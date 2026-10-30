@@ -67,7 +67,7 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 30+ тегов, 19 стилей текста (L33T, vaporwave, готика, зеркальный и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "30.6.0"
+__version__ = "30.7.0"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -83,6 +83,16 @@ FLAGS_FORMAT = 1
 FLAGS_DOMAIN = b"Prefixfy-flags-v1\n"
 FLAGS_CACHE_FILE = "Prefixfy_flags.json"
 FLAGS_MAX_COUNT = 64
+FLAGS_MAX_ACCOUNTS = 1024
+BLACKLIST_FILE = "blacklist.json"
+BLACKLIST_FORMAT = 1
+BLACKLIST_DOMAIN = b"Prefixfy-blacklist-v1\n"
+BLACKLIST_CACHE_FILE = "Prefixfy_blacklist.json"
+BLACKLIST_MAX_BYTES = 1024 * 1024
+BLACKLIST_MAX_IDS = 50000
+BLACKLIST_KEY = "/yADUrDk9+uuX6ilxfB4WFqZpglH2kwVmN+LN07pNHE="
+DEVICE_RECHECK_INTERVAL = 15.0
+_ACCOUNT_ID_RE = re.compile(r"[0-9]{1,16}")
 UPDATE_ALLOWED_HOSTS = ("raw.githubusercontent.com",)
 UPDATE_PUBLIC_KEYS: Tuple[str, ...] = (
     "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAnCpVgdegnDqZoaOi5H5EOpHiwY8jhprNdIT3jGVauC0Nijz2L/iauWaVxnEOwDT2tqp1tJQ6CrdQxOS/PKV/7QLtGtAseKdpo/4tZjHgx2N9TAPMVb+zK3oWYk+0+OcLFIUoczCa1aZuwaScBqQchmgTj4sQwIbhWDhquE2EtyiF1+6S6GCgV5KyJrqylt2pAcif5z3ixUV27MPzaPbQmuyU+3amsIXDxGcdTFwlHMg/ThFVz77bwV5fkfaNdJrZGDp3+FKSIfjN68v2scL6O9oYHhkDg4AEPUYQkJmNTMnqc0ABFSW9MGuGsMTa0MKNDMaBY5iP2aQmfzLddorBP4ovfOZRzZguFVltFGd44xVOE1w5ceL1WVH+pW+4HX0Ck5FWnHbttaQiLoxXuiIK+F927LLM0yCmKLZC9tcIfMdBXgcaHp1ZaKGOIVvRs8SRaVnQ2z51v3NtjHbakGKwcXit2JlgyKvrHPG2AQj8ci7tApB6BWYffsNkFM4bCBIlAgMBAAE=",
@@ -256,6 +266,8 @@ class LocalizationManager:
             "update_required_subtext": "Установите Prefixfy {version} (официальная сборка). Пока плагин не оформляет сообщения.",
             "verify_required": "Проверка не пройдена",
             "verify_required_subtext": "Не удалось подтвердить подлинность сборки Prefixfy. Пока плагин не оформляет сообщения; проверьте подключение к интернету.",
+            "account_blocked": "Доступ запрещён",
+            "account_blocked_subtext": "Один из аккаунтов на этом устройстве внесён в чёрный список Prefixfy. Плагин не работает.",
             "section_scope": "Где работает",
             "plugin_language": "Язык плагина",
             "language_auto": "Автоопределение языка",
@@ -451,6 +463,8 @@ class LocalizationManager:
             "update_required_subtext": "Install Prefixfy {version} (official build). Until then the plugin won’t format messages.",
             "verify_required": "Verification failed",
             "verify_required_subtext": "Couldn’t verify this Prefixfy build. Until then the plugin won’t format messages; check your internet connection.",
+            "account_blocked": "Access denied",
+            "account_blocked_subtext": "One of the accounts on this device is on the Prefixfy blacklist. The plugin is disabled.",
             "section_scope": "Where it works",
             "plugin_language": "Plugin language",
             "language_auto": "Detect language automatically",
@@ -646,6 +660,8 @@ class LocalizationManager:
             "update_required_subtext": "Prefixfy {version}（公式ビルド）をインストールしてください。それまでメッセージの装飾は行われません。",
             "verify_required": "検証に失敗しました",
             "verify_required_subtext": "このPrefixfyビルドを検証できませんでした。それまでメッセージの装飾は行われません。インターネット接続を確認してください。",
+            "account_blocked": "アクセスが拒否されました",
+            "account_blocked_subtext": "この端末のアカウントの1つがPrefixfyのブラックリストに登録されています。プラグインは無効です。",
             "section_scope": "適用範囲",
             "plugin_language": "プラグインの言語",
             "language_auto": "言語を自動検出",
@@ -841,6 +857,8 @@ class LocalizationManager:
             "update_required_subtext": "Prefixfy {version}(공식 빌드)를 설치하세요. 그때까지 플러그인은 메시지를 꾸미지 않습니다.",
             "verify_required": "검증 실패",
             "verify_required_subtext": "이 Prefixfy 빌드를 검증하지 못했습니다. 그때까지 플러그인은 메시지를 꾸미지 않습니다. 인터넷 연결을 확인하세요.",
+            "account_blocked": "접근이 거부되었습니다",
+            "account_blocked_subtext": "이 기기의 계정 중 하나가 Prefixfy 블랙리스트에 등록되어 있습니다. 플러그인이 비활성화되었습니다.",
             "section_scope": "적용 범위",
             "plugin_language": "플러그인 언어",
             "language_auto": "언어 자동 감지",
@@ -1036,6 +1054,8 @@ class LocalizationManager:
             "update_required_subtext": "ثبّت Prefixfy {version} (النسخة الرسمية). إلى ذلك الحين لن تنسّق الإضافة الرسائل.",
             "verify_required": "فشل التحقق",
             "verify_required_subtext": "تعذّر التحقق من نسخة Prefixfy هذه. إلى ذلك الحين لن تنسّق الإضافة الرسائل؛ تحقّق من اتصالك بالإنترنت.",
+            "account_blocked": "تم رفض الوصول",
+            "account_blocked_subtext": "أحد الحسابات على هذا الجهاز في القائمة السوداء لـ Prefixfy. الإضافة معطّلة.",
             "section_scope": "نطاق العمل",
             "plugin_language": "لغة الإضافة",
             "language_auto": "الكشف التلقائي عن اللغة",
@@ -1231,6 +1251,8 @@ class LocalizationManager:
             "update_required_subtext": "Installez Prefixfy {version} (version officielle). D’ici là, le plugin ne met pas en forme les messages.",
             "verify_required": "Échec de la vérification",
             "verify_required_subtext": "Impossible de vérifier cette version de Prefixfy. D’ici là, le plugin ne met pas en forme les messages ; vérifiez votre connexion Internet.",
+            "account_blocked": "Accès refusé",
+            "account_blocked_subtext": "L’un des comptes de cet appareil figure sur la liste noire de Prefixfy. Le plugin est désactivé.",
             "section_scope": "Où ça s’applique",
             "plugin_language": "Langue du plugin",
             "language_auto": "Détection automatique de la langue",
@@ -1426,6 +1448,8 @@ class LocalizationManager:
             "update_required_subtext": "Zainstaluj Prefixfy {version} (oficjalna wersja). Do tego czasu plugin nie formatuje wiadomości.",
             "verify_required": "Weryfikacja nie powiodła się",
             "verify_required_subtext": "Nie udało się zweryfikować tej wersji Prefixfy. Do tego czasu plugin nie formatuje wiadomości; sprawdź połączenie z internetem.",
+            "account_blocked": "Odmowa dostępu",
+            "account_blocked_subtext": "Jedno z kont na tym urządzeniu znajduje się na czarnej liście Prefixfy. Plugin jest wyłączony.",
             "section_scope": "Gdzie działa",
             "plugin_language": "Język pluginu",
             "language_auto": "Automatyczne wykrywanie języka",
@@ -1621,6 +1645,8 @@ class LocalizationManager:
             "update_required_subtext": "Installiere Prefixfy {version} (offizieller Build). Bis dahin formatiert das Plugin keine Nachrichten.",
             "verify_required": "Überprüfung fehlgeschlagen",
             "verify_required_subtext": "Dieser Prefixfy-Build konnte nicht verifiziert werden. Bis dahin formatiert das Plugin keine Nachrichten; prüfe deine Internetverbindung.",
+            "account_blocked": "Zugriff verweigert",
+            "account_blocked_subtext": "Eines der Konten auf diesem Gerät steht auf der Prefixfy-Sperrliste. Das Plugin ist deaktiviert.",
             "section_scope": "Wo es wirkt",
             "plugin_language": "Plugin-Sprache",
             "language_auto": "Sprache automatisch erkennen",
@@ -1816,6 +1842,8 @@ class LocalizationManager:
             "update_required_subtext": "Встановіть Prefixfy {version} (офіційна збірка). Доти плагін не оформлює повідомлення.",
             "verify_required": "Перевірку не пройдено",
             "verify_required_subtext": "Не вдалося підтвердити цю збірку Prefixfy. Доти плагін не оформлює повідомлення; перевірте підключення до інтернету.",
+            "account_blocked": "Доступ заборонено",
+            "account_blocked_subtext": "Один з акаунтів на цьому пристрої внесено до чорного списку Prefixfy. Плагін не працює.",
             "section_scope": "Де працює",
             "plugin_language": "Мова плагіна",
             "language_auto": "Автовизначення мови",
@@ -2824,30 +2852,60 @@ _FLAG_NAME_RE = re.compile(r"[a-z][a-z0-9_]{0,31}")
 class FeatureFlags:
     """Remote on/off switches for optional features; the user's own settings are never touched.
 
-    Reads take no lock: apply() swaps in a whole new dict.
+    Global values come from flags.json; the "accounts" section can override them for specific
+    account IDs. Overrides apply when any such account is signed in on this device. If several
+    matching accounts disagree about a flag, "off" wins.
+    Reads take no lock: every change swaps in a whole new dict.
     """
 
     def __init__(self, defaults: Dict[str, bool]):
         self._defaults = dict(defaults)
+        self._global = dict(defaults)
         self._values = dict(defaults)
+        self._accounts: Dict[int, Dict[str, bool]] = {}
+        self._ids: frozenset = frozenset()
         self._serial = -1
         self._lock = threading.Lock()
 
     def on(self, name: str) -> bool:
         return self._values.get(name, True)
 
-    def apply(self, flags: Dict[str, bool], serial: int) -> bool:
-        merged = dict(self._defaults)
+    def _compose(self) -> Dict[str, bool]:
+        merged = dict(self._global)
+        matched = [self._accounts[i] for i in sorted(self._ids) if i in self._accounts]
+        for name in merged:
+            votes = [item[name] for item in matched if name in item]
+            if votes:
+                merged[name] = all(votes)
+        return merged
+
+    def _swap(self) -> bool:
+        merged = self._compose()
+        changed = merged != self._values
+        self._values = merged
+        return changed
+
+    def apply(self, flags: Dict[str, bool], serial: int, accounts: Optional[Dict[int, Dict[str, bool]]] = None) -> bool:
+        base = dict(self._defaults)
         for name, value in flags.items():
-            if name in merged and isinstance(value, bool):
-                merged[name] = value
+            if name in base and isinstance(value, bool):
+                base[name] = value
+        cleaned: Dict[int, Dict[str, bool]] = {}
+        for account_id, overrides in (accounts or {}).items():
+            if isinstance(account_id, int) and not isinstance(account_id, bool) and isinstance(overrides, dict):
+                cleaned[account_id] = {n: v for n, v in overrides.items() if n in self._defaults and isinstance(v, bool)}
         with self._lock:
             if serial < self._serial:
                 raise ValueError(f"flags rollback rejected ({serial} < {self._serial})")
-            changed = merged != self._values
-            self._values = merged
+            self._global = base
+            self._accounts = cleaned
             self._serial = serial
-        return changed
+            return self._swap()
+
+    def set_device_accounts(self, ids) -> bool:
+        with self._lock:
+            self._ids = frozenset(ids)
+            return self._swap()
 
     def overridden(self) -> List[str]:
         values = self._values
@@ -5951,12 +6009,105 @@ def verify_flags(raw: bytes) -> Dict[str, Any]:
     for name, value in values.items():
         if name in FEATURE_FLAGS and isinstance(value, bool) and _FLAG_NAME_RE.fullmatch(name):
             known[name] = value
+    raw_accounts = body.get("accounts", {})
+    if not isinstance(raw_accounts, dict) or len(raw_accounts) > FLAGS_MAX_ACCOUNTS:
+        raise ValueError("flags: bad accounts object")
+    accounts: Dict[int, Dict[str, bool]] = {}
+    for key, overrides in raw_accounts.items():
+        if not (isinstance(key, str) and _ACCOUNT_ID_RE.fullmatch(key) and 0 < int(key) <= 2 ** 53):
+            raise ValueError("flags: bad account id")
+        if not isinstance(overrides, dict) or len(overrides) > FLAGS_MAX_COUNT:
+            raise ValueError("flags: bad account overrides")
+        accounts[int(key)] = {
+            name: value for name, value in overrides.items()
+            if name in FEATURE_FLAGS and isinstance(value, bool) and _FLAG_NAME_RE.fullmatch(name)
+        }
     return {
         "serial": _manifest_int(body, "serial"),
         "issued_at": _manifest_int(body, "issued_at"),
         "flags": known,
+        "accounts": accounts,
         "signed": signed,
     }
+
+
+def _blacklist_keystream(key: bytes, nonce: bytes, length: int) -> bytes:
+    out = bytearray()
+    counter = 0
+    while len(out) < length:
+        out += hmac.new(key, nonce + counter.to_bytes(8, "big"), hashlib.sha256).digest()
+        counter += 1
+    return bytes(out[:length])
+
+
+def _decrypt_blacklist_ids(blob: str) -> List[Any]:
+    """ids_enc = base64(nonce[16] + XOR(zlib(json ids), HMAC-SHA256 keystream)). Подлинность даёт подпись файла."""
+    raw = base64.b64decode(blob, validate=True)
+    if len(raw) <= 16 or len(raw) > BLACKLIST_MAX_BYTES:
+        raise ValueError("blacklist: bad encrypted payload")
+    nonce, cipher = raw[:16], raw[16:]
+    key = base64.b64decode(BLACKLIST_KEY)
+    stream = _blacklist_keystream(key, nonce, len(cipher))
+    packed = (int.from_bytes(cipher, "big") ^ int.from_bytes(stream, "big")).to_bytes(len(cipher), "big")
+    unpacker = zlib.decompressobj()
+    plain = unpacker.decompress(packed, BLACKLIST_MAX_BYTES)
+    if unpacker.unconsumed_tail or not unpacker.eof:
+        raise ValueError("blacklist: payload too large or truncated")
+    values = json.loads(plain.decode("utf-8"))
+    if not isinstance(values, list):
+        raise ValueError("blacklist: bad ids list")
+    return values
+
+
+def verify_blacklist(raw: bytes) -> Dict[str, Any]:
+    signed, body = _verify_signed(raw, BLACKLIST_DOMAIN, "blacklist")
+    if _manifest_int(body, "format") != BLACKLIST_FORMAT:
+        raise ValueError("unsupported blacklist format")
+    if "ids_enc" in body:
+        if not isinstance(body["ids_enc"], str):
+            raise ValueError("blacklist: bad encrypted payload")
+        try:
+            values = _decrypt_blacklist_ids(body["ids_enc"])
+        except (ValueError, zlib.error, UnicodeDecodeError) as exc:
+            raise ValueError(f"blacklist: cannot decrypt ids ({exc})")
+    else:
+        values = body.get("ids")
+    if not isinstance(values, list) or len(values) > BLACKLIST_MAX_IDS:
+        raise ValueError("blacklist: bad ids list")
+    ids = set()
+    for value in values:
+        if isinstance(value, bool) or not isinstance(value, int) or not 0 < value <= 2 ** 53:
+            raise ValueError("blacklist: bad account id")
+        ids.add(value)
+    return {
+        "serial": _manifest_int(body, "serial"),
+        "issued_at": _manifest_int(body, "issued_at"),
+        "ids": frozenset(ids),
+        "signed": signed,
+    }
+
+
+def device_account_ids(logger=None) -> Optional[frozenset]:
+    """IDs of every Telegram account signed in on this device, or None if they can't be read."""
+    try:
+        config_class = find_class("org.telegram.messenger.UserConfig")
+        try:
+            count = int(config_class.MAX_ACCOUNT_COUNT)
+        except Exception:
+            count = 16
+        ids = set()
+        for index in range(max(1, min(count, 32))):
+            config = config_class.getInstance(index)
+            if config is None or not bool(config.isClientActivated()):
+                continue
+            user_id = java_int(config.getClientUserId())
+            if user_id and user_id > 0:
+                ids.add(user_id)
+        return frozenset(ids)
+    except Exception as exc:
+        if logger:
+            logger(f"Prefixfy device accounts lookup failed: {exc}")
+        return None
 
 
 class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
@@ -5995,9 +6146,18 @@ class RemoteControl:
         self._self_hash = _self_file_sha256()
         if self._self_hash is None:
             self.plugin.log("Prefixfy: could not hash own file; falling back to version-only integrity check")
+        self._device_ids: frozenset = frozenset()
+        self._dev_checked = float("-inf")
+        self._dev_lock = threading.Lock()
+        self._bl_ids: frozenset = frozenset()
+        self._bl_serial = -1
+        self._bl_known = False
+        self._bl_path = os.path.join(get_plugins_dir(), BLACKLIST_CACHE_FILE)
         self._load_cache()
         self._flags_path = os.path.join(get_plugins_dir(), FLAGS_CACHE_FILE)
         self._load_flags_cache()
+        self._load_blacklist_cache()
+        self._poll_devices(notify=False, force=True)
 
     def start(self):
         if not self.enabled:
@@ -6029,7 +6189,7 @@ class RemoteControl:
             self.request_refresh()
 
     @staticmethod
-    def _download(name: str) -> bytes:
+    def _download(name: str, limit: int = REMOTE_MAX_BYTES) -> bytes:
         import ssl
         request = urllib.request.Request(
             f"{UPDATE_BASE_URL}{name}?t={int(time.time())}",
@@ -6053,7 +6213,7 @@ class RemoteControl:
                 if not chunk:
                     break
                 total += len(chunk)
-                if total > REMOTE_MAX_BYTES:
+                if total > limit:
                     raise ValueError(f"{name} is too large")
                 chunks.append(chunk)
         return b"".join(chunks)
@@ -6087,6 +6247,7 @@ class RemoteControl:
             self._state = state
         self._last_ok = time.monotonic()
         self._save_cache()
+        self._refresh_blacklist()
         after = self._snapshot()
         if after[0] != before[0]:
             self._announce()
@@ -6101,7 +6262,7 @@ class RemoteControl:
     def _refresh_flags(self):
         try:
             state = verify_flags(self._download(FLAGS_FILE))
-            changed = FEATURES.apply(state["flags"], state["serial"])
+            changed = FEATURES.apply(state["flags"], state["serial"], state["accounts"])
         except urllib.error.HTTPError as exc:
             if exc.code != 404:
                 self.plugin.log(f"Prefixfy flags check failed: HTTP {exc.code}")
@@ -6113,22 +6274,78 @@ class RemoteControl:
         if not changed:
             return
         self.plugin.log(f"Prefixfy flags updated (serial {state['serial']}): {', '.join(FEATURES.overridden()) or 'defaults'}")
+        self.plugin._on_features_changed()
+
+    def _bl_hit(self, ids) -> bool:
+        return bool(ids and self._bl_ids and not ids.isdisjoint(self._bl_ids))
+
+    def blacklisted(self) -> bool:
+        self._poll_devices()
+        return self._bl_hit(self._device_ids)
+
+    def _poll_devices(self, notify: bool = True, force: bool = False):
+        if not force and time.monotonic() - self._dev_checked < DEVICE_RECHECK_INTERVAL:
+            return
+        if not self._dev_lock.acquire(blocking=False):
+            return
+        features_changed = hit_changed = False
         try:
-            self.plugin.runtime_manager.rebuild()
-        except Exception as exc:
-            self.plugin.log(f"Prefixfy flags rebuild failed: {exc}")
+            self._dev_checked = time.monotonic()
+            ids = device_account_ids(self.plugin.log)
+            if ids is None or ids == self._device_ids:
+                return
+            hit_changed = self._bl_hit(ids) != self._bl_hit(self._device_ids)
+            self._device_ids = ids
+            features_changed = FEATURES.set_device_accounts(ids)
+        finally:
+            self._dev_lock.release()
+        if not notify:
+            return
+        if features_changed or hit_changed:
+            self.plugin._on_features_changed()
+        if hit_changed:
+            self._announce()
+
+    def _refresh_blacklist(self):
         try:
-            self.plugin.localization.invalidate()
-            self.plugin._schedule_menu_refresh(250)
-            self.plugin.reload_settings_ui()
+            state = verify_blacklist(self._download(BLACKLIST_FILE, BLACKLIST_MAX_BYTES))
+            if state["serial"] < self._bl_serial:
+                raise ValueError(f"blacklist rollback rejected ({state['serial']} < {self._bl_serial})")
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                self._bl_known = True
+            else:
+                self.plugin.log(f"Prefixfy blacklist check failed: HTTP {exc.code}")
+            return
         except Exception as exc:
-            self.plugin.log(f"Prefixfy flags UI refresh failed: {exc}")
+            self.plugin.log(f"Prefixfy blacklist check failed: {exc}")
+            return
+        self._bl_ids = state["ids"]
+        self._bl_serial = state["serial"]
+        self._bl_known = True
+        try:
+            temp = self._bl_path + ".tmp"
+            with open(temp, "w", encoding="utf-8") as handle:
+                json.dump(state["signed"], handle)
+            os.replace(temp, self._bl_path)
+        except OSError as exc:
+            self.plugin.log(f"Prefixfy blacklist cache not saved: {exc}")
+
+    def _load_blacklist_cache(self):
+        try:
+            with open(self._bl_path, "rb") as handle:
+                state = verify_blacklist(handle.read(BLACKLIST_MAX_BYTES + 1))
+        except (OSError, ValueError):
+            return
+        self._bl_ids = state["ids"]
+        self._bl_serial = state["serial"]
+        self._bl_known = True
 
     def _load_flags_cache(self):
         try:
             with open(self._flags_path, "rb") as handle:
                 state = verify_flags(handle.read(REMOTE_MAX_BYTES + 1))
-            FEATURES.apply(state["flags"], state["serial"])
+            FEATURES.apply(state["flags"], state["serial"], state["accounts"])
         except (OSError, ValueError):
             pass
 
@@ -6193,10 +6410,12 @@ class RemoteControl:
     def verified(self) -> bool:
         with self._lock:
             has_state = self._state is not None
-        return has_state and time.monotonic() - self._last_ok <= REMOTE_MAX_AGE
+        return has_state and self._bl_known and time.monotonic() - self._last_ok <= REMOTE_MAX_AGE
 
     def blocked(self) -> bool:
         if not self.enabled or not self.verified():
+            return True
+        if self.blacklisted():
             return True
         return self.mismatched()
 
@@ -6208,6 +6427,8 @@ class RemoteControl:
         return not self.blocked()
 
     def notice(self) -> Tuple[str, Dict[str, Any]]:
+        if self.enabled and self.verified() and self.blacklisted():
+            return "account_blocked_subtext", {}
         if self._field("version", ()) and self.mismatched():
             return "update_required_subtext", {"version": self.required_version()}
         return "verify_required_subtext", {}
@@ -7267,6 +7488,32 @@ class PrefixfyPlugin(BasePlugin):
             ))
         return items
 
+    def _on_features_changed(self):
+        try:
+            self.runtime_manager.rebuild()
+        except Exception as exc:
+            self.log(f"Prefixfy features rebuild failed: {exc}")
+        try:
+            self.localization.invalidate()
+        except Exception as exc:
+            self.log(f"Prefixfy features language reset failed: {exc}")
+        ref = weakref.ref(self)
+
+        def task():
+            plugin = ref()
+            if plugin is None:
+                return
+            try:
+                plugin._schedule_menu_refresh(250)
+                plugin.reload_settings_ui()
+            except Exception as exc:
+                plugin.log(f"Prefixfy features UI refresh failed: {exc}")
+
+        try:
+            run_on_queue(task, PLUGINS_QUEUE, 1)
+        except Exception as exc:
+            self.log(f"Prefixfy features UI scheduling failed: {exc}")
+
     def _remote_notice(self) -> List[Any]:
         remote = getattr(self, "remote", None)
         if remote is None:
@@ -7279,6 +7526,8 @@ class PrefixfyPlugin(BasePlugin):
             checksum = remote.latest_checksum()
             if checksum and key == "update_required_subtext":
                 subtext += f"\nSHA-256 {checksum[:12]}…"
+            if key == "account_blocked_subtext":
+                return [Text(text=tr("account_blocked"), subtext=subtext, icon=icon, on_click=lambda *_: None)]
             title = tr("update_required" if key == "update_required_subtext" else "verify_required")
             return [Text(text=title, subtext=subtext, icon=icon, on_click=self._open_repo)]
         return []
