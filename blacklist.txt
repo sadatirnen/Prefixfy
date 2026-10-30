@@ -1,0 +1,2 @@
+# Account IDs blocked from using the plugin, one per line.
+# Lines starting with # are ignored.
