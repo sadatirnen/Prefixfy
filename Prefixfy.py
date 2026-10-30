@@ -67,7 +67,7 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 30+ тегов, 19 стилей текста (L33T, vaporwave, готика, зеркальный и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "30.5.0"
+__version__ = "30.6.0"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -78,6 +78,11 @@ UPDATE_BASE_URL = "https://raw.githubusercontent.com/sadatirnen/Prefixfy/main/"
 MANIFEST_FILE = "version.json"
 MANIFEST_FORMAT = 1
 MANIFEST_DOMAIN = b"Prefixfy-manifest-v1\n"
+FLAGS_FILE = "flags.json"
+FLAGS_FORMAT = 1
+FLAGS_DOMAIN = b"Prefixfy-flags-v1\n"
+FLAGS_CACHE_FILE = "Prefixfy_flags.json"
+FLAGS_MAX_COUNT = 64
 UPDATE_ALLOWED_HOSTS = ("raw.githubusercontent.com",)
 UPDATE_PUBLIC_KEYS: Tuple[str, ...] = (
     "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAnCpVgdegnDqZoaOi5H5EOpHiwY8jhprNdIT3jGVauC0Nijz2L/iauWaVxnEOwDT2tqp1tJQ6CrdQxOS/PKV/7QLtGtAseKdpo/4tZjHgx2N9TAPMVb+zK3oWYk+0+OcLFIUoczCa1aZuwaScBqQchmgTj4sQwIbhWDhquE2EtyiF1+6S6GCgV5KyJrqylt2pAcif5z3ixUV27MPzaPbQmuyU+3amsIXDxGcdTFwlHMg/ThFVz77bwV5fkfaNdJrZGDp3+FKSIfjN68v2scL6O9oYHhkDg4AEPUYQkJmNTMnqc0ABFSW9MGuGsMTa0MKNDMaBY5iP2aQmfzLddorBP4ovfOZRzZguFVltFGd44xVOE1w5ceL1WVH+pW+4HX0Ck5FWnHbttaQiLoxXuiIK+F927LLM0yCmKLZC9tcIfMdBXgcaHp1ZaKGOIVvRs8SRaVnQ2z51v3NtjHbakGKwcXit2JlgyKvrHPG2AQj8ci7tApB6BWYffsNkFM4bCBIlAgMBAAE=",
@@ -2024,7 +2029,7 @@ class LocalizationManager:
         if not code:
             return None
         base = cls.LANGUAGE_ALIASES.get(code) or cls.LANGUAGE_ALIASES.get(code.split("_", 1)[0]) or code.split("_", 1)[0]
-        return base if base in cls.SUPPORTED_AUTO else None
+        return base if base in cls.SUPPORTED_AUTO and language_enabled(base) else None
 
     def _detect_interface_language(self) -> Optional[str]:
         try:
@@ -2053,7 +2058,7 @@ class LocalizationManager:
 
     def language(self) -> str:
         forced = LANGUAGE_MODES[self.plugin.settings.language_index()]
-        if forced:
+        if forced and language_enabled(forced):
             return forced
         now = time.monotonic()
         if self._auto_language is None or now - self._auto_checked > self.AUTO_LANGUAGE_TTL:
@@ -2076,7 +2081,12 @@ class LocalizationManager:
         return value
 
     def language_items(self) -> List[str]:
-        return self.LANGUAGE_ITEMS.get(self.language(), self.LANGUAGE_ITEMS["en"])
+        names = self.LANGUAGE_ITEMS.get(self.language(), self.LANGUAGE_ITEMS["en"])
+        return [names[index - 1] for index in enabled_language_indices()]
+
+    def invalidate(self):
+        self._auto_language = None
+        self._auto_checked = 0.0
 
 
 def clamp_int(value, default: int, low: int, high: int) -> int:
@@ -2786,6 +2796,81 @@ def unique_name(base: str, taken, ignore: str = "") -> str:
     return name
 
 
+FEATURE_FLAGS: Dict[str, bool] = {
+    "markdown": True,
+    "text_styles": True,
+    "mask_rotation": True,
+    "conditional_masks": True,
+    "regex_exceptions": True,
+    "chat_type_rules": True,
+    "edit_processing": True,
+    "attached_media": True,
+    "premium_emoji": True,
+    "schedule": True,
+    "chat_configs": True,
+    "config_import": True,
+    "lang_ru": True,
+    "lang_ja": True,
+    "lang_ko": True,
+    "lang_ar": True,
+    "lang_fr": True,
+    "lang_pl": True,
+    "lang_de": True,
+    "lang_uk": True,
+}
+_FLAG_NAME_RE = re.compile(r"[a-z][a-z0-9_]{0,31}")
+
+
+class FeatureFlags:
+    """Remote on/off switches for optional features; the user's own settings are never touched.
+
+    Reads take no lock: apply() swaps in a whole new dict.
+    """
+
+    def __init__(self, defaults: Dict[str, bool]):
+        self._defaults = dict(defaults)
+        self._values = dict(defaults)
+        self._serial = -1
+        self._lock = threading.Lock()
+
+    def on(self, name: str) -> bool:
+        return self._values.get(name, True)
+
+    def apply(self, flags: Dict[str, bool], serial: int) -> bool:
+        merged = dict(self._defaults)
+        for name, value in flags.items():
+            if name in merged and isinstance(value, bool):
+                merged[name] = value
+        with self._lock:
+            if serial < self._serial:
+                raise ValueError(f"flags rollback rejected ({serial} < {self._serial})")
+            changed = merged != self._values
+            self._values = merged
+            self._serial = serial
+        return changed
+
+    def overridden(self) -> List[str]:
+        values = self._values
+        return sorted(f"{name}={'on' if value else 'off'}" for name, value in values.items() if value != self._defaults[name])
+
+
+FEATURES = FeatureFlags(FEATURE_FLAGS)
+
+
+def language_enabled(code) -> bool:
+    """English is the mandatory base pack; every other pack can be switched off remotely."""
+    return code == "en" or FEATURES.on("lang_" + as_text(code))
+
+
+def enabled_language_indices() -> List[int]:
+    """Indices into LANGUAGE_MODES (skipping 'auto') of the packs that are currently available."""
+    return [index for index in range(1, len(LANGUAGE_MODES)) if language_enabled(LANGUAGE_MODES[index])]
+
+
+def has_language_choice() -> bool:
+    return any(LANGUAGE_MODES[index] != "en" for index in enabled_language_indices())
+
+
 class RuntimeSettings:
     __slots__ = (
         "language", "chat_scope_enabled", "process_message", "process_media", "process_edit",
@@ -2807,24 +2892,24 @@ class RuntimeSettings:
         self.chat_scope_enabled = bool(get("chat_scope_enabled"))
         self.process_message = bool(get("process_message"))
         self.process_media = bool(get("process_media"))
-        self.process_edit = bool(get("process_edit"))
+        self.process_edit = bool(get("process_edit")) and FEATURES.on("edit_processing")
         self.process_edit_message = bool(get("process_edit_message"))
         self.process_edit_media = bool(get("process_edit_media"))
         self.skip_once_on_edit = bool(get("skip_once_on_edit"))
         style = clamp_int(get("markdown_style"), 0, 0, MARKDOWN_STYLE_COUNT - 1)
-        self.markdown_enabled = bool(get("markdown_enabled")) and style != 1
+        self.markdown_enabled = bool(get("markdown_enabled")) and style != 1 and FEATURES.on("markdown")
         self.markdown_style = 0 if style == 1 else style
         self.markdown_wrap = MARKDOWN_WRAP_KINDS.get(self.markdown_style) if self.markdown_enabled else None
         self.mask = as_text(get("mask"))
-        self.text_style_enabled = bool(get("text_style_enabled"))
+        self.text_style_enabled = bool(get("text_style_enabled")) and FEATURES.on("text_styles")
         self.text_style = clamp_int(get("text_style"), 0, 0, TEXT_STYLE_COUNT - 1)
         self.text_style_random = bool(get("text_style_random"))
-        self.mask_rotation_enabled = bool(get("mask_rotation_enabled"))
+        self.mask_rotation_enabled = bool(get("mask_rotation_enabled")) and FEATURES.on("mask_rotation")
         self.masks_list = [item.strip() for item in as_text(get("masks_list")).splitlines() if item.strip() and is_valid_mask(item.strip())][:MAX_MASKS_IN_LIST]
         self.mask_rotation_mode = clamp_int(get("mask_rotation_mode"), 0, 0, 1)
-        self.regex_exceptions = compile_regex_exceptions(get("regex_exceptions"))
-        self.conditional_rules = parse_conditional_masks(get("conditional_masks"))[0]
-        self.chat_type_rules = parse_chat_type_rules(get("chat_type_rules"))
+        self.regex_exceptions = compile_regex_exceptions(get("regex_exceptions")) if FEATURES.on("regex_exceptions") else ()
+        self.conditional_rules = parse_conditional_masks(get("conditional_masks"))[0] if FEATURES.on("conditional_masks") else ()
+        self.chat_type_rules = parse_chat_type_rules(get("chat_type_rules")) if FEATURES.on("chat_type_rules") else frozenset(CHAT_KINDS)
         self.mask_parts = split_mask(self.mask)
         if self.mask_parts is None and not self.mask.strip():
             self.mask_parts = ("", "")
@@ -2836,7 +2921,7 @@ class RuntimeSettings:
         self.ignore_special = bool(get("ignore_special"))
         self.ignore_emoji_only = bool(get("ignore_emoji_only"))
         self.disabled_chats = parse_chat_ids(get("disabled_chats"))
-        self.media_enabled = bool(get("attached_media_enabled"))
+        self.media_enabled = bool(get("attached_media_enabled")) and FEATURES.on("attached_media")
         self.media_path = as_text(get("attached_media_path"))
         self.media_name = as_text(get("attached_media_name"))
         self.media_mime = as_text(get("attached_media_mime"))
@@ -4358,6 +4443,17 @@ class ConfigTransfer:
         return ""
 
 
+    @staticmethod
+    def visible_components() -> Tuple[str, ...]:
+        hidden = set()
+        if not FEATURES.on("attached_media"):
+            hidden.add("media")
+        if not has_language_choice():
+            hidden.add("language")
+        if not FEATURES.on("schedule") and not FEATURES.on("chat_configs"):
+            hidden.add("schedule")
+        return tuple(c for c in COMPONENTS if c not in hidden)
+
     def _component_label(self, component):
         return self._tr("config_" + component)
 
@@ -4374,7 +4470,7 @@ class ConfigTransfer:
         if self._blocked():
             return
         fragment, _ = self._activity()
-        available = tuple(c for c in COMPONENTS if operation != "reset" or COMPONENT_KEYS.get(c))
+        available = tuple(c for c in self.visible_components() if operation != "reset" or COMPONENT_KEYS.get(c))
         rows = [(self._component_label(component), True, True) for component in available]
         extra = None
         message = self._tr("select_configuration_subtext")
@@ -4517,15 +4613,16 @@ class ConfigTransfer:
             return
         try:
             data = self.read_container(args.file.getAbsolutePath())
-            detected = detect_components(data)
+            visible = self.visible_components()
+            detected = tuple(c for c in detect_components(data) if c in visible)
             if not detected:
                 self.discard_container_media(data)
                 raise ConfigurationError("configuration has no valid components")
 
-            rows = [(self._component_label(c), c in detected, c in detected) for c in COMPONENTS]
+            rows = [(self._component_label(c), c in detected, c in detected) for c in visible]
 
             def confirm(selected, as_new):
-                chosen = tuple(COMPONENTS[i] for i in selected if COMPONENTS[i] in detected)
+                chosen = tuple(visible[i] for i in selected if visible[i] in detected)
                 if not chosen:
                     self._toast("configuration_nothing_selected", fragment)
                     return False
@@ -5488,6 +5585,8 @@ class ConfigurationsManager:
         remote = getattr(self.plugin, "remote", None)
         if remote is not None and not remote.allows():
             raise ConfigurationError("plugin update required")
+        if not FEATURES.on("config_import"):
+            raise ConfigurationError("configuration import is switched off")
         if as_new:
             self.create_from_import(data, components, name=name)
         else:
@@ -5795,22 +5894,27 @@ def _manifest_int(body: Dict[str, Any], key: str) -> int:
     return value
 
 
-def verify_manifest(raw: bytes) -> Dict[str, Any]:
+def _verify_signed(raw: bytes, domain: bytes, what: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     if not UPDATE_PUBLIC_KEYS:
         raise ValueError("no update public key configured")
     signed = json.loads(raw.decode("utf-8"))
     if not isinstance(signed, dict):
-        raise ValueError("manifest is not an object")
+        raise ValueError(f"{what} is not an object")
     body = dict(signed)
     signature_text = body.pop("signature", None)
     if not isinstance(signature_text, str):
-        raise ValueError("manifest is not signed")
+        raise ValueError(f"{what} is not signed")
     signature = base64.b64decode(signature_text, validate=True)
-    message = MANIFEST_DOMAIN + json.dumps(
+    message = domain + json.dumps(
         body, sort_keys=True, separators=(",", ":"), ensure_ascii=True,
     ).encode("ascii")
     if not any(_rsa_sha256_verify(base64.b64decode(key), message, signature) for key in UPDATE_PUBLIC_KEYS):
-        raise ValueError("bad manifest signature")
+        raise ValueError(f"bad {what} signature")
+    return signed, body
+
+
+def verify_manifest(raw: bytes) -> Dict[str, Any]:
+    signed, body = _verify_signed(raw, MANIFEST_DOMAIN, "manifest")
     if _manifest_int(body, "format") != MANIFEST_FORMAT:
         raise ValueError("unsupported manifest format")
     version = parse_version(body.get("version"))
@@ -5832,6 +5936,25 @@ def verify_manifest(raw: bytes) -> Dict[str, Any]:
         "sha256": sha256,
         "sha512": sha512,
         "file": name,
+        "signed": signed,
+    }
+
+
+def verify_flags(raw: bytes) -> Dict[str, Any]:
+    signed, body = _verify_signed(raw, FLAGS_DOMAIN, "flags")
+    if _manifest_int(body, "format") != FLAGS_FORMAT:
+        raise ValueError("unsupported flags format")
+    values = body.get("flags")
+    if not isinstance(values, dict) or len(values) > FLAGS_MAX_COUNT:
+        raise ValueError("flags: bad flags object")
+    known: Dict[str, bool] = {}
+    for name, value in values.items():
+        if name in FEATURE_FLAGS and isinstance(value, bool) and _FLAG_NAME_RE.fullmatch(name):
+            known[name] = value
+    return {
+        "serial": _manifest_int(body, "serial"),
+        "issued_at": _manifest_int(body, "issued_at"),
+        "flags": known,
         "signed": signed,
     }
 
@@ -5873,6 +5996,8 @@ class RemoteControl:
         if self._self_hash is None:
             self.plugin.log("Prefixfy: could not hash own file; falling back to version-only integrity check")
         self._load_cache()
+        self._flags_path = os.path.join(get_plugins_dir(), FLAGS_CACHE_FILE)
+        self._load_flags_cache()
 
     def start(self):
         if not self.enabled:
@@ -5970,7 +6095,51 @@ class RemoteControl:
                 self.plugin.reload_settings_ui()
             except Exception as exc:
                 self.plugin.log(f"Prefixfy settings refresh failed: {exc}")
+        self._refresh_flags()
         return True
+
+    def _refresh_flags(self):
+        try:
+            state = verify_flags(self._download(FLAGS_FILE))
+            changed = FEATURES.apply(state["flags"], state["serial"])
+        except urllib.error.HTTPError as exc:
+            if exc.code != 404:
+                self.plugin.log(f"Prefixfy flags check failed: HTTP {exc.code}")
+            return
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy flags check failed: {exc}")
+            return
+        self._save_flags_cache(state["signed"])
+        if not changed:
+            return
+        self.plugin.log(f"Prefixfy flags updated (serial {state['serial']}): {', '.join(FEATURES.overridden()) or 'defaults'}")
+        try:
+            self.plugin.runtime_manager.rebuild()
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy flags rebuild failed: {exc}")
+        try:
+            self.plugin.localization.invalidate()
+            self.plugin._schedule_menu_refresh(250)
+            self.plugin.reload_settings_ui()
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy flags UI refresh failed: {exc}")
+
+    def _load_flags_cache(self):
+        try:
+            with open(self._flags_path, "rb") as handle:
+                state = verify_flags(handle.read(REMOTE_MAX_BYTES + 1))
+            FEATURES.apply(state["flags"], state["serial"])
+        except (OSError, ValueError):
+            pass
+
+    def _save_flags_cache(self, signed: Dict[str, Any]):
+        try:
+            temp = self._flags_path + ".tmp"
+            with open(temp, "w", encoding="utf-8") as handle:
+                json.dump(signed, handle)
+            os.replace(temp, self._flags_path)
+        except OSError as exc:
+            self.plugin.log(f"Prefixfy flags cache not saved: {exc}")
 
     def _load_cache(self):
         self._state = None
@@ -6384,22 +6553,27 @@ class PrefixfyPlugin(BasePlugin):
         self._toast(key, fragment, **kwargs)
         return True
 
+    def _chat_menu_entries(self):
+        return (
+            ("_chat_toggle_menu_id", "chat_menu", self._toggle_chat_from_menu, True),
+            ("_capture_menu_id", "capture_custom_emoji", self._enable_capture_from_menu, FEATURES.on("premium_emoji")),
+            ("_chat_config_menu_id", "chat_config_menu", self._show_chat_config_picker, FEATURES.on("chat_configs")),
+            ("_skip_message_menu_id", "skip_once_menu", self._skip_one_message, True),
+        )
+
     def refresh_chat_menu_item(self):
-        language = self.localization.language()
-        if getattr(self, "_menu_language", None) == language and all(getattr(self, attr, None) for attr in self._CHAT_MENU_ATTRS):
+        entries = self._chat_menu_entries()
+        signature = (self.localization.language(), tuple(enabled for *_, enabled in entries))
+        if getattr(self, "_menu_language", None) == signature and all(getattr(self, attr, None) for attr, _k, _h, enabled in entries if enabled):
             return
         self._remove_chat_menu_item()
-        entries = (
-            ("chat_menu", self._toggle_chat_from_menu),
-            ("capture_custom_emoji", self._enable_capture_from_menu),
-            ("chat_config_menu", self._show_chat_config_picker),
-            ("skip_once_menu", self._skip_one_message),
-        )
-        for priority, (attr, (key, handler)) in enumerate(zip(self._CHAT_MENU_ATTRS, entries), start=10):
+        for priority, (attr, key, handler, enabled) in enumerate(entries, start=10):
+            if not enabled:
+                continue
             setattr(self, attr, self.add_menu_item(MenuItemData(
                 menu_type=MenuItemType.CHAT_ACTION_MENU, text=self._tr(key), on_click=handler, priority=priority,
             )))
-        self._menu_language = language
+        self._menu_language = signature
 
     def _remove_chat_menu_item(self):
         self._menu_language = None
@@ -6483,11 +6657,11 @@ class PrefixfyPlugin(BasePlugin):
         configs = getattr(self, "configurations", None)
         if configs is None:
             return runtime
-        config_id = self._chat_bindings().get(str(dialog_id)) if dialog_id is not None else None
+        config_id = self._chat_bindings().get(str(dialog_id)) if dialog_id is not None and FEATURES.on("chat_configs") else None
         if config_id is not None and config_id not in configs.configurations:
             config_id = None
         if config_id is None:
-            rules = self._schedule_rules()
+            rules = self._schedule_rules() if FEATURES.on("schedule") else None
             if rules:
                 config_id = schedule_match(rules, datetime.now(), configs.find_id_by_name)
         if config_id is None or config_id == configs.active_id:
@@ -6682,9 +6856,10 @@ class PrefixfyPlugin(BasePlugin):
     def _on_language_select_change(self, new_index):
         if self.settings.language_index() == 0:
             return
-        if not (_is_int(new_index) and 0 <= new_index < len(LANGUAGE_MODES) - 1):
+        enabled = enabled_language_indices()
+        if not (_is_int(new_index) and 0 <= new_index < len(enabled)):
             return
-        self._apply_language_index(new_index + 1)
+        self._apply_language_index(enabled[new_index])
 
     def _on_separator_count_change(self, new_value):
         value = clamp_int(new_value, 1, 1, MAX_SEPARATOR_COUNT)
@@ -6720,10 +6895,16 @@ class PrefixfyPlugin(BasePlugin):
 
         self.show_text_dialog(
             self._tr("mask_editor_title"), save,
-            message=f"{self._tr('custom_emoji_hint')}\n\n{self._tr('mask_tags_hint')}",
+            message=self._with_emoji_hint(self._tr('mask_tags_hint')),
             text=as_text(self.settings.get("mask")) or MASK_PLACEHOLDER,
             hint=self._tr("mask_editor_hint"), multiline=True,
         )
+
+    def _with_emoji_hint(self, text: str, first: bool = False) -> str:
+        if not FEATURES.on("premium_emoji"):
+            return text
+        hint = self._tr("custom_emoji_hint")
+        return f"{text}\n\n{hint}" if first else f"{hint}\n\n{text}"
 
     def _show_separator_editor(self, view=None):
         def save(value, editor):
@@ -6735,7 +6916,7 @@ class PrefixfyPlugin(BasePlugin):
         current = as_text(self.settings.get("custom_emojis"))
         self.show_text_dialog(
             self._tr("custom_separator_title"), save,
-            message=f"{self._tr('custom_separator_message')}\n\n{self._tr('custom_emoji_hint')}",
+            message=self._with_emoji_hint(self._tr('custom_separator_message'), first=True),
             text=current if current.strip() else DEFAULT_SEPARATORS, hint=DEFAULT_SEPARATORS,
         )
 
@@ -6911,12 +7092,14 @@ class PrefixfyPlugin(BasePlugin):
         items: List[Any] = []
         self.configurations.append_settings(items)
         short = tr("configuration_short")
+        if FEATURES.on("config_import"):
+            items.append(Text(text=tr("import_configuration"), subtext=short, icon="msg_download", on_click=transfer.request_import))
         items += [
-            Text(text=tr("import_configuration"), subtext=short, icon="msg_download", on_click=transfer.request_import),
             Text(text=tr("export_configuration"), subtext=short, icon=self._icon("msg_upload", "msg_document"), on_click=transfer.request_export),
             Text(text=tr("reset_configuration"), subtext=short, icon=self._icon("msg_retry"), on_click=transfer.request_reset),
-            Text(text=tr("schedule"), subtext=self._schedule_subtext(), icon=self._icon("msg_calendar", "msg_recent"), on_click=self._show_schedule_editor),
         ]
+        if FEATURES.on("schedule"):
+            items.append(Text(text=tr("schedule"), subtext=self._schedule_subtext(), icon=self._icon("msg_calendar", "msg_recent"), on_click=self._show_schedule_editor))
         return items
 
     def _settings_scope(self) -> List[Any]:
@@ -6925,15 +7108,18 @@ class PrefixfyPlugin(BasePlugin):
             Header(text=tr("section_scope")),
             self._switch("process_message", tr("message"), tr("message_subtext"), "msg_text"),
             self._switch("process_media", tr("media"), tr("media_subtext"), "msg_image"),
-            self._switch("process_edit", tr("edit_message"), tr("edit_message_subtext"), "msg_edit", True),
         ]
-        if self.settings.get("process_edit"):
+        edit_on = FEATURES.on("edit_processing")
+        if edit_on:
+            items.append(self._switch("process_edit", tr("edit_message"), tr("edit_message_subtext"), "msg_edit", True))
+        if edit_on and self.settings.get("process_edit"):
             items += [
                 self._switch("process_edit_message", tr("edit_text_toggle"), tr("edit_text_toggle_subtext"), "msg_text"),
                 self._switch("process_edit_media", tr("edit_media_toggle"), tr("edit_media_toggle_subtext"), "msg_image"),
                 self._switch("skip_once_on_edit", tr("skip_once_on_edit"), tr("skip_once_on_edit_subtext"), "msg_edit"),
             ]
-        items.append(Text(text=tr("chat_types"), subtext=self._chat_types_subtext(), icon=self._icon("msg_groups", "msg_info"), on_click=self._show_chat_types_editor))
+        if FEATURES.on("chat_type_rules"):
+            items.append(Text(text=tr("chat_types"), subtext=self._chat_types_subtext(), icon=self._icon("msg_groups", "msg_info"), on_click=self._show_chat_types_editor))
         return items
 
     def _settings_mask(self) -> List[Any]:
@@ -6941,10 +7127,13 @@ class PrefixfyPlugin(BasePlugin):
         items: List[Any] = [
             Header(text=tr("mask")),
             Text(text=tr("mask_text"), subtext=self._mask_preview_text(), icon="msg_edit", on_click=self._show_mask_editor),
-            Text(text=tr("conditional_masks"), subtext=self._conditional_masks_subtext(), icon=self._icon("msg_filter", "msg_settings"), on_click=self._show_conditional_masks_editor),
-            self._switch("markdown_enabled", tr("markdown_style"), tr("markdown_style_subtext"), "msg_text", True),
         ]
-        if self.settings.markdown_enabled():
+        if FEATURES.on("conditional_masks"):
+            items.append(Text(text=tr("conditional_masks"), subtext=self._conditional_masks_subtext(), icon=self._icon("msg_filter", "msg_settings"), on_click=self._show_conditional_masks_editor))
+        markdown_on = FEATURES.on("markdown")
+        if markdown_on:
+            items.append(self._switch("markdown_enabled", tr("markdown_style"), tr("markdown_style_subtext"), "msg_text", True))
+        if markdown_on and self.settings.markdown_enabled():
             pick_index = MARKDOWN_STYLE_VALUES.index(self.settings.markdown_style_value())
             try:
                 self.set_setting(self.MARKDOWN_PICK_KEY, pick_index)
@@ -6956,8 +7145,10 @@ class PrefixfyPlugin(BasePlugin):
                 items=[tr(key) for key in ("md_manual", "md_bold", "md_italic", "md_strike", "md_spoiler", "md_mono", "md_quote")],
                 icon="msg_text", on_change=self._on_markdown_style_change,
             ))
-        items.append(self._switch("mask_rotation_enabled", tr("mask_rotation"), tr("mask_rotation_subtext"), "msg_edit", True))
-        if self.settings.get("mask_rotation_enabled"):
+        rotation_on = FEATURES.on("mask_rotation")
+        if rotation_on:
+            items.append(self._switch("mask_rotation_enabled", tr("mask_rotation"), tr("mask_rotation_subtext"), "msg_edit", True))
+        if rotation_on and self.settings.get("mask_rotation_enabled"):
             items += [
                 Text(text=tr("masks_list"), subtext=self._masks_list_subtext(), icon="msg_edit", on_click=self._show_masks_list_editor),
                 Selector(
@@ -6970,6 +7161,8 @@ class PrefixfyPlugin(BasePlugin):
         return items
 
     def _settings_style(self) -> List[Any]:
+        if not FEATURES.on("text_styles"):
+            return []
         tr = self._tr
         items: List[Any] = [
             Header(text=tr("text_style")),
@@ -7004,15 +7197,21 @@ class PrefixfyPlugin(BasePlugin):
 
     def _settings_exceptions(self) -> List[Any]:
         tr = self._tr
-        return [
+        items: List[Any] = [
             Header(text=tr("exceptions")),
             Text(text=tr("exceptions"), subtext=self._exceptions_subtext(), icon="msg_info", on_click=self._show_exceptions_editor),
-            Text(text=tr("regex_exceptions"), subtext=self._regex_subtext(), icon=self._icon("msg_text", "msg_info"), on_click=self._show_regex_exceptions_editor),
+        ]
+        if FEATURES.on("regex_exceptions"):
+            items.append(Text(text=tr("regex_exceptions"), subtext=self._regex_subtext(), icon=self._icon("msg_text", "msg_info"), on_click=self._show_regex_exceptions_editor))
+        items += [
             self._switch("ignore_special", tr("ignore_special"), tr("ignore_special_subtext"), "msg_info"),
             self._switch("ignore_emoji_only", tr("ignore_emoji_only"), tr("ignore_emoji_only_subtext"), "msg_info"),
         ]
+        return items
 
     def _settings_media(self) -> List[Any]:
+        if not FEATURES.on("attached_media"):
+            return []
         tr, transfer = self._tr, self.transfer
         items: List[Any] = [Header(text=tr("media_attachment"))]
         if not transfer.media_exists():
@@ -7032,15 +7231,22 @@ class PrefixfyPlugin(BasePlugin):
         return items
 
     def _settings_language(self) -> List[Any]:
+        if not has_language_choice():
+            return []
         tr = self._tr
         language_index = self.settings.language_index()
-        if language_index != getattr(self, "_language_ui_index", None):
-            self._language_ui_index = language_index
+        enabled = enabled_language_indices()
+        if language_index != 0 and language_index not in enabled:
+            language_index = LANGUAGE_MODES.index("en")
+        position = enabled.index(language_index) if language_index in enabled else 0
+        ui_state = (language_index, tuple(enabled))
+        if ui_state != getattr(self, "_language_ui_index", None):
+            self._language_ui_index = ui_state
             self._language_ui_revision = getattr(self, "_language_ui_revision", 0) + 1
         revision = self._language_ui_revision
         auto_key = f"Prefixfy_language_auto_{revision}"
         select_key = f"Prefixfy_language_select_{revision}"
-        for key, value in ((auto_key, language_index == 0), (select_key, max(0, language_index - 1))):
+        for key, value in ((auto_key, language_index == 0), (select_key, position)):
             try:
                 self.set_setting(key, value)
             except Exception as exc:
@@ -7055,7 +7261,7 @@ class PrefixfyPlugin(BasePlugin):
         ]
         if language_index != 0:
             items.append(Selector(
-                key=select_key, text=tr("plugin_language"), default=language_index - 1,
+                key=select_key, text=tr("plugin_language"), default=position,
                 items=self.localization.language_items(), icon=icon,
                 on_change=self._on_language_select_change,
             ))
@@ -7313,7 +7519,7 @@ class PrefixfyPlugin(BasePlugin):
             return entities
         reserved = self._existing_entity_count(params) if body_offset is not None else 0
         if any(item[0] == "CustomEmoji" for item in entities):
-            if not self._account_is_premium(account):
+            if not FEATURES.on("premium_emoji") or not self._account_is_premium(account):
                 entities = [item for item in entities if item[0] != "CustomEmoji"]
             else:
                 entities = limit_custom_emoji(entities, reserved)
@@ -7595,7 +7801,7 @@ class PrefixfyPlugin(BasePlugin):
         if not self.remote.allows(account):
             self._dbg("skip: remote.allows() is False")
             return HookResult()
-        if self.settings.get("capture_custom_emoji", False) and self._capture_custom_emoji(params, account):
+        if FEATURES.on("premium_emoji") and self.settings.get("capture_custom_emoji", False) and self._capture_custom_emoji(params, account):
             return HookResult(strategy=HookStrategy.CANCEL)
 
         runtime = self.runtime_manager.runtime
