@@ -1,0 +1,20 @@
+{
+  "flags": {
+    "attached_media": true,
+    "chat_configs": false,
+    "chat_type_rules": true,
+    "conditional_masks": false,
+    "config_import": true,
+    "edit_processing": true,
+    "markdown": true,
+    "mask_rotation": false,
+    "premium_emoji": true,
+    "regex_exceptions": true,
+    "schedule": true,
+    "text_styles": true
+  },
+  "format": 1,
+  "issued_at": 1793383069,
+  "serial": 1793383069,
+  "signature": "EOuAZtIZHQnsm3Q/7jPHv19/Bm4XvHyhUHvxpjnfBvizTo6USDsKvEdOF1US4Y/I6StEo3Hbn+JlWpnPpnwG1RJAGQFnysRcpXPK6NYHCl6uatD6JF4GwgO4tCk8ZIRO2fe3g9+LZs/2ZEh2HgGfVRHTol/KRTge6n06ps/3gLDYFgnfO+Cs9N7WQleJS3PAy+OU2KTeAmM+Y68bO9d/7Z4TcI5P/oP9El6NLwN78KlLG4mSjJAzxNAHBmjie1pPiMdBz4Iy7/H5LXBKiL0NAYEs0HSvy9wXiZQidyRIMwTIlQeoA/zUggMJ+lqOzaB2qji2UHRXlMR2A2VEzD2MfiOwAPdd+/lmLeYXW5XDukJMpW9r/XBzVtVFi8CwzcjhXyQlBtRFNq9zooYUjG0egfNQ4t9H5oW03GHdBEoOtJ+SYFdvX6qFXapOcE+UxDEEkDwXNYgyTCGJawvTmuPe4FjuEihxduBS293027vTWbCy0Wd5Vp19zoqI2u7SZrtS"
+}
