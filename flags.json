@@ -1,37 +1,28 @@
 {
-  "accounts": {
-    "727461793": {
-      "attached_media": true,
-      "chat_configs": true,
-      "edit_processing": true,
-      "mask_rotation": true,
-      "schedule": true
-    }
-  },
   "flags": {
-    "attached_media": false,
-    "chat_configs": false,
+    "attached_media": true,
+    "chat_configs": true,
     "chat_type_rules": true,
     "conditional_masks": true,
     "config_import": true,
-    "edit_processing": false,
+    "edit_processing": true,
     "lang_ar": true,
     "lang_de": true,
     "lang_fr": true,
     "lang_ja": true,
     "lang_ko": true,
-    "lang_pl": false,
+    "lang_pl": true,
     "lang_ru": true,
     "lang_uk": true,
     "markdown": true,
-    "mask_rotation": false,
+    "mask_rotation": true,
     "premium_emoji": true,
     "regex_exceptions": true,
-    "schedule": false,
+    "schedule": true,
     "text_styles": true
   },
   "format": 1,
-  "issued_at": 1793388193,
-  "serial": 1793388193,
-  "signature": "Bc4SsB9K2eORMwQ32W36E8KuiNC3SqiieOPD7M4s+ivRVgOjhXvyNrO2QyG4vhTXK6+4N8Ffk4HWRnQ2nkgDX4yGrksuNdU2oeqEa9Yfm7HqWqEQnYC78kuUcFL4j/dDJJporI+gaHfzucxjEVyFM7Thd3nI7bO0ORBxorRn4bPBAlGpH+kih8x+0uRqbmaGIDDFXNEfBEqLmuPkBcSpv4CjcQl7fo8ImWx4sZ6B0aw7gYoh1fUXnHcCqYEMA8E32qs2LS7tQhFpm/Qh0tGrroVIKH88O4+LPDb4/tFTShTvJ5HtC6KsDre4AA5iiCsvC5bVbkgbYeDDprbRWuQ5LJrI+lrX5Cj7Lq8yJO5uQloObZ51xbGz2dtuxrkd/UBs5uSJ1Xkq/nc3nBqeoY40ZcUEesW7HfvYA0BBxjmWkvjpxZxT1S581ckBzwKX+6NQFF8CIRkkkSTkW38h3SLV6ROq2430khJnPBXhyvzWAI0a7Tt9axMOhVWMMX6sSumx"
+  "issued_at": 1793393653,
+  "serial": 1793393653,
+  "signature": "ENMEBFaLEBI1x7MNeWcNpy+HSPrQk7C3gpJ8WGeS2c4QWJIHyRp7C79q/9dnopt8+xpUYeaJcJrGuuCsKWBo2QFF+Y+jjawlFNa338nE62Z7ib0kXB4W+Cj5wfiXaTzilkZCMl5C9M3CmI9vppsWdPSPeJuq64rrgpq4wX0i83u8GbnuJcmx86n8Ud07Jq1ML5r39qJ5LWg+ChDSQJDIu8nl7f3fO6L02pPVA55e/sB6NvGXFh5k1fqDaYsWDjcTH6MKp5ZytiGrnIWHU8TMj2GP+ZGAZWtPBITrRcJphMn5uk2KqoB3SC6TuY+EZ826Io9ikR0sywrS68fySN6CrwO2esOlGmbh0eVggx4DBromfF2sFixEraFmEFBLdOBQ0Wm+dGze96omRYSZSpQKPqV68hZKPDtWRGO9vRlyJ3L9XQgteKMHrxtqUVrCM6EbMVH6sOmvfE722uxvOCcxeWcx1BgMcTEL3oc+DOnk2bMw7jG06Y8ZJrbLVmV5939C"
 }
