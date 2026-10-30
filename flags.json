@@ -1,28 +1,28 @@
 {
   "flags": {
-    "attached_media": true,
+    "attached_media": false,
     "chat_configs": false,
     "chat_type_rules": true,
     "conditional_masks": false,
     "config_import": true,
     "edit_processing": true,
-    "lang_ar": false,
-    "lang_de": false,
-    "lang_fr": false,
+    "lang_ar": true,
+    "lang_de": true,
+    "lang_fr": true,
     "lang_ja": true,
     "lang_ko": true,
     "lang_pl": false,
     "lang_ru": true,
-    "lang_uk": false,
+    "lang_uk": true,
     "markdown": true,
     "mask_rotation": false,
     "premium_emoji": true,
     "regex_exceptions": true,
-    "schedule": true,
+    "schedule": false,
     "text_styles": true
   },
   "format": 1,
-  "issued_at": 1793384441,
-  "serial": 1793384441,
-  "signature": "iCD7AKDnEnzLY74Kfv+SNZV5oQlEYfqPCFJyGxTzXUiibwmtdQa0lCpqGkIN9hDHeyDe1X0ntm7+D4F1N44C8fkoFkOOcvnpTCIjtau8BHuESE7Rzv8llH499vhWbEAGtB1tuRMxOigIxQE8T/3d0fY722U6HyhSUimhPYOX4bc92Q2Grmx7N+DtCRZdMMrxIOnlRqenJgPBoZFW52UB/rZ96tBwxw3RcC07ixZ8Af1YuVuO6c95JpV0RuxvB1qvBVGUn2sgRX7wQIhxoriy8iw2R3nzs2UpUvptORaEhsLtx5G+lzI8ETf+6ZEsRLUOQ0ZKXbELVW3NoC2IFSLMYVb4LX0rYW8ita5PHBQ2SZReojg8/uZimL67Q6QRGHPaCY7UOIqHCWXlH87VuMejQmKS3fj8R1MDnV2V0e5CfKS5cZOEV4lUbawUWN9e2jTK6w7UEWgod6phxGO+N+ysuZaEE/Igme1JiZGHaO6pXAlLx/E+vu9CVAtwmWP1v6Vf"
+  "issued_at": 1793385133,
+  "serial": 1793385133,
+  "signature": "fJaOGgSUHghzzP2RsPuGzHWasWpOylGy/JvamtvT8qE15ffCRmZi5YIMvOt3wwG5vQOcNM6tAdNikSiKiOPk3A1YN6+bJYjpu+d9GktpR4kHyn2pSTizFHvUgZnPi4aCfA23w80nQxG46zwTV5tAjN0aO0F0JDu0FJ6xjP0Xa6XUue+XbhipFGFD0Ec7UUrPfJ7kEqxHdsrUL2vBeCg/JfWVz7WIudwCiCqtsx6DnVPmTUMH5R8p5PKvwYs9p15yVT/v8aQqEAHcaAmYDwXFRAuUzSimhZbuDoNcHWUGPSvZYaRPMmfGcdQ2Zr/ukP1q4HHvzCm2XmzOlJEUKETfFLWrKq7nSgl/DHO34x2YIBcGH8oX5hxaRSZC4kD26M+ZGNXUx195KxsZFPwbJTUpMFPpSWbMoxXhp4ahhpf/XTwP8sZSHwzGWCqu9eXZ8ifI/RAHGLyvtBcSzlDXVUV998aOfIAKw5rl98aJQHGNM2NLIqYIuRDroywjlfWCjJfk"
 }
