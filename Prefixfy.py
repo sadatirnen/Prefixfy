@@ -64,10 +64,10 @@ except ImportError:
 __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = (
-    "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 19 стилей текста (L33T, vaporwave, готика, зеркальный и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [chat], [username], [count], гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
+    "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 30+ тегов, 19 стилей текста (L33T, vaporwave, готика, зеркальный и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "30.4.1"
+__version__ = "30.5.0"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -75,18 +75,10 @@ __sdk_version__ = ">=1.4.5.0"
 
 REPO_URL = "https://github.com/sadatirnen/Prefixfy"
 UPDATE_BASE_URL = "https://raw.githubusercontent.com/sadatirnen/Prefixfy/main/"
-# Signed manifest: the ONE supported build (exact version + exact sha256 of this file). Any mismatch blocks
-# the plugin -- older, newer, or a locally edited copy that only changed __version__. Updates are mandatory.
-# The old unsigned min_version.txt is NOT read here: it stays in the repository only to block 30.3.0 / 30.3.1,
-# which still check it.
 MANIFEST_FILE = "version.json"
 MANIFEST_FORMAT = 1
 MANIFEST_DOMAIN = b"Prefixfy-manifest-v1\n"
 UPDATE_ALLOWED_HOSTS = ("raw.githubusercontent.com",)
-# Base64 DER SubjectPublicKeyInfo of RSA keys (primary and optional backup). Get it from:
-#   python sign_manifest.py keygen
-# While empty, the remote check is switched off (nothing is blocked, nothing is fetched).
-# A second (backup) key can be added to this tuple for rotation.
 UPDATE_PUBLIC_KEYS: Tuple[str, ...] = (
     "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAnCpVgdegnDqZoaOi5H5EOpHiwY8jhprNdIT3jGVauC0Nijz2L/iauWaVxnEOwDT2tqp1tJQ6CrdQxOS/PKV/7QLtGtAseKdpo/4tZjHgx2N9TAPMVb+zK3oWYk+0+OcLFIUoczCa1aZuwaScBqQchmgTj4sQwIbhWDhquE2EtyiF1+6S6GCgV5KyJrqylt2pAcif5z3ixUV27MPzaPbQmuyU+3amsIXDxGcdTFwlHMg/ThFVz77bwV5fkfaNdJrZGDp3+FKSIfjN68v2scL6O9oYHhkDg4AEPUYQkJmNTMnqc0ABFSW9MGuGsMTa0MKNDMaBY5iP2aQmfzLddorBP4ovfOZRzZguFVltFGd44xVOE1w5ceL1WVH+pW+4HX0Ck5FWnHbttaQiLoxXuiIK+F927LLM0yCmKLZC9tcIfMdBXgcaHp1ZaKGOIVvRs8SRaVnQ2z51v3NtjHbakGKwcXit2JlgyKvrHPG2AQj8ci7tApB6BWYffsNkFM4bCBIlAgMBAAE=",
 )
@@ -95,6 +87,7 @@ REMOTE_RETRY_INTERVAL = 60
 REMOTE_MANUAL_COOLDOWN = 10.0
 REMOTE_TIMEOUT = 10
 REMOTE_TOTAL_TIMEOUT = 20
+REMOTE_MAX_AGE = 60 * 60
 REMOTE_MAX_BYTES = 64 * 1024
 MASK_PLACEHOLDER = "[text]"
 DEFAULT_SEPARATORS = "•, ·, —, ~, |"
@@ -126,7 +119,11 @@ MAX_SETTING_TEXT = 64 * 1024
 MAX_REGEX_REPEATS = 8
 REGEX_UNSAFE_REASON = "nested or too many repeats (the message check could hang)"
 RANDOM_EMOJI = ("😀", "😎", "✨", "🌟", "💜", "🔥", "🍀", "🦋", "🌈", "⭐", "🎉", "🚀")
-MASK_TAG_RE = re.compile(r"\[(date|time|datetime|chat|id|weekday|year|month|day|username|count|random_emoji|emoji)\]", re.IGNORECASE)
+MASK_TAG_RE = re.compile(
+    r"\[(date|time|datetime|time12|chat|id|weekday|weekday_short|year|year_short|month|monthname|day|week|yearday|"
+    r"hour|minute|second|ampm|daypart|timestamp|tz|chattype|username|count|dice|random_emoji|emoji)\]",
+    re.IGNORECASE,
+)
 _TAG_UNSAFE_RE = re.compile(r"[\[\]*_~|`\\\uE000-\uF8FF\s]+")
 WEEKDAY_NAMES = {
     "ru": ("Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"),
@@ -139,6 +136,49 @@ WEEKDAY_NAMES = {
     "de": ("Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"),
     "uk": ("Понеділок", "Вівторок", "Середа", "Четвер", "Пʼятниця", "Субота", "Неділя"),
 }
+
+MONTH_NAMES = {
+    "ru": ("Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"),
+    "en": ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"),
+    "ja": tuple(f"{n}月" for n in range(1, 13)),
+    "ko": tuple(f"{n}월" for n in range(1, 13)),
+    "ar": ("يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"),
+    "fr": ("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"),
+    "pl": ("styczeń", "luty", "marzec", "kwiecień", "maj", "czerwiec", "lipiec", "sierpień", "wrzesień", "październik", "listopad", "grudzień"),
+    "de": ("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"),
+    "uk": ("Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"),
+}
+DAYPART_NAMES = {
+    "ru": ("Утро", "День", "Вечер", "Ночь"),
+    "en": ("Morning", "Afternoon", "Evening", "Night"),
+    "ja": ("朝", "昼", "夕方", "夜"),
+    "ko": ("아침", "낮", "저녁", "밤"),
+    "ar": ("الصباح", "النهار", "المساء", "الليل"),
+    "fr": ("Matin", "Après-midi", "Soir", "Nuit"),
+    "pl": ("Rano", "Dzień", "Wieczór", "Noc"),
+    "de": ("Morgen", "Tag", "Abend", "Nacht"),
+    "uk": ("Ранок", "День", "Вечір", "Ніч"),
+}
+DAYPART_BOUNDS = ((5 * 60, 12 * 60), (12 * 60, 17 * 60), (17 * 60, 23 * 60), (23 * 60, 5 * 60))
+DAYPART_ALIASES = {
+    0: ("morning", "утро", "ранок", "matin", "rano", "morgen", "朝", "아침", "الصباح", "صباح"),
+    1: ("afternoon", "day", "день", "dzień", "tag", "après-midi", "昼", "낮", "النهار", "ظهر"),
+    2: ("evening", "вечер", "вечір", "soir", "wieczór", "abend", "夕方", "저녁", "المساء", "مساء"),
+    3: ("night", "ночь", "ніч", "nuit", "noc", "nacht", "夜", "밤", "الليل", "ليل"),
+}
+DAYPART_BY_ALIAS = {alias: index for index, names in DAYPART_ALIASES.items() for alias in names}
+_DAYPART_PATTERN = "|".join(re.escape(a) for a in sorted(DAYPART_BY_ALIAS, key=len, reverse=True))
+
+
+def daypart_index(minutes: int) -> int:
+    for index, (start, end) in enumerate(DAYPART_BOUNDS):
+        if start < end:
+            if start <= minutes < end:
+                return index
+        elif minutes >= start or minutes < end:
+            return index
+    return 3
+
 
 MARKDOWN_STYLE_COUNT = 8
 MARKDOWN_STYLE_VALUES = (0, 2, 3, 4, 5, 6, 7)
@@ -209,6 +249,8 @@ class LocalizationManager:
             "language": "Язык",
             "update_required": "Требуется обновление",
             "update_required_subtext": "Установите Prefixfy {version} (официальная сборка). Пока плагин не оформляет сообщения.",
+            "verify_required": "Проверка не пройдена",
+            "verify_required_subtext": "Не удалось подтвердить подлинность сборки Prefixfy. Пока плагин не оформляет сообщения; проверьте подключение к интернету.",
             "section_scope": "Где работает",
             "plugin_language": "Язык плагина",
             "language_auto": "Автоопределение языка",
@@ -240,8 +282,8 @@ class LocalizationManager:
             "schedule": "Расписание конфигураций",
             "schedule_empty": "Не задано",
             "schedule_count": "Правил: {n}",
-            "schedule_message": "Одно правило в строке: [дата] [ЧЧ:ММ-ЧЧ:ММ] [дни] = название конфигурации.\nДата: ГГГГ-ММ-ДД, ДД.ММ.ГГГГ или ДД.ММ (каждый год); диапазон через «..». Без времени — весь день. Дни: пн-пт, сб,вс или mon-fri; без дней — каждый день. Правила с датой важнее правил по дням недели, из остальных побеждает первое подходящее. Чат со своей конфигурацией расписание не меняет.",
-            "schedule_hint": "22:00-07:00 = Ночная\n09:00-18:00 пн-пт = Рабочая\n31.12 = Праздничная\n2026-12-28..2027-01-10 = Отпуск",
+            "schedule_message": "Одно правило в строке: [дата] [ЧЧ:ММ-ЧЧ:ММ] [дни] = название конфигурации.\nДата: ГГГГ-ММ-ДД, ДД.ММ.ГГГГ или ДД.ММ (каждый год); диапазон через «..». Без времени — весь день. Дни: пн-пт, сб,вс или mon-fri; без дней — каждый день. Правила с датой важнее правил по дням недели, из остальных побеждает первое подходящее. Чат со своей конфигурацией расписание не меняет. Вместо времени можно указать часть суток: утро (05–12), день (12–17), вечер (17–23), ночь (23–05) или диапазон «утро-вечер».",
+            "schedule_hint": "22:00-07:00 = Ночная\n09:00-18:00 пн-пт = Рабочая\n31.12 = Праздничная\n2026-12-28..2027-01-10 = Отпуск\nутро пн-пт = Рабочая\nночь = Ночная",
             "schedule_saved": "Расписание сохранено",
             "schedule_error": "Строка {n}: {reason}",
             "schedule_err_format": "ожидается «[дата] [ЧЧ:ММ-ЧЧ:ММ] [дни] = конфигурация»",
@@ -262,7 +304,7 @@ class LocalizationManager:
             "masks_list_hint": "По одной маске в строке, в каждой ровно один [text].",
             "masks_list_invalid": "В каждой маске должен быть ровно один [text]",
             "masks_list_limit": "Не больше {n} масок",
-            "mask_tags_hint": "Теги: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji].",
+            "mask_tags_hint": "Теги: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice].",
             "mask_rotation_mode": "Порядок ротации",
             "rotation_random": "Случайная",
             "rotation_sequential": "По кругу",
@@ -402,6 +444,8 @@ class LocalizationManager:
             "language": "Language",
             "update_required": "Update required",
             "update_required_subtext": "Install Prefixfy {version} (official build). Until then the plugin won’t format messages.",
+            "verify_required": "Verification failed",
+            "verify_required_subtext": "Couldn’t verify this Prefixfy build. Until then the plugin won’t format messages; check your internet connection.",
             "section_scope": "Where it works",
             "plugin_language": "Plugin language",
             "language_auto": "Detect language automatically",
@@ -433,8 +477,8 @@ class LocalizationManager:
             "schedule": "Configuration schedule",
             "schedule_empty": "Not set",
             "schedule_count": "Rules: {n}",
-            "schedule_message": "One rule per line: [date] [HH:MM-HH:MM] [days] = configuration name.\nDate: YYYY-MM-DD, DD.MM.YYYY or DD.MM (every year); ranges use “..”. No time means all day. Days: mon-fri, sat,sun or пн-пт; no days means every day. Rules with a date beat weekday rules; among the rest the first match wins. A chat with its own configuration ignores the schedule.",
-            "schedule_hint": "22:00-07:00 = Night\n09:00-18:00 mon-fri = Work\n31.12 = Holiday\n2026-12-28..2027-01-10 = Vacation",
+            "schedule_message": "One rule per line: [date] [HH:MM-HH:MM] [days] = configuration name.\nDate: YYYY-MM-DD, DD.MM.YYYY or DD.MM (every year); ranges use “..”. No time means all day. Days: mon-fri, sat,sun or пн-пт; no days means every day. Rules with a date beat weekday rules; among the rest the first match wins. A chat with its own configuration ignores the schedule. Instead of a time you can use a part of the day: morning (05–12), afternoon/day (12–17), evening (17–23), night (23–05) or a range like “morning-evening”.",
+            "schedule_hint": "22:00-07:00 = Night\n09:00-18:00 mon-fri = Work\n31.12 = Holiday\n2026-12-28..2027-01-10 = Vacation\nmorning mon-fri = Work\nnight = Night",
             "schedule_saved": "Schedule saved",
             "schedule_error": "Line {n}: {reason}",
             "schedule_err_format": "expected “[date] [HH:MM-HH:MM] [days] = configuration”",
@@ -455,7 +499,7 @@ class LocalizationManager:
             "masks_list_hint": "One mask per line, each with exactly one [text].",
             "masks_list_invalid": "Each mask needs exactly one [text]",
             "masks_list_limit": "At most {n} masks",
-            "mask_tags_hint": "Tags: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji].",
+            "mask_tags_hint": "Tags: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice].",
             "mask_rotation_mode": "Rotation order",
             "rotation_random": "Random",
             "rotation_sequential": "In turn",
@@ -595,6 +639,8 @@ class LocalizationManager:
             "language": "言語",
             "update_required": "アップデートが必要です",
             "update_required_subtext": "Prefixfy {version}（公式ビルド）をインストールしてください。それまでメッセージの装飾は行われません。",
+            "verify_required": "検証に失敗しました",
+            "verify_required_subtext": "このPrefixfyビルドを検証できませんでした。それまでメッセージの装飾は行われません。インターネット接続を確認してください。",
             "section_scope": "適用範囲",
             "plugin_language": "プラグインの言語",
             "language_auto": "言語を自動検出",
@@ -626,8 +672,8 @@ class LocalizationManager:
             "schedule": "設定のスケジュール",
             "schedule_empty": "未設定",
             "schedule_count": "ルール: {n}",
-            "schedule_message": "1行に1ルール: [日付] [HH:MM-HH:MM] [曜日] = 設定名\n日付: YYYY-MM-DD、DD.MM.YYYY、DD.MM（毎年）。範囲は「..」で指定。時刻を省略すると終日。曜日: mon-fri、sat,sun（省略で毎日）。日付付きルールは曜日ルールより優先され、それ以外は最初に一致したルールが適用されます。専用の設定があるチャットはスケジュールの影響を受けません。",
-            "schedule_hint": "22:00-07:00 = 夜\n09:00-18:00 mon-fri = 仕事\n31.12 = 祝日\n2026-12-28..2027-01-10 = 休暇",
+            "schedule_message": "1行に1ルール: [日付] [HH:MM-HH:MM] [曜日] = 設定名\n日付: YYYY-MM-DD、DD.MM.YYYY、DD.MM（毎年）。範囲は「..」で指定。時刻を省略すると終日。曜日: mon-fri、sat,sun（省略で毎日）。日付付きルールは曜日ルールより優先され、それ以外は最初に一致したルールが適用されます。専用の設定があるチャットはスケジュールの影響を受けません。 時刻の代わりに時間帯も指定できます: 朝(05–12)、昼(12–17)、夕方(17–23)、夜(23–05)、または「朝-夕方」のような範囲。",
+            "schedule_hint": "22:00-07:00 = 夜\n09:00-18:00 mon-fri = 仕事\n31.12 = 祝日\n2026-12-28..2027-01-10 = 休暇\n朝 mon-fri = 仕事\n夜 = 夜",
             "schedule_saved": "スケジュールを保存しました",
             "schedule_error": "{n}行目: {reason}",
             "schedule_err_format": "形式は「[日付] [HH:MM-HH:MM] [曜日] = 設定名」",
@@ -648,7 +694,7 @@ class LocalizationManager:
             "masks_list_hint": "1行に1つのマスク。各マスクに [text] を1つだけ含めてください。",
             "masks_list_invalid": "各マスクには [text] がちょうど1つ必要です",
             "masks_list_limit": "マスクは最大{n}個までです",
-            "mask_tags_hint": "タグ: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji]",
+            "mask_tags_hint": "タグ: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice]",
             "mask_rotation_mode": "ローテーションの順序",
             "rotation_random": "ランダム",
             "rotation_sequential": "順番",
@@ -788,6 +834,8 @@ class LocalizationManager:
             "language": "언어",
             "update_required": "업데이트 필요",
             "update_required_subtext": "Prefixfy {version}(공식 빌드)를 설치하세요. 그때까지 플러그인은 메시지를 꾸미지 않습니다.",
+            "verify_required": "검증 실패",
+            "verify_required_subtext": "이 Prefixfy 빌드를 검증하지 못했습니다. 그때까지 플러그인은 메시지를 꾸미지 않습니다. 인터넷 연결을 확인하세요.",
             "section_scope": "적용 범위",
             "plugin_language": "플러그인 언어",
             "language_auto": "언어 자동 감지",
@@ -819,8 +867,8 @@ class LocalizationManager:
             "schedule": "구성 일정",
             "schedule_empty": "설정 안 됨",
             "schedule_count": "규칙: {n}",
-            "schedule_message": "한 줄에 규칙 하나: [날짜] [HH:MM-HH:MM] [요일] = 구성 이름\n날짜: YYYY-MM-DD, DD.MM.YYYY 또는 DD.MM(매년), 범위는 “..” 사용. 시간을 생략하면 하루 종일. 요일: mon-fri, sat,sun (생략하면 매일). 날짜가 있는 규칙이 요일 규칙보다 우선하며, 나머지는 처음 일치하는 규칙이 적용됩니다. 자체 구성이 있는 채팅에는 일정이 적용되지 않습니다.",
-            "schedule_hint": "22:00-07:00 = 밤\n09:00-18:00 mon-fri = 업무\n31.12 = 휴일\n2026-12-28..2027-01-10 = 휴가",
+            "schedule_message": "한 줄에 규칙 하나: [날짜] [HH:MM-HH:MM] [요일] = 구성 이름\n날짜: YYYY-MM-DD, DD.MM.YYYY 또는 DD.MM(매년), 범위는 “..” 사용. 시간을 생략하면 하루 종일. 요일: mon-fri, sat,sun (생략하면 매일). 날짜가 있는 규칙이 요일 규칙보다 우선하며, 나머지는 처음 일치하는 규칙이 적용됩니다. 자체 구성이 있는 채팅에는 일정이 적용되지 않습니다. 시간 대신 시간대도 쓸 수 있습니다: 아침(05–12), 낮(12–17), 저녁(17–23), 밤(23–05) 또는 “아침-저녁” 같은 범위.",
+            "schedule_hint": "22:00-07:00 = 밤\n09:00-18:00 mon-fri = 업무\n31.12 = 휴일\n2026-12-28..2027-01-10 = 휴가\n아침 mon-fri = 업무\n밤 = 밤",
             "schedule_saved": "일정을 저장했습니다",
             "schedule_error": "{n}번째 줄: {reason}",
             "schedule_err_format": "형식: “[날짜] [HH:MM-HH:MM] [요일] = 구성”",
@@ -841,7 +889,7 @@ class LocalizationManager:
             "masks_list_hint": "한 줄에 마스크 하나, 각 마스크에는 [text]가 정확히 하나 있어야 합니다.",
             "masks_list_invalid": "각 마스크에는 [text]가 정확히 하나 있어야 합니다",
             "masks_list_limit": "마스크는 최대 {n}개입니다",
-            "mask_tags_hint": "태그: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji]",
+            "mask_tags_hint": "태그: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice]",
             "mask_rotation_mode": "순환 순서",
             "rotation_random": "무작위",
             "rotation_sequential": "순서대로",
@@ -981,6 +1029,8 @@ class LocalizationManager:
             "language": "اللغة",
             "update_required": "التحديث مطلوب",
             "update_required_subtext": "ثبّت Prefixfy {version} (النسخة الرسمية). إلى ذلك الحين لن تنسّق الإضافة الرسائل.",
+            "verify_required": "فشل التحقق",
+            "verify_required_subtext": "تعذّر التحقق من نسخة Prefixfy هذه. إلى ذلك الحين لن تنسّق الإضافة الرسائل؛ تحقّق من اتصالك بالإنترنت.",
             "section_scope": "نطاق العمل",
             "plugin_language": "لغة الإضافة",
             "language_auto": "الكشف التلقائي عن اللغة",
@@ -1012,8 +1062,8 @@ class LocalizationManager:
             "schedule": "جدول الإعدادات",
             "schedule_empty": "غير محدد",
             "schedule_count": "القواعد: {n}",
-            "schedule_message": "قاعدة واحدة في كل سطر: [التاريخ] [HH:MM-HH:MM] [الأيام] = اسم الإعدادات\nالتاريخ: YYYY-MM-DD أو DD.MM.YYYY أو DD.MM (كل سنة)، والنطاق بـ «..». بدون وقت = اليوم كله. الأيام: mon-fri أو sat,sun (بدونها = كل يوم). قواعد التاريخ لها الأولوية على قواعد الأيام، وفي الباقي تُطبَّق أول قاعدة مطابقة. المحادثة ذات الإعدادات الخاصة تتجاهل الجدول.",
-            "schedule_hint": "22:00-07:00 = ليلي\n09:00-18:00 mon-fri = عمل\n31.12 = عطلة\n2026-12-28..2027-01-10 = إجازة",
+            "schedule_message": "قاعدة واحدة في كل سطر: [التاريخ] [HH:MM-HH:MM] [الأيام] = اسم الإعدادات\nالتاريخ: YYYY-MM-DD أو DD.MM.YYYY أو DD.MM (كل سنة)، والنطاق بـ «..». بدون وقت = اليوم كله. الأيام: mon-fri أو sat,sun (بدونها = كل يوم). قواعد التاريخ لها الأولوية على قواعد الأيام، وفي الباقي تُطبَّق أول قاعدة مطابقة. المحادثة ذات الإعدادات الخاصة تتجاهل الجدول. يمكن استخدام جزء من اليوم بدل الوقت: الصباح (05–12)، النهار (12–17)، المساء (17–23)، الليل (23–05) أو نطاق مثل «الصباح-المساء».",
+            "schedule_hint": "22:00-07:00 = ليلي\n09:00-18:00 mon-fri = عمل\n31.12 = عطلة\n2026-12-28..2027-01-10 = إجازة\nالصباح mon-fri = عمل\nالليل = ليل",
             "schedule_saved": "تم حفظ الجدول",
             "schedule_error": "السطر {n}: {reason}",
             "schedule_err_format": "الصيغة: «[التاريخ] [HH:MM-HH:MM] [الأيام] = الإعدادات»",
@@ -1034,7 +1084,7 @@ class LocalizationManager:
             "masks_list_hint": "قناع واحد في كل سطر، ويجب أن يحتوي كل قناع على [text] واحد بالضبط.",
             "masks_list_invalid": "يجب أن يحتوي كل قناع على [text] واحد بالضبط",
             "masks_list_limit": "الحد الأقصى {n} قناعًا",
-            "mask_tags_hint": "الوسوم: [date] و[time] و[datetime] و[chat] و[id] و[weekday] و[year] و[month] و[day] و[username] و[count] و[random_emoji]",
+            "mask_tags_hint": "الوسوم: [date] و[time] و[datetime] و[chat] و[id] و[weekday] و[year] و[month] و[day] و[username] و[count] و[random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice]",
             "mask_rotation_mode": "ترتيب التدوير",
             "rotation_random": "عشوائي",
             "rotation_sequential": "بالتتابع",
@@ -1174,6 +1224,8 @@ class LocalizationManager:
             "language": "Langue",
             "update_required": "Mise à jour requise",
             "update_required_subtext": "Installez Prefixfy {version} (version officielle). D’ici là, le plugin ne met pas en forme les messages.",
+            "verify_required": "Échec de la vérification",
+            "verify_required_subtext": "Impossible de vérifier cette version de Prefixfy. D’ici là, le plugin ne met pas en forme les messages ; vérifiez votre connexion Internet.",
             "section_scope": "Où ça s’applique",
             "plugin_language": "Langue du plugin",
             "language_auto": "Détection automatique de la langue",
@@ -1205,8 +1257,8 @@ class LocalizationManager:
             "schedule": "Planning des configurations",
             "schedule_empty": "Non défini",
             "schedule_count": "Règles : {n}",
-            "schedule_message": "Une règle par ligne : [date] [HH:MM-HH:MM] [jours] = nom de la configuration.\nDate : YYYY-MM-DD, DD.MM.YYYY ou DD.MM (chaque année) ; plage avec « .. ». Sans heure = toute la journée. Jours : mon-fri, sat,sun (sans jours = tous les jours). Les règles avec date l’emportent sur celles par jours ; pour les autres, la première correspondance s’applique. Un chat avec sa propre configuration ignore le planning.",
-            "schedule_hint": "22:00-07:00 = Nuit\n09:00-18:00 mon-fri = Travail\n31.12 = Fête\n2026-12-28..2027-01-10 = Vacances",
+            "schedule_message": "Une règle par ligne : [date] [HH:MM-HH:MM] [jours] = nom de la configuration.\nDate : YYYY-MM-DD, DD.MM.YYYY ou DD.MM (chaque année) ; plage avec « .. ». Sans heure = toute la journée. Jours : mon-fri, sat,sun (sans jours = tous les jours). Les règles avec date l’emportent sur celles par jours ; pour les autres, la première correspondance s’applique. Un chat avec sa propre configuration ignore le planning. À la place de l’heure, on peut indiquer un moment de la journée : matin (05–12), après-midi (12–17), soir (17–23), nuit (23–05) ou une plage comme « matin-soir ».",
+            "schedule_hint": "22:00-07:00 = Nuit\n09:00-18:00 mon-fri = Travail\n31.12 = Fête\n2026-12-28..2027-01-10 = Vacances\nmatin mon-fri = Travail\nnuit = Nuit",
             "schedule_saved": "Planning enregistré",
             "schedule_error": "Ligne {n} : {reason}",
             "schedule_err_format": "format attendu : « [date] [HH:MM-HH:MM] [jours] = configuration »",
@@ -1227,7 +1279,7 @@ class LocalizationManager:
             "masks_list_hint": "Un masque par ligne, chacun avec exactement un [text].",
             "masks_list_invalid": "Chaque masque doit contenir exactement un [text]",
             "masks_list_limit": "{n} masques maximum",
-            "mask_tags_hint": "Balises : [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji].",
+            "mask_tags_hint": "Balises : [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice].",
             "mask_rotation_mode": "Ordre de rotation",
             "rotation_random": "Aléatoire",
             "rotation_sequential": "À tour de rôle",
@@ -1367,6 +1419,8 @@ class LocalizationManager:
             "language": "Język",
             "update_required": "Wymagana aktualizacja",
             "update_required_subtext": "Zainstaluj Prefixfy {version} (oficjalna wersja). Do tego czasu plugin nie formatuje wiadomości.",
+            "verify_required": "Weryfikacja nie powiodła się",
+            "verify_required_subtext": "Nie udało się zweryfikować tej wersji Prefixfy. Do tego czasu plugin nie formatuje wiadomości; sprawdź połączenie z internetem.",
             "section_scope": "Gdzie działa",
             "plugin_language": "Język pluginu",
             "language_auto": "Automatyczne wykrywanie języka",
@@ -1398,8 +1452,8 @@ class LocalizationManager:
             "schedule": "Harmonogram konfiguracji",
             "schedule_empty": "Nie ustawiono",
             "schedule_count": "Reguł: {n}",
-            "schedule_message": "Jedna reguła w wierszu: [data] [GG:MM-GG:MM] [dni] = nazwa konfiguracji.\nData: RRRR-MM-DD, DD.MM.RRRR lub DD.MM (co roku); zakres przez „..”. Bez godzin = cały dzień. Dni: mon-fri, sat,sun (bez dni = codziennie). Reguły z datą mają pierwszeństwo przed regułami dni tygodnia; wśród pozostałych działa pierwsza pasująca. Czat z własną konfiguracją pomija harmonogram.",
-            "schedule_hint": "22:00-07:00 = Noc\n09:00-18:00 mon-fri = Praca\n31.12 = Święto\n2026-12-28..2027-01-10 = Urlop",
+            "schedule_message": "Jedna reguła w wierszu: [data] [GG:MM-GG:MM] [dni] = nazwa konfiguracji.\nData: RRRR-MM-DD, DD.MM.RRRR lub DD.MM (co roku); zakres przez „..”. Bez godzin = cały dzień. Dni: mon-fri, sat,sun (bez dni = codziennie). Reguły z datą mają pierwszeństwo przed regułami dni tygodnia; wśród pozostałych działa pierwsza pasująca. Czat z własną konfiguracją pomija harmonogram. Zamiast godzin można podać porę dnia: rano (05–12), dzień (12–17), wieczór (17–23), noc (23–05) albo zakres, np. „rano-wieczór”.",
+            "schedule_hint": "22:00-07:00 = Noc\n09:00-18:00 mon-fri = Praca\n31.12 = Święto\n2026-12-28..2027-01-10 = Urlop\nrano mon-fri = Praca\nnoc = Noc",
             "schedule_saved": "Zapisano harmonogram",
             "schedule_error": "Wiersz {n}: {reason}",
             "schedule_err_format": "oczekiwano „[data] [GG:MM-GG:MM] [dni] = konfiguracja”",
@@ -1420,7 +1474,7 @@ class LocalizationManager:
             "masks_list_hint": "Jedna maska w wierszu, każda z dokładnie jednym [text].",
             "masks_list_invalid": "Każda maska musi zawierać dokładnie jeden [text]",
             "masks_list_limit": "Maksymalnie {n} masek",
-            "mask_tags_hint": "Tagi: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji].",
+            "mask_tags_hint": "Tagi: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice].",
             "mask_rotation_mode": "Kolejność rotacji",
             "rotation_random": "Losowa",
             "rotation_sequential": "Po kolei",
@@ -1560,6 +1614,8 @@ class LocalizationManager:
             "language": "Sprache",
             "update_required": "Update erforderlich",
             "update_required_subtext": "Installiere Prefixfy {version} (offizieller Build). Bis dahin formatiert das Plugin keine Nachrichten.",
+            "verify_required": "Überprüfung fehlgeschlagen",
+            "verify_required_subtext": "Dieser Prefixfy-Build konnte nicht verifiziert werden. Bis dahin formatiert das Plugin keine Nachrichten; prüfe deine Internetverbindung.",
             "section_scope": "Wo es wirkt",
             "plugin_language": "Plugin-Sprache",
             "language_auto": "Sprache automatisch erkennen",
@@ -1591,8 +1647,8 @@ class LocalizationManager:
             "schedule": "Konfigurations-Zeitplan",
             "schedule_empty": "Nicht festgelegt",
             "schedule_count": "Regeln: {n}",
-            "schedule_message": "Eine Regel pro Zeile: [Datum] [HH:MM-HH:MM] [Tage] = Konfigurationsname.\nDatum: JJJJ-MM-TT, TT.MM.JJJJ oder TT.MM (jedes Jahr); Bereiche mit „..“. Ohne Uhrzeit = ganzer Tag. Tage: mon-fri, sat,sun (ohne Tage = täglich). Regeln mit Datum haben Vorrang vor Wochentagsregeln, unter den übrigen gilt die erste passende. Ein Chat mit eigener Konfiguration ignoriert den Zeitplan.",
-            "schedule_hint": "22:00-07:00 = Nacht\n09:00-18:00 mon-fri = Arbeit\n31.12 = Feiertag\n2026-12-28..2027-01-10 = Urlaub",
+            "schedule_message": "Eine Regel pro Zeile: [Datum] [HH:MM-HH:MM] [Tage] = Konfigurationsname.\nDatum: JJJJ-MM-TT, TT.MM.JJJJ oder TT.MM (jedes Jahr); Bereiche mit „..“. Ohne Uhrzeit = ganzer Tag. Tage: mon-fri, sat,sun (ohne Tage = täglich). Regeln mit Datum haben Vorrang vor Wochentagsregeln, unter den übrigen gilt die erste passende. Ein Chat mit eigener Konfiguration ignoriert den Zeitplan. Statt einer Uhrzeit kann eine Tageszeit stehen: Morgen (05–12), Tag (12–17), Abend (17–23), Nacht (23–05) oder ein Bereich wie „morgen-abend“.",
+            "schedule_hint": "22:00-07:00 = Nacht\n09:00-18:00 mon-fri = Arbeit\n31.12 = Feiertag\n2026-12-28..2027-01-10 = Urlaub\nmorgen mon-fri = Arbeit\nnacht = Nacht",
             "schedule_saved": "Zeitplan gespeichert",
             "schedule_error": "Zeile {n}: {reason}",
             "schedule_err_format": "erwartet „[Datum] [HH:MM-HH:MM] [Tage] = Konfiguration“",
@@ -1613,7 +1669,7 @@ class LocalizationManager:
             "masks_list_hint": "Eine Maske pro Zeile, jede mit genau einem [text].",
             "masks_list_invalid": "Jede Maske braucht genau ein [text]",
             "masks_list_limit": "Höchstens {n} Masken",
-            "mask_tags_hint": "Tags: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji].",
+            "mask_tags_hint": "Tags: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice].",
             "mask_rotation_mode": "Reihenfolge der Rotation",
             "rotation_random": "Zufällig",
             "rotation_sequential": "Der Reihe nach",
@@ -1753,6 +1809,8 @@ class LocalizationManager:
             "language": "Мова",
             "update_required": "Потрібне оновлення",
             "update_required_subtext": "Встановіть Prefixfy {version} (офіційна збірка). Доти плагін не оформлює повідомлення.",
+            "verify_required": "Перевірку не пройдено",
+            "verify_required_subtext": "Не вдалося підтвердити цю збірку Prefixfy. Доти плагін не оформлює повідомлення; перевірте підключення до інтернету.",
             "section_scope": "Де працює",
             "plugin_language": "Мова плагіна",
             "language_auto": "Автовизначення мови",
@@ -1784,8 +1842,8 @@ class LocalizationManager:
             "schedule": "Розклад конфігурацій",
             "schedule_empty": "Не задано",
             "schedule_count": "Правил: {n}",
-            "schedule_message": "Одне правило в рядку: [дата] [ГГ:ХХ-ГГ:ХХ] [дні] = назва конфігурації.\nДата: РРРР-ММ-ДД, ДД.ММ.РРРР або ДД.ММ (щороку); діапазон через «..». Без часу — увесь день. Дні: пн-пт, сб,нд або mon-fri; без днів — щодня. Правила з датою важливіші за правила за днями тижня, з решти діє перше підходяще. Чат зі своєю конфігурацією розклад не змінює.",
-            "schedule_hint": "22:00-07:00 = Нічна\n09:00-18:00 пн-пт = Робоча\n31.12 = Святкова\n2026-12-28..2027-01-10 = Відпустка",
+            "schedule_message": "Одне правило в рядку: [дата] [ГГ:ХХ-ГГ:ХХ] [дні] = назва конфігурації.\nДата: РРРР-ММ-ДД, ДД.ММ.РРРР або ДД.ММ (щороку); діапазон через «..». Без часу — увесь день. Дні: пн-пт, сб,нд або mon-fri; без днів — щодня. Правила з датою важливіші за правила за днями тижня, з решти діє перше підходяще. Чат зі своєю конфігурацією розклад не змінює. Замість часу можна вказати частину доби: ранок (05–12), день (12–17), вечір (17–23), ніч (23–05) або діапазон «ранок-вечір».",
+            "schedule_hint": "22:00-07:00 = Нічна\n09:00-18:00 пн-пт = Робоча\n31.12 = Святкова\n2026-12-28..2027-01-10 = Відпустка\nранок пн-пт = Робоча\nніч = Нічна",
             "schedule_saved": "Розклад збережено",
             "schedule_error": "Рядок {n}: {reason}",
             "schedule_err_format": "очікується «[дата] [ГГ:ХХ-ГГ:ХХ] [дні] = конфігурація»",
@@ -1806,7 +1864,7 @@ class LocalizationManager:
             "masks_list_hint": "По одній масці в рядку, у кожній рівно один [text].",
             "masks_list_invalid": "У кожній масці має бути рівно один [text]",
             "masks_list_limit": "Не більше {n} масок",
-            "mask_tags_hint": "Теги: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji].",
+            "mask_tags_hint": "Теги: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice].",
             "mask_rotation_mode": "Порядок ротації",
             "rotation_random": "Випадкова",
             "rotation_sequential": "По колу",
@@ -2470,7 +2528,9 @@ _SCHEDULE_DAYS = {
 _SCHEDULE_DATE = r"(\d{4}-\d{2}-\d{2}|\d{1,2}\.\d{1,2}\.\d{4}|\d{1,2}\.\d{1,2})"
 _SCHEDULE_LEFT_RE = re.compile(
     r"^(?:" + _SCHEDULE_DATE + r"(?:\s*\.\.\s*" + _SCHEDULE_DATE + r")?\s*)?"
-    r"(?:(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2}))?(.*)$"
+    r"(?:(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})"
+    r"|(" + _DAYPART_PATTERN + r")(?:\s*[-–—]\s*(" + _DAYPART_PATTERN + r"))?(?![^\W\d_]))?(.*)$",
+    re.IGNORECASE,
 )
 
 
@@ -2543,8 +2603,8 @@ def parse_schedule(raw):
         if match is None:
             errors.append((number, "schedule_err_format"))
             continue
-        first, last, h1, m1, h2, m2, rest = match.groups()
-        if first is None and h1 is None:
+        first, last, h1, m1, h2, m2, part_a, part_b, rest = match.groups()
+        if first is None and h1 is None and part_a is None:
             errors.append((number, "schedule_err_format"))
             continue
         dates = None
@@ -2556,7 +2616,14 @@ def parse_schedule(raw):
                 errors.append((number, "schedule_err_date"))
                 continue
             dates = (start_date, end_date)
-        if h1 is None:
+        if part_a is not None:
+            first_part = DAYPART_BY_ALIAS[part_a.casefold()]
+            last_part = DAYPART_BY_ALIAS[part_b.casefold()] if part_b is not None else first_part
+            start, end = DAYPART_BOUNDS[first_part][0], DAYPART_BOUNDS[last_part][1]
+            if start == end:
+                errors.append((number, "schedule_err_time"))
+                continue
+        elif h1 is None:
             start, end = 0, 24 * 60
         else:
             h1, m1, h2, m2 = int(h1), int(m1), int(h2), int(m2)
@@ -3518,8 +3585,6 @@ def _new_tg_entity(kind: str):
 
 
 def _realign_entities(kept, original: str, final_text: str, start: int):
-    """Place the sender's own entities (e.g. Premium Emoji) inside the final text
-    when the body was changed in a way that offsets can't be shifted (separators etc.)."""
     result = []
     cursor = _utf16_index(final_text, start) if start else 0
     for entity in sorted(kept, key=lambda item: int(item.offset)):
@@ -3627,7 +3692,6 @@ DEBUG_SEND = False
 
 
 def describe_entities(entities) -> str:
-    """Compact dump of Telegram entities for the debug log."""
     try:
         items = _iter_entities(entities)
     except Exception as exc:
@@ -4247,7 +4311,8 @@ class ConfigTransfer:
         remote = getattr(self.plugin, "remote", None)
         if remote is None or remote.allows():
             return False
-        self._toast("update_required_subtext", fragment, version=remote.required_version())
+        key, kwargs = remote.notice()
+        self._toast(key, fragment, **kwargs)
         return True
 
     def request_media_import(self, view=None):
@@ -5651,14 +5716,11 @@ _MANIFEST_FILE_RE = re.compile(r"[A-Za-z0-9._\-]{1,80}")
 
 
 def parse_version(value) -> Tuple[int, ...]:
-    """Strict 'X.Y.Z'. Anything else (HTML, extra text, garbage) gives ()."""
     text = as_text(value).strip()
     if not _VERSION_RE.fullmatch(text):
         return ()
     return tuple(int(part) for part in text.split("."))
 
-
-# ---- update manifest: signature and validation (RSA PKCS#1 v1.5 / SHA-256, public side only) ----
 
 _RSA_OID = bytes.fromhex("06092a864886f70d010101")
 _SHA256_DIGEST_INFO = bytes.fromhex("3031300d060960864801650304020105000420")
@@ -5734,7 +5796,6 @@ def _manifest_int(body: Dict[str, Any], key: str) -> int:
 
 
 def verify_manifest(raw: bytes) -> Dict[str, Any]:
-    """Checks signature and fields of version.json; returns a validated state or raises ValueError."""
     if not UPDATE_PUBLIC_KEYS:
         raise ValueError("no update public key configured")
     signed = json.loads(raw.decode("utf-8"))
@@ -5776,7 +5837,6 @@ def verify_manifest(raw: bytes) -> Dict[str, Any]:
 
 
 class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
-    """Follows redirects only to https on the allowed hosts (no https -> http, no foreign hosts)."""
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         parts = urllib.parse.urlsplit(newurl)
@@ -5786,12 +5846,6 @@ class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def _self_file_sha256() -> Optional[str]:
-    """SHA-256 of this plugin's own .py file on disk, hashed the same way sign_manifest.py hashes it.
-
-    Relies on the module-level __file__ the plugin loader sets when it execs this file; if the loader
-    doesn't set a real, readable path (sandboxed/zipped execution), this returns None and the integrity
-    half of the check is skipped -- the exact-version check below still applies on its own.
-    """
     path = globals().get("__file__")
     if not path:
         return None
@@ -5803,13 +5857,6 @@ def _self_file_sha256() -> Optional[str]:
 
 
 class RemoteControl:
-    """Signed version manifest: the ONE supported build. The plugin runs only when its own version
-    AND its own file's SHA-256 both equal the signed manifest -- a higher version, a lower version,
-    and a file edited without bumping __version__ are all blocked the same way.
-
-    Nothing from the network is trusted without a valid signature; the cache stores the signed
-    manifest itself and is re-verified on load; an older serial (rollback) is rejected.
-    """
 
     def __init__(self, plugin):
         self.plugin = plugin
@@ -5829,7 +5876,7 @@ class RemoteControl:
 
     def start(self):
         if not self.enabled:
-            self.plugin.log("Prefixfy remote check is off: no update public key in this build")
+            self.plugin.log("Prefixfy is blocked: no update public key in this build")
             return
         self._stop.set()
         self._stop = stop = threading.Event()
@@ -5897,7 +5944,7 @@ class RemoteControl:
             self._busy.release()
 
     def _snapshot(self) -> Tuple[bool, str]:
-        return self.mismatched(), self.latest_version()
+        return self.blocked(), self.latest_version()
 
     def _refresh(self) -> bool:
         try:
@@ -5908,6 +5955,7 @@ class RemoteControl:
                 raise ValueError(f"manifest rollback rejected ({state['serial']} < {known})")
         except Exception as exc:
             self.plugin.log(f"Prefixfy remote check failed: {exc}")
+            self._announce()
             return False
         before = self._snapshot()
         with self._lock:
@@ -5961,34 +6009,50 @@ class RemoteControl:
         return self._field("sha256", "") or ""
 
     def mismatched(self) -> bool:
-        """True once a manifest is known and this build doesn't exactly match it (version or file hash)."""
         latest = self._field("version", ())
         if not latest:
-            return False  # no manifest fetched yet (e.g. first launch, offline) -- fail open, as before
+            return False
         if parse_version(__version__) != latest:
             return True
         expected_sha = self._field("sha256", "")
+        if expected_sha and not self._self_hash:
+            return True
         if expected_sha and self._self_hash and expected_sha != self._self_hash:
             return True
         return False
 
-    # kept as an alias: other call sites (and the settings UI) ask "is this build blocked?"
-    def outdated(self) -> bool:
+    def verified(self) -> bool:
+        with self._lock:
+            has_state = self._state is not None
+        return has_state and time.monotonic() - self._last_ok <= REMOTE_MAX_AGE
+
+    def blocked(self) -> bool:
+        if not self.enabled or not self.verified():
+            return True
         return self.mismatched()
+
+    def outdated(self) -> bool:
+        return self.blocked()
 
     def allows(self, account=None) -> bool:
         self.ensure_fresh()
-        return not self.mismatched()
+        return not self.blocked()
+
+    def notice(self) -> Tuple[str, Dict[str, Any]]:
+        if self._field("version", ()) and self.mismatched():
+            return "update_required_subtext", {"version": self.required_version()}
+        return "verify_required_subtext", {}
 
     def _announce(self):
-        if not self.mismatched():
+        if not self.blocked():
             self._notified = False
             return
         if self._notified:
             return
         self._notified = True
         try:
-            self.plugin._toast("update_required_subtext", version=self.required_version())
+            key, kwargs = self.notice()
+            self.plugin._toast(key, **kwargs)
         except Exception as exc:
             self.plugin.log(f"Prefixfy remote notice failed: {exc}")
 
@@ -6316,7 +6380,8 @@ class PrefixfyPlugin(BasePlugin):
         if remote is None or remote.allows():
             return False
         fragment = context.get("fragment") if isinstance(context, dict) else None
-        self._toast("update_required_subtext", fragment, version=remote.required_version())
+        key, kwargs = remote.notice()
+        self._toast(key, fragment, **kwargs)
         return True
 
     def refresh_chat_menu_item(self):
@@ -7003,11 +7068,13 @@ class PrefixfyPlugin(BasePlugin):
         tr = self._tr
         icon = self._icon("msg_report", "msg_info")
         if remote.outdated():
-            subtext = tr("update_required_subtext", version=remote.required_version())
+            key, kwargs = remote.notice()
+            subtext = tr(key, **kwargs)
             checksum = remote.latest_checksum()
-            if checksum:
+            if checksum and key == "update_required_subtext":
                 subtext += f"\nSHA-256 {checksum[:12]}…"
-            return [Text(text=tr("update_required"), subtext=subtext, icon=icon, on_click=self._open_repo)]
+            title = tr("update_required" if key == "update_required_subtext" else "verify_required")
+            return [Text(text=title, subtext=subtext, icon=icon, on_click=self._open_repo)]
         return []
 
     def _open_repo(self, *_):
@@ -7423,9 +7490,44 @@ class PrefixfyPlugin(BasePlugin):
                     raw = now.strftime("%m")
                 elif tag == "day":
                     raw = now.strftime("%d")
-                elif tag == "weekday":
+                elif tag in ("weekday", "weekday_short"):
                     names = WEEKDAY_NAMES.get(self.localization.language(), WEEKDAY_NAMES["en"])
                     raw = names[now.weekday()]
+                    if tag == "weekday_short":
+                        raw = raw[:3] if raw.isascii() else raw[:2]
+                elif tag == "year_short":
+                    raw = now.strftime("%y")
+                elif tag == "time12":
+                    raw = now.strftime("%I:%M")
+                elif tag == "ampm":
+                    raw = "AM" if now.hour < 12 else "PM"
+                elif tag == "hour":
+                    raw = now.strftime("%H")
+                elif tag == "minute":
+                    raw = now.strftime("%M")
+                elif tag == "second":
+                    raw = now.strftime("%S")
+                elif tag == "week":
+                    raw = str(now.isocalendar()[1])
+                elif tag == "yearday":
+                    raw = str(now.timetuple().tm_yday)
+                elif tag == "monthname":
+                    names = MONTH_NAMES.get(self.localization.language(), MONTH_NAMES["en"])
+                    raw = names[now.month - 1]
+                elif tag == "daypart":
+                    names = DAYPART_NAMES.get(self.localization.language(), DAYPART_NAMES["en"])
+                    raw = names[daypart_index(now.hour * 60 + now.minute)]
+                elif tag == "timestamp":
+                    raw = str(int(time.time()))
+                elif tag == "tz":
+                    offset = now.astimezone().utcoffset()
+                    minutes = int(offset.total_seconds() // 60) if offset is not None else 0
+                    sign = "+" if minutes >= 0 else "-"
+                    raw = f"UTC{sign}{abs(minutes) // 60:02d}:{abs(minutes) % 60:02d}"
+                elif tag == "chattype":
+                    raw = "private" if preview else (self._dialog_kind(account, dialog_id) or "")
+                elif tag == "dice":
+                    raw = str(random.randint(1, 6))
                 elif tag == "id":
                     raw = ("12345" if preview else "") if dialog_id is None else str(dialog_id)
                 elif tag == "username":
