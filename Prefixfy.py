@@ -67,7 +67,7 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 19 стилей текста (L33T, vaporwave, готика, зеркальный и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [chat], [username], [count], гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "30.4.0"
+__version__ = "30.4.1"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -75,9 +75,10 @@ __sdk_version__ = ">=1.4.5.0"
 
 REPO_URL = "https://github.com/sadatirnen/Prefixfy"
 UPDATE_BASE_URL = "https://raw.githubusercontent.com/sadatirnen/Prefixfy/main/"
-# Signed manifest: the only supported version + its checksums. Updates are mandatory: a client older than
-# `version` stops formatting. The old unsigned min_version.txt is NOT read here: it stays in the repository
-# only to block 30.3.0 / 30.3.1, which still check it.
+# Signed manifest: the ONE supported build (exact version + exact sha256 of this file). Any mismatch blocks
+# the plugin -- older, newer, or a locally edited copy that only changed __version__. Updates are mandatory.
+# The old unsigned min_version.txt is NOT read here: it stays in the repository only to block 30.3.0 / 30.3.1,
+# which still check it.
 MANIFEST_FILE = "version.json"
 MANIFEST_FORMAT = 1
 MANIFEST_DOMAIN = b"Prefixfy-manifest-v1\n"
@@ -207,7 +208,7 @@ class LocalizationManager:
             "enable_plugin_subtext": "Вкл: везде, кроме выбранных чатов. Выкл: только в выбранных.",
             "language": "Язык",
             "update_required": "Требуется обновление",
-            "update_required_subtext": "Установите Prefixfy {version} или новее. Пока плагин не оформляет сообщения.",
+            "update_required_subtext": "Установите Prefixfy {version} (официальная сборка). Пока плагин не оформляет сообщения.",
             "section_scope": "Где работает",
             "plugin_language": "Язык плагина",
             "language_auto": "Автоопределение языка",
@@ -400,7 +401,7 @@ class LocalizationManager:
             "enable_plugin_subtext": "On: everywhere except the listed chats. Off: only in the listed chats.",
             "language": "Language",
             "update_required": "Update required",
-            "update_required_subtext": "Install Prefixfy {version} or newer. Until then the plugin won’t format messages.",
+            "update_required_subtext": "Install Prefixfy {version} (official build). Until then the plugin won’t format messages.",
             "section_scope": "Where it works",
             "plugin_language": "Plugin language",
             "language_auto": "Detect language automatically",
@@ -593,7 +594,7 @@ class LocalizationManager:
             "enable_plugin_subtext": "オン: リスト以外のすべてのチャット。オフ: リストのチャットのみ。",
             "language": "言語",
             "update_required": "アップデートが必要です",
-            "update_required_subtext": "Prefixfy {version} 以降をインストールしてください。それまでメッセージの装飾は行われません。",
+            "update_required_subtext": "Prefixfy {version}（公式ビルド）をインストールしてください。それまでメッセージの装飾は行われません。",
             "section_scope": "適用範囲",
             "plugin_language": "プラグインの言語",
             "language_auto": "言語を自動検出",
@@ -786,7 +787,7 @@ class LocalizationManager:
             "enable_plugin_subtext": "켜짐: 목록의 채팅을 제외한 전체. 꺼짐: 목록의 채팅에서만.",
             "language": "언어",
             "update_required": "업데이트 필요",
-            "update_required_subtext": "Prefixfy {version} 이상을 설치하세요. 그때까지 플러그인은 메시지를 꾸미지 않습니다.",
+            "update_required_subtext": "Prefixfy {version}(공식 빌드)를 설치하세요. 그때까지 플러그인은 메시지를 꾸미지 않습니다.",
             "section_scope": "적용 범위",
             "plugin_language": "플러그인 언어",
             "language_auto": "언어 자동 감지",
@@ -979,7 +980,7 @@ class LocalizationManager:
             "enable_plugin_subtext": "مفعّل: كل المحادثات عدا القائمة. معطّل: محادثات القائمة فقط.",
             "language": "اللغة",
             "update_required": "التحديث مطلوب",
-            "update_required_subtext": "ثبّت Prefixfy {version} أو أحدث. إلى ذلك الحين لن تنسّق الإضافة الرسائل.",
+            "update_required_subtext": "ثبّت Prefixfy {version} (النسخة الرسمية). إلى ذلك الحين لن تنسّق الإضافة الرسائل.",
             "section_scope": "نطاق العمل",
             "plugin_language": "لغة الإضافة",
             "language_auto": "الكشف التلقائي عن اللغة",
@@ -1172,7 +1173,7 @@ class LocalizationManager:
             "enable_plugin_subtext": "Activé : partout sauf les chats de la liste. Désactivé : seulement dans la liste.",
             "language": "Langue",
             "update_required": "Mise à jour requise",
-            "update_required_subtext": "Installez Prefixfy {version} ou une version plus récente. D’ici là, le plugin ne met pas en forme les messages.",
+            "update_required_subtext": "Installez Prefixfy {version} (version officielle). D’ici là, le plugin ne met pas en forme les messages.",
             "section_scope": "Où ça s’applique",
             "plugin_language": "Langue du plugin",
             "language_auto": "Détection automatique de la langue",
@@ -1365,7 +1366,7 @@ class LocalizationManager:
             "enable_plugin_subtext": "Włączone: wszędzie oprócz czatów z listy. Wyłączone: tylko w czatach z listy.",
             "language": "Język",
             "update_required": "Wymagana aktualizacja",
-            "update_required_subtext": "Zainstaluj Prefixfy {version} lub nowszy. Do tego czasu plugin nie formatuje wiadomości.",
+            "update_required_subtext": "Zainstaluj Prefixfy {version} (oficjalna wersja). Do tego czasu plugin nie formatuje wiadomości.",
             "section_scope": "Gdzie działa",
             "plugin_language": "Język pluginu",
             "language_auto": "Automatyczne wykrywanie języka",
@@ -1558,7 +1559,7 @@ class LocalizationManager:
             "enable_plugin_subtext": "Ein: überall außer in den gelisteten Chats. Aus: nur in den gelisteten Chats.",
             "language": "Sprache",
             "update_required": "Update erforderlich",
-            "update_required_subtext": "Installiere Prefixfy {version} oder neuer. Bis dahin formatiert das Plugin keine Nachrichten.",
+            "update_required_subtext": "Installiere Prefixfy {version} (offizieller Build). Bis dahin formatiert das Plugin keine Nachrichten.",
             "section_scope": "Wo es wirkt",
             "plugin_language": "Plugin-Sprache",
             "language_auto": "Sprache automatisch erkennen",
@@ -1751,7 +1752,7 @@ class LocalizationManager:
             "enable_plugin_subtext": "Увімкнено: усюди, крім чатів зі списку. Вимкнено: лише у чатах зі списку.",
             "language": "Мова",
             "update_required": "Потрібне оновлення",
-            "update_required_subtext": "Встановіть Prefixfy {version} або новішу. Доти плагін не оформлює повідомлення.",
+            "update_required_subtext": "Встановіть Prefixfy {version} (офіційна збірка). Доти плагін не оформлює повідомлення.",
             "section_scope": "Де працює",
             "plugin_language": "Мова плагіна",
             "language_auto": "Автовизначення мови",
@@ -5757,8 +5758,8 @@ def verify_manifest(raw: bytes) -> Dict[str, Any]:
     sha256 = as_text(body.get("sha256"))
     sha512 = as_text(body.get("sha512"))
     name = as_text(body.get("file"))
-    if sha256 and not _HEX64_RE.fullmatch(sha256):
-        raise ValueError("manifest: bad sha256")
+    if not _HEX64_RE.fullmatch(sha256):
+        raise ValueError("manifest: missing or bad sha256")
     if sha512 and not _HEX128_RE.fullmatch(sha512):
         raise ValueError("manifest: bad sha512")
     if name and not _MANIFEST_FILE_RE.fullmatch(name):
@@ -5784,8 +5785,27 @@ class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
+def _self_file_sha256() -> Optional[str]:
+    """SHA-256 of this plugin's own .py file on disk, hashed the same way sign_manifest.py hashes it.
+
+    Relies on the module-level __file__ the plugin loader sets when it execs this file; if the loader
+    doesn't set a real, readable path (sandboxed/zipped execution), this returns None and the integrity
+    half of the check is skipped -- the exact-version check below still applies on its own.
+    """
+    path = globals().get("__file__")
+    if not path:
+        return None
+    try:
+        with open(path, "rb") as handle:
+            return hashlib.sha256(handle.read()).hexdigest()
+    except OSError:
+        return None
+
+
 class RemoteControl:
-    """Signed version manifest: the only supported version + its checksums (updates are mandatory).
+    """Signed version manifest: the ONE supported build. The plugin runs only when its own version
+    AND its own file's SHA-256 both equal the signed manifest -- a higher version, a lower version,
+    and a file edited without bumping __version__ are all blocked the same way.
 
     Nothing from the network is trusted without a valid signature; the cache stores the signed
     manifest itself and is re-verified on load; an older serial (rollback) is rejected.
@@ -5802,6 +5822,9 @@ class RemoteControl:
         self._last_request = -REMOTE_MANUAL_COOLDOWN
         self._notified = False
         self._cache_path = os.path.join(get_plugins_dir(), "Prefixfy_remote.json")
+        self._self_hash = _self_file_sha256()
+        if self._self_hash is None:
+            self.plugin.log("Prefixfy: could not hash own file; falling back to version-only integrity check")
         self._load_cache()
 
     def start(self):
@@ -5874,7 +5897,7 @@ class RemoteControl:
             self._busy.release()
 
     def _snapshot(self) -> Tuple[bool, str]:
-        return self.outdated(), self.latest_version()
+        return self.mismatched(), self.latest_version()
 
     def _refresh(self) -> bool:
         try:
@@ -5937,16 +5960,28 @@ class RemoteControl:
     def latest_checksum(self) -> str:
         return self._field("sha256", "") or ""
 
-    def outdated(self) -> bool:
+    def mismatched(self) -> bool:
+        """True once a manifest is known and this build doesn't exactly match it (version or file hash)."""
         latest = self._field("version", ())
-        return bool(latest) and parse_version(__version__) < latest
+        if not latest:
+            return False  # no manifest fetched yet (e.g. first launch, offline) -- fail open, as before
+        if parse_version(__version__) != latest:
+            return True
+        expected_sha = self._field("sha256", "")
+        if expected_sha and self._self_hash and expected_sha != self._self_hash:
+            return True
+        return False
+
+    # kept as an alias: other call sites (and the settings UI) ask "is this build blocked?"
+    def outdated(self) -> bool:
+        return self.mismatched()
 
     def allows(self, account=None) -> bool:
         self.ensure_fresh()
-        return not self.outdated()
+        return not self.mismatched()
 
     def _announce(self):
-        if not self.outdated():
+        if not self.mismatched():
             self._notified = False
             return
         if self._notified:
