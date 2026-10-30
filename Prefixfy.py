@@ -67,7 +67,7 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 30+ тегов, 19 стилей текста (L33T, vaporwave, готика, зеркальный и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "30.6.0"
+__version__ = "30.5.0"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -78,11 +78,6 @@ UPDATE_BASE_URL = "https://raw.githubusercontent.com/sadatirnen/Prefixfy/main/"
 MANIFEST_FILE = "version.json"
 MANIFEST_FORMAT = 1
 MANIFEST_DOMAIN = b"Prefixfy-manifest-v1\n"
-FLAGS_FILE = "flags.json"
-FLAGS_FORMAT = 1
-FLAGS_DOMAIN = b"Prefixfy-flags-v1\n"
-FLAGS_CACHE_FILE = "Prefixfy_flags.json"
-FLAGS_MAX_COUNT = 64
 UPDATE_ALLOWED_HOSTS = ("raw.githubusercontent.com",)
 UPDATE_PUBLIC_KEYS: Tuple[str, ...] = (
     "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAnCpVgdegnDqZoaOi5H5EOpHiwY8jhprNdIT3jGVauC0Nijz2L/iauWaVxnEOwDT2tqp1tJQ6CrdQxOS/PKV/7QLtGtAseKdpo/4tZjHgx2N9TAPMVb+zK3oWYk+0+OcLFIUoczCa1aZuwaScBqQchmgTj4sQwIbhWDhquE2EtyiF1+6S6GCgV5KyJrqylt2pAcif5z3ixUV27MPzaPbQmuyU+3amsIXDxGcdTFwlHMg/ThFVz77bwV5fkfaNdJrZGDp3+FKSIfjN68v2scL6O9oYHhkDg4AEPUYQkJmNTMnqc0ABFSW9MGuGsMTa0MKNDMaBY5iP2aQmfzLddorBP4ovfOZRzZguFVltFGd44xVOE1w5ceL1WVH+pW+4HX0Ck5FWnHbttaQiLoxXuiIK+F927LLM0yCmKLZC9tcIfMdBXgcaHp1ZaKGOIVvRs8SRaVnQ2z51v3NtjHbakGKwcXit2JlgyKvrHPG2AQj8ci7tApB6BWYffsNkFM4bCBIlAgMBAAE=",
@@ -2791,59 +2786,6 @@ def unique_name(base: str, taken, ignore: str = "") -> str:
     return name
 
 
-FEATURE_FLAGS: Dict[str, bool] = {
-    "markdown": True,
-    "text_styles": True,
-    "mask_rotation": True,
-    "conditional_masks": True,
-    "regex_exceptions": True,
-    "chat_type_rules": True,
-    "edit_processing": True,
-    "attached_media": True,
-    "premium_emoji": True,
-    "schedule": True,
-    "chat_configs": True,
-    "config_import": True,
-}
-_FLAG_NAME_RE = re.compile(r"[a-z][a-z0-9_]{0,31}")
-
-
-class FeatureFlags:
-    """Remote on/off switches for optional features; the user's own settings are never touched.
-
-    Reads take no lock: apply() swaps in a whole new dict.
-    """
-
-    def __init__(self, defaults: Dict[str, bool]):
-        self._defaults = dict(defaults)
-        self._values = dict(defaults)
-        self._serial = -1
-        self._lock = threading.Lock()
-
-    def on(self, name: str) -> bool:
-        return self._values.get(name, True)
-
-    def apply(self, flags: Dict[str, bool], serial: int) -> bool:
-        merged = dict(self._defaults)
-        for name, value in flags.items():
-            if name in merged and isinstance(value, bool):
-                merged[name] = value
-        with self._lock:
-            if serial < self._serial:
-                raise ValueError(f"flags rollback rejected ({serial} < {self._serial})")
-            changed = merged != self._values
-            self._values = merged
-            self._serial = serial
-        return changed
-
-    def overridden(self) -> List[str]:
-        values = self._values
-        return sorted(f"{name}={'on' if value else 'off'}" for name, value in values.items() if value != self._defaults[name])
-
-
-FEATURES = FeatureFlags(FEATURE_FLAGS)
-
-
 class RuntimeSettings:
     __slots__ = (
         "language", "chat_scope_enabled", "process_message", "process_media", "process_edit",
@@ -2865,24 +2807,24 @@ class RuntimeSettings:
         self.chat_scope_enabled = bool(get("chat_scope_enabled"))
         self.process_message = bool(get("process_message"))
         self.process_media = bool(get("process_media"))
-        self.process_edit = bool(get("process_edit")) and FEATURES.on("edit_processing")
+        self.process_edit = bool(get("process_edit"))
         self.process_edit_message = bool(get("process_edit_message"))
         self.process_edit_media = bool(get("process_edit_media"))
         self.skip_once_on_edit = bool(get("skip_once_on_edit"))
         style = clamp_int(get("markdown_style"), 0, 0, MARKDOWN_STYLE_COUNT - 1)
-        self.markdown_enabled = bool(get("markdown_enabled")) and style != 1 and FEATURES.on("markdown")
+        self.markdown_enabled = bool(get("markdown_enabled")) and style != 1
         self.markdown_style = 0 if style == 1 else style
         self.markdown_wrap = MARKDOWN_WRAP_KINDS.get(self.markdown_style) if self.markdown_enabled else None
         self.mask = as_text(get("mask"))
-        self.text_style_enabled = bool(get("text_style_enabled")) and FEATURES.on("text_styles")
+        self.text_style_enabled = bool(get("text_style_enabled"))
         self.text_style = clamp_int(get("text_style"), 0, 0, TEXT_STYLE_COUNT - 1)
         self.text_style_random = bool(get("text_style_random"))
-        self.mask_rotation_enabled = bool(get("mask_rotation_enabled")) and FEATURES.on("mask_rotation")
+        self.mask_rotation_enabled = bool(get("mask_rotation_enabled"))
         self.masks_list = [item.strip() for item in as_text(get("masks_list")).splitlines() if item.strip() and is_valid_mask(item.strip())][:MAX_MASKS_IN_LIST]
         self.mask_rotation_mode = clamp_int(get("mask_rotation_mode"), 0, 0, 1)
-        self.regex_exceptions = compile_regex_exceptions(get("regex_exceptions")) if FEATURES.on("regex_exceptions") else ()
-        self.conditional_rules = parse_conditional_masks(get("conditional_masks"))[0] if FEATURES.on("conditional_masks") else ()
-        self.chat_type_rules = parse_chat_type_rules(get("chat_type_rules")) if FEATURES.on("chat_type_rules") else frozenset(CHAT_KINDS)
+        self.regex_exceptions = compile_regex_exceptions(get("regex_exceptions"))
+        self.conditional_rules = parse_conditional_masks(get("conditional_masks"))[0]
+        self.chat_type_rules = parse_chat_type_rules(get("chat_type_rules"))
         self.mask_parts = split_mask(self.mask)
         if self.mask_parts is None and not self.mask.strip():
             self.mask_parts = ("", "")
@@ -2894,7 +2836,7 @@ class RuntimeSettings:
         self.ignore_special = bool(get("ignore_special"))
         self.ignore_emoji_only = bool(get("ignore_emoji_only"))
         self.disabled_chats = parse_chat_ids(get("disabled_chats"))
-        self.media_enabled = bool(get("attached_media_enabled")) and FEATURES.on("attached_media")
+        self.media_enabled = bool(get("attached_media_enabled"))
         self.media_path = as_text(get("attached_media_path"))
         self.media_name = as_text(get("attached_media_name"))
         self.media_mime = as_text(get("attached_media_mime"))
@@ -5546,8 +5488,6 @@ class ConfigurationsManager:
         remote = getattr(self.plugin, "remote", None)
         if remote is not None and not remote.allows():
             raise ConfigurationError("plugin update required")
-        if not FEATURES.on("config_import"):
-            raise ConfigurationError("configuration import is switched off")
         if as_new:
             self.create_from_import(data, components, name=name)
         else:
@@ -5855,27 +5795,22 @@ def _manifest_int(body: Dict[str, Any], key: str) -> int:
     return value
 
 
-def _verify_signed(raw: bytes, domain: bytes, what: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+def verify_manifest(raw: bytes) -> Dict[str, Any]:
     if not UPDATE_PUBLIC_KEYS:
         raise ValueError("no update public key configured")
     signed = json.loads(raw.decode("utf-8"))
     if not isinstance(signed, dict):
-        raise ValueError(f"{what} is not an object")
+        raise ValueError("manifest is not an object")
     body = dict(signed)
     signature_text = body.pop("signature", None)
     if not isinstance(signature_text, str):
-        raise ValueError(f"{what} is not signed")
+        raise ValueError("manifest is not signed")
     signature = base64.b64decode(signature_text, validate=True)
-    message = domain + json.dumps(
+    message = MANIFEST_DOMAIN + json.dumps(
         body, sort_keys=True, separators=(",", ":"), ensure_ascii=True,
     ).encode("ascii")
     if not any(_rsa_sha256_verify(base64.b64decode(key), message, signature) for key in UPDATE_PUBLIC_KEYS):
-        raise ValueError(f"bad {what} signature")
-    return signed, body
-
-
-def verify_manifest(raw: bytes) -> Dict[str, Any]:
-    signed, body = _verify_signed(raw, MANIFEST_DOMAIN, "manifest")
+        raise ValueError("bad manifest signature")
     if _manifest_int(body, "format") != MANIFEST_FORMAT:
         raise ValueError("unsupported manifest format")
     version = parse_version(body.get("version"))
@@ -5897,25 +5832,6 @@ def verify_manifest(raw: bytes) -> Dict[str, Any]:
         "sha256": sha256,
         "sha512": sha512,
         "file": name,
-        "signed": signed,
-    }
-
-
-def verify_flags(raw: bytes) -> Dict[str, Any]:
-    signed, body = _verify_signed(raw, FLAGS_DOMAIN, "flags")
-    if _manifest_int(body, "format") != FLAGS_FORMAT:
-        raise ValueError("unsupported flags format")
-    values = body.get("flags")
-    if not isinstance(values, dict) or len(values) > FLAGS_MAX_COUNT:
-        raise ValueError("flags: bad flags object")
-    known: Dict[str, bool] = {}
-    for name, value in values.items():
-        if name in FEATURE_FLAGS and isinstance(value, bool) and _FLAG_NAME_RE.fullmatch(name):
-            known[name] = value
-    return {
-        "serial": _manifest_int(body, "serial"),
-        "issued_at": _manifest_int(body, "issued_at"),
-        "flags": known,
         "signed": signed,
     }
 
@@ -5957,8 +5873,6 @@ class RemoteControl:
         if self._self_hash is None:
             self.plugin.log("Prefixfy: could not hash own file; falling back to version-only integrity check")
         self._load_cache()
-        self._flags_path = os.path.join(get_plugins_dir(), FLAGS_CACHE_FILE)
-        self._load_flags_cache()
 
     def start(self):
         if not self.enabled:
@@ -6056,45 +5970,7 @@ class RemoteControl:
                 self.plugin.reload_settings_ui()
             except Exception as exc:
                 self.plugin.log(f"Prefixfy settings refresh failed: {exc}")
-        self._refresh_flags()
         return True
-
-    def _refresh_flags(self):
-        try:
-            state = verify_flags(self._download(FLAGS_FILE))
-            changed = FEATURES.apply(state["flags"], state["serial"])
-        except urllib.error.HTTPError as exc:
-            if exc.code != 404:
-                self.plugin.log(f"Prefixfy flags check failed: HTTP {exc.code}")
-            return
-        except Exception as exc:
-            self.plugin.log(f"Prefixfy flags check failed: {exc}")
-            return
-        self._save_flags_cache(state["signed"])
-        if not changed:
-            return
-        self.plugin.log(f"Prefixfy flags updated (serial {state['serial']}): {', '.join(FEATURES.overridden()) or 'defaults'}")
-        try:
-            self.plugin.runtime_manager.rebuild()
-        except Exception as exc:
-            self.plugin.log(f"Prefixfy flags rebuild failed: {exc}")
-
-    def _load_flags_cache(self):
-        try:
-            with open(self._flags_path, "rb") as handle:
-                state = verify_flags(handle.read(REMOTE_MAX_BYTES + 1))
-            FEATURES.apply(state["flags"], state["serial"])
-        except (OSError, ValueError):
-            pass
-
-    def _save_flags_cache(self, signed: Dict[str, Any]):
-        try:
-            temp = self._flags_path + ".tmp"
-            with open(temp, "w", encoding="utf-8") as handle:
-                json.dump(signed, handle)
-            os.replace(temp, self._flags_path)
-        except OSError as exc:
-            self.plugin.log(f"Prefixfy flags cache not saved: {exc}")
 
     def _load_cache(self):
         self._state = None
@@ -6607,11 +6483,11 @@ class PrefixfyPlugin(BasePlugin):
         configs = getattr(self, "configurations", None)
         if configs is None:
             return runtime
-        config_id = self._chat_bindings().get(str(dialog_id)) if dialog_id is not None and FEATURES.on("chat_configs") else None
+        config_id = self._chat_bindings().get(str(dialog_id)) if dialog_id is not None else None
         if config_id is not None and config_id not in configs.configurations:
             config_id = None
         if config_id is None:
-            rules = self._schedule_rules() if FEATURES.on("schedule") else None
+            rules = self._schedule_rules()
             if rules:
                 config_id = schedule_match(rules, datetime.now(), configs.find_id_by_name)
         if config_id is None or config_id == configs.active_id:
@@ -7437,7 +7313,7 @@ class PrefixfyPlugin(BasePlugin):
             return entities
         reserved = self._existing_entity_count(params) if body_offset is not None else 0
         if any(item[0] == "CustomEmoji" for item in entities):
-            if not FEATURES.on("premium_emoji") or not self._account_is_premium(account):
+            if not self._account_is_premium(account):
                 entities = [item for item in entities if item[0] != "CustomEmoji"]
             else:
                 entities = limit_custom_emoji(entities, reserved)
@@ -7719,7 +7595,7 @@ class PrefixfyPlugin(BasePlugin):
         if not self.remote.allows(account):
             self._dbg("skip: remote.allows() is False")
             return HookResult()
-        if FEATURES.on("premium_emoji") and self.settings.get("capture_custom_emoji", False) and self._capture_custom_emoji(params, account):
+        if self.settings.get("capture_custom_emoji", False) and self._capture_custom_emoji(params, account):
             return HookResult(strategy=HookStrategy.CANCEL)
 
         runtime = self.runtime_manager.runtime
