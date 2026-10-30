@@ -6,6 +6,14 @@
     "conditional_masks": false,
     "config_import": true,
     "edit_processing": true,
+    "lang_ar": false,
+    "lang_de": false,
+    "lang_fr": false,
+    "lang_ja": true,
+    "lang_ko": true,
+    "lang_pl": false,
+    "lang_ru": true,
+    "lang_uk": false,
     "markdown": true,
     "mask_rotation": false,
     "premium_emoji": true,
@@ -14,7 +22,7 @@
     "text_styles": true
   },
   "format": 1,
-  "issued_at": 1793383069,
-  "serial": 1793383069,
-  "signature": "EOuAZtIZHQnsm3Q/7jPHv19/Bm4XvHyhUHvxpjnfBvizTo6USDsKvEdOF1US4Y/I6StEo3Hbn+JlWpnPpnwG1RJAGQFnysRcpXPK6NYHCl6uatD6JF4GwgO4tCk8ZIRO2fe3g9+LZs/2ZEh2HgGfVRHTol/KRTge6n06ps/3gLDYFgnfO+Cs9N7WQleJS3PAy+OU2KTeAmM+Y68bO9d/7Z4TcI5P/oP9El6NLwN78KlLG4mSjJAzxNAHBmjie1pPiMdBz4Iy7/H5LXBKiL0NAYEs0HSvy9wXiZQidyRIMwTIlQeoA/zUggMJ+lqOzaB2qji2UHRXlMR2A2VEzD2MfiOwAPdd+/lmLeYXW5XDukJMpW9r/XBzVtVFi8CwzcjhXyQlBtRFNq9zooYUjG0egfNQ4t9H5oW03GHdBEoOtJ+SYFdvX6qFXapOcE+UxDEEkDwXNYgyTCGJawvTmuPe4FjuEihxduBS293027vTWbCy0Wd5Vp19zoqI2u7SZrtS"
+  "issued_at": 1793384441,
+  "serial": 1793384441,
+  "signature": "iCD7AKDnEnzLY74Kfv+SNZV5oQlEYfqPCFJyGxTzXUiibwmtdQa0lCpqGkIN9hDHeyDe1X0ntm7+D4F1N44C8fkoFkOOcvnpTCIjtau8BHuESE7Rzv8llH499vhWbEAGtB1tuRMxOigIxQE8T/3d0fY722U6HyhSUimhPYOX4bc92Q2Grmx7N+DtCRZdMMrxIOnlRqenJgPBoZFW52UB/rZ96tBwxw3RcC07ixZ8Af1YuVuO6c95JpV0RuxvB1qvBVGUn2sgRX7wQIhxoriy8iw2R3nzs2UpUvptORaEhsLtx5G+lzI8ETf+6ZEsRLUOQ0ZKXbELVW3NoC2IFSLMYVb4LX0rYW8ita5PHBQ2SZReojg8/uZimL67Q6QRGHPaCY7UOIqHCWXlH87VuMejQmKS3fj8R1MDnV2V0e5CfKS5cZOEV4lUbawUWN9e2jTK6w7UEWgod6phxGO+N+ysuZaEE/Igme1JiZGHaO6pXAlLx/E+vu9CVAtwmWP1v6Vf"
 }
