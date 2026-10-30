@@ -75,8 +75,9 @@ __sdk_version__ = ">=1.4.5.0"
 
 REPO_URL = "https://github.com/sadatirnen/Prefixfy"
 UPDATE_BASE_URL = "https://raw.githubusercontent.com/sadatirnen/Prefixfy/main/"
-# Signed manifest (version, checksums, min_version). The old unsigned min_version.txt is NOT read here:
-# it stays in the repository only to block clients <= 30.3.x that still check it.
+# Signed manifest: the only supported version + its checksums. Updates are mandatory: a client older than
+# `version` stops formatting. The old unsigned min_version.txt is NOT read here: it stays in the repository
+# only to block 30.3.0 / 30.3.1, which still check it.
 MANIFEST_FILE = "version.json"
 MANIFEST_FORMAT = 1
 MANIFEST_DOMAIN = b"Prefixfy-manifest-v1\n"
@@ -207,8 +208,6 @@ class LocalizationManager:
             "language": "Язык",
             "update_required": "Требуется обновление",
             "update_required_subtext": "Установите Prefixfy {version} или новее. Пока плагин не оформляет сообщения.",
-            "update_available": "Доступно обновление",
-            "update_available_subtext": "Prefixfy {version} · SHA-256 {sha}… Нажмите, чтобы открыть репозиторий.",
             "section_scope": "Где работает",
             "plugin_language": "Язык плагина",
             "language_auto": "Автоопределение языка",
@@ -402,8 +401,6 @@ class LocalizationManager:
             "language": "Language",
             "update_required": "Update required",
             "update_required_subtext": "Install Prefixfy {version} or newer. Until then the plugin won’t format messages.",
-            "update_available": "Update available",
-            "update_available_subtext": "Prefixfy {version} · SHA-256 {sha}… Tap to open the repository.",
             "section_scope": "Where it works",
             "plugin_language": "Plugin language",
             "language_auto": "Detect language automatically",
@@ -597,8 +594,6 @@ class LocalizationManager:
             "language": "言語",
             "update_required": "アップデートが必要です",
             "update_required_subtext": "Prefixfy {version} 以降をインストールしてください。それまでメッセージの装飾は行われません。",
-            "update_available": "アップデートがあります",
-            "update_available_subtext": "Prefixfy {version} · SHA-256 {sha}… タップしてリポジトリを開きます。",
             "section_scope": "適用範囲",
             "plugin_language": "プラグインの言語",
             "language_auto": "言語を自動検出",
@@ -792,8 +787,6 @@ class LocalizationManager:
             "language": "언어",
             "update_required": "업데이트 필요",
             "update_required_subtext": "Prefixfy {version} 이상을 설치하세요. 그때까지 플러그인은 메시지를 꾸미지 않습니다.",
-            "update_available": "업데이트 가능",
-            "update_available_subtext": "Prefixfy {version} · SHA-256 {sha}… 탭하여 저장소를 엽니다.",
             "section_scope": "적용 범위",
             "plugin_language": "플러그인 언어",
             "language_auto": "언어 자동 감지",
@@ -987,8 +980,6 @@ class LocalizationManager:
             "language": "اللغة",
             "update_required": "التحديث مطلوب",
             "update_required_subtext": "ثبّت Prefixfy {version} أو أحدث. إلى ذلك الحين لن تنسّق الإضافة الرسائل.",
-            "update_available": "يتوفر تحديث",
-            "update_available_subtext": "Prefixfy {version} · SHA-256 {sha}… اضغط لفتح المستودع.",
             "section_scope": "نطاق العمل",
             "plugin_language": "لغة الإضافة",
             "language_auto": "الكشف التلقائي عن اللغة",
@@ -1182,8 +1173,6 @@ class LocalizationManager:
             "language": "Langue",
             "update_required": "Mise à jour requise",
             "update_required_subtext": "Installez Prefixfy {version} ou une version plus récente. D’ici là, le plugin ne met pas en forme les messages.",
-            "update_available": "Mise à jour disponible",
-            "update_available_subtext": "Prefixfy {version} · SHA-256 {sha}… Touchez pour ouvrir le dépôt.",
             "section_scope": "Où ça s’applique",
             "plugin_language": "Langue du plugin",
             "language_auto": "Détection automatique de la langue",
@@ -1377,8 +1366,6 @@ class LocalizationManager:
             "language": "Język",
             "update_required": "Wymagana aktualizacja",
             "update_required_subtext": "Zainstaluj Prefixfy {version} lub nowszy. Do tego czasu plugin nie formatuje wiadomości.",
-            "update_available": "Dostępna aktualizacja",
-            "update_available_subtext": "Prefixfy {version} · SHA-256 {sha}… Dotknij, aby otworzyć repozytorium.",
             "section_scope": "Gdzie działa",
             "plugin_language": "Język pluginu",
             "language_auto": "Automatyczne wykrywanie języka",
@@ -1572,8 +1559,6 @@ class LocalizationManager:
             "language": "Sprache",
             "update_required": "Update erforderlich",
             "update_required_subtext": "Installiere Prefixfy {version} oder neuer. Bis dahin formatiert das Plugin keine Nachrichten.",
-            "update_available": "Update verfügbar",
-            "update_available_subtext": "Prefixfy {version} · SHA-256 {sha}… Tippe, um das Repository zu öffnen.",
             "section_scope": "Wo es wirkt",
             "plugin_language": "Plugin-Sprache",
             "language_auto": "Sprache automatisch erkennen",
@@ -1767,8 +1752,6 @@ class LocalizationManager:
             "language": "Мова",
             "update_required": "Потрібне оновлення",
             "update_required_subtext": "Встановіть Prefixfy {version} або новішу. Доти плагін не оформлює повідомлення.",
-            "update_available": "Доступне оновлення",
-            "update_available_subtext": "Prefixfy {version} · SHA-256 {sha}… Торкніться, щоб відкрити репозиторій.",
             "section_scope": "Де працює",
             "plugin_language": "Мова плагіна",
             "language_auto": "Автовизначення мови",
@@ -5769,9 +5752,8 @@ def verify_manifest(raw: bytes) -> Dict[str, Any]:
     if _manifest_int(body, "format") != MANIFEST_FORMAT:
         raise ValueError("unsupported manifest format")
     version = parse_version(body.get("version"))
-    minimum = parse_version(body.get("min_version"))
-    if not version or not minimum or minimum > version:
-        raise ValueError("manifest: bad versions")
+    if not version:
+        raise ValueError("manifest: bad version")
     sha256 = as_text(body.get("sha256"))
     sha512 = as_text(body.get("sha512"))
     name = as_text(body.get("file"))
@@ -5785,7 +5767,6 @@ def verify_manifest(raw: bytes) -> Dict[str, Any]:
         "serial": _manifest_int(body, "serial"),
         "issued_at": _manifest_int(body, "issued_at"),
         "version": version,
-        "min_version": minimum,
         "sha256": sha256,
         "sha512": sha512,
         "file": name,
@@ -5804,7 +5785,7 @@ class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
 
 
 class RemoteControl:
-    """Signed version manifest: latest version + checksums + minimum allowed version.
+    """Signed version manifest: the only supported version + its checksums (updates are mandatory).
 
     Nothing from the network is trusted without a valid signature; the cache stores the signed
     manifest itself and is re-verified on load; an older serial (rollback) is rejected.
@@ -5892,8 +5873,8 @@ class RemoteControl:
         finally:
             self._busy.release()
 
-    def _snapshot(self) -> Tuple[bool, bool, str]:
-        return self.outdated(), self.update_available(), self.latest_version()
+    def _snapshot(self) -> Tuple[bool, str]:
+        return self.outdated(), self.latest_version()
 
     def _refresh(self) -> bool:
         try:
@@ -5948,7 +5929,7 @@ class RemoteControl:
             return self._state.get(key, default) if self._state else default
 
     def required_version(self) -> str:
-        return ".".join(map(str, self._field("min_version", ())))
+        return self.latest_version()
 
     def latest_version(self) -> str:
         return ".".join(map(str, self._field("version", ())))
@@ -5957,10 +5938,6 @@ class RemoteControl:
         return self._field("sha256", "") or ""
 
     def outdated(self) -> bool:
-        minimum = self._field("min_version", ())
-        return bool(minimum) and parse_version(__version__) < minimum
-
-    def update_available(self) -> bool:
         latest = self._field("version", ())
         return bool(latest) and parse_version(__version__) < latest
 
@@ -6992,18 +6969,11 @@ class PrefixfyPlugin(BasePlugin):
         icon = self._icon("msg_report", "msg_info")
         if remote.outdated():
             subtext = tr("update_required_subtext", version=remote.required_version())
+            checksum = remote.latest_checksum()
+            if checksum:
+                subtext += f"\nSHA-256 {checksum[:12]}…"
             return [Text(text=tr("update_required"), subtext=subtext, icon=icon, on_click=self._open_repo)]
         return []
-
-    def _update_available_notice(self) -> List[Any]:
-        remote = getattr(self, "remote", None)
-        if remote is None or not remote.update_available():
-            return []
-        tr = self._tr
-        subtext = tr("update_available_subtext", version=remote.latest_version(),
-                     sha=remote.latest_checksum()[:12] or "—")
-        return [Text(text=tr("update_available"), subtext=subtext,
-                     icon=self._icon("msg_download", "msg_info"), on_click=self._open_repo)]
 
     def _open_repo(self, *_):
         try:
@@ -7021,7 +6991,6 @@ class PrefixfyPlugin(BasePlugin):
         if notice:
             return notice
         settings: List[Any] = []
-        settings.extend(self._update_available_notice())
         settings.append(
             self._switch("chat_scope_enabled", self._tr("enable_plugin"), self._tr("enable_plugin_subtext"), "msg_settings"),
         )
