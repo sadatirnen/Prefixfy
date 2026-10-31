@@ -67,7 +67,7 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "30.8.0"
+__version__ = "30.8.1"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -6848,6 +6848,29 @@ class PrefixfyPlugin(BasePlugin):
         for name in ("Prefixfy_tmp", "Prefixfy_imports", "Prefixfy_exports", "Prefixfy"):
             shutil.rmtree(os.path.join(cache_dir, name), ignore_errors=True)
 
+    @staticmethod
+    def _hookable_class(name: str):
+        try:
+            cls = find_class(name)
+        except Exception:
+            cls = None
+        if cls is not None:
+            if hasattr(cls, "getName"):
+                return cls
+            literal = getattr(cls, "class_", None)
+            if literal is not None and hasattr(literal, "getName"):
+                return literal
+        try:
+            from java import jclass
+            class_type = jclass("java.lang.Class")
+            try:
+                return class_type.forName(name)
+            except Exception:
+                loader = jclass("org.telegram.messenger.ApplicationLoader").applicationContext.getClassLoader()
+                return class_type.forName(name, True, loader)
+        except Exception:
+            return None
+
     def _install_activity_result_hook(self):
         plugin = self
 
@@ -6858,11 +6881,15 @@ class PrefixfyPlugin(BasePlugin):
                 except Exception as exc:
                     plugin.log(f"Activity result handling failed: {exc}")
 
-        launch_class = find_class("org.telegram.ui.LaunchActivity")
+        launch_class = self._hookable_class("org.telegram.ui.LaunchActivity")
         if launch_class is None:
             self.log("LaunchActivity not found: file pickers are unavailable")
             return
-        hooks = self.hook_all_methods(launch_class, "onActivityResult", ActivityResultHook())
+        try:
+            hooks = self.hook_all_methods(launch_class, "onActivityResult", ActivityResultHook())
+        except Exception as exc:
+            self.log(f"LaunchActivity hook failed, file pickers are unavailable: {exc}")
+            return
         if hooks:
             self._prefixfy_hooks.extend(hooks)
 
@@ -6887,7 +6914,7 @@ class PrefixfyPlugin(BasePlugin):
                 except Exception as exc:
                     plugin.log(f"Prefixfy edit hook failed: {exc}")
 
-        manager_class = find_class("org.telegram.tgnet.ConnectionsManager")
+        manager_class = self._hookable_class("org.telegram.tgnet.ConnectionsManager")
         if manager_class is None:
             self.log("Prefixfy edit: ConnectionsManager not found, message editing is unavailable")
             return
