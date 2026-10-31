@@ -68,7 +68,7 @@ __description__ = (
 )
 __author__ = "@Prefixfy"
 __version__ = "31.1.0"
-__build__ = "31.1.0_20261031.1_7"
+__build__ = "31.1.0_20261031.1_8"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -6531,11 +6531,11 @@ def verify_manifest(raw: bytes) -> Dict[str, Any]:
     serial = _manifest_int(body, "serial")
     issued_at = _manifest_int(body, "issued_at")
     _check_issued_at(issued_at, "manifest")
-    if len(version) == 6 and version[4] != serial:
+    if len(version) == 6 and version[5] != serial:
         raise ValueError("manifest: serial does not match the serial in the version tag")
     build = parse_version(__build__)
-    if len(build) == 6 and serial < build[4]:
-        raise ValueError(f"manifest: older than this build ({serial} < {build[4]})")
+    if len(build) == 6 and serial < build[5]:
+        raise ValueError(f"manifest: older than this build ({serial} < {build[5]})")
     return {
         "serial": serial,
         "issued_at": issued_at,
