@@ -64,10 +64,10 @@ except ImportError:
 __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = (
-    "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 30+ тегов, 19 стилей текста (L33T, vaporwave, готика, зеркальный и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
+    "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "30.7.0"
+__version__ = "30.8.0"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -82,7 +82,7 @@ FLAGS_FILE = "flags.json"
 FLAGS_FORMAT = 1
 FLAGS_DOMAIN = b"Prefixfy-flags-v1\n"
 FLAGS_CACHE_FILE = "Prefixfy_flags.json"
-FLAGS_MAX_COUNT = 64
+FLAGS_MAX_COUNT = 128
 FLAGS_MAX_ACCOUNTS = 1024
 BLACKLIST_FILE = "blacklist.json"
 BLACKLIST_FORMAT = 1
@@ -117,6 +117,10 @@ EXPORT_TEMP_TTL = 3600
 MAX_CAPTURED_EMOJI = 20
 DEFAULT_EMOJI_FALLBACK = "⭐"
 MAX_MASKS_IN_LIST = 20
+MAX_STYLE_WORDS = 100
+MAX_TAG_LINES = 50
+MAX_CHAT_COUNTS = 2000
+CHAT_COUNTS_KEY = "Prefixfy_chat_counts"
 MAX_REGEX_EXCEPTIONS = 20
 MAX_REGEX_LENGTH = 200
 REGEX_TEXT_LIMIT = 4096
@@ -136,7 +140,7 @@ REGEX_UNSAFE_REASON = "nested or too many repeats (the message check could hang)
 RANDOM_EMOJI = ("😀", "😎", "✨", "🌟", "💜", "🔥", "🍀", "🦋", "🌈", "⭐", "🎉", "🚀")
 MASK_TAG_RE = re.compile(
     r"\[(date|time|datetime|time12|chat|id|weekday|weekday_short|year|year_short|month|monthname|day|week|yearday|"
-    r"hour|minute|second|ampm|daypart|timestamp|tz|chattype|username|count|dice|random_emoji|emoji)\]",
+    r"hour|minute|second|ampm|daypart|timestamp|tz|chattype|username|count|dice|random_emoji|emoji|reply|chatcount|battery|moon|line|(?:since|until):\d{4}-\d{2}-\d{2})\]",
     re.IGNORECASE,
 )
 _TAG_UNSAFE_RE = re.compile(r"[\[\]*_~|`\\\uE000-\uF8FF\s]+")
@@ -222,6 +226,9 @@ SETTING_DEFAULTS = {
     "text_style_enabled": False,
     "text_style": 0,
     "text_style_random": False,
+    "text_style_translit": False,
+    "style_words": "",
+    "tag_lines": "",
     "mask_rotation_enabled": False,
     "masks_list": "",
     "mask_rotation_mode": 0,
@@ -2117,6 +2124,81 @@ class LocalizationManager:
         self._auto_checked = 0.0
 
 
+_NEW_STRINGS = {
+    "en": {
+        "style_translit": "Transliterate Cyrillic",
+        "style_translit_subtext": "Latin-only styles will also work with Russian and Ukrainian text.",
+        "style_words": "Style only these words",
+        "style_words_hint": "One word per line. If the list is empty, the style applies to the whole text.",
+        "style_words_count": "Words: {n}",
+        "style_words_empty": "Whole text",
+        "style_words_limit": "At most {n} words",
+        "tag_lines": "Lines for [line]",
+        "tag_lines_hint": "One line per row. The [line] tag inserts a random one (up to 64 characters each).",
+        "tag_lines_count": "Lines: {n}",
+        "tag_lines_empty": "No lines yet",
+        "tag_lines_limit": "At most {n} lines",
+        "tags_more": "[reply] \u2014 name of the person you reply to; [chatcount] \u2014 your message number in this chat; [battery] \u2014 battery level; [moon] \u2014 moon phase; [line] \u2014 random line from your list; [since:2026-12-31] / [until:2026-12-31] \u2014 days passed / left.",
+    },
+    "ru": {
+        "style_translit": "Транслитерировать кириллицу",
+        "style_translit_subtext": "Латинские стили будут работать и с русским, и с украинским текстом.",
+        "style_words": "Стиль только для слов",
+        "style_words_hint": "Одно слово в строке. Если список пуст, стиль применяется ко всему тексту.",
+        "style_words_count": "Слов: {n}",
+        "style_words_empty": "Весь текст",
+        "style_words_limit": "Не больше {n} слов",
+        "tag_lines": "Строки для [line]",
+        "tag_lines_hint": "Одна строка в ряд. Тег [line] подставит случайную (до 64 символов каждая).",
+        "tag_lines_count": "Строк: {n}",
+        "tag_lines_empty": "Строк пока нет",
+        "tag_lines_limit": "Не больше {n} строк",
+        "tags_more": "[reply] \u2014 имя того, кому отвечаете; [chatcount] \u2014 номер вашего сообщения в этом чате; [battery] \u2014 заряд батареи; [moon] \u2014 фаза луны; [line] \u2014 случайная строка из списка; [since:2026-12-31] / [until:2026-12-31] \u2014 дней прошло / осталось.",
+    },
+    "uk": {
+        "style_translit": "Транслітерувати кирилицю",
+        "style_translit_subtext": "Латинські стилі працюватимуть і з російським, і з українським текстом.",
+        "style_words": "Стиль лише для слів",
+        "style_words_hint": "Одне слово в рядку. Якщо список порожній, стиль застосовується до всього тексту.",
+        "style_words_count": "Слів: {n}",
+        "style_words_empty": "Весь текст",
+        "style_words_limit": "Не більше {n} слів",
+        "tag_lines": "Рядки для [line]",
+        "tag_lines_hint": "Один рядок у ряд. Тег [line] підставить випадковий (до 64 символів кожен).",
+        "tag_lines_count": "Рядків: {n}",
+        "tag_lines_empty": "Рядків поки немає",
+        "tag_lines_limit": "Не більше {n} рядків",
+        "tags_more": "[reply] \u2014 імʼя того, кому відповідаєте; [chatcount] \u2014 номер вашого повідомлення в цьому чаті; [battery] \u2014 заряд батареї; [moon] \u2014 фаза місяця; [line] \u2014 випадковий рядок зі списку; [since:2026-12-31] / [until:2026-12-31] \u2014 днів минуло / залишилось.",
+    },
+}
+for _code, _table in LocalizationManager.STRINGS.items():
+    _extra = _NEW_STRINGS.get(_code, _NEW_STRINGS["en"])
+    _base = _NEW_STRINGS["en"]
+    for _key, _value in _base.items():
+        _table.setdefault(_key, _extra.get(_key, _value))
+    if _table.get("mask_tags_hint"):
+        _table["mask_tags_hint"] = _table["mask_tags_hint"] + "\n" + _extra.get("tags_more", _base["tags_more"])
+
+
+_SYNODIC_MONTH = 29.530588853
+
+
+def moon_phase_emoji(moment: Optional[float] = None) -> str:
+    julian = (time.time() if moment is None else moment) / 86400.0 + 2440587.5
+    age = (julian - 2451550.1) % _SYNODIC_MONTH
+    return "\U0001F311\U0001F312\U0001F313\U0001F314\U0001F315\U0001F316\U0001F317\U0001F318"[int(age / _SYNODIC_MONTH * 8 + 0.5) % 8]
+
+
+def days_tag_value(tag: str, today) -> str:
+    kind, _, raw = tag.partition(":")
+    try:
+        target = _date.fromisoformat(raw)
+    except ValueError:
+        return ""
+    delta = (target - today).days
+    return str(max(0, -delta if kind == "since" else delta))
+
+
 def clamp_int(value, default: int, low: int, high: int) -> int:
     if isinstance(value, bool):
         return default
@@ -2168,13 +2250,24 @@ def split_mask(mask) -> Optional[Tuple[str, str]]:
     return None
 
 
-TEXT_STYLE_COUNT = 19
+TEXT_STYLE_COUNT = 30
 (STYLE_LEET, STYLE_ALTERNATING, STYLE_FULLWIDTH, STYLE_VAPORWAVE,
  STYLE_UPSIDE_DOWN, STYLE_SCRIPT, STYLE_BOLD, STYLE_SQUARED, STYLE_GOTHIC,
  STYLE_DOUBLE_STRUCK, STYLE_MONOSPACE, STYLE_ITALIC, STYLE_BOLD_FRAKTUR, STYLE_SMALL_CAPS,
- STYLE_STRIKETHROUGH, STYLE_UNDERLINE, STYLE_CIRCLED, STYLE_MIRRORED, STYLE_SMILEY) = range(TEXT_STYLE_COUNT)
+ STYLE_STRIKETHROUGH, STYLE_UNDERLINE, STYLE_CIRCLED, STYLE_MIRRORED, STYLE_SMILEY,
+ STYLE_BUBBLES, STYLE_SUPERSCRIPT, STYLE_SUBSCRIPT, STYLE_MORSE, STYLE_MIXED,
+ STYLE_DOUBLE_UNDERLINE, STYLE_OVERLINE, STYLE_DOTTED, STYLE_WAVY, STYLE_SLASHED,
+ STYLE_TRANSLIT) = range(TEXT_STYLE_COUNT)
 
-TEXT_STYLE_ITEMS = ("L33T", "aLtErNaTiNg", "Ｆｕｌｌｗｉｄｔｈ", "Ｖ ａ ｐ ｏ ｒ", "uʍop ǝpısdn", "𝓯𝓪𝓷𝓬𝔂", "𝐛𝐨𝐥𝐝", "🅲🅸🆁🅲🅻🅴🅳", "𝔊𝔬𝔱𝔥𝔦𝔠", "𝕕𝕠𝕦𝕓𝕝𝕖-𝕤𝕥𝕣𝕦𝕔𝕜", "𝙼𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎", "𝘪𝘵𝘢𝘭𝘪𝘤", "𝖇𝖔𝖑𝖉 𝖋𝖗𝖆𝖐𝖙𝖚𝖗", "sᴍᴀʟʟ ᴄᴀᴘs", "s̶t̶r̶i̶k̶e̶", "u̲n̲d̲e̲r̲l̲i̲n̲e̲", "ⓒⓘⓡⓒⓛⓔⓓ", "ɿoɿɿiM", "☺Smile☺")
+STYLE_KEYS = (
+    "leet", "alternating", "fullwidth", "vaporwave", "upside_down", "script", "bold", "squared", "gothic",
+    "double_struck", "monospace", "italic", "bold_fraktur", "small_caps", "strikethrough", "underline",
+    "circled", "mirrored", "smiley", "bubbles", "superscript", "subscript", "morse", "mixed",
+    "double_underline", "overline", "dotted", "wavy", "slashed", "translit",
+)
+assert len(STYLE_KEYS) == TEXT_STYLE_COUNT
+
+TEXT_STYLE_ITEMS = ("L33T", "aLtErNaTiNg", "Ｆｕｌｌｗｉｄｔｈ", "Ｖ ａ ｐ ｏ ｒ", "uʍop ǝpısdn", "𝓯𝓪𝓷𝓬𝔂", "𝐛𝐨𝐥𝐝", "🅲🅸🆁🅲🅻🅴🅳", "𝔊𝔬𝔱𝔥𝔦𝔠", "𝕕𝕠𝕦𝕓𝕝𝕖-𝕤𝕥𝕣𝕦𝕔𝕜", "𝙼𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎", "𝘪𝘵𝘢𝘭𝘪𝘤", "𝖇𝖔𝖑𝖉 𝖋𝖗𝖆𝖐𝖙𝖚𝖗", "sᴍᴀʟʟ ᴄᴀᴘs", "s̶t̶r̶i̶k̶e̶", "u̲n̲d̲e̲r̲l̲i̲n̲e̲", "ⓒⓘⓡⓒⓛⓔⓓ", "ɿoɿɿiM", "☺Smile☺", "🅑🅤🅑🅑🅛🅔", "ˢᵘᵖᵉʳ", "ₐₛᵤₑₐ", "Morse -- --- .-. ... .", "mIxEd 𝓼𝓽𝔶𝓵𝓮", "d̳o̳u̳b̳l̳e̳", "o̅v̅e̅r̅", "ḍọṭṣ", "w̰a̰v̰y̰", "s̸l̸a̸s̸h̸", "Translit")
 
 _LEET_DIGITS = (
     ("3", "EЕЁЄ"),
@@ -2251,7 +2344,6 @@ def _gothic_char(char: str) -> str:
 _DOUBLE_STRUCK_EXCEPTIONS = {"C": "ℂ", "H": "ℍ", "N": "ℕ", "P": "ℙ", "Q": "ℚ", "R": "ℝ", "Z": "ℤ"}
 _ITALIC_EXCEPTIONS = {"h": "ℎ"}
 _SMALL_CAPS = dict(zip("abcdefghijklmnopqrstuvwxyz", "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ"))
-RANDOM_STYLE_POOL = tuple(style for style in range(TEXT_STYLE_COUNT) if style not in (STYLE_UPSIDE_DOWN, STYLE_MIRRORED))
 
 
 def _small_caps_char(char: str) -> str:
@@ -2264,10 +2356,148 @@ def _combine_char(char: str, mark: str) -> str:
     return char
 
 
-def _style_atoms(text: str, style: int) -> List[Tuple[str, str]]:
+_TRANSLIT_BASE = {
+    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "yo", "ж": "zh", "з": "z",
+    "и": "i", "й": "y", "к": "k", "л": "l", "м": "m", "н": "n", "о": "o", "п": "p", "р": "r",
+    "с": "s", "т": "t", "у": "u", "ф": "f", "х": "kh", "ц": "ts", "ч": "ch", "ш": "sh",
+    "щ": "shch", "ъ": "", "ы": "y", "ь": "", "э": "e", "ю": "yu", "я": "ya",
+    "і": "i", "ї": "yi", "є": "ye", "ґ": "g",
+}
+
+
+def _translit_char(char: str) -> Optional[str]:
+    latin = _TRANSLIT_BASE.get(char.lower())
+    if latin is None:
+        return None
+    return latin.capitalize() if char != char.lower() else latin
+
+
+_MORSE = {
+    "A": ".-", "B": "-...", "C": "-.-.", "D": "-..", "E": ".", "F": "..-.", "G": "--.", "H": "....",
+    "I": "..", "J": ".---", "K": "-.-", "L": ".-..", "M": "--", "N": "-.", "O": "---", "P": ".--.",
+    "Q": "--.-", "R": ".-.", "S": "...", "T": "-", "U": "..-", "V": "...-", "W": ".--", "X": "-..-",
+    "Y": "-.--", "Z": "--..",
+    "0": "-----", "1": ".----", "2": "..---", "3": "...--", "4": "....-", "5": ".....",
+    "6": "-....", "7": "--...", "8": "---..", "9": "----.",
+    ".": ".-.-.-", ",": "--..--", "?": "..--..", "!": "-.-.--", "/": "-..-.", ":": "---...",
+    "-": "-....-", "(": "-.--.", ")": "-.--.-", "'": ".----.", "\"": ".-..-.", "=": "-...-",
+    "+": ".-.-.", "@": ".--.-.",
+    "А": ".-", "Б": "-...", "В": ".--", "Г": "--.", "Д": "-..", "Е": ".", "Ё": ".", "Ж": "...-",
+    "З": "--..", "И": "..", "Й": ".---", "К": "-.-", "Л": ".-..", "М": "--", "Н": "-.", "О": "---",
+    "П": ".--.", "Р": ".-.", "С": "...", "Т": "-", "У": "..-", "Ф": "..-.", "Х": "....", "Ц": "-.-.",
+    "Ч": "---.", "Ш": "----", "Щ": "--.-", "Ъ": "-..-", "Ы": "-.--", "Ь": "-..-", "Э": "..-..",
+    "Ю": "..--", "Я": ".-.-", "І": "..", "Ї": ".---.", "Є": "..-..", "Ґ": "--.",
+}
+
+_COMBINING_MARKS = {
+    STYLE_STRIKETHROUGH: "\u0336",
+    STYLE_UNDERLINE: "\u0332",
+    STYLE_DOUBLE_UNDERLINE: "\u0333",
+    STYLE_OVERLINE: "\u0305",
+    STYLE_DOTTED: "\u0323",
+    STYLE_WAVY: "\u0330",
+    STYLE_SLASHED: "\u0338",
+}
+_CYRILLIC_STYLES = frozenset({
+    STYLE_LEET, STYLE_ALTERNATING, STYLE_MIRRORED, STYLE_SMILEY, STYLE_MORSE, STYLE_TRANSLIT, STYLE_MIXED,
+    *_COMBINING_MARKS,
+})
+_MIXED_EXCLUDED = frozenset({
+    STYLE_UPSIDE_DOWN, STYLE_MIRRORED, STYLE_MORSE, STYLE_MIXED, STYLE_SUBSCRIPT, STYLE_TRANSLIT, STYLE_SMILEY,
+})
+_RANDOM_EXCLUDED = frozenset({
+    STYLE_UPSIDE_DOWN, STYLE_MIRRORED, STYLE_MORSE, STYLE_SUBSCRIPT, STYLE_TRANSLIT,
+})
+RANDOM_STYLE_POOL = tuple(style for style in range(TEXT_STYLE_COUNT) if style not in _RANDOM_EXCLUDED)
+
+
+def _build_script_map(letters: str, marks: str, upper: str = "", upper_marks: str = "", digits: str = "0123456789", digit_marks: str = "", extra: str = "", extra_marks: str = "") -> Dict[str, str]:
+    if len(letters) != len(marks) or len(upper) != len(upper_marks) or len(digits) != len(digit_marks) or len(extra) != len(extra_marks):
+        raise ValueError("script table length mismatch")
+    table = dict(zip(letters, marks))
+    table.update(zip(upper, upper_marks))
+    table.update(zip(digits, digit_marks))
+    table.update(zip(extra, extra_marks))
+    return table
+
+
+_SUPERSCRIPT = _build_script_map(
+    "abcdefghijklmnoprstuvwxyz", "\u1d43\u1d47\u1d9c\u1d48\u1d49\u1da0\u1d4d\u02b0\u2071\u02b2\u1d4f\u02e1\u1d50\u207f\u1d52\u1d56\u02b3\u02e2\u1d57\u1d58\u1d5b\u02b7\u02e3\u02b8\u1dbb",
+    "ABDEGHIJKLMNOPRTUVW", "\u1d2c\u1d2e\u1d30\u1d31\u1d33\u1d34\u1d35\u1d36\u1d37\u1d38\u1d39\u1d3a\u1d3c\u1d3e\u1d3f\u1d40\u1d41\u2c7d\u1d42",
+    "0123456789", "\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079",
+    "+-=()", "\u207a\u207b\u207c\u207d\u207e",
+)
+for _upper in "CFSXYZ":
+    _SUPERSCRIPT[_upper] = _SUPERSCRIPT[_upper.lower()]
+_SUBSCRIPT = _build_script_map(
+    "aehijklmnoprstuvx", "\u2090\u2091\u2095\u1d62\u2c7c\u2096\u2097\u2098\u2099\u2092\u209a\u1d63\u209b\u209c\u1d64\u1d65\u2093",
+    "", "",
+    "0123456789", "\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089",
+    "+-=()", "\u208a\u208b\u208c\u208d\u208e",
+)
+for _upper in "AEHIJKLMNOPRSTUVX":
+    _SUBSCRIPT[_upper] = _SUBSCRIPT[_upper.lower()]
+
+
+def _bubble_char(char: str) -> str:
+    if char.isascii() and char.isalpha():
+        return chr(0x1F150 + ord(char.upper()) - 65)
+    if "1" <= char <= "9":
+        return chr(0x2776 + ord(char) - 49)
+    if char == "0":
+        return "\u24FF"
+    return char
+
+
+def _stateless_style(char: str, style: int) -> str:
+    if style == STYLE_FULLWIDTH:
+        return _fullwidth_char(char)
+    if style == STYLE_UPSIDE_DOWN:
+        return _FLIP_TABLE.get(char, char)
+    if style == STYLE_SCRIPT:
+        return _math_alphabet(char, 0x1D4D0, 0x1D4EA)
+    if style == STYLE_BOLD:
+        return _math_alphabet(char, 0x1D400, 0x1D41A, 0x1D7CE)
+    if style == STYLE_SQUARED:
+        return chr(0x1F170 + ord(char.upper()) - 65) if char.isascii() and char.isalpha() else char
+    if style == STYLE_GOTHIC:
+        return _gothic_char(char)
+    if style == STYLE_DOUBLE_STRUCK:
+        return _DOUBLE_STRUCK_EXCEPTIONS.get(char, _math_alphabet(char, 0x1D538, 0x1D552, 0x1D7D8))
+    if style == STYLE_MONOSPACE:
+        return _math_alphabet(char, 0x1D670, 0x1D68A, 0x1D7F6)
+    if style == STYLE_ITALIC:
+        return _ITALIC_EXCEPTIONS.get(char) or _math_alphabet(char, 0x1D434, 0x1D44E)
+    if style == STYLE_BOLD_FRAKTUR:
+        return _math_alphabet(char, 0x1D56C, 0x1D586)
+    if style == STYLE_SMALL_CAPS:
+        return _small_caps_char(char)
+    if style == STYLE_CIRCLED:
+        if "A" <= char <= "Z":
+            return chr(0x24B6 + ord(char) - 65)
+        if "a" <= char <= "z":
+            return chr(0x24D0 + ord(char) - 97)
+        if "1" <= char <= "9":
+            return chr(0x2460 + ord(char) - 49)
+        if char == "0":
+            return "\u24EA"
+        return char
+    if style == STYLE_BUBBLES:
+        return _bubble_char(char)
+    if style == STYLE_SUPERSCRIPT:
+        return _SUPERSCRIPT.get(char, char)
+    if style == STYLE_SUBSCRIPT:
+        return _SUBSCRIPT.get(char, char)
+    return char
+
+
+def _style_atoms_full(text: str, style: int, translit: bool = False) -> List[Tuple[str, str]]:
+    if style == STYLE_MIXED:
+        return _mixed_atoms(text, translit)
     protected = {match.start(): match.end() for match in _PLACEHOLDER_RE.finditer(text)}
     atoms: List[Tuple[str, str]] = []
     upper = False
+    convert = style == STYLE_TRANSLIT or (translit and style not in _CYRILLIC_STYLES)
     index, size = 0, len(text)
     while index < size:
         end = protected.get(index)
@@ -2277,52 +2507,37 @@ def _style_atoms(text: str, style: int) -> List[Tuple[str, str]]:
             continue
         char = text[index]
         out = char
-        if style == STYLE_LEET:
+        latin = _translit_char(char) if convert else None
+        if latin is not None:
+            if style == STYLE_TRANSLIT:
+                out = latin
+            elif style == STYLE_VAPORWAVE:
+                out = "".join(_fullwidth_char(c) for c in latin)
+                following = text[index + 1:index + 2]
+                if latin and following and not following.isspace():
+                    out += " "
+            else:
+                out = "".join(_stateless_style(c, style) for c in latin)
+        elif style == STYLE_LEET:
             out = _leet_char(char)
         elif style == STYLE_ALTERNATING:
             if char.isalpha():
                 out = char.upper() if upper else char.lower()
                 upper = not upper
-        elif style == STYLE_FULLWIDTH:
-            out = _fullwidth_char(char)
         elif style == STYLE_VAPORWAVE:
             out = _fullwidth_char(char)
             following = text[index + 1:index + 2]
             if not char.isspace() and following and not following.isspace():
                 out += " "
-        elif style == STYLE_UPSIDE_DOWN:
-            out = _FLIP_TABLE.get(char, char)
-        elif style == STYLE_SCRIPT:
-            out = _math_alphabet(char, 0x1D4D0, 0x1D4EA)
-        elif style == STYLE_BOLD:
-            out = _math_alphabet(char, 0x1D400, 0x1D41A, 0x1D7CE)
-        elif style == STYLE_SQUARED and char.isascii() and char.isalpha():
-            out = chr(0x1F170 + ord(char.upper()) - 65)
-        elif style == STYLE_GOTHIC:
-            out = _gothic_char(char)
-        elif style == STYLE_DOUBLE_STRUCK:
-            out = _DOUBLE_STRUCK_EXCEPTIONS.get(char, _math_alphabet(char, 0x1D538, 0x1D552, 0x1D7D8))
-        elif style == STYLE_MONOSPACE:
-            out = _math_alphabet(char, 0x1D670, 0x1D68A, 0x1D7F6)
-        elif style == STYLE_ITALIC:
-            out = _ITALIC_EXCEPTIONS.get(char) or _math_alphabet(char, 0x1D434, 0x1D44E)
-        elif style == STYLE_BOLD_FRAKTUR:
-            out = _math_alphabet(char, 0x1D56C, 0x1D586)
-        elif style == STYLE_SMALL_CAPS:
-            out = _small_caps_char(char)
-        elif style == STYLE_STRIKETHROUGH:
-            out = _combine_char(char, "\u0336")
-        elif style == STYLE_UNDERLINE:
-            out = _combine_char(char, "\u0332")
-        elif style == STYLE_CIRCLED:
-            if "A" <= char <= "Z":
-                out = chr(0x24B6 + ord(char) - 65)
-            elif "a" <= char <= "z":
-                out = chr(0x24D0 + ord(char) - 97)
-            elif "1" <= char <= "9":
-                out = chr(0x2460 + ord(char) - 49)
-            elif char == "0":
-                out = "\u24EA"
+        elif style in _COMBINING_MARKS:
+            out = _combine_char(char, _COMBINING_MARKS[style])
+        elif style == STYLE_MORSE:
+            code = _MORSE.get(char.upper())
+            if code is not None:
+                following = text[index + 1:index + 2]
+                out = code + (" " if following and following.upper() in _MORSE else "")
+            elif char == " ":
+                out = " / "
         elif style == STYLE_MIRRORED:
             out = _MIRROR_TABLE.get(char, char)
         elif style == STYLE_SMILEY:
@@ -2332,8 +2547,45 @@ def _style_atoms(text: str, style: int) -> List[Tuple[str, str]]:
                 opens = not before or before.isspace() or before == "\uE001"
                 closes = not after or after.isspace() or after == "\uE000"
                 out = ("\u263A" if opens else "") + char + ("\u263A" if closes else "")
+        else:
+            out = _stateless_style(char, style)
         atoms.append((char, out))
         index += 1
+    return atoms
+
+
+def _mixed_atoms(text: str, translit: bool) -> List[Tuple[str, str]]:
+    pool = [s for s in available_styles() if s not in _MIXED_EXCLUDED] or [STYLE_BOLD]
+    atoms: List[Tuple[str, str]] = []
+    word_index = 0
+    for part in re.split(r"(\s+)", text):
+        if not part:
+            continue
+        if part.isspace():
+            atoms.extend((c, c) for c in part)
+            continue
+        pick = pool[(word_index + zlib.crc32(part.casefold().encode("utf-8"))) % len(pool)]
+        word_index += 1
+        atoms.extend(_style_atoms_full(part, pick, translit))
+    return atoms
+
+
+_STYLE_WORD_RE = re.compile("(\uE000\\d+\uE001|\\w+)")
+
+
+def _style_atoms(text: str, style: int, translit: bool = False, only=None) -> List[Tuple[str, str]]:
+    if not only:
+        return _style_atoms_full(text, style, translit)
+    atoms: List[Tuple[str, str]] = []
+    for part in _STYLE_WORD_RE.split(text):
+        if not part:
+            continue
+        if _PLACEHOLDER_RE.fullmatch(part):
+            atoms.append((part, part))
+        elif part.casefold() in only:
+            atoms.extend(_style_atoms_full(part, style, translit))
+        else:
+            atoms.extend((c, c) for c in part)
     return atoms
 
 
@@ -2356,10 +2608,10 @@ def _output_order(atoms: List[Tuple[str, str]], style: int) -> List[int]:
     return order
 
 
-def apply_text_style(text: str, style: int) -> str:
+def apply_text_style(text: str, style: int, translit: bool = False, only=None) -> str:
     if not text or not 0 <= style < TEXT_STYLE_COUNT:
         return text
-    atoms = _style_atoms(text, style)
+    atoms = _style_atoms(text, style, translit, only)
     return "".join(atoms[index][1] for index in _output_order(atoms, style))
 
 
@@ -2846,6 +3098,10 @@ FEATURE_FLAGS: Dict[str, bool] = {
     "lang_de": True,
     "lang_uk": True,
 }
+FEATURE_FLAGS.update({"style_" + _key: True for _key in STYLE_KEYS})
+MASK_TAG_NAMES = ("date", "time", "datetime", "time12", "chat", "id", "weekday", "weekday_short", "year", "year_short", "month", "monthname", "day", "week", "yearday", "hour", "minute", "second", "ampm", "daypart", "timestamp", "tz", "chattype", "username", "count", "dice", "random_emoji", "emoji", "reply", "chatcount", "battery", "moon", "line", "since", "until")
+FEATURE_FLAGS.update({"tag_" + _tag: True for _tag in MASK_TAG_NAMES})
+FEATURE_FLAGS.update({"md_bold": True, "md_italic": True, "md_strike": True, "md_spoiler": True, "md_mono": True, "md_quote": True})
 _FLAG_NAME_RE = re.compile(r"[a-z][a-z0-9_]{0,31}")
 
 
@@ -2914,6 +3170,60 @@ class FeatureFlags:
 
 FEATURES = FeatureFlags(FEATURE_FLAGS)
 
+MD_FLAG_BY_KIND = {
+    "Bold": "md_bold", "Italic": "md_italic", "Strike": "md_strike", "Spoiler": "md_spoiler",
+    "Code": "md_mono", "Pre": "md_mono", "Blockquote": "md_quote",
+}
+MARKDOWN_PICKS = (
+    (0, "md_manual", None), (2, "md_bold", "md_bold"), (3, "md_italic", "md_italic"),
+    (4, "md_strike", "md_strike"), (5, "md_spoiler", "md_spoiler"), (6, "md_mono", "md_mono"),
+    (7, "md_quote", "md_quote"),
+)
+
+
+_HINT_TAG_RE = re.compile(r"\[([a-z0-9_]+)(?::[^\]]*)?\]")
+
+
+def _hint_tag_on(match) -> bool:
+    return FEATURES.on("tag_" + match.group(1))
+
+
+def filter_tags_hint(text: str) -> str:
+    text = as_text(text)
+    if all(FEATURES.on("tag_" + name) for name in MASK_TAG_NAMES):
+        return text
+    head, _, more = text.partition("\n")
+    tokens = list(_HINT_TAG_RE.finditer(head))
+    if not tokens:
+        return text
+    kept = [token.group(0) for token in tokens if _hint_tag_on(token)]
+    ending = head.rstrip()[-1:] if head.rstrip()[-1:] in (".", "。") else ""
+    new_head = head[:tokens[0].start()] + ", ".join(kept) + ending if kept else ""
+    clauses = [
+        clause for clause in more.split("; ")
+        if clause and (not _HINT_TAG_RE.search(clause) or any(_hint_tag_on(m) for m in _HINT_TAG_RE.finditer(clause)))
+    ]
+    more_ending = "." if more.rstrip().endswith((".", "。")) else ""
+    new_more = "; ".join(clause.rstrip(".。 ") for clause in clauses) + more_ending if clauses else ""
+    return "\n".join(part for part in (new_head, new_more) if part)
+
+
+def md_kind_enabled(kind) -> bool:
+    flag = MD_FLAG_BY_KIND.get(kind)
+    return flag is None or FEATURES.on(flag)
+
+
+def style_available(style) -> bool:
+    return _is_int(style) and 0 <= style < TEXT_STYLE_COUNT and FEATURES.on("style_" + STYLE_KEYS[style])
+
+
+def available_styles() -> List[int]:
+    return [style for style in range(TEXT_STYLE_COUNT) if style_available(style)]
+
+
+def random_style_pool() -> Tuple[int, ...]:
+    return tuple(style for style in available_styles() if style not in _RANDOM_EXCLUDED)
+
 
 def language_enabled(code) -> bool:
     """English is the mandatory base pack; every other pack can be switched off remotely."""
@@ -2934,7 +3244,7 @@ class RuntimeSettings:
         "language", "chat_scope_enabled", "process_message", "process_media", "process_edit",
         "process_edit_message", "process_edit_media", "skip_once_on_edit",
         "mask", "mask_parts", "mask_link", "markdown_enabled", "markdown_style", "markdown_wrap", "text_style_enabled", "text_style",
-        "text_style_random", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "regex_exceptions", "conditional_rules", "chat_type_rules",
+        "text_style_random", "text_style_translit", "style_only", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "regex_exceptions", "conditional_rules", "chat_type_rules",
         "separator_enabled", "separators", "separator_count",
         "exceptions", "ignore_special", "ignore_emoji_only", "disabled_chats",
         "media_enabled", "media_path", "media_name", "media_mime", "raw",
@@ -2957,11 +3267,15 @@ class RuntimeSettings:
         style = clamp_int(get("markdown_style"), 0, 0, MARKDOWN_STYLE_COUNT - 1)
         self.markdown_enabled = bool(get("markdown_enabled")) and style != 1 and FEATURES.on("markdown")
         self.markdown_style = 0 if style == 1 else style
-        self.markdown_wrap = MARKDOWN_WRAP_KINDS.get(self.markdown_style) if self.markdown_enabled else None
+        wrap_kind = MARKDOWN_WRAP_KINDS.get(self.markdown_style) if self.markdown_enabled else None
+        self.markdown_wrap = wrap_kind if wrap_kind and md_kind_enabled(wrap_kind) else None
         self.mask = as_text(get("mask"))
-        self.text_style_enabled = bool(get("text_style_enabled")) and FEATURES.on("text_styles")
         self.text_style = clamp_int(get("text_style"), 0, 0, TEXT_STYLE_COUNT - 1)
         self.text_style_random = bool(get("text_style_random"))
+        style_ok = bool(random_style_pool()) if self.text_style_random else style_available(self.text_style)
+        self.text_style_enabled = bool(get("text_style_enabled")) and FEATURES.on("text_styles") and style_ok
+        self.text_style_translit = bool(get("text_style_translit"))
+        self.style_only = frozenset(word.casefold() for word in parse_lines(get("style_words"))[:MAX_STYLE_WORDS])
         self.mask_rotation_enabled = bool(get("mask_rotation_enabled")) and FEATURES.on("mask_rotation")
         self.masks_list = [item.strip() for item in as_text(get("masks_list")).splitlines() if item.strip() and is_valid_mask(item.strip())][:MAX_MASKS_IN_LIST]
         self.mask_rotation_mode = clamp_int(get("mask_rotation_mode"), 0, 0, 1)
@@ -3096,6 +3410,8 @@ class MaskTransformation(Transformation):
         self.link_id: Optional[int] = None
         self.text_style_enabled = settings.text_style_enabled
         self.text_style = settings.text_style
+        self.text_style_translit = settings.text_style_translit
+        self.style_only = settings.style_only
         self.wrap_id: Optional[int] = None
         compiled = compile_mask_markdown(settings.mask, parse_markdown=settings.markdown_enabled)
         if compiled is not None:
@@ -3128,7 +3444,7 @@ class MaskTransformation(Transformation):
         prefix = "" if has_left else self.left
         suffix = "" if has_right else self.right
         if self.text_style_enabled:
-            text = apply_text_style(text, self.text_style)
+            text = apply_text_style(text, self.text_style, self.text_style_translit, self.style_only)
         if self.table:
             body = _MD_BODY_START + text + _MD_BODY_END
             if self.link_id is not None:
@@ -3262,6 +3578,8 @@ class TransformationPipeline:
         self.transformations: List[Transformation] = []
         self.markdown_table: List[Tuple[str, str]] = []
         self.text_style = settings.text_style
+        self.text_style_translit = settings.text_style_translit
+        self.style_only = settings.style_only
         self.styling = False
         self._prepared_memo = None
         self._layout_memo = None
@@ -3306,7 +3624,7 @@ class TransformationPipeline:
             return None
         protected, spans = prepared
         atoms = []
-        for source, result in _style_atoms(protected, self.text_style):
+        for source, result in _style_atoms(protected, self.text_style, self.text_style_translit, self.style_only):
             marker = _PLACEHOLDER_RE.fullmatch(source)
             if marker is not None and int(marker.group(1)) < len(spans):
                 source = result = spans[int(marker.group(1))]
@@ -3486,7 +3804,7 @@ def _md_parse(src: str):
             j = i
             while j < n and src[j] == ch:
                 j += 1
-            if j - i != 2:
+            if j - i != 2 or not md_kind_enabled(_MD_KINDS.get(ch * 2)):
                 buf.append(src[i:j])
                 i = j
                 continue
@@ -3523,7 +3841,7 @@ def _md_parse(src: str):
             while j < n and src[j] == "`":
                 j += 1
             span = _md_code_span(src, i, j)
-            if span is None:
+            if span is None or not md_kind_enabled(span[0].kind):
                 buf.append(src[i:j])
                 i = j
             else:
@@ -4171,7 +4489,7 @@ COMPONENT_ALIASES = {
 }
 COMPONENT_KEYS = {
     "language": ("language",),
-    "mask": ("mask", "markdown_enabled", "markdown_style", "text_style_enabled", "text_style", "text_style_random", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "conditional_masks"),
+    "mask": ("mask", "markdown_enabled", "markdown_style", "text_style_enabled", "text_style", "text_style_random", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "conditional_masks", "text_style_translit", "style_words", "tag_lines"),
     "separator": ("separator_enabled", "custom_emojis", "emoji_count"),
     "exceptions": ("exceptions", "ignore_special", "ignore_emoji_only", "disabled_chats", "chat_scope_enabled", "regex_exceptions", "chat_type_rules"),
     "media": ("attached_media_enabled", "attached_media_path", "attached_media_name", "attached_media_mime"),
@@ -4271,6 +4589,11 @@ def validate_component(component: str, section: dict) -> bool:
             return False
         if "conditional_masks" in section and not isinstance(section["conditional_masks"], str):
             return False
+        if "text_style_translit" in section and not isinstance(section["text_style_translit"], bool):
+            return False
+        for text_key in ("style_words", "tag_lines"):
+            if text_key in section and not isinstance(section[text_key], str):
+                return False
         if "mask_rotation_mode" in section and (not _is_int(section["mask_rotation_mode"]) or section["mask_rotation_mode"] not in (0, 1)):
             return False
         return True
@@ -4824,7 +5147,7 @@ class ConfigTransfer:
             params["text_style_enabled"], params["text_style"] = style["enabled"], style["value"]
         for key in ("mask", "markdown_style", "markdown_enabled", "text_style_enabled", "text_style"):
             self.settings.set(key, params[key])
-        for key in ("text_style_random", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "conditional_masks"):
+        for key in ("text_style_random", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "conditional_masks", "text_style_translit", "style_words", "tag_lines"):
             if key in section:
                 self.settings.set(key, section[key])
 
@@ -4899,6 +5222,9 @@ class ConfigTransfer:
                 "masks_list": as_text(s.get("masks_list")),
                 "mask_rotation_mode": clamp_int(s.get("mask_rotation_mode"), 0, 0, 1),
                 "conditional_masks": as_text(s.get("conditional_masks")),
+                "text_style_translit": bool(s.get("text_style_translit")),
+                "style_words": as_text(s.get("style_words")),
+                "tag_lines": as_text(s.get("tag_lines")),
             }
         if "separator" in components:
             data["separator"] = {
@@ -7022,6 +7348,7 @@ class PrefixfyPlugin(BasePlugin):
 
 
     MARKDOWN_PICK_KEY = "Prefixfy_markdown_style_pick"
+    STYLE_PICK_KEY = "Prefixfy_text_style_pick"
     LANGUAGE_RELOAD_DELAY_MS = 280
 
     def _bool_handler(self, key, reload_settings=False):
@@ -7116,10 +7443,13 @@ class PrefixfyPlugin(BasePlugin):
 
         self.show_text_dialog(
             self._tr("mask_editor_title"), save,
-            message=self._with_emoji_hint(self._tr('mask_tags_hint')),
+            message=self._with_emoji_hint(self._tags_hint()),
             text=as_text(self.settings.get("mask")) or MASK_PLACEHOLDER,
             hint=self._tr("mask_editor_hint"), multiline=True,
         )
+
+    def _tags_hint(self) -> str:
+        return filter_tags_hint(self._tr("mask_tags_hint"))
 
     def _with_emoji_hint(self, text: str, first: bool = False) -> str:
         if not FEATURES.on("premium_emoji"):
@@ -7154,7 +7484,7 @@ class PrefixfyPlugin(BasePlugin):
 
         self.show_text_dialog(
             self._tr("masks_list"), save,
-            message=f"{self._tr('masks_list_hint')}\n\n{self._tr('mask_tags_hint')}",
+            message=f"{self._tr('masks_list_hint')}\n\n{self._tags_hint()}".rstrip(),
             text="\n".join(parse_lines(self.settings.get("masks_list"))), multiline=True,
         )
 
@@ -7183,7 +7513,7 @@ class PrefixfyPlugin(BasePlugin):
 
         self.show_text_dialog(
             self._tr("conditional_masks"), save,
-            message=f"{self._tr('conditional_masks_hint')}\n\n{self._tr('mask_tags_hint')}",
+            message=f"{self._tr('conditional_masks_hint')}\n\n{self._tags_hint()}".rstrip(),
             text=as_text(self.settings.get("conditional_masks")), hint="(?i)hello => 👋 [text]", multiline=True,
         )
 
@@ -7236,12 +7566,48 @@ class PrefixfyPlugin(BasePlugin):
         return ", ".join(self._tr(f"chat_type_{kind}") for kind in CHAT_KINDS if kind in kinds)
 
     def _on_markdown_style_change(self, index):
-        if _is_int(index) and 0 <= index < len(MARKDOWN_STYLE_VALUES):
-            self.settings.set("markdown_style", MARKDOWN_STYLE_VALUES[index], reload_settings=True)
+        values = getattr(self, "_markdown_pick_values", None) or list(MARKDOWN_STYLE_VALUES)
+        if _is_int(index) and 0 <= index < len(values):
+            self.settings.set("markdown_style", values[index], reload_settings=True)
 
     def _on_text_style_change(self, index):
-        if _is_int(index) and 0 <= index < TEXT_STYLE_COUNT:
-            self.settings.set("text_style", index, reload_settings=True)
+        values = getattr(self, "_style_pick_values", None) or list(range(TEXT_STYLE_COUNT))
+        if _is_int(index) and 0 <= index < len(values):
+            self.settings.set("text_style", values[index], reload_settings=True)
+
+    def _show_style_words_editor(self, view=None):
+        def save(value, editor):
+            words = list(parse_lines(value))
+            if len(words) > MAX_STYLE_WORDS:
+                editor.setError(self._tr("style_words_limit", n=MAX_STYLE_WORDS))
+                return False
+            self.settings.set("style_words", "\n".join(words), reload_settings=True)
+
+        self.show_text_dialog(
+            self._tr("style_words"), save, message=self._tr("style_words_hint"),
+            text="\n".join(parse_lines(self.settings.get("style_words"))), multiline=True,
+        )
+
+    def _style_words_subtext(self) -> str:
+        count = len(parse_lines(self.settings.get("style_words")))
+        return self._tr("style_words_count", n=count) if count else self._tr("style_words_empty")
+
+    def _show_tag_lines_editor(self, view=None):
+        def save(value, editor):
+            lines = list(parse_lines(value))
+            if len(lines) > MAX_TAG_LINES:
+                editor.setError(self._tr("tag_lines_limit", n=MAX_TAG_LINES))
+                return False
+            self.settings.set("tag_lines", "\n".join(lines), reload_settings=True)
+
+        self.show_text_dialog(
+            self._tr("tag_lines"), save, message=self._tr("tag_lines_hint"),
+            text="\n".join(parse_lines(self.settings.get("tag_lines"))), multiline=True,
+        )
+
+    def _tag_lines_subtext(self) -> str:
+        count = len(parse_lines(self.settings.get("tag_lines")))
+        return self._tr("tag_lines_count", n=count) if count else self._tr("tag_lines_empty")
 
     def _show_exceptions_editor(self, view=None):
         def save(value, editor):
@@ -7261,7 +7627,11 @@ class PrefixfyPlugin(BasePlugin):
         markdown = self.settings.markdown_enabled()
         sample = self._tr("mask_preview_sample")
         if self.settings.get("text_style_enabled"):
-            sample = apply_text_style(sample, clamp_int(self.settings.get("text_style"), 0, 0, TEXT_STYLE_COUNT - 1))
+            preview_settings = RuntimeSettings(self.settings.raw())
+            sample = apply_text_style(
+                sample, clamp_int(self.settings.get("text_style"), 0, 0, TEXT_STYLE_COUNT - 1),
+                preview_settings.text_style_translit, preview_settings.style_only,
+            )
         parts = split_mask(mask)
         if parts is None:
             return self._tr("mask_preview_invalid")
@@ -7351,11 +7721,16 @@ class PrefixfyPlugin(BasePlugin):
         ]
         if FEATURES.on("conditional_masks"):
             items.append(Text(text=tr("conditional_masks"), subtext=self._conditional_masks_subtext(), icon=self._icon("msg_filter", "msg_settings"), on_click=self._show_conditional_masks_editor))
+        if FEATURES.on("tag_line"):
+            items.append(Text(text=tr("tag_lines"), subtext=self._tag_lines_subtext(), icon="msg_edit", on_click=self._show_tag_lines_editor))
         markdown_on = FEATURES.on("markdown")
         if markdown_on:
             items.append(self._switch("markdown_enabled", tr("markdown_style"), tr("markdown_style_subtext"), "msg_text", True))
         if markdown_on and self.settings.markdown_enabled():
-            pick_index = MARKDOWN_STYLE_VALUES.index(self.settings.markdown_style_value())
+            picks = [(value, key) for value, key, flag in MARKDOWN_PICKS if flag is None or FEATURES.on(flag)]
+            self._markdown_pick_values = [value for value, _ in picks]
+            current_markdown = self.settings.markdown_style_value()
+            pick_index = self._markdown_pick_values.index(current_markdown) if current_markdown in self._markdown_pick_values else 0
             try:
                 self.set_setting(self.MARKDOWN_PICK_KEY, pick_index)
             except Exception as exc:
@@ -7363,7 +7738,7 @@ class PrefixfyPlugin(BasePlugin):
             items.append(Selector(
                 key=self.MARKDOWN_PICK_KEY, text=tr("markdown_style_pick"),
                 default=pick_index,
-                items=[tr(key) for key in ("md_manual", "md_bold", "md_italic", "md_strike", "md_spoiler", "md_mono", "md_quote")],
+                items=[tr(key) for _, key in picks],
                 icon="msg_text", on_change=self._on_markdown_style_change,
             ))
         rotation_on = FEATURES.on("mask_rotation")
@@ -7391,12 +7766,22 @@ class PrefixfyPlugin(BasePlugin):
         ]
         if self.settings.get("text_style_enabled"):
             items.append(self._switch("text_style_random", tr("random_style"), tr("random_style_subtext"), "msg_palette", True))
-            if not self.settings.get("text_style_random"):
+            values = available_styles()
+            if not self.settings.get("text_style_random") and values:
+                self._style_pick_values = values
+                current_style = clamp_int(self.settings.get("text_style"), 0, 0, TEXT_STYLE_COUNT - 1)
+                pick_index = values.index(current_style) if current_style in values else 0
+                try:
+                    self.set_setting(self.STYLE_PICK_KEY, pick_index)
+                except Exception as exc:
+                    self.log(f"Prefixfy style widget state failed: {exc}")
                 items.append(Selector(
-                    key="text_style", text=tr("text_style"),
-                    default=clamp_int(self.settings.get("text_style"), 0, 0, TEXT_STYLE_COUNT - 1),
-                    items=list(TEXT_STYLE_ITEMS), icon="msg_palette", on_change=self._on_text_style_change,
+                    key=self.STYLE_PICK_KEY, text=tr("text_style"), default=pick_index,
+                    items=[TEXT_STYLE_ITEMS[style] for style in values], icon="msg_palette",
+                    on_change=self._on_text_style_change,
                 ))
+            items.append(self._switch("text_style_translit", tr("style_translit"), tr("style_translit_subtext"), "msg_text", True))
+            items.append(Text(text=tr("style_words"), subtext=self._style_words_subtext(), icon="msg_edit", on_click=self._show_style_words_editor))
         return items
 
     def _settings_separator(self) -> List[Any]:
@@ -7570,6 +7955,7 @@ class PrefixfyPlugin(BasePlugin):
     _rotation_lock = threading.Lock()
     _counter_lock = threading.Lock()
     _count_used = False
+    _chat_count_key = None
 
     @classmethod
     def _params_have_media(cls, params) -> bool:
@@ -7914,17 +8300,95 @@ class PrefixfyPlugin(BasePlugin):
             return clamp_int(self.get_setting(COUNTER_KEY, 0), 0, 0, 10 ** 9) + 1
 
     def _commit_message_counter(self):
+        number = None
+        counts = None
         with self._counter_lock:
-            if not self._count_used:
-                return
+            used, chat_key = self._count_used, self._chat_count_key
             self._count_used = False
-            number = clamp_int(self.get_setting(COUNTER_KEY, 0), 0, 0, 10 ** 9) + 1
-        try:
-            self.set_setting(COUNTER_KEY, number)
-        except Exception as exc:
-            self.log(f"Prefixfy counter save failed: {exc}")
+            self._chat_count_key = None
+            if used:
+                number = clamp_int(self.get_setting(COUNTER_KEY, 0), 0, 0, 10 ** 9) + 1
+            if chat_key:
+                counts = self._chat_counts()
+                current = counts.pop(chat_key, 0)
+                counts[chat_key] = min(current + 1, 10 ** 9)
+                while len(counts) > MAX_CHAT_COUNTS:
+                    counts.pop(next(iter(counts)), None)
+        if number is not None:
+            try:
+                self.set_setting(COUNTER_KEY, number)
+            except Exception as exc:
+                self.log(f"Prefixfy counter save failed: {exc}")
+        if counts is not None:
+            try:
+                self.set_setting(CHAT_COUNTS_KEY, json.dumps(counts))
+            except Exception as exc:
+                self.log(f"Prefixfy chat counter save failed: {exc}")
 
-    def _expand_mask_tags(self, mask, account, dialog_id, preview: bool = False) -> str:
+    def _chat_counts(self) -> Dict[str, int]:
+        try:
+            data = json.loads(as_text(self.get_setting(CHAT_COUNTS_KEY, "")) or "{}")
+        except (ValueError, TypeError):
+            return {}
+        if not isinstance(data, dict):
+            return {}
+        return {str(key): value for key, value in data.items() if _is_int(value) and 0 <= value <= 10 ** 9}
+
+    def _chat_message_number(self, account, dialog_id) -> int:
+        if dialog_id is None:
+            return 1
+        key = f"{account}:{dialog_id}"
+        with self._counter_lock:
+            self._chat_count_key = key
+            return self._chat_counts().get(key, 0) + 1
+
+    def _reply_name(self, account, params) -> str:
+        try:
+            message = getattr(params, "replyToMsg", None)
+            if message is None:
+                return ""
+            owner = getattr(message, "messageOwner", None)
+            controller = find_class("org.telegram.messenger.MessagesController").getInstance(int(account))
+            boxed = find_class("java.lang.Long")
+            for field in ("from_id", "peer_id"):
+                peer = getattr(owner, field, None)
+                if peer is None:
+                    continue
+                user_id = java_int(getattr(peer, "user_id", 0)) or 0
+                if user_id:
+                    user = controller.getUser(boxed.valueOf(abs(int(user_id))))
+                    if user is not None:
+                        return as_text(find_class("org.telegram.messenger.UserObject").getUserName(user))
+                chat_id = java_int(getattr(peer, "channel_id", 0)) or java_int(getattr(peer, "chat_id", 0)) or 0
+                if chat_id:
+                    chat = controller.getChat(boxed.valueOf(abs(int(chat_id))))
+                    if chat is not None:
+                        return as_text(chat.title)
+        except Exception as exc:
+            self.log(f"Prefixfy reply name lookup failed: {exc}")
+        return ""
+
+    def _battery_text(self) -> str:
+        try:
+            from android.content import IntentFilter
+            context = find_class("org.telegram.messenger.ApplicationLoader").applicationContext
+            status = context.registerReceiver(None, IntentFilter("android.intent.action.BATTERY_CHANGED"))
+            if status is None:
+                return ""
+            level, scale = int(status.getIntExtra("level", -1)), int(status.getIntExtra("scale", -1))
+            if level >= 0 and scale > 0:
+                return f"{level * 100 // scale}%"
+        except Exception as exc:
+            self.log(f"Prefixfy battery lookup failed: {exc}")
+        return ""
+
+    def _random_line(self, preview: bool = False) -> str:
+        lines = parse_lines(self.settings.get("tag_lines"))[:MAX_TAG_LINES]
+        if not lines:
+            return "\u2026" if preview else ""
+        return lines[0] if preview else random.choice(lines)
+
+    def _expand_mask_tags(self, mask, account, dialog_id, preview: bool = False, params=None) -> str:
         mask = as_text(mask)
         if "[" not in mask or not MASK_TAG_RE.search(mask):
             return mask
@@ -7991,18 +8455,36 @@ class PrefixfyPlugin(BasePlugin):
                     raw = "1" if preview else str(self._message_number())
                 elif tag in ("random_emoji", "emoji"):
                     raw = random.choice(RANDOM_EMOJI)
+                elif tag == "reply":
+                    raw = "Name" if preview else self._reply_name(account, params)
+                elif tag == "chatcount":
+                    raw = "1" if preview else str(self._chat_message_number(account, dialog_id))
+                elif tag == "battery":
+                    raw = "100%" if preview else self._battery_text()
+                elif tag == "moon":
+                    raw = moon_phase_emoji()
+                elif tag == "line":
+                    raw = self._random_line(preview)
+                elif tag.startswith(("since:", "until:")):
+                    raw = days_tag_value(tag, now.date())
                 else:
                     raw = self._chat_title(account, dialog_id) or ("…" if preview else "")
                 values[tag] = sanitize_tag_value(raw)
             return values[tag]
 
-        return MASK_TAG_RE.sub(lambda match: value(match.group(1).lower()), mask)
+        def replace(match) -> str:
+            tag = match.group(1).lower()
+            flag = "tag_" + (tag.split(":", 1)[0] if tag.startswith(("since:", "until:")) else tag)
+            return value(tag) if FEATURES.on(flag) else match.group(0)
 
-    def _runtime_for_message(self, runtime, account: int, dialog_id, text: str = ""):
+        return MASK_TAG_RE.sub(replace, mask)
+
+    def _runtime_for_message(self, runtime, account: int, dialog_id, text: str = "", params=None):
         settings = runtime.settings
         mask = settings.mask
         rotation_next = None
         self._count_used = False
+        self._chat_count_key = None
         matched = None
         if text and settings.conditional_rules:
             sample = text[:REGEX_TEXT_LIMIT]
@@ -8020,11 +8502,13 @@ class PrefixfyPlugin(BasePlugin):
                 mask = masks[index]
                 rotation_next = (index + 1) % len(masks)
         volatile = MASK_TAG_RE.search(mask) is not None
-        mask = self._expand_mask_tags(mask, account, dialog_id)
+        mask = self._expand_mask_tags(mask, account, dialog_id, params=params)
         style = settings.text_style
         if settings.text_style_enabled and settings.text_style_random:
-            style = self._pick_fresh(RANDOM_STYLE_POOL, self._last_random_style)
-            self._last_random_style = style
+            pool = random_style_pool()
+            if pool:
+                style = self._pick_fresh(pool, self._last_random_style)
+                self._last_random_style = style
         if mask == settings.mask and style == settings.text_style:
             return runtime, rotation_next
         try:
@@ -8032,6 +8516,7 @@ class PrefixfyPlugin(BasePlugin):
         except Exception as exc:
             self.log(f"Prefixfy per-message runtime failed: {exc}")
             self._count_used = False
+            self._chat_count_key = None
             return runtime, None
         return derived, rotation_next
 
@@ -8088,7 +8573,7 @@ class PrefixfyPlugin(BasePlugin):
         if self._skip_once is not None and not runtime.pipeline.ignores(text) and self._consume_skip_once(dialog_id):
             self._dbg("skip: skip_once consumed")
             return HookResult()
-        runtime, rotation_next = self._runtime_for_message(runtime, account, dialog_id, text)
+        runtime, rotation_next = self._runtime_for_message(runtime, account, dialog_id, text, params)
         if field == "message" and self._try_attach_media(runtime, dialog_id, params, message, has_media, account):
             self._advance_rotation(rotation_next)
             return HookResult(strategy=HookStrategy.CANCEL)
