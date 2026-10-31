@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "31.1.0"
-__build__ = "31.1.0_20261031.1_8"
+__version__ = "31.2.0"
+__build__ = "31.2.0_20261031.1_9"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -2147,6 +2147,11 @@ _NEW_STRINGS = {
         "tag_lines_count": "Lines: {n}",
         "tag_lines_empty": "No lines yet",
         "tag_lines_limit": "At most {n} lines",
+        "check_now": "Check now",
+        "check_now_subtext": "Re-verify this build right away.",
+        "check_started": "Checking…",
+        "check_ok": "Verification passed",
+        "check_failed": "Verification failed. Check your internet connection and try again.",
         "verify_soft": "Features paused",
         "verify_soft_subtext": "Couldn’t verify this Prefixfy build right now, so optional features are switched off and only basic formatting works. Check your internet connection; everything returns once verification succeeds.",
         "tags_more": "[reply] \u2014 name of the person you reply to; [chatcount] \u2014 your message number in this chat; [battery] \u2014 battery level; [moon] \u2014 moon phase; [line] \u2014 random line from your list; [since:2026-12-31] / [until:2026-12-31] \u2014 days passed / left; [quote] \u2014 start of the message you reply to; [countdown:2026-12-31 18:00] \u2014 time left (days, hours, minutes); [weather] / [weather:Paris] \u2014 temperature from wttr.in (online).",
@@ -2164,6 +2169,11 @@ _NEW_STRINGS = {
         "tag_lines_count": "Строк: {n}",
         "tag_lines_empty": "Строк пока нет",
         "tag_lines_limit": "Не больше {n} строк",
+        "check_now": "Проверить сейчас",
+        "check_now_subtext": "Сразу перепроверить подлинность сборки.",
+        "check_started": "Проверяю…",
+        "check_ok": "Проверка пройдена",
+        "check_failed": "Проверка не пройдена. Проверьте подключение к интернету и повторите.",
         "verify_soft": "Функции приостановлены",
         "verify_soft_subtext": "Сейчас не удаётся подтвердить подлинность сборки Prefixfy, поэтому дополнительные функции отключены, работает только базовое оформление. Проверьте подключение к интернету: после успешной проверки всё вернётся.",
         "tags_more": "[reply] \u2014 имя того, кому отвечаете; [chatcount] \u2014 номер вашего сообщения в этом чате; [battery] \u2014 заряд батареи; [moon] \u2014 фаза луны; [line] \u2014 случайная строка из списка; [since:2026-12-31] / [until:2026-12-31] \u2014 дней прошло / осталось; [quote] \u2014 начало сообщения, на которое отвечаете; [countdown:2026-12-31 18:00] \u2014 сколько осталось (дни, часы, минуты); [weather] / [weather:Париж] \u2014 температура с wttr.in (нужен интернет).",
@@ -2181,6 +2191,11 @@ _NEW_STRINGS = {
         "tag_lines_count": "Рядків: {n}",
         "tag_lines_empty": "Рядків поки немає",
         "tag_lines_limit": "Не більше {n} рядків",
+        "check_now": "Перевірити зараз",
+        "check_now_subtext": "Одразу перевірити справжність збірки.",
+        "check_started": "Перевіряю…",
+        "check_ok": "Перевірку пройдено",
+        "check_failed": "Перевірку не пройдено. Перевірте підключення до інтернету й повторіть.",
         "verify_soft": "Функції призупинено",
         "verify_soft_subtext": "Зараз не вдається підтвердити цю збірку Prefixfy, тому додаткові функції вимкнено, працює лише базове оформлення. Перевірте підключення до інтернету: після успішної перевірки все повернеться.",
         "tags_more": "[reply] \u2014 імʼя того, кому відповідаєте; [chatcount] \u2014 номер вашого повідомлення в цьому чаті; [battery] \u2014 заряд батареї; [moon] \u2014 фаза місяця; [line] \u2014 випадковий рядок зі списку; [since:2026-12-31] / [until:2026-12-31] \u2014 днів минуло / залишилось; [quote] \u2014 початок повідомлення, на яке відповідаєте; [countdown:2026-12-31 18:00] \u2014 скільки залишилось (дні, години, хвилини); [weather] / [weather:Київ] \u2014 температура з wttr.in (потрібен інтернет).",
@@ -8360,8 +8375,31 @@ class PrefixfyPlugin(BasePlugin):
             title = tr("update_required" if key == "update_required_subtext" else "verify_required")
             return [Text(text=title, subtext=subtext, icon=icon, on_click=self._open_repo)]
         if remote.suspended(False):
-            return [Text(text=tr("verify_soft"), subtext=tr("verify_soft_subtext"), icon=icon, on_click=self._open_repo)]
+            return [
+                Text(text=tr("verify_soft"), subtext=tr("verify_soft_subtext"), icon=icon, on_click=self._open_repo),
+                Text(text=tr("check_now"), subtext=tr("check_now_subtext"), icon=self._icon("msg_retry"), on_click=self._check_now),
+            ]
         return []
+
+    def _check_now(self, *_):
+        remote = getattr(self, "remote", None)
+        if remote is None or getattr(self, "_check_running", False):
+            return
+        self._check_running = True
+        self._toast("check_started")
+
+        def work():
+            try:
+                remote.refresh()
+                still_soft = remote.blocked() or remote.soft()
+                self._toast("check_failed" if still_soft else "check_ok")
+                self.reload_settings_ui()
+            except Exception as exc:
+                self.log(f"Prefixfy manual check failed: {exc}")
+            finally:
+                self._check_running = False
+
+        threading.Thread(target=work, name="PrefixfyCheckNow", daemon=True).start()
 
     def _open_repo(self, *_):
         try:
