@@ -67,7 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "30.8.1"
+__version__ = "31.0.0"
+__build__ = "31.0.0_20261031.0_6"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -2753,15 +2754,93 @@ def _regex_nested_repeat(items) -> bool:
     return False
 
 
+def _regex_first_chars(items):
+    seq = list(_regex_seq(items))
+    if not seq:
+        return None
+    op, av = seq[0]
+    if op == _re_constants.LITERAL:
+        return {av}
+    if op == _re_constants.SUBPATTERN:
+        return _regex_first_chars(av[-1])
+    return None
+
+
+def _regex_branch_overlap(items) -> bool:
+    for op, av in _regex_seq(items):
+        if op == _re_constants.BRANCH:
+            firsts = [_regex_first_chars(branch) for branch in av[1]]
+            if any(first is None for first in firsts):
+                return True
+            seen = set()
+            for first in firsts:
+                if seen & first:
+                    return True
+                seen |= first
+            if any(_regex_branch_overlap(branch) for branch in av[1]):
+                return True
+        elif _regex_is_repeat(op):
+            if _regex_branch_overlap(av[2]):
+                return True
+        elif op == _re_constants.SUBPATTERN:
+            if _regex_branch_overlap(av[-1]):
+                return True
+    return False
+
+
+def _regex_repeated_ambiguity(items) -> bool:
+    for op, av in _regex_seq(items):
+        if _regex_is_repeat(op):
+            heavy = av[1] == _re_constants.MAXREPEAT or av[1] > 8
+            if heavy and (_regex_branch_overlap(av[2]) or (av[1] != _re_constants.MAXREPEAT and _regex_has_unbounded(av[2]))):
+                return True
+            if _regex_repeated_ambiguity(av[2]):
+                return True
+        elif op == _re_constants.SUBPATTERN:
+            if _regex_repeated_ambiguity(av[-1]):
+                return True
+        elif op == _re_constants.BRANCH:
+            if any(_regex_repeated_ambiguity(branch) for branch in av[1]):
+                return True
+        elif op in (_re_constants.ASSERT, _re_constants.ASSERT_NOT):
+            if _regex_repeated_ambiguity(av[1]):
+                return True
+    return False
+
+
+def _regex_has_backref(items) -> bool:
+    backrefs = tuple(
+        getattr(_re_constants, name) for name in ("GROUPREF", "GROUPREF_EXISTS", "GROUPREF_IGNORE")
+        if hasattr(_re_constants, name)
+    )
+    for op, av in _regex_seq(items):
+        if op in backrefs:
+            return True
+        if _regex_is_repeat(op) and _regex_has_backref(av[2]):
+            return True
+        if op == _re_constants.SUBPATTERN and _regex_has_backref(av[-1]):
+            return True
+        if op == _re_constants.BRANCH and any(_regex_has_backref(branch) for branch in av[1]):
+            return True
+        if op in (_re_constants.ASSERT, _re_constants.ASSERT_NOT) and _regex_has_backref(av[1]):
+            return True
+    return False
+
+
 @lru_cache(maxsize=256)
 def regex_is_safe(pattern: str) -> bool:
     if _re_parser is None:
-        return True
+        return False
     try:
         tree = _re_parser.parse(pattern)
-        return _regex_count_unbounded(tree) <= MAX_REGEX_REPEATS and not _regex_nested_repeat(tree)
+        return (
+            _regex_count_unbounded(tree) <= MAX_REGEX_REPEATS
+            and not _regex_nested_repeat(tree)
+            and not _regex_repeated_ambiguity(tree)
+            and not _regex_has_backref(tree)
+        )
     except Exception:
-        return True
+        return False
 
 
 def compile_regex_exceptions(raw) -> tuple:
@@ -4645,6 +4724,27 @@ def detect_components(data: dict) -> Tuple[str, ...]:
     return tuple(found)
 
 
+MAX_CONTAINER_ENTRIES = 16
+
+
+def _zip_entry_count_ok(path: str) -> bool:
+    try:
+        size = os.path.getsize(path)
+        with open(path, "rb") as handle:
+            handle.seek(max(0, size - (65535 + 22 + 20)))
+            tail = handle.read()
+    except OSError:
+        return False
+    position = tail.rfind(b"PK\x05\x06")
+    if position < 0 or position + 22 > len(tail):
+        return False
+    if position >= 20 and tail[position - 20:position - 16] == b"PK\x06\x07":
+        return False
+    total = int.from_bytes(tail[position + 10:position + 12], "little")
+    this_disk = int.from_bytes(tail[position + 8:position + 10], "little")
+    return total == this_disk and 0 < total <= MAX_CONTAINER_ENTRIES
+
+
 def _read_zip_member(archive: zipfile.ZipFile, info: zipfile.ZipInfo, limit: int) -> bytes:
     with archive.open(info) as source:
         data = source.read(limit + 1)
@@ -4896,6 +4996,8 @@ class ConfigTransfer:
         activity.startActivityForResult(intent, self.CONFIG_IMPORT_REQUEST_CODE)
 
     def read_container(self, path: str) -> dict:
+        if not _zip_entry_count_ok(path):
+            raise ConfigurationError("not a .prefixfy container")
         try:
             with zipfile.ZipFile(path, "r") as archive:
                 try:
@@ -6192,17 +6294,24 @@ class ConfigurationsManager:
             ))
 
 
-_VERSION_RE = re.compile(r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}")
+_VERSION_RE = re.compile(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(?:_([0-9]{8})\.([0-9]{1,4})_([0-9]{1,12}))?")
 _HEX64_RE = re.compile(r"[0-9a-f]{64}")
 _HEX128_RE = re.compile(r"[0-9a-f]{128}")
 _MANIFEST_FILE_RE = re.compile(r"[A-Za-z0-9._\-]{1,80}")
 
 
 def parse_version(value) -> Tuple[int, ...]:
-    text = as_text(value).strip()
-    if not _VERSION_RE.fullmatch(text):
+    match = _VERSION_RE.fullmatch(as_text(value).strip())
+    if match is None:
         return ()
-    return tuple(int(part) for part in text.split("."))
+    return tuple(int(part) for part in match.groups() if part is not None)
+
+
+def format_version(parts) -> str:
+    parts = tuple(parts)
+    if len(parts) == 6:
+        return f"{parts[0]}.{parts[1]}.{parts[2]}_{parts[3]:08d}.{parts[4]}_{parts[5]}"
+    return ".".join(map(str, parts))
 
 
 _RSA_OID = bytes.fromhex("06092a864886f70d010101")
@@ -6281,7 +6390,10 @@ def _manifest_int(body: Dict[str, Any], key: str) -> int:
 def _verify_signed(raw: bytes, domain: bytes, what: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     if not UPDATE_PUBLIC_KEYS:
         raise ValueError("no update public key configured")
-    signed = json.loads(raw.decode("utf-8"))
+    try:
+        signed = json.loads(raw.decode("utf-8"))
+    except RecursionError as exc:
+        raise ValueError(f"{what} is too deeply nested") from exc
     if not isinstance(signed, dict):
         raise ValueError(f"{what} is not an object")
     body = dict(signed)
@@ -6519,7 +6631,7 @@ class RemoteControl:
         import ssl
         request = urllib.request.Request(
             f"{UPDATE_BASE_URL}{name}?t={int(time.time())}",
-            headers={"User-Agent": f"Prefixfy/{__version__}", "Cache-Control": "no-cache"},
+            headers={"User-Agent": f"Prefixfy/{__build__}", "Cache-Control": "no-cache"},
         )
         opener = urllib.request.build_opener(
             urllib.request.HTTPSHandler(context=ssl.create_default_context()),
@@ -6715,7 +6827,7 @@ class RemoteControl:
         return self.latest_version()
 
     def latest_version(self) -> str:
-        return ".".join(map(str, self._field("version", ())))
+        return format_version(self._field("version", ()))
 
     def latest_checksum(self) -> str:
         return self._field("sha256", "") or ""
@@ -6724,7 +6836,7 @@ class RemoteControl:
         latest = self._field("version", ())
         if not latest:
             return False
-        if parse_version(__version__) != latest:
+        if parse_version(__build__) != latest:
             return True
         expected_sha = self._field("sha256", "")
         if expected_sha and not self._self_hash:
@@ -6800,12 +6912,18 @@ class PrefixfyPlugin(BasePlugin):
 
         self.transfer.register_file_handler()
         self.add_on_send_message_hook()
-        self.refresh_chat_menu_item()
-        self._install_activity_result_hook()
-        self._install_edit_message_hook()
+        for label, step in (
+            ("chat menu", self.refresh_chat_menu_item),
+            ("activity result hook", self._install_activity_result_hook),
+            ("edit message hook", self._install_edit_message_hook),
+        ):
+            try:
+                step()
+            except Exception as exc:
+                self.log(f"Prefixfy {label} failed: {exc}")
         self.remote.start()
-        self.log(f"Prefixfy {__version__} loaded ({self.localization.language()})")
-        self._dbg(f"{__version__} loaded, debug logging on")
+        self.log(f"Prefixfy {__build__} loaded ({self.localization.language()})")
+        self._dbg(f"{__build__} loaded, debug logging on")
 
     def on_plugin_unload(self):
         remote = getattr(self, "remote", None)
