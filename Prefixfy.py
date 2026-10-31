@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "31.0.0"
-__build__ = "31.0.0_20261031.0_6"
+__version__ = "31.1.0"
+__build__ = "31.1.0_20261031.1_7"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -85,6 +85,13 @@ FLAGS_DOMAIN = b"Prefixfy-flags-v1\n"
 FLAGS_CACHE_FILE = "Prefixfy_flags.json"
 FLAGS_MAX_COUNT = 128
 FLAGS_MAX_ACCOUNTS = 1024
+FLAGS_MAX_BYTES = 256 * 1024
+MANIFEST_MAX_FILE_SIZE = 8 * 1024 * 1024
+BLACKLIST_MAX_AGE = 3 * 24 * 3600
+SIGNED_FUTURE_SKEW = 14 * 24 * 3600
+SIGNED_MAX_AGE = 0  # seconds; 0 = don't reject old signed files (needs periodic re-signing otherwise)
+REPLY_QUOTE_LIMIT = 40
+WEATHER_HOST = "wttr.in"
 BLACKLIST_FILE = "blacklist.json"
 BLACKLIST_FORMAT = 1
 BLACKLIST_DOMAIN = b"Prefixfy-blacklist-v1\n"
@@ -141,7 +148,8 @@ REGEX_UNSAFE_REASON = "nested or too many repeats (the message check could hang)
 RANDOM_EMOJI = ("😀", "😎", "✨", "🌟", "💜", "🔥", "🍀", "🦋", "🌈", "⭐", "🎉", "🚀")
 MASK_TAG_RE = re.compile(
     r"\[(date|time|datetime|time12|chat|id|weekday|weekday_short|year|year_short|month|monthname|day|week|yearday|"
-    r"hour|minute|second|ampm|daypart|timestamp|tz|chattype|username|count|dice|random_emoji|emoji|reply|chatcount|battery|moon|line|(?:since|until):\d{4}-\d{2}-\d{2})\]",
+    r"hour|minute|second|ampm|daypart|timestamp|tz|chattype|username|count|dice|random_emoji|emoji|reply|chatcount|battery|moon|line|quote|"
+    r"weather(?::[\w .\-]{1,40})?|(?:since|until):\d{4}-\d{2}-\d{2}|countdown:\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2})?)\]",
     re.IGNORECASE,
 )
 _TAG_UNSAFE_RE = re.compile(r"[\[\]*_~|`\\\uE000-\uF8FF\s]+")
@@ -2139,7 +2147,9 @@ _NEW_STRINGS = {
         "tag_lines_count": "Lines: {n}",
         "tag_lines_empty": "No lines yet",
         "tag_lines_limit": "At most {n} lines",
-        "tags_more": "[reply] \u2014 name of the person you reply to; [chatcount] \u2014 your message number in this chat; [battery] \u2014 battery level; [moon] \u2014 moon phase; [line] \u2014 random line from your list; [since:2026-12-31] / [until:2026-12-31] \u2014 days passed / left.",
+        "verify_soft": "Features paused",
+        "verify_soft_subtext": "Couldn’t verify this Prefixfy build right now, so optional features are switched off and only basic formatting works. Check your internet connection; everything returns once verification succeeds.",
+        "tags_more": "[reply] \u2014 name of the person you reply to; [chatcount] \u2014 your message number in this chat; [battery] \u2014 battery level; [moon] \u2014 moon phase; [line] \u2014 random line from your list; [since:2026-12-31] / [until:2026-12-31] \u2014 days passed / left; [quote] \u2014 start of the message you reply to; [countdown:2026-12-31 18:00] \u2014 time left (days, hours, minutes); [weather] / [weather:Paris] \u2014 temperature from wttr.in (online).",
     },
     "ru": {
         "style_translit": "Транслитерировать кириллицу",
@@ -2154,7 +2164,9 @@ _NEW_STRINGS = {
         "tag_lines_count": "Строк: {n}",
         "tag_lines_empty": "Строк пока нет",
         "tag_lines_limit": "Не больше {n} строк",
-        "tags_more": "[reply] \u2014 имя того, кому отвечаете; [chatcount] \u2014 номер вашего сообщения в этом чате; [battery] \u2014 заряд батареи; [moon] \u2014 фаза луны; [line] \u2014 случайная строка из списка; [since:2026-12-31] / [until:2026-12-31] \u2014 дней прошло / осталось.",
+        "verify_soft": "Функции приостановлены",
+        "verify_soft_subtext": "Сейчас не удаётся подтвердить подлинность сборки Prefixfy, поэтому дополнительные функции отключены, работает только базовое оформление. Проверьте подключение к интернету: после успешной проверки всё вернётся.",
+        "tags_more": "[reply] \u2014 имя того, кому отвечаете; [chatcount] \u2014 номер вашего сообщения в этом чате; [battery] \u2014 заряд батареи; [moon] \u2014 фаза луны; [line] \u2014 случайная строка из списка; [since:2026-12-31] / [until:2026-12-31] \u2014 дней прошло / осталось; [quote] \u2014 начало сообщения, на которое отвечаете; [countdown:2026-12-31 18:00] \u2014 сколько осталось (дни, часы, минуты); [weather] / [weather:Париж] \u2014 температура с wttr.in (нужен интернет).",
     },
     "uk": {
         "style_translit": "Транслітерувати кирилицю",
@@ -2169,7 +2181,9 @@ _NEW_STRINGS = {
         "tag_lines_count": "Рядків: {n}",
         "tag_lines_empty": "Рядків поки немає",
         "tag_lines_limit": "Не більше {n} рядків",
-        "tags_more": "[reply] \u2014 імʼя того, кому відповідаєте; [chatcount] \u2014 номер вашого повідомлення в цьому чаті; [battery] \u2014 заряд батареї; [moon] \u2014 фаза місяця; [line] \u2014 випадковий рядок зі списку; [since:2026-12-31] / [until:2026-12-31] \u2014 днів минуло / залишилось.",
+        "verify_soft": "Функції призупинено",
+        "verify_soft_subtext": "Зараз не вдається підтвердити цю збірку Prefixfy, тому додаткові функції вимкнено, працює лише базове оформлення. Перевірте підключення до інтернету: після успішної перевірки все повернеться.",
+        "tags_more": "[reply] \u2014 імʼя того, кому відповідаєте; [chatcount] \u2014 номер вашого повідомлення в цьому чаті; [battery] \u2014 заряд батареї; [moon] \u2014 фаза місяця; [line] \u2014 випадковий рядок зі списку; [since:2026-12-31] / [until:2026-12-31] \u2014 днів минуло / залишилось; [quote] \u2014 початок повідомлення, на яке відповідаєте; [countdown:2026-12-31 18:00] \u2014 скільки залишилось (дні, години, хвилини); [weather] / [weather:Київ] \u2014 температура з wttr.in (потрібен інтернет).",
     },
 }
 for _code, _table in LocalizationManager.STRINGS.items():
@@ -2198,6 +2212,33 @@ def days_tag_value(tag: str, today) -> str:
         return ""
     delta = (target - today).days
     return str(max(0, -delta if kind == "since" else delta))
+
+
+COUNTDOWN_UNITS = {
+    "ru": ("д", "ч", "м"), "uk": ("д", "г", "хв"), "en": ("d", "h", "m"), "ja": ("日", "時間", "分"),
+    "ko": ("일", "시간", "분"), "ar": ("ي", "س", "د"), "fr": ("j", "h", "min"), "pl": ("d", "g", "min"),
+    "de": ("T", "Std", "Min"),
+}
+
+
+def countdown_tag_value(tag: str, now, language: str) -> str:
+    """[countdown:2026-12-31] or [countdown:2026-12-31 18:00] -> "12d 4h" / "3h 20m" / "15m"."""
+    raw = tag.partition(":")[2]
+    try:
+        target = datetime.strptime(raw, "%Y-%m-%d %H:%M" if " " in raw else "%Y-%m-%d")
+    except ValueError:
+        return ""
+    day, hour, minute = COUNTDOWN_UNITS.get(language, COUNTDOWN_UNITS["en"])
+    seconds = int((target - now).total_seconds())
+    if seconds <= 0:
+        return f"0{minute}"
+    days, rest = divmod(seconds // 60, 1440)
+    hours, minutes = divmod(rest, 60)
+    if days:
+        return f"{days}{day} {hours}{hour}"
+    if hours:
+        return f"{hours}{hour} {minutes}{minute}"
+    return f"{max(1, minutes)}{minute}"
 
 
 def clamp_int(value, default: int, low: int, high: int) -> int:
@@ -3178,7 +3219,7 @@ FEATURE_FLAGS: Dict[str, bool] = {
     "lang_uk": True,
 }
 FEATURE_FLAGS.update({"style_" + _key: True for _key in STYLE_KEYS})
-MASK_TAG_NAMES = ("date", "time", "datetime", "time12", "chat", "id", "weekday", "weekday_short", "year", "year_short", "month", "monthname", "day", "week", "yearday", "hour", "minute", "second", "ampm", "daypart", "timestamp", "tz", "chattype", "username", "count", "dice", "random_emoji", "emoji", "reply", "chatcount", "battery", "moon", "line", "since", "until")
+MASK_TAG_NAMES = ("date", "time", "datetime", "time12", "chat", "id", "weekday", "weekday_short", "year", "year_short", "month", "monthname", "day", "week", "yearday", "hour", "minute", "second", "ampm", "daypart", "timestamp", "tz", "chattype", "username", "count", "dice", "random_emoji", "emoji", "reply", "chatcount", "battery", "moon", "line", "since", "until", "quote", "countdown", "weather")
 FEATURE_FLAGS.update({"tag_" + _tag: True for _tag in MASK_TAG_NAMES})
 FEATURE_FLAGS.update({"md_bold": True, "md_italic": True, "md_strike": True, "md_spoiler": True, "md_mono": True, "md_quote": True})
 _FLAG_NAME_RE = re.compile(r"[a-z][a-z0-9_]{0,31}")
@@ -3200,9 +3241,24 @@ class FeatureFlags:
         self._accounts: Dict[int, Dict[str, bool]] = {}
         self._ids: frozenset = frozenset()
         self._serial = -1
+        self._digest = ""
+        self._soft = False
         self._lock = threading.Lock()
 
+    @property
+    def soft(self) -> bool:
+        return self._soft
+
+    def set_soft(self, value: bool) -> bool:
+        """Soft block: while on, every feature flag reads as off. Returns True if the state changed."""
+        with self._lock:
+            changed = self._soft != bool(value)
+            self._soft = bool(value)
+            return changed
+
     def on(self, name: str) -> bool:
+        if self._soft:
+            return False
         return self._values.get(name, True)
 
     def _compose(self) -> Dict[str, bool]:
@@ -3220,7 +3276,7 @@ class FeatureFlags:
         self._values = merged
         return changed
 
-    def apply(self, flags: Dict[str, bool], serial: int, accounts: Optional[Dict[int, Dict[str, bool]]] = None) -> bool:
+    def apply(self, flags: Dict[str, bool], serial: int, accounts: Optional[Dict[int, Dict[str, bool]]] = None, digest: str = "") -> bool:
         base = dict(self._defaults)
         for name, value in flags.items():
             if name in base and isinstance(value, bool):
@@ -3232,9 +3288,12 @@ class FeatureFlags:
         with self._lock:
             if serial < self._serial:
                 raise ValueError(f"flags rollback rejected ({serial} < {self._serial})")
+            if serial == self._serial and digest and self._digest and digest != self._digest:
+                raise ValueError(f"flags serial {serial} reused with different content")
             self._global = base
             self._accounts = cleaned
             self._serial = serial
+            self._digest = digest
             return self._swap()
 
     def set_device_accounts(self, ids) -> bool:
@@ -6387,6 +6446,47 @@ def _manifest_int(body: Dict[str, Any], key: str) -> int:
     return value
 
 
+def _body_digest(body: Dict[str, Any]) -> str:
+    """Content digest of a signed body; issued_at is left out so a re-signed identical file still matches."""
+    content = {key: value for key, value in body.items() if key != "issued_at"}
+    packed = json.dumps(content, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("ascii")
+    return hashlib.sha256(packed).hexdigest()
+
+
+def _check_issued_at(value: int, what: str):
+    """Seconds or milliseconds since the epoch; anything that doesn't look like a timestamp is ignored."""
+    if 1_500_000_000 <= value < 4_000_000_000:
+        seconds = float(value)
+    elif 1_500_000_000_000 <= value < 4_000_000_000_000:
+        seconds = value / 1000.0
+    else:
+        return
+    now = time.time()
+    if seconds > now + SIGNED_FUTURE_SKEW:
+        raise ValueError(f"{what}: issued in the future")
+    if SIGNED_MAX_AGE and now - seconds > SIGNED_MAX_AGE:
+        raise ValueError(f"{what}: issued too long ago")
+
+
+def _optional_build(body: Dict[str, Any], key: str) -> Tuple[int, ...]:
+    value = body.get(key)
+    if value is None or value == "":
+        return ()
+    parts = parse_version(value)
+    if not parts:
+        raise ValueError(f"flags: bad {key}")
+    return parts
+
+
+def build_in_range(low: Tuple[int, ...], high: Tuple[int, ...]) -> bool:
+    build = parse_version(__build__)[:3]
+    if low and build < low[:3]:
+        return False
+    if high and build > high[:3]:
+        return False
+    return True
+
+
 def _verify_signed(raw: bytes, domain: bytes, what: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     if not UPDATE_PUBLIC_KEYS:
         raise ValueError("no update public key configured")
@@ -6425,13 +6525,26 @@ def verify_manifest(raw: bytes) -> Dict[str, Any]:
         raise ValueError("manifest: bad sha512")
     if name and not _MANIFEST_FILE_RE.fullmatch(name):
         raise ValueError("manifest: bad file name")
+    size = body.get("size", 0)
+    if "size" in body and (isinstance(size, bool) or not isinstance(size, int) or not 0 < size <= MANIFEST_MAX_FILE_SIZE):
+        raise ValueError("manifest: bad size")
+    serial = _manifest_int(body, "serial")
+    issued_at = _manifest_int(body, "issued_at")
+    _check_issued_at(issued_at, "manifest")
+    if len(version) == 6 and version[4] != serial:
+        raise ValueError("manifest: serial does not match the serial in the version tag")
+    build = parse_version(__build__)
+    if len(build) == 6 and serial < build[4]:
+        raise ValueError(f"manifest: older than this build ({serial} < {build[4]})")
     return {
-        "serial": _manifest_int(body, "serial"),
-        "issued_at": _manifest_int(body, "issued_at"),
+        "serial": serial,
+        "issued_at": issued_at,
         "version": version,
         "sha256": sha256,
         "sha512": sha512,
+        "size": size,
         "file": name,
+        "digest": _body_digest(body),
         "signed": signed,
     }
 
@@ -6440,6 +6553,9 @@ def verify_flags(raw: bytes) -> Dict[str, Any]:
     signed, body = _verify_signed(raw, FLAGS_DOMAIN, "flags")
     if _manifest_int(body, "format") != FLAGS_FORMAT:
         raise ValueError("unsupported flags format")
+    issued_at = _manifest_int(body, "issued_at")
+    _check_issued_at(issued_at, "flags")
+    low, high = _optional_build(body, "min_build"), _optional_build(body, "max_build")
     values = body.get("flags")
     if not isinstance(values, dict) or len(values) > FLAGS_MAX_COUNT:
         raise ValueError("flags: bad flags object")
@@ -6462,9 +6578,12 @@ def verify_flags(raw: bytes) -> Dict[str, Any]:
         }
     return {
         "serial": _manifest_int(body, "serial"),
-        "issued_at": _manifest_int(body, "issued_at"),
+        "issued_at": issued_at,
+        "min_build": low,
+        "max_build": high,
         "flags": known,
         "accounts": accounts,
+        "digest": _body_digest(body),
         "signed": signed,
     }
 
@@ -6517,10 +6636,13 @@ def verify_blacklist(raw: bytes) -> Dict[str, Any]:
         if isinstance(value, bool) or not isinstance(value, int) or not 0 < value <= 2 ** 53:
             raise ValueError("blacklist: bad account id")
         ids.add(value)
+    issued_at = _manifest_int(body, "issued_at")
+    _check_issued_at(issued_at, "blacklist")
     return {
         "serial": _manifest_int(body, "serial"),
-        "issued_at": _manifest_int(body, "issued_at"),
+        "issued_at": issued_at,
         "ids": frozenset(ids),
+        "digest": _body_digest(body),
         "signed": signed,
     }
 
@@ -6550,22 +6672,99 @@ def device_account_ids(logger=None) -> Optional[frozenset]:
 
 class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
 
+    def __init__(self, hosts=UPDATE_ALLOWED_HOSTS):
+        super().__init__()
+        self._hosts = tuple(hosts)
+
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         parts = urllib.parse.urlsplit(newurl)
-        if parts.scheme != "https" or (parts.hostname or "").lower() not in UPDATE_ALLOWED_HOSTS:
+        if parts.scheme != "https" or (parts.hostname or "").lower() not in self._hosts:
             raise urllib.error.URLError("redirect to a foreign host blocked")
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def _self_file_sha256() -> Optional[str]:
+class WeatherCache:
+    """[weather] / [weather:City]: temperature from wttr.in. Never blocks a send: the tag shows the cached
+    value and a background thread refreshes it. Only used when a mask actually contains the tag."""
+
+    TTL = 30 * 60
+    RETRY = 5 * 60
+    STALE = 6 * 3600
+    MAX_ITEMS = 8
+
+    def __init__(self, log):
+        self._log = log
+        self._lock = threading.Lock()
+        self._items: Dict[str, Tuple[float, str]] = {}
+        self._busy: set = set()
+        self._closed = False
+
+    def close(self):
+        self._closed = True
+
+    def get(self, city: str) -> str:
+        key = as_text(city).strip().casefold()[:40]
+        now = time.monotonic()
+        with self._lock:
+            entry = self._items.get(key)
+            age = now - entry[0] if entry else float("inf")
+            text = entry[1] if entry and age <= self.STALE else ""
+            fresh = entry is not None and age < (self.TTL if entry[1] else self.RETRY)
+            start = not fresh and not self._closed and key not in self._busy
+            if start:
+                self._busy.add(key)
+        if start:
+            threading.Thread(target=self._refresh, args=(key,), name="PrefixfyWeather", daemon=True).start()
+        return text
+
+    def _refresh(self, key: str):
+        text = ""
+        try:
+            text = self._fetch(key)
+        except Exception as exc:
+            self._log(f"Prefixfy weather lookup failed: {exc}")
+        with self._lock:
+            self._busy.discard(key)
+            if self._closed:
+                return
+            self._items[key] = (time.monotonic(), text)
+            while len(self._items) > self.MAX_ITEMS:
+                self._items.pop(min(self._items, key=lambda name: self._items[name][0]))
+
+    @staticmethod
+    def _fetch(key: str) -> str:
+        import ssl
+        query = urllib.parse.urlencode({"format": "%c%t"})
+        request = urllib.request.Request(
+            f"https://{WEATHER_HOST}/{urllib.parse.quote(key)}?{query}",
+            headers={"User-Agent": f"Prefixfy/{__build__}", "Accept": "text/plain"},
+        )
+        opener = urllib.request.build_opener(
+            urllib.request.HTTPSHandler(context=ssl.create_default_context()),
+            _SameHostRedirect((WEATHER_HOST,)),
+        )
+        with opener.open(request, timeout=REMOTE_TIMEOUT) as response:
+            final = urllib.parse.urlsplit(response.geturl())
+            if final.scheme != "https" or (final.hostname or "").lower() != WEATHER_HOST:
+                raise ValueError("unexpected final host")
+            body = response.read(257)
+        text = " ".join(body.decode("utf-8", "replace").split())
+        if len(text) > 32 or "°" not in text or not any(char.isdigit() for char in text):
+            return ""
+        return text
+
+
+def _self_file_digests() -> Optional[Tuple[str, str, int]]:
+    """(sha256, sha512, size) of this plugin file, read once; None if it can't be read."""
     path = globals().get("__file__")
     if not path:
         return None
     try:
         with open(path, "rb") as handle:
-            return hashlib.sha256(handle.read()).hexdigest()
+            data = handle.read()
     except OSError:
         return None
+    return hashlib.sha256(data).hexdigest(), hashlib.sha512(data).hexdigest(), len(data)
 
 
 class RemoteControl:
@@ -6575,21 +6774,29 @@ class RemoteControl:
         self.enabled = bool(UPDATE_PUBLIC_KEYS)
         self._lock = threading.Lock()
         self._busy = threading.Lock()
+        self._soft_lock = threading.Lock()
         self._stop = threading.Event()
         self._state: Optional[Dict[str, Any]] = None
         self._last_ok = float("-inf")
         self._last_request = -REMOTE_MANUAL_COOLDOWN
         self._notified = False
+        self._soft_notified = False
+        self._cache_stale = False
         self._cache_path = os.path.join(get_plugins_dir(), "Prefixfy_remote.json")
-        self._self_hash = _self_file_sha256()
-        if self._self_hash is None:
-            self.plugin.log("Prefixfy: could not hash own file; falling back to version-only integrity check")
+        digests = _self_file_digests()
+        if digests is None:
+            self._self_hash = self._self_hash512 = self._self_size = None
+            self.plugin.log("Prefixfy: could not hash own file; optional features stay off until the build can be verified")
+        else:
+            self._self_hash, self._self_hash512, self._self_size = digests
         self._device_ids: frozenset = frozenset()
         self._dev_checked = float("-inf")
         self._dev_lock = threading.Lock()
         self._bl_ids: frozenset = frozenset()
         self._bl_serial = -1
+        self._bl_digest = ""
         self._bl_known = False
+        self._bl_last_ok = float("-inf")
         self._bl_path = os.path.join(get_plugins_dir(), BLACKLIST_CACHE_FILE)
         self._load_cache()
         self._flags_path = os.path.join(get_plugins_dir(), FLAGS_CACHE_FILE)
@@ -6611,6 +6818,7 @@ class RemoteControl:
     def _run(self, stop):
         while not stop.is_set():
             fetched = self.refresh()
+            self.soft()
             stop.wait(REMOTE_CHECK_INTERVAL if fetched and not self.outdated() else REMOTE_RETRY_INTERVAL)
 
     def request_refresh(self):
@@ -6656,6 +6864,15 @@ class RemoteControl:
                 chunks.append(chunk)
         return b"".join(chunks)
 
+    @staticmethod
+    def _anchor(path: str) -> float:
+        """Monotonic time at which a cache file was last written (-inf if unknown)."""
+        try:
+            age = max(0.0, time.time() - os.path.getmtime(path))
+        except OSError:
+            return float("-inf")
+        return time.monotonic() - age
+
     def refresh(self) -> bool:
         if not self.enabled:
             return False
@@ -6673,9 +6890,16 @@ class RemoteControl:
         try:
             state = verify_manifest(self._download(MANIFEST_FILE))
             with self._lock:
-                known = self._state["serial"] if self._state else -1
-            if state["serial"] < known:
-                raise ValueError(f"manifest rollback rejected ({state['serial']} < {known})")
+                known = self._state
+            if known is not None:
+                if state["serial"] < known["serial"]:
+                    raise ValueError(f"manifest rollback rejected ({state['serial']} < {known['serial']})")
+                if state["serial"] == known["serial"] and state["version"] == known["version"] and state["digest"] != known["digest"]:
+                    raise ValueError(f"manifest serial {state['serial']} reused with different content")
+                if state["serial"] > known["serial"] and state["version"][:3] < known["version"][:3]:
+                    raise ValueError(
+                        f"manifest version went backwards ({format_version(state['version'])} < {format_version(known['version'])})"
+                    )
         except Exception as exc:
             self.plugin.log(f"Prefixfy remote check failed: {exc}")
             self._announce()
@@ -6683,6 +6907,7 @@ class RemoteControl:
         before = self._snapshot()
         with self._lock:
             self._state = state
+        self._cache_stale = False
         self._last_ok = time.monotonic()
         self._save_cache()
         self._refresh_blacklist()
@@ -6694,13 +6919,18 @@ class RemoteControl:
                 self.plugin.reload_settings_ui()
             except Exception as exc:
                 self.plugin.log(f"Prefixfy settings refresh failed: {exc}")
+        self.soft(after[0])
         self._refresh_flags()
         return True
 
     def _refresh_flags(self):
         try:
-            state = verify_flags(self._download(FLAGS_FILE))
-            changed = FEATURES.apply(state["flags"], state["serial"], state["accounts"])
+            state = verify_flags(self._download(FLAGS_FILE, FLAGS_MAX_BYTES))
+            if build_in_range(state["min_build"], state["max_build"]):
+                values, accounts = state["flags"], state["accounts"]
+            else:
+                values, accounts = {}, {}
+            changed = FEATURES.apply(values, state["serial"], accounts, state["digest"])
         except urllib.error.HTTPError as exc:
             if exc.code != 404:
                 self.plugin.log(f"Prefixfy flags check failed: HTTP {exc.code}")
@@ -6749,9 +6979,12 @@ class RemoteControl:
             state = verify_blacklist(self._download(BLACKLIST_FILE, BLACKLIST_MAX_BYTES))
             if state["serial"] < self._bl_serial:
                 raise ValueError(f"blacklist rollback rejected ({state['serial']} < {self._bl_serial})")
+            if state["serial"] == self._bl_serial and self._bl_digest and state["digest"] != self._bl_digest:
+                raise ValueError(f"blacklist serial {state['serial']} reused with different content")
         except urllib.error.HTTPError as exc:
             if exc.code == 404:
                 self._bl_known = True
+                self._bl_last_ok = time.monotonic()
             else:
                 self.plugin.log(f"Prefixfy blacklist check failed: HTTP {exc.code}")
             return
@@ -6760,7 +6993,9 @@ class RemoteControl:
             return
         self._bl_ids = state["ids"]
         self._bl_serial = state["serial"]
+        self._bl_digest = state["digest"]
         self._bl_known = True
+        self._bl_last_ok = time.monotonic()
         try:
             temp = self._bl_path + ".tmp"
             with open(temp, "w", encoding="utf-8") as handle:
@@ -6777,13 +7012,18 @@ class RemoteControl:
             return
         self._bl_ids = state["ids"]
         self._bl_serial = state["serial"]
+        self._bl_digest = state["digest"]
         self._bl_known = True
+        self._bl_last_ok = self._anchor(self._bl_path)
 
     def _load_flags_cache(self):
         try:
             with open(self._flags_path, "rb") as handle:
-                state = verify_flags(handle.read(REMOTE_MAX_BYTES + 1))
-            FEATURES.apply(state["flags"], state["serial"], state["accounts"])
+                state = verify_flags(handle.read(FLAGS_MAX_BYTES + 1))
+            if build_in_range(state["min_build"], state["max_build"]):
+                FEATURES.apply(state["flags"], state["serial"], state["accounts"], state["digest"])
+            else:
+                FEATURES.apply({}, state["serial"], {}, state["digest"])
         except (OSError, ValueError):
             pass
 
@@ -6805,6 +7045,13 @@ class RemoteControl:
                 self._state = verify_manifest(handle.read(REMOTE_MAX_BYTES + 1))
         except (OSError, ValueError):
             self._state = None
+            return
+        if self._state["version"][:3] < parse_version(__build__)[:3]:
+            # Cached manifest predates this build (the plugin was just updated): keep it for rollback
+            # protection only, and wait for a fresh one before judging this build against it.
+            self._cache_stale = True
+            return
+        self._last_ok = self._anchor(self._cache_path)
 
     def _save_cache(self):
         with self._lock:
@@ -6832,55 +7079,103 @@ class RemoteControl:
     def latest_checksum(self) -> str:
         return self._field("sha256", "") or ""
 
+    def _integrity_unknown(self) -> bool:
+        return bool(self._field("sha256", "")) and not self._self_hash
+
     def mismatched(self) -> bool:
         latest = self._field("version", ())
-        if not latest:
+        if not latest or self._cache_stale:
             return False
         if parse_version(__build__) != latest:
             return True
-        expected_sha = self._field("sha256", "")
-        if expected_sha and not self._self_hash:
+        if not self._self_hash:
+            return False
+        if self._field("sha256", "") != self._self_hash:
             return True
-        if expected_sha and self._self_hash and expected_sha != self._self_hash:
+        expected_512 = self._field("sha512", "")
+        if expected_512 and expected_512 != self._self_hash512:
             return True
-        return False
+        expected_size = self._field("size", 0)
+        return bool(expected_size and expected_size != self._self_size)
 
     def verified(self) -> bool:
         with self._lock:
             has_state = self._state is not None
-        return has_state and self._bl_known and time.monotonic() - self._last_ok <= REMOTE_MAX_AGE
+        now = time.monotonic()
+        return has_state and self._bl_known and now - self._last_ok <= REMOTE_MAX_AGE and now - self._bl_last_ok <= BLACKLIST_MAX_AGE
 
     def blocked(self) -> bool:
-        if not self.enabled or not self.verified():
+        """Hard block: no key in this build, banned account, or a build that doesn't match the manifest."""
+        if not self.enabled:
             return True
         if self.blacklisted():
             return True
         return self.mismatched()
 
+    def suspended(self, blocked: Optional[bool] = None) -> bool:
+        """Soft block: not hard-blocked, but the build can't be verified right now."""
+        if blocked is None:
+            blocked = self.blocked()
+        return self.enabled and not blocked and (self._integrity_unknown() or not self.verified())
+
+    def soft(self, blocked: Optional[bool] = None) -> bool:
+        wanted = self.suspended(blocked)
+        self._sync_soft(wanted)
+        return wanted
+
+    def _sync_soft(self, wanted: bool):
+        if FEATURES.soft == wanted:
+            return
+        if not self._soft_lock.acquire(blocking=False):
+            return
+        try:
+            if not FEATURES.set_soft(wanted):
+                return
+        finally:
+            self._soft_lock.release()
+        self.plugin.log("Prefixfy soft block: optional features off until the build is verified" if wanted else "Prefixfy soft block lifted")
+        try:
+            self.plugin._on_features_changed()
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy soft block refresh failed: {exc}")
+
     def outdated(self) -> bool:
-        return self.blocked()
+        return self.blocked() or not self.verified()
 
     def allows(self, account=None) -> bool:
         self.ensure_fresh()
-        return not self.blocked()
+        blocked = self.blocked()
+        self.soft(blocked)
+        return not blocked
 
     def notice(self) -> Tuple[str, Dict[str, Any]]:
-        if self.enabled and self.verified() and self.blacklisted():
+        if self.enabled and self.blacklisted():
             return "account_blocked_subtext", {}
         if self._field("version", ()) and self.mismatched():
             return "update_required_subtext", {"version": self.required_version()}
         return "verify_required_subtext", {}
 
     def _announce(self):
-        if not self.blocked():
-            self._notified = False
+        if self.blocked():
+            self._soft_notified = False
+            if self._notified:
+                return
+            self._notified = True
+            try:
+                key, kwargs = self.notice()
+                self.plugin._toast(key, **kwargs)
+            except Exception as exc:
+                self.plugin.log(f"Prefixfy remote notice failed: {exc}")
             return
-        if self._notified:
+        self._notified = False
+        if not self.soft(False):
+            self._soft_notified = False
             return
-        self._notified = True
+        if self._soft_notified:
+            return
+        self._soft_notified = True
         try:
-            key, kwargs = self.notice()
-            self.plugin._toast(key, **kwargs)
+            self.plugin._toast("verify_soft_subtext")
         except Exception as exc:
             self.plugin.log(f"Prefixfy remote notice failed: {exc}")
 
@@ -6892,6 +7187,7 @@ class PrefixfyPlugin(BasePlugin):
         self.runtime_manager = RuntimeManager(self)
         self.transfer = ConfigTransfer(self)
         self.remote = RemoteControl(self)
+        self._weather = WeatherCache(self.log)
         self._internal_sends: Dict[Tuple[Any, str], float] = {}
         self._internal_lock = threading.Lock()
         self._dialog_kinds: Dict[int, str] = {}
@@ -6929,6 +7225,9 @@ class PrefixfyPlugin(BasePlugin):
         remote = getattr(self, "remote", None)
         if remote is not None:
             remote.stop()
+        weather = getattr(self, "_weather", None)
+        if weather is not None:
+            weather.close()
         configurations = getattr(self, "configurations", None)
         if configurations is not None:
             try:
@@ -8050,7 +8349,7 @@ class PrefixfyPlugin(BasePlugin):
             return []
         tr = self._tr
         icon = self._icon("msg_report", "msg_info")
-        if remote.outdated():
+        if remote.blocked():
             key, kwargs = remote.notice()
             subtext = tr(key, **kwargs)
             checksum = remote.latest_checksum()
@@ -8060,6 +8359,8 @@ class PrefixfyPlugin(BasePlugin):
                 return [Text(text=tr("account_blocked"), subtext=subtext, icon=icon, on_click=lambda *_: None)]
             title = tr("update_required" if key == "update_required_subtext" else "verify_required")
             return [Text(text=title, subtext=subtext, icon=icon, on_click=self._open_repo)]
+        if remote.suspended(False):
+            return [Text(text=tr("verify_soft"), subtext=tr("verify_soft_subtext"), icon=icon, on_click=self._open_repo)]
         return []
 
     def _open_repo(self, *_):
@@ -8075,9 +8376,9 @@ class PrefixfyPlugin(BasePlugin):
         self.localization.refresh()
         self.remote.request_refresh()
         notice = self._remote_notice()
-        if notice:
+        if notice and self.remote.blocked():
             return notice
-        settings: List[Any] = []
+        settings: List[Any] = list(notice)
         settings.append(
             self._switch("chat_scope_enabled", self._tr("enable_plugin"), self._tr("enable_plugin_subtext"), "msg_settings"),
         )
@@ -8513,6 +8814,21 @@ class PrefixfyPlugin(BasePlugin):
             self.log(f"Prefixfy reply name lookup failed: {exc}")
         return ""
 
+    def _reply_quote(self, params) -> str:
+        try:
+            message = getattr(params, "replyToMsg", None)
+            owner = getattr(message, "messageOwner", None) if message is not None else None
+            text = as_text(getattr(owner, "message", "")) if owner is not None else ""
+        except Exception as exc:
+            self.log(f"Prefixfy reply quote lookup failed: {exc}")
+            return ""
+        text = " ".join(text.split())
+        return text[:REPLY_QUOTE_LIMIT] + ("…" if len(text) > REPLY_QUOTE_LIMIT else "")
+
+    def _weather_text(self, city: str) -> str:
+        weather = getattr(self, "_weather", None)
+        return weather.get(city) if weather is not None else ""
+
     def _battery_text(self) -> str:
         try:
             from android.content import IntentFilter
@@ -8612,6 +8928,12 @@ class PrefixfyPlugin(BasePlugin):
                     raw = self._random_line(preview)
                 elif tag.startswith(("since:", "until:")):
                     raw = days_tag_value(tag, now.date())
+                elif tag.startswith("countdown:"):
+                    raw = countdown_tag_value(tag, now, self.localization.language())
+                elif tag == "quote":
+                    raw = "…" if preview else self._reply_quote(params)
+                elif tag == "weather" or tag.startswith("weather:"):
+                    raw = "☀ +20°C" if preview else self._weather_text(tag.partition(":")[2])
                 else:
                     raw = self._chat_title(account, dialog_id) or ("…" if preview else "")
                 values[tag] = sanitize_tag_value(raw)
@@ -8619,7 +8941,7 @@ class PrefixfyPlugin(BasePlugin):
 
         def replace(match) -> str:
             tag = match.group(1).lower()
-            flag = "tag_" + (tag.split(":", 1)[0] if tag.startswith(("since:", "until:")) else tag)
+            flag = "tag_" + tag.split(":", 1)[0]
             return value(tag) if FEATURES.on(flag) else match.group(0)
 
         return MASK_TAG_RE.sub(replace, mask)
