@@ -156,7 +156,7 @@
     "tag_chatcount": true,
     "tag_chattype": true,
     "tag_count": true,
-    "tag_countdown": false,
+    "tag_countdown": true,
     "tag_date": true,
     "tag_datetime": true,
     "tag_day": true,
@@ -170,7 +170,7 @@
     "tag_month": true,
     "tag_monthname": true,
     "tag_moon": true,
-    "tag_quote": false,
+    "tag_quote": true,
     "tag_random_emoji": true,
     "tag_reply": true,
     "tag_second": true,
@@ -181,7 +181,7 @@
     "tag_tz": true,
     "tag_until": true,
     "tag_username": true,
-    "tag_weather": false,
+    "tag_weather": true,
     "tag_week": true,
     "tag_weekday": true,
     "tag_weekday_short": true,
@@ -191,7 +191,7 @@
     "text_styles": true
   },
   "format": 1,
-  "issued_at": 1793474424,
-  "serial": 1793474424,
-  "signature": "moQI3Ku1As/3+4WAfQFIyND93QTdr63aN3t7YwuOWJ89KvXtqFK6gzCmqz6oBW8ST3l/JNi8MH06jUAmKN0y1jAwHMTU5FmHQvjnSlZ+AyyQnI9vu1ojf7i0lJOIuRq1I3FD42V5mczaGSnX2bduNcvEl3ir1lgwKL8jKoBdUyW5YriXRp0rHnjExa/VQUYQXeJjbXZeqCyCgiE+vQmkLa6F3EqnlyAWsmjvp0X61UngYmFZhuK4uqnkEOWAGK+f+6R/mp5cfh8CDBIn2kmPu+VT0wJmAvcpFAKkbA8nG+bBpOOacR4RYGthszP+t9M7UXRM3OE+JON3REPpv52Y6lgyL/998g0n5tacqKteVAy2zv9RQeOw/9ngPXT0lXuSJzZYCkkMDsmMlj5zrSiKE2G2YfAqQRSVWpK384/lthCrbZ9RUp1tqYZXdMK0twh6/fDs4DekFRKpbnoi63MW+buCSzxOgm0k3zQLmnCO8/8fb8Rd36AXSiPK9HS0Ewte"
+  "issued_at": 1793525218,
+  "serial": 1793525218,
+  "signature": "em0VOAPyRT5xm1JkWGLKEc9GqAMItbk2sOcPZhAaQ0dPqxvBPeQH7KixFHUYhB72+zvrdzwnJDxMLB+Hf/quKHzuF/7yvVHy+rGhdKNIkwWFpzmF3P8cFV7f/aVHBs/SQQml2RhhvHspWywCdze8r4agNShvAV2jMBnOQPXPY92PgbAOB+UXDqL1OtB2kwngbvdwoiiuPcN5YSm7d/GuvkOyjz0qAzfBBYlXaLKtNu+VbEnNgu4Y4hhr4WWGAsuMzncp8x6rMcO2hsoVqLxOzRRUYedNLOy8e0bdU3dN4xuexbYRMSJ3C4MuD5mfSCvow+NvoKeVMIpnJBuqkcpRnb+z9dcg134dPEC/zaK5JG3+n6tH7JV46uu9hr4WFb7ECSFEL0CHYiaXe3s/XJXbbJUElCCgLPn3ylmq7oOIf8lRZdK8skZq+0wyCIoxPPWTCHob4jex1unIHPk7SQ/AA2IRPJxNsABVfrhij146PEUOFG1HN5cxS+woiCvb6JlI"
 }
