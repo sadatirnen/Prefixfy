@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "31.3.1"
-__build__ = "31.3.1_20261101.2_11"
+__version__ = "31.4.0"
+__build__ = "31.4.0_20261101.3_12"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -2159,6 +2159,7 @@ _NEW_STRINGS = {
         "check_now_subtext": "Re-verify this build right away.",
         "check_started": "Checking…",
         "about_plugin": "About plugin",
+        "about_section": "Plugin",
         "about_plugin_subtext": "Version, build and verification status.",
         "about_title": "About Prefixfy",
         "about_version": "Version",
@@ -2208,6 +2209,7 @@ _NEW_STRINGS = {
         "check_now_subtext": "Сразу перепроверить подлинность сборки.",
         "check_started": "Проверяю…",
         "about_plugin": "О плагине",
+        "about_section": "Плагин",
         "about_plugin_subtext": "Версия, сборка и статус проверки.",
         "about_title": "О Prefixfy",
         "about_version": "Версия",
@@ -2257,6 +2259,7 @@ _NEW_STRINGS = {
         "check_now_subtext": "Одразу перевірити справжність збірки.",
         "check_started": "Перевіряю…",
         "about_plugin": "Про плагін",
+        "about_section": "Плагін",
         "about_plugin_subtext": "Версія, збірка та статус перевірки.",
         "about_title": "Про Prefixfy",
         "about_version": "Версія",
@@ -8585,9 +8588,10 @@ class PrefixfyPlugin(BasePlugin):
         self._show_builder(builder)
 
     def _settings_about(self) -> List[Any]:
-        """The last two rows of the settings: 'About plugin' and, right under it, 'Check now'.
+        """The last section of the settings: 'About plugin' and, right under it, 'Check now'.
         Both are always shown, including when the account is blacklisted or the check has passed."""
         return [
+            Header(text=self._tr("about_section")),
             Text(
                 text=self._tr("about_plugin"), subtext=self._tr("about_plugin_subtext"),
                 icon=self._icon("msg_info"), on_click=self._show_about,
