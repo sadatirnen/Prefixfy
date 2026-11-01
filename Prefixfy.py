@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "31.4.0"
-__build__ = "31.4.0_20261101.3_12"
+__version__ = "31.5.0"
+__build__ = "31.5.0_20261101.4_13"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -689,6 +689,7 @@ class LocalizationManager:
             "section_scope": "適用範囲",
             "plugin_language": "プラグインの言語",
             "language_auto": "言語を自動検出",
+            "about_section": "詳細情報",
             "language_auto_subtext": "Telegramのインターフェース言語を使用します。オフにすると手動で選択できます。",
             "message": "メッセージ",
             "message_subtext": "通常のテキストメッセージにプラグインを使用します。",
@@ -886,6 +887,7 @@ class LocalizationManager:
             "section_scope": "적용 범위",
             "plugin_language": "플러그인 언어",
             "language_auto": "언어 자동 감지",
+            "about_section": "정보",
             "language_auto_subtext": "Telegram 인터페이스 언어를 사용합니다. 끄면 언어를 직접 선택할 수 있습니다.",
             "message": "메시지",
             "message_subtext": "일반 텍스트 메시지에 플러그인을 사용합니다.",
@@ -1083,6 +1085,7 @@ class LocalizationManager:
             "section_scope": "نطاق العمل",
             "plugin_language": "لغة الإضافة",
             "language_auto": "الكشف التلقائي عن اللغة",
+            "about_section": "معلومات",
             "language_auto_subtext": "استخدام لغة واجهة Telegram. أوقف الخيار لاختيار اللغة يدويًا.",
             "message": "الرسالة",
             "message_subtext": "استخدام الإضافة للرسائل النصية العادية.",
@@ -1280,6 +1283,7 @@ class LocalizationManager:
             "section_scope": "Où ça s’applique",
             "plugin_language": "Langue du plugin",
             "language_auto": "Détection automatique de la langue",
+            "about_section": "Informations",
             "language_auto_subtext": "Utiliser la langue de l’interface Telegram. Désactivez pour choisir la langue manuellement.",
             "message": "Message",
             "message_subtext": "Utiliser le plugin pour les messages texte ordinaires.",
@@ -1477,6 +1481,7 @@ class LocalizationManager:
             "section_scope": "Gdzie działa",
             "plugin_language": "Język pluginu",
             "language_auto": "Automatyczne wykrywanie języka",
+            "about_section": "Informacje",
             "language_auto_subtext": "Używaj języka interfejsu Telegram. Wyłącz, aby wybrać język ręcznie.",
             "message": "Wiadomość",
             "message_subtext": "Używaj pluginu dla zwykłych wiadomości tekstowych.",
@@ -1674,6 +1679,7 @@ class LocalizationManager:
             "section_scope": "Wo es wirkt",
             "plugin_language": "Plugin-Sprache",
             "language_auto": "Sprache automatisch erkennen",
+            "about_section": "Informationen",
             "language_auto_subtext": "Sprache der Telegram-Oberfläche verwenden. Ausschalten, um die Sprache manuell zu wählen.",
             "message": "Nachricht",
             "message_subtext": "Plugin für normale Textnachrichten verwenden.",
@@ -2106,12 +2112,14 @@ class LocalizationManager:
                 found = self._match_language(value)
                 if found:
                     return found
-        return "en" if readable else None
+        return "ru" if readable else None
 
     def language(self) -> str:
         forced = LANGUAGE_MODES[self.plugin.settings.language_index()]
         if forced and language_enabled(forced):
             return forced
+        if not language_auto_enabled():
+            return "ru"
         now = time.monotonic()
         if self._auto_language is None or now - self._auto_checked > self.AUTO_LANGUAGE_TTL:
             detected = self._detect_interface_language()
@@ -2119,12 +2127,12 @@ class LocalizationManager:
             if detected is not None:
                 self._auto_language = detected
             elif self._auto_language is None:
-                self._auto_language = "en"
+                self._auto_language = "ru"
         return self._auto_language
 
     def tr(self, key: str, **kwargs) -> str:
-        table = self.STRINGS.get(self.language(), self.STRINGS["en"])
-        value = table.get(key) or self.STRINGS["en"].get(key, key)
+        table = self.STRINGS.get(self.language(), self.STRINGS["ru"])
+        value = table.get(key) or self.STRINGS["ru"].get(key, key)
         if kwargs:
             try:
                 return value.format(**kwargs)
@@ -2133,7 +2141,7 @@ class LocalizationManager:
         return value
 
     def language_items(self) -> List[str]:
-        names = self.LANGUAGE_ITEMS.get(self.language(), self.LANGUAGE_ITEMS["en"])
+        names = self.LANGUAGE_ITEMS.get(self.language(), self.LANGUAGE_ITEMS["ru"])
         return [names[index - 1] for index in enabled_language_indices()]
 
     def invalidate(self):
@@ -2159,7 +2167,7 @@ _NEW_STRINGS = {
         "check_now_subtext": "Re-verify this build right away.",
         "check_started": "Checking…",
         "about_plugin": "About plugin",
-        "about_section": "Plugin",
+        "about_section": "Details",
         "about_plugin_subtext": "Version, build and verification status.",
         "about_title": "About Prefixfy",
         "about_version": "Version",
@@ -2184,7 +2192,7 @@ _NEW_STRINGS = {
         "notice_reason_file": "The build label matches, but the file contents (checksum or size) differ from the signed release. The file was modified, damaged or only partly updated.",
         "notice_update_body": "What happened: the installed build ({installed}) does not match the official signed release ({latest}).\n\n{reason}\n\nWhat it means: until the build is official, Prefixfy does not format outgoing messages and its settings are hidden. Your settings and configurations are not deleted.\n\nWhat to do: install the latest official Prefixfy ({latest}) from the repository (button below) and restart Telegram. The plugin recovers by itself after the next successful check.",
         "notice_verify_body": "What happened: this Prefixfy build cannot be verified. It has no valid update key, so the signed manifest cannot be checked.\n\nWhat it means: the plugin does not format outgoing messages. Your settings are kept.\n\nWhat to do: install the official Prefixfy build from the repository.",
-        "notice_soft_body": "What happened: right now Prefixfy cannot confirm that this build is official. A fresh signed manifest or blacklist check could not be completed (no internet, GitHub is unreachable, the last successful check is too old, or the plugin file could not be read).\n\nWhat is paused: all optional features (text styles, Markdown, mask rotation and conditional masks, tags, schedule, chat configurations, media attachment, Premium Emoji, edit processing, configuration import, extra languages). Only the basic mask formatting works.\n\nWhat to do: check your internet connection and tap “Check now”. Nothing is lost: after a successful check everything returns by itself.",
+        "notice_soft_body": "What happened: right now Prefixfy cannot confirm that this build is official. A fresh signed manifest or blacklist check could not be completed (no internet, GitHub is unreachable, the last successful check is too old, or the plugin file could not be read).\n\nWhat is paused: all optional features (text styles, Markdown, mask rotation and conditional masks, tags, schedule, chat configurations, media attachment, Premium Emoji, edit processing, configuration import). Only the basic mask formatting works.\n\nWhat to do: check your internet connection and tap “Check now”. Nothing is lost: after a successful check everything returns by itself.",
         "notice_account_body": "What happened: one of the Telegram accounts signed in on this device is on the Prefixfy blacklist.\n\nWhat it means: the plugin is disabled on this device and does not format messages. Settings are not changed.\n\nIf you believe this is a mistake, contact the plugin author.",
         "check_ok": "Verification passed",
         "check_failed": "Verification failed. Check your internet connection and try again.",
@@ -2209,7 +2217,7 @@ _NEW_STRINGS = {
         "check_now_subtext": "Сразу перепроверить подлинность сборки.",
         "check_started": "Проверяю…",
         "about_plugin": "О плагине",
-        "about_section": "Плагин",
+        "about_section": "Сведения",
         "about_plugin_subtext": "Версия, сборка и статус проверки.",
         "about_title": "О Prefixfy",
         "about_version": "Версия",
@@ -2234,7 +2242,7 @@ _NEW_STRINGS = {
         "notice_reason_file": "Метка сборки совпадает, но содержимое файла (контрольная сумма или размер) отличается от подписанного релиза. Файл изменён, повреждён или обновлён не полностью.",
         "notice_update_body": "Что произошло: установленная сборка ({installed}) не совпадает с официальным подписанным релизом ({latest}).\n\n{reason}\n\nЧто это значит: пока сборка не официальная, Prefixfy не оформляет исходящие сообщения, а его настройки скрыты. Ваши настройки и конфигурации не удаляются.\n\nЧто делать: установите последнюю официальную версию Prefixfy ({latest}) из репозитория (кнопка ниже) и перезапустите Telegram. После следующей успешной проверки плагин восстановится сам.",
         "notice_verify_body": "Что произошло: эту сборку Prefixfy невозможно проверить. В ней нет действующего ключа обновлений, поэтому подписанный манифест не проверить.\n\nЧто это значит: плагин не оформляет исходящие сообщения. Настройки сохраняются.\n\nЧто делать: установите официальную сборку Prefixfy из репозитория.",
-        "notice_soft_body": "Что произошло: сейчас Prefixfy не может подтвердить, что эта сборка официальная. Не удалось завершить проверку свежего подписанного манифеста или чёрного списка (нет интернета, GitHub недоступен, последняя успешная проверка слишком старая или не удалось прочитать файл плагина).\n\nЧто приостановлено: все дополнительные функции (стили текста, Markdown, ротация и условные маски, теги, расписание, конфигурации чатов, вложение медиа, Premium Emoji, оформление при редактировании, импорт конфигураций, дополнительные языки). Работает только базовое оформление маской.\n\nЧто делать: проверьте подключение к интернету и нажмите «Проверить сейчас». Ничего не потеряно: после успешной проверки всё вернётся само.",
+        "notice_soft_body": "Что произошло: сейчас Prefixfy не может подтвердить, что эта сборка официальная. Не удалось завершить проверку свежего подписанного манифеста или чёрного списка (нет интернета, GitHub недоступен, последняя успешная проверка слишком старая или не удалось прочитать файл плагина).\n\nЧто приостановлено: все дополнительные функции (стили текста, Markdown, ротация и условные маски, теги, расписание, конфигурации чатов, вложение медиа, Premium Emoji, оформление при редактировании, импорт конфигураций). Работает только базовое оформление маской.\n\nЧто делать: проверьте подключение к интернету и нажмите «Проверить сейчас». Ничего не потеряно: после успешной проверки всё вернётся само.",
         "notice_account_body": "Что произошло: один из аккаунтов Telegram, выполнивших вход на этом устройстве, внесён в чёрный список Prefixfy.\n\nЧто это значит: плагин отключён на этом устройстве и не оформляет сообщения. Настройки не меняются.\n\nЕсли считаете, что это ошибка, свяжитесь с автором плагина.",
         "check_ok": "Проверка пройдена",
         "check_failed": "Проверка не пройдена. Проверьте подключение к интернету и повторите.",
@@ -2259,7 +2267,7 @@ _NEW_STRINGS = {
         "check_now_subtext": "Одразу перевірити справжність збірки.",
         "check_started": "Перевіряю…",
         "about_plugin": "Про плагін",
-        "about_section": "Плагін",
+        "about_section": "Відомості",
         "about_plugin_subtext": "Версія, збірка та статус перевірки.",
         "about_title": "Про Prefixfy",
         "about_version": "Версія",
@@ -2284,7 +2292,7 @@ _NEW_STRINGS = {
         "notice_reason_file": "Мітка збірки збігається, але вміст файлу (контрольна сума або розмір) відрізняється від підписаного релізу. Файл змінено, пошкоджено або оновлено не повністю.",
         "notice_update_body": "Що сталося: встановлена збірка ({installed}) не збігається з офіційним підписаним релізом ({latest}).\n\n{reason}\n\nЩо це означає: доки збірка не офіційна, Prefixfy не оформлює вихідні повідомлення, а його налаштування приховано. Ваші налаштування й конфігурації не видаляються.\n\nЩо робити: встановіть останню офіційну версію Prefixfy ({latest}) із репозиторію (кнопка нижче) та перезапустіть Telegram. Після наступної успішної перевірки плагін відновиться сам.",
         "notice_verify_body": "Що сталося: цю збірку Prefixfy неможливо перевірити. У ній немає чинного ключа оновлень, тому підписаний маніфест перевірити не можна.\n\nЩо це означає: плагін не оформлює вихідні повідомлення. Налаштування зберігаються.\n\nЩо робити: встановіть офіційну збірку Prefixfy із репозиторію.",
-        "notice_soft_body": "Що сталося: зараз Prefixfy не може підтвердити, що ця збірка офіційна. Не вдалося завершити перевірку свіжого підписаного маніфесту або чорного списку (немає інтернету, GitHub недоступний, остання успішна перевірка надто стара або не вдалося прочитати файл плагіна).\n\nЩо призупинено: усі додаткові функції (стилі тексту, Markdown, ротація й умовні маски, теги, розклад, конфігурації чатів, вкладення медіа, Premium Emoji, оформлення під час редагування, імпорт конфігурацій, додаткові мови). Працює лише базове оформлення маскою.\n\nЩо робити: перевірте підключення до інтернету й натисніть «Перевірити зараз». Нічого не втрачено: після успішної перевірки все повернеться саме.",
+        "notice_soft_body": "Що сталося: зараз Prefixfy не може підтвердити, що ця збірка офіційна. Не вдалося завершити перевірку свіжого підписаного маніфесту або чорного списку (немає інтернету, GitHub недоступний, остання успішна перевірка надто стара або не вдалося прочитати файл плагіна).\n\nЩо призупинено: усі додаткові функції (стилі тексту, Markdown, ротація й умовні маски, теги, розклад, конфігурації чатів, вкладення медіа, Premium Emoji, оформлення під час редагування, імпорт конфігурацій). Працює лише базове оформлення маскою.\n\nЩо робити: перевірте підключення до інтернету й натисніть «Перевірити зараз». Нічого не втрачено: після успішної перевірки все повернеться саме.",
         "notice_account_body": "Що сталося: один з акаунтів Telegram, у яких виконано вхід на цьому пристрої, внесено до чорного списку Prefixfy.\n\nЩо це означає: плагін вимкнено на цьому пристрої, він не оформлює повідомлення. Налаштування не змінюються.\n\nЯкщо вважаєте, що це помилка, зв’яжіться з автором плагіна.",
         "check_ok": "Перевірку пройдено",
         "check_failed": "Перевірку не пройдено. Перевірте підключення до інтернету й повторіть.",
@@ -2294,8 +2302,8 @@ _NEW_STRINGS = {
     },
 }
 for _code, _table in LocalizationManager.STRINGS.items():
-    _extra = _NEW_STRINGS.get(_code, _NEW_STRINGS["en"])
-    _base = _NEW_STRINGS["en"]
+    _extra = _NEW_STRINGS.get(_code, _NEW_STRINGS["ru"])
+    _base = _NEW_STRINGS["ru"]
     for _key, _value in _base.items():
         _table.setdefault(_key, _extra.get(_key, _value))
     if _table.get("mask_tags_hint"):
@@ -2335,7 +2343,7 @@ def countdown_tag_value(tag: str, now, language: str) -> str:
         target = datetime.strptime(raw, "%Y-%m-%d %H:%M" if " " in raw else "%Y-%m-%d")
     except ValueError:
         return ""
-    day, hour, minute = COUNTDOWN_UNITS.get(language, COUNTDOWN_UNITS["en"])
+    day, hour, minute = COUNTDOWN_UNITS.get(language, COUNTDOWN_UNITS["ru"])
     seconds = int((target - now).total_seconds())
     if seconds <= 0:
         return f"0{minute}"
@@ -3316,7 +3324,8 @@ FEATURE_FLAGS: Dict[str, bool] = {
     "schedule": True,
     "chat_configs": True,
     "config_import": True,
-    "lang_ru": True,
+    "lang_auto": True,
+    "lang_en": True,
     "lang_ja": True,
     "lang_ko": True,
     "lang_ar": True,
@@ -3357,14 +3366,14 @@ class FeatureFlags:
         return self._soft
 
     def set_soft(self, value: bool) -> bool:
-        """Soft block: while on, every feature flag reads as off. Returns True if the state changed."""
+        """Soft block: while on, every feature flag except the language ones (lang_*) reads as off. Returns True if the state changed."""
         with self._lock:
             changed = self._soft != bool(value)
             self._soft = bool(value)
             return changed
 
     def on(self, name: str) -> bool:
-        if self._soft:
+        if self._soft and not name.startswith("lang_"):
             return False
         return self._values.get(name, True)
 
@@ -3471,8 +3480,13 @@ def random_style_pool() -> Tuple[int, ...]:
 
 
 def language_enabled(code) -> bool:
-    """English is the mandatory base pack; every other pack can be switched off remotely."""
-    return code == "en" or FEATURES.on("lang_" + as_text(code))
+    """Russian is the mandatory base pack; every other pack can be switched off remotely."""
+    return code == "ru" or FEATURES.on("lang_" + as_text(code))
+
+
+def language_auto_enabled() -> bool:
+    """Automatic interface-language detection can be switched off remotely (flag lang_auto)."""
+    return FEATURES.on("lang_auto")
 
 
 def enabled_language_indices() -> List[int]:
@@ -3481,7 +3495,7 @@ def enabled_language_indices() -> List[int]:
 
 
 def has_language_choice() -> bool:
-    return any(LANGUAGE_MODES[index] != "en" for index in enabled_language_indices())
+    return any(LANGUAGE_MODES[index] != "ru" for index in enabled_language_indices())
 
 
 class RuntimeSettings:
@@ -7968,15 +7982,17 @@ class PrefixfyPlugin(BasePlugin):
         current_index = self.settings.language_index()
         if bool(enabled) == (current_index == 0):
             return
+        if enabled and not language_auto_enabled():
+            return
         if enabled:
             index = 0
         else:
             current = self.localization.language()
-            index = LANGUAGE_MODES.index(current) if current in LANGUAGE_MODES else LANGUAGE_MODES.index("en")
+            index = LANGUAGE_MODES.index(current) if current in LANGUAGE_MODES else LANGUAGE_MODES.index("ru")
         self._apply_language_index(index)
 
     def _on_language_select_change(self, new_index):
-        if self.settings.language_index() == 0:
+        if self.settings.language_index() == 0 and language_auto_enabled():
             return
         enabled = enabled_language_indices()
         if not (_is_int(new_index) and 0 <= new_index < len(enabled)):
@@ -8416,8 +8432,9 @@ class PrefixfyPlugin(BasePlugin):
         tr = self._tr
         language_index = self.settings.language_index()
         enabled = enabled_language_indices()
-        if language_index != 0 and language_index not in enabled:
-            language_index = LANGUAGE_MODES.index("en")
+        auto_on = language_auto_enabled()
+        if (language_index == 0 and not auto_on) or (language_index != 0 and language_index not in enabled):
+            language_index = LANGUAGE_MODES.index("ru")
         position = enabled.index(language_index) if language_index in enabled else 0
         ui_state = (language_index, tuple(enabled))
         if ui_state != getattr(self, "_language_ui_index", None):
@@ -8434,11 +8451,12 @@ class PrefixfyPlugin(BasePlugin):
         icon = self._icon("msg_language")
         items: List[Any] = [
             Header(text=tr("language")),
-            Switch(
+        ]
+        if auto_on:
+            items.append(Switch(
                 key=auto_key, text=tr("language_auto"), default=language_index == 0,
                 subtext=tr("language_auto_subtext"), icon=icon, on_change=self._on_language_auto_change,
-            ),
-        ]
+            ))
         if language_index != 0:
             items.append(Selector(
                 key=select_key, text=tr("plugin_language"), default=position,
@@ -9140,7 +9158,7 @@ class PrefixfyPlugin(BasePlugin):
                     if tag == "weekday_short" and language in WEEKDAY_SHORT:
                         raw = WEEKDAY_SHORT[language][now.weekday()]
                     else:
-                        names = WEEKDAY_NAMES.get(language, WEEKDAY_NAMES["en"])
+                        names = WEEKDAY_NAMES.get(language, WEEKDAY_NAMES["ru"])
                         raw = names[now.weekday()]
                         if tag == "weekday_short":
                             raw = raw[:3]
@@ -9161,10 +9179,10 @@ class PrefixfyPlugin(BasePlugin):
                 elif tag == "yearday":
                     raw = str(now.timetuple().tm_yday)
                 elif tag == "monthname":
-                    names = MONTH_NAMES.get(self.localization.language(), MONTH_NAMES["en"])
+                    names = MONTH_NAMES.get(self.localization.language(), MONTH_NAMES["ru"])
                     raw = names[now.month - 1]
                 elif tag == "daypart":
-                    names = DAYPART_NAMES.get(self.localization.language(), DAYPART_NAMES["en"])
+                    names = DAYPART_NAMES.get(self.localization.language(), DAYPART_NAMES["ru"])
                     raw = names[daypart_index(now.hour * 60 + now.minute)]
                 elif tag == "timestamp":
                     raw = str(int(time.time()))
