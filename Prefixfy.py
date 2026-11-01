@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "31.2.0"
-__build__ = "31.2.0_20261031.1_9"
+__version__ = "31.3.0"
+__build__ = "31.3.0_20261101.1_10"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -175,6 +175,14 @@ MONTH_NAMES = {
     "pl": ("styczeń", "luty", "marzec", "kwiecień", "maj", "czerwiec", "lipiec", "sierpień", "wrzesień", "październik", "listopad", "grudzień"),
     "de": ("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"),
     "uk": ("Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"),
+}
+WEEKDAY_SHORT = {
+    "ru": ("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"),
+    "uk": ("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"),
+    "pl": ("pn", "wt", "śr", "cz", "pt", "sb", "nd"),
+    "de": ("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"),
+    "ja": ("月", "火", "水", "木", "金", "土", "日"),
+    "ko": ("월", "화", "수", "목", "금", "토", "일"),
 }
 DAYPART_NAMES = {
     "ru": ("Утро", "День", "Вечер", "Ночь"),
@@ -2150,6 +2158,33 @@ _NEW_STRINGS = {
         "check_now": "Check now",
         "check_now_subtext": "Re-verify this build right away.",
         "check_started": "Checking…",
+        "about_plugin": "About plugin",
+        "about_plugin_subtext": "Version, build and verification status.",
+        "about_title": "About Prefixfy",
+        "about_version": "Version",
+        "about_build_date": "Build date",
+        "about_build_number": "Build number of the day",
+        "about_serial": "Serial",
+        "about_build_label": "Full build label",
+        "about_latest": "Latest official build",
+        "about_status": "Verification",
+        "about_unknown": "unknown",
+        "about_note": "All values are read from this file's build label at the moment you open this window.",
+        "status_ok": "passed: this build matches the signed official release",
+        "status_pending": "waiting for the first check",
+        "status_soft": "not verified right now: optional features are paused",
+        "status_mismatch": "failed: this build does not match the official release",
+        "status_blacklisted": "denied: an account on this device is blacklisted",
+        "status_no_key": "failed: this build contains no update key",
+        "status_integrity": "not verified: the plugin file could not be read for the check",
+        "notice_ok": "OK",
+        "notice_open_repo": "Repository",
+        "notice_reason_version": "The version or build label of the installed plugin differs from the signed official manifest.",
+        "notice_reason_file": "The build label matches, but the file contents (checksum or size) differ from the signed release. The file was modified, damaged or only partly updated.",
+        "notice_update_body": "What happened: the installed build ({installed}) does not match the official signed release ({latest}).\n\n{reason}\n\nWhat it means: until the build is official, Prefixfy does not format outgoing messages and its settings are hidden. Your settings and configurations are not deleted.\n\nWhat to do: install the latest official Prefixfy ({latest}) from the repository (button below) and restart Telegram. The plugin recovers by itself after the next successful check.",
+        "notice_verify_body": "What happened: this Prefixfy build cannot be verified. It has no valid update key, so the signed manifest cannot be checked.\n\nWhat it means: the plugin does not format outgoing messages. Your settings are kept.\n\nWhat to do: install the official Prefixfy build from the repository.",
+        "notice_soft_body": "What happened: right now Prefixfy cannot confirm that this build is official. A fresh signed manifest or blacklist check could not be completed (no internet, GitHub is unreachable, the last successful check is too old, or the plugin file could not be read).\n\nWhat is paused: all optional features (text styles, Markdown, mask rotation and conditional masks, tags, schedule, chat configurations, media attachment, Premium Emoji, edit processing, configuration import, extra languages). Only the basic mask formatting works.\n\nWhat to do: check your internet connection and tap “Check now”. Nothing is lost: after a successful check everything returns by itself.",
+        "notice_account_body": "What happened: one of the Telegram accounts signed in on this device is on the Prefixfy blacklist.\n\nWhat it means: the plugin is disabled on this device and does not format messages. Settings are not changed.\n\nIf you believe this is a mistake, contact the plugin author.",
         "check_ok": "Verification passed",
         "check_failed": "Verification failed. Check your internet connection and try again.",
         "verify_soft": "Features paused",
@@ -2172,6 +2207,33 @@ _NEW_STRINGS = {
         "check_now": "Проверить сейчас",
         "check_now_subtext": "Сразу перепроверить подлинность сборки.",
         "check_started": "Проверяю…",
+        "about_plugin": "О плагине",
+        "about_plugin_subtext": "Версия, сборка и статус проверки.",
+        "about_title": "О Prefixfy",
+        "about_version": "Версия",
+        "about_build_date": "Дата сборки",
+        "about_build_number": "Номер сборки за день",
+        "about_serial": "Serial",
+        "about_build_label": "Полная метка сборки",
+        "about_latest": "Последняя официальная сборка",
+        "about_status": "Проверка",
+        "about_unknown": "неизвестно",
+        "about_note": "Все значения читаются из метки сборки этого файла в момент открытия окна.",
+        "status_ok": "пройдена: сборка совпадает с подписанным официальным релизом",
+        "status_pending": "ожидание первой проверки",
+        "status_soft": "сейчас не подтверждена: дополнительные функции приостановлены",
+        "status_mismatch": "не пройдена: сборка не совпадает с официальным релизом",
+        "status_blacklisted": "отказано: аккаунт на этом устройстве в чёрном списке",
+        "status_no_key": "не пройдена: в этой сборке нет ключа обновлений",
+        "status_integrity": "не подтверждена: не удалось прочитать файл плагина для проверки",
+        "notice_ok": "OK",
+        "notice_open_repo": "Репозиторий",
+        "notice_reason_version": "Версия или метка сборки установленного плагина отличается от подписанного официального манифеста.",
+        "notice_reason_file": "Метка сборки совпадает, но содержимое файла (контрольная сумма или размер) отличается от подписанного релиза. Файл изменён, повреждён или обновлён не полностью.",
+        "notice_update_body": "Что произошло: установленная сборка ({installed}) не совпадает с официальным подписанным релизом ({latest}).\n\n{reason}\n\nЧто это значит: пока сборка не официальная, Prefixfy не оформляет исходящие сообщения, а его настройки скрыты. Ваши настройки и конфигурации не удаляются.\n\nЧто делать: установите последнюю официальную версию Prefixfy ({latest}) из репозитория (кнопка ниже) и перезапустите Telegram. После следующей успешной проверки плагин восстановится сам.",
+        "notice_verify_body": "Что произошло: эту сборку Prefixfy невозможно проверить. В ней нет действующего ключа обновлений, поэтому подписанный манифест не проверить.\n\nЧто это значит: плагин не оформляет исходящие сообщения. Настройки сохраняются.\n\nЧто делать: установите официальную сборку Prefixfy из репозитория.",
+        "notice_soft_body": "Что произошло: сейчас Prefixfy не может подтвердить, что эта сборка официальная. Не удалось завершить проверку свежего подписанного манифеста или чёрного списка (нет интернета, GitHub недоступен, последняя успешная проверка слишком старая или не удалось прочитать файл плагина).\n\nЧто приостановлено: все дополнительные функции (стили текста, Markdown, ротация и условные маски, теги, расписание, конфигурации чатов, вложение медиа, Premium Emoji, оформление при редактировании, импорт конфигураций, дополнительные языки). Работает только базовое оформление маской.\n\nЧто делать: проверьте подключение к интернету и нажмите «Проверить сейчас». Ничего не потеряно: после успешной проверки всё вернётся само.",
+        "notice_account_body": "Что произошло: один из аккаунтов Telegram, выполнивших вход на этом устройстве, внесён в чёрный список Prefixfy.\n\nЧто это значит: плагин отключён на этом устройстве и не оформляет сообщения. Настройки не меняются.\n\nЕсли считаете, что это ошибка, свяжитесь с автором плагина.",
         "check_ok": "Проверка пройдена",
         "check_failed": "Проверка не пройдена. Проверьте подключение к интернету и повторите.",
         "verify_soft": "Функции приостановлены",
@@ -2194,6 +2256,33 @@ _NEW_STRINGS = {
         "check_now": "Перевірити зараз",
         "check_now_subtext": "Одразу перевірити справжність збірки.",
         "check_started": "Перевіряю…",
+        "about_plugin": "Про плагін",
+        "about_plugin_subtext": "Версія, збірка та статус перевірки.",
+        "about_title": "Про Prefixfy",
+        "about_version": "Версія",
+        "about_build_date": "Дата збірки",
+        "about_build_number": "Номер збірки за день",
+        "about_serial": "Serial",
+        "about_build_label": "Повна мітка збірки",
+        "about_latest": "Остання офіційна збірка",
+        "about_status": "Перевірка",
+        "about_unknown": "невідомо",
+        "about_note": "Усі значення читаються з мітки збірки цього файлу в момент відкриття вікна.",
+        "status_ok": "пройдено: збірка збігається з підписаним офіційним релізом",
+        "status_pending": "очікування першої перевірки",
+        "status_soft": "зараз не підтверджено: додаткові функції призупинено",
+        "status_mismatch": "не пройдено: збірка не збігається з офіційним релізом",
+        "status_blacklisted": "відмовлено: акаунт на цьому пристрої в чорному списку",
+        "status_no_key": "не пройдено: у цій збірці немає ключа оновлень",
+        "status_integrity": "не підтверджено: не вдалося прочитати файл плагіна для перевірки",
+        "notice_ok": "OK",
+        "notice_open_repo": "Репозиторій",
+        "notice_reason_version": "Версія або мітка збірки встановленого плагіна відрізняється від підписаного офіційного маніфесту.",
+        "notice_reason_file": "Мітка збірки збігається, але вміст файлу (контрольна сума або розмір) відрізняється від підписаного релізу. Файл змінено, пошкоджено або оновлено не повністю.",
+        "notice_update_body": "Що сталося: встановлена збірка ({installed}) не збігається з офіційним підписаним релізом ({latest}).\n\n{reason}\n\nЩо це означає: доки збірка не офіційна, Prefixfy не оформлює вихідні повідомлення, а його налаштування приховано. Ваші налаштування й конфігурації не видаляються.\n\nЩо робити: встановіть останню офіційну версію Prefixfy ({latest}) із репозиторію (кнопка нижче) та перезапустіть Telegram. Після наступної успішної перевірки плагін відновиться сам.",
+        "notice_verify_body": "Що сталося: цю збірку Prefixfy неможливо перевірити. У ній немає чинного ключа оновлень, тому підписаний маніфест перевірити не можна.\n\nЩо це означає: плагін не оформлює вихідні повідомлення. Налаштування зберігаються.\n\nЩо робити: встановіть офіційну збірку Prefixfy із репозиторію.",
+        "notice_soft_body": "Що сталося: зараз Prefixfy не може підтвердити, що ця збірка офіційна. Не вдалося завершити перевірку свіжого підписаного маніфесту або чорного списку (немає інтернету, GitHub недоступний, остання успішна перевірка надто стара або не вдалося прочитати файл плагіна).\n\nЩо призупинено: усі додаткові функції (стилі тексту, Markdown, ротація й умовні маски, теги, розклад, конфігурації чатів, вкладення медіа, Premium Emoji, оформлення під час редагування, імпорт конфігурацій, додаткові мови). Працює лише базове оформлення маскою.\n\nЩо робити: перевірте підключення до інтернету й натисніть «Перевірити зараз». Нічого не втрачено: після успішної перевірки все повернеться саме.",
+        "notice_account_body": "Що сталося: один з акаунтів Telegram, у яких виконано вхід на цьому пристрої, внесено до чорного списку Prefixfy.\n\nЩо це означає: плагін вимкнено на цьому пристрої, він не оформлює повідомлення. Налаштування не змінюються.\n\nЯкщо вважаєте, що це помилка, зв’яжіться з автором плагіна.",
         "check_ok": "Перевірку пройдено",
         "check_failed": "Перевірку не пройдено. Перевірте підключення до інтернету й повторіть.",
         "verify_soft": "Функції призупинено",
@@ -7113,6 +7202,29 @@ class RemoteControl:
         expected_size = self._field("size", 0)
         return bool(expected_size and expected_size != self._self_size)
 
+    def mismatch_reason(self) -> str:
+        """'version' if the build label differs from the manifest, 'file' if only the contents differ, '' if none."""
+        latest = self._field("version", ())
+        if not latest or self._cache_stale or not self.mismatched():
+            return ""
+        return "version" if parse_version(__build__) != latest else "file"
+
+    def status(self) -> str:
+        """Key of the verification status shown in the About dialog."""
+        if not self.enabled:
+            return "status_no_key"
+        if self.blacklisted():
+            return "status_blacklisted"
+        if self.mismatched():
+            return "status_mismatch"
+        if self._integrity_unknown():
+            return "status_integrity"
+        if self.verified():
+            return "status_ok"
+        with self._lock:
+            has_state = self._state is not None
+        return "status_soft" if has_state else "status_pending"
+
     def verified(self) -> bool:
         with self._lock:
             has_state = self._state is not None
@@ -8371,15 +8483,113 @@ class PrefixfyPlugin(BasePlugin):
             if checksum and key == "update_required_subtext":
                 subtext += f"\nSHA-256 {checksum[:12]}…"
             if key == "account_blocked_subtext":
-                return [Text(text=tr("account_blocked"), subtext=subtext, icon=icon, on_click=lambda *_: None)]
-            title = tr("update_required" if key == "update_required_subtext" else "verify_required")
-            return [Text(text=title, subtext=subtext, icon=icon, on_click=self._open_repo)]
+                return [Text(text=tr("account_blocked"), subtext=subtext, icon=icon,
+                             on_click=lambda *_: self._show_notice_dialog("account"))]
+            if key == "update_required_subtext":
+                return [Text(text=tr("update_required"), subtext=subtext, icon=icon,
+                             on_click=lambda *_: self._show_notice_dialog("update"))]
+            return [Text(text=tr("verify_required"), subtext=subtext, icon=icon,
+                         on_click=lambda *_: self._show_notice_dialog("verify"))]
         if remote.suspended(False):
             return [
-                Text(text=tr("verify_soft"), subtext=tr("verify_soft_subtext"), icon=icon, on_click=self._open_repo),
+                Text(text=tr("verify_soft"), subtext=tr("verify_soft_subtext"), icon=icon,
+                     on_click=lambda *_: self._show_notice_dialog("soft")),
                 Text(text=tr("check_now"), subtext=tr("check_now_subtext"), icon=self._icon("msg_retry"), on_click=self._check_now),
             ]
         return []
+
+    def _notice_dialog_text(self, kind: str) -> str:
+        tr = self._tr
+        remote = getattr(self, "remote", None)
+        if kind == "account":
+            return tr("notice_account_body")
+        if kind == "verify":
+            return tr("notice_verify_body")
+        if kind == "soft":
+            return tr("notice_soft_body")
+        reason = ""
+        if remote is not None:
+            reason = tr("notice_reason_file" if remote.mismatch_reason() == "file" else "notice_reason_version")
+        latest = remote.latest_version() if remote is not None else ""
+        return tr(
+            "notice_update_body",
+            installed=__build__, latest=latest or tr("about_unknown"), reason=reason,
+        )
+
+    def _show_notice_dialog(self, kind: str):
+        """Tapping 'Update required' / 'Features paused' / 'Verification failed' explains what happened."""
+        tr = self._tr
+        activity = self._dialog_activity()
+        if not activity:
+            return
+        titles = {
+            "update": "update_required", "verify": "verify_required",
+            "soft": "verify_soft", "account": "account_blocked",
+        }
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(tr(titles.get(kind, "verify_required")))
+        builder.set_message(self._notice_dialog_text(kind))
+        builder.set_positive_button(tr("notice_ok"), lambda bld, which: bld.dismiss())
+        if kind == "update":
+            def open_repo(bld, which):
+                bld.dismiss()
+                self._open_repo()
+            builder.set_negative_button(tr("notice_open_repo"), open_repo)
+        elif kind == "soft":
+            def check(bld, which):
+                bld.dismiss()
+                self._check_now()
+            builder.set_negative_button(tr("check_now"), check)
+        self._show_builder(builder)
+
+    def _about_status_key(self) -> str:
+        remote = getattr(self, "remote", None)
+        return remote.status() if remote is not None else "status_pending"
+
+    def _about_text(self) -> str:
+        """Everything here is parsed from __build__ on every call; nothing is stored ahead of time."""
+        tr = self._tr
+        unknown = tr("about_unknown")
+        parts = parse_version(__build__)
+        main = date_text = number = serial = unknown
+        if len(parts) >= 3:
+            main = f"{parts[0]}.{parts[1]}.{parts[2]}"
+        if len(parts) == 6:
+            raw_date = f"{parts[3]:08d}"
+            try:
+                date_text = datetime.strptime(raw_date, "%Y%m%d").strftime("%Y-%m-%d")
+            except ValueError:
+                date_text = raw_date
+            number, serial = str(parts[4]), str(parts[5])
+        lines = [
+            f"{tr('about_version')}: {main}",
+            f"{tr('about_build_date')}: {date_text}",
+            f"{tr('about_build_number')}: {number}",
+            f"{tr('about_serial')}: {serial}",
+            f"{tr('about_build_label')}: {__build__ or unknown}",
+        ]
+        remote = getattr(self, "remote", None)
+        latest = remote.latest_version() if remote is not None else ""
+        if latest:
+            lines.append(f"{tr('about_latest')}: {latest}")
+        lines.append(f"{tr('about_status')}: {tr(self._about_status_key())}")
+        return "\n".join(lines) + "\n\n" + tr("about_note")
+
+    def _show_about(self, *_):
+        activity = self._dialog_activity()
+        if not activity:
+            return
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(self._tr("about_title"))
+        builder.set_message(self._about_text())
+        builder.set_positive_button(self._tr("notice_ok"), lambda bld, which: bld.dismiss())
+        self._show_builder(builder)
+
+    def _settings_about(self) -> List[Any]:
+        return [Text(
+            text=self._tr("about_plugin"), subtext=self._tr("about_plugin_subtext"),
+            icon=self._icon("msg_info"), on_click=self._show_about,
+        )]
 
     def _check_now(self, *_):
         remote = getattr(self, "remote", None)
@@ -8415,7 +8625,7 @@ class PrefixfyPlugin(BasePlugin):
         self.remote.request_refresh()
         notice = self._remote_notice()
         if notice and self.remote.blocked():
-            return notice
+            return notice + self._settings_about()
         settings: List[Any] = list(notice)
         settings.append(
             self._switch("chat_scope_enabled", self._tr("enable_plugin"), self._tr("enable_plugin_subtext"), "msg_settings"),
@@ -8423,6 +8633,7 @@ class PrefixfyPlugin(BasePlugin):
         for section in (
             self._settings_configurations, self._settings_scope, self._settings_mask, self._settings_style,
             self._settings_separator, self._settings_exceptions, self._settings_media, self._settings_language,
+            self._settings_about,
         ):
             settings += section()
         return settings
@@ -8909,10 +9120,14 @@ class PrefixfyPlugin(BasePlugin):
                 elif tag == "day":
                     raw = now.strftime("%d")
                 elif tag in ("weekday", "weekday_short"):
-                    names = WEEKDAY_NAMES.get(self.localization.language(), WEEKDAY_NAMES["en"])
-                    raw = names[now.weekday()]
-                    if tag == "weekday_short":
-                        raw = raw[:3] if raw.isascii() else raw[:2]
+                    language = self.localization.language()
+                    if tag == "weekday_short" and language in WEEKDAY_SHORT:
+                        raw = WEEKDAY_SHORT[language][now.weekday()]
+                    else:
+                        names = WEEKDAY_NAMES.get(language, WEEKDAY_NAMES["en"])
+                        raw = names[now.weekday()]
+                        if tag == "weekday_short":
+                            raw = raw[:3]
                 elif tag == "year_short":
                     raw = now.strftime("%y")
                 elif tag == "time12":
