@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 9 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "31.3.0"
-__build__ = "31.3.0_20261101.1_10"
+__version__ = "31.3.1"
+__build__ = "31.3.1_20261101.2_11"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -8494,7 +8494,6 @@ class PrefixfyPlugin(BasePlugin):
             return [
                 Text(text=tr("verify_soft"), subtext=tr("verify_soft_subtext"), icon=icon,
                      on_click=lambda *_: self._show_notice_dialog("soft")),
-                Text(text=tr("check_now"), subtext=tr("check_now_subtext"), icon=self._icon("msg_retry"), on_click=self._check_now),
             ]
         return []
 
@@ -8586,10 +8585,18 @@ class PrefixfyPlugin(BasePlugin):
         self._show_builder(builder)
 
     def _settings_about(self) -> List[Any]:
-        return [Text(
-            text=self._tr("about_plugin"), subtext=self._tr("about_plugin_subtext"),
-            icon=self._icon("msg_info"), on_click=self._show_about,
-        )]
+        """The last two rows of the settings: 'About plugin' and, right under it, 'Check now'.
+        Both are always shown, including when the account is blacklisted or the check has passed."""
+        return [
+            Text(
+                text=self._tr("about_plugin"), subtext=self._tr("about_plugin_subtext"),
+                icon=self._icon("msg_info"), on_click=self._show_about,
+            ),
+            Text(
+                text=self._tr("check_now"), subtext=self._tr("check_now_subtext"),
+                icon=self._icon("msg_retry"), on_click=self._check_now,
+            ),
+        ]
 
     def _check_now(self, *_):
         remote = getattr(self, "remote", None)
@@ -8601,8 +8608,13 @@ class PrefixfyPlugin(BasePlugin):
         def work():
             try:
                 remote.refresh()
-                still_soft = remote.blocked() or remote.soft()
-                self._toast("check_failed" if still_soft else "check_ok")
+                if remote.blocked():
+                    key, kwargs = remote.notice()
+                    self._toast(key, **kwargs)
+                elif remote.soft():
+                    self._toast("check_failed")
+                else:
+                    self._toast("check_ok")
                 self.reload_settings_ui()
             except Exception as exc:
                 self.log(f"Prefixfy manual check failed: {exc}")
