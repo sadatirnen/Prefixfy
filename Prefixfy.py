@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 6 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "32.0.0"
-__build__ = "32.0.0_20261102.1_15"
+__version__ = "32.1.0"
+__build__ = "32.1.0_20261103.1_16"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -82,7 +82,9 @@ MANIFEST_DOMAIN = b"Prefixfy-manifest-v1\n"
 FLAGS_FILE = "flags.json"
 FLAGS_FORMAT = 1
 FLAGS_DOMAIN = b"Prefixfy-flags-v1\n"
-FLAGS_CACHE_FILE = "Prefixfy_flags.json"
+FLAGS_CACHE_FILE = ".pfx_profile"
+FLAGS_CACHE_LEGACY_FILE = "Prefixfy_flags.json"
+SERIALS_FILE = ".pfx_serials"
 FLAGS_MAX_COUNT = 128
 FLAGS_MAX_ACCOUNTS = 1024
 FLAGS_MAX_BYTES = 256 * 1024
@@ -1562,8 +1564,11 @@ _NEW_STRINGS = {
         "tag_lines_empty": "No lines yet",
         "tag_lines_limit": "At most {n} lines",
         "check_now": "Check now",
-        "check_now_subtext": "Re-verify this build right away.",
-        "check_started": "Checking…",
+        "check_now_subtext": "Clear the saved check data and re-verify this build from scratch.",
+        "check_started": "Clearing cache and checking…",
+        "check_confirm_title": "Check this build now?",
+        "check_confirm_body": "What it does: Prefixfy deletes its saved verification data (the official build manifest, the block list and the settings profile), downloads them again from the repository and re-checks that this build is official.\n\nWhat it is for: use it if the plugin says the build can’t be verified, features are paused, you have just updated or reinstalled the plugin, or the status looks out of date.\n\nIs it safe: your settings and configurations are not touched. Check serial numbers are kept, so an older signed copy can’t be slipped in. Internet is required; while the check runs, optional features may be paused, and if it fails they stay paused until a later check succeeds.",
+        "check_confirm_yes": "Check",
         "about_plugin": "About plugin",
         "about_section": "Details",
         "about_plugin_subtext": "Version, build and verification status.",
@@ -1588,6 +1593,14 @@ _NEW_STRINGS = {
         "notice_open_repo": "Repository",
         "notice_reason_version": "The version or build label of the installed plugin differs from the signed official manifest.",
         "notice_reason_file": "The build label matches, but the file contents (checksum or size) differ from the signed release. The file was modified, damaged or only partly updated.",
+        "status_outdated": "failed: this build is outdated, a newer official release exists",
+        "status_modified": "failed: this build was modified and differs from the official release",
+        "modified_build": "Modified build",
+        "modified_required_subtext": "This Prefixfy file differs from the official release {version}. Reinstall the official build; until then the plugin won’t format messages.",
+        "notice_reason_outdated": "The installed build is older than the latest official release.",
+        "notice_reason_modified": "The build label matches the official release, but the file contents (checksum or size) differ. The file was edited, damaged or only partly updated.",
+        "notice_reason_unreleased": "The build label is newer than any published official release, so this build is unofficial or was edited.",
+        "notice_modified_body": "What happened: the installed build ({installed}) is not the official release ({latest}).\n\n{reason}\n\nWhat it means: this is not just an old version, the file differs from what was published. Until an official build is installed, Prefixfy does not format outgoing messages and its settings are hidden. Your settings and configurations are not deleted.\n\nWhat to do: reinstall the official Prefixfy ({latest}) from the repository (button below) and restart Telegram.",
         "notice_update_body": "What happened: the installed build ({installed}) does not match the official signed release ({latest}).\n\n{reason}\n\nWhat it means: until the build is official, Prefixfy does not format outgoing messages and its settings are hidden. Your settings and configurations are not deleted.\n\nWhat to do: install the latest official Prefixfy ({latest}) from the repository (button below) and restart Telegram. The plugin recovers by itself after the next successful check.",
         "notice_verify_body": "What happened: this Prefixfy build cannot be verified. It has no valid update key, so the signed manifest cannot be checked.\n\nWhat it means: the plugin does not format outgoing messages. Your settings are kept.\n\nWhat to do: install the official Prefixfy build from the repository.",
         "notice_soft_body": "What happened: right now Prefixfy cannot confirm that this build is official. A fresh signed manifest or blacklist check could not be completed (no internet, GitHub is unreachable, the last successful check is too old, or the plugin file could not be read).\n\nWhat is paused: all optional features (text styles, Markdown, mask rotation and conditional masks, tags, schedule, chat configurations, media attachment, Premium Emoji, edit processing, configuration import). Only the basic mask formatting works.\n\nWhat to do: check your internet connection and tap “Check now”. Nothing is lost: after a successful check everything returns by itself.",
@@ -1612,8 +1625,11 @@ _NEW_STRINGS = {
         "tag_lines_empty": "Строк пока нет",
         "tag_lines_limit": "Не больше {n} строк",
         "check_now": "Проверить сейчас",
-        "check_now_subtext": "Сразу перепроверить подлинность сборки.",
-        "check_started": "Проверяю…",
+        "check_now_subtext": "Стереть сохранённые данные проверки и перепроверить сборку с нуля.",
+        "check_started": "Очищаю кэш и проверяю…",
+        "check_confirm_title": "Проверить сборку сейчас?",
+        "check_confirm_body": "Что делает: Prefixfy удалит сохранённые данные проверки (манифест официальной сборки, чёрный список и профиль настроек), скачает их заново из репозитория и снова проверит, что эта сборка официальная.\n\nДля чего нужна: нажимайте, если плагин пишет, что сборку не удалось подтвердить, функции приостановлены, вы только что обновили или переустановили плагин либо статус кажется устаревшим.\n\nБезопасно ли: ваши настройки и конфигурации не затрагиваются. Серийные номера проверок сохраняются, поэтому подсунуть более старую подписанную копию нельзя. Нужен интернет; пока идёт проверка, дополнительные функции могут быть приостановлены, а при неудаче останутся таковыми до следующей успешной проверки.",
+        "check_confirm_yes": "Проверить",
         "about_plugin": "О плагине",
         "about_section": "Сведения",
         "about_plugin_subtext": "Версия, сборка и статус проверки.",
@@ -1638,6 +1654,14 @@ _NEW_STRINGS = {
         "notice_open_repo": "Репозиторий",
         "notice_reason_version": "Версия или метка сборки установленного плагина отличается от подписанного официального манифеста.",
         "notice_reason_file": "Метка сборки совпадает, но содержимое файла (контрольная сумма или размер) отличается от подписанного релиза. Файл изменён, повреждён или обновлён не полностью.",
+        "status_outdated": "не пройдена: сборка устарела, есть более новый официальный релиз",
+        "status_modified": "не пройдена: сборка изменена и отличается от официального релиза",
+        "modified_build": "Изменённая сборка",
+        "modified_required_subtext": "Этот файл Prefixfy отличается от официального релиза {version}. Переустановите официальную сборку; пока плагин не оформляет сообщения.",
+        "notice_reason_outdated": "Установленная сборка старше последнего официального релиза.",
+        "notice_reason_modified": "Метка сборки совпадает с официальным релизом, но содержимое файла (контрольная сумма или размер) отличается. Файл изменён, повреждён или обновлён не полностью.",
+        "notice_reason_unreleased": "Метка сборки новее любого опубликованного официального релиза, поэтому сборка неофициальная или была изменена.",
+        "notice_modified_body": "Что произошло: установленная сборка ({installed}) не является официальным релизом ({latest}).\n\n{reason}\n\nЧто это значит: это не просто старая версия, файл отличается от опубликованного. Пока не установлена официальная сборка, Prefixfy не оформляет исходящие сообщения, а его настройки скрыты. Ваши настройки и конфигурации не удаляются.\n\nЧто делать: переустановите официальный Prefixfy ({latest}) из репозитория (кнопка ниже) и перезапустите Telegram.",
         "notice_update_body": "Что произошло: установленная сборка ({installed}) не совпадает с официальным подписанным релизом ({latest}).\n\n{reason}\n\nЧто это значит: пока сборка не официальная, Prefixfy не оформляет исходящие сообщения, а его настройки скрыты. Ваши настройки и конфигурации не удаляются.\n\nЧто делать: установите последнюю официальную версию Prefixfy ({latest}) из репозитория (кнопка ниже) и перезапустите Telegram. После следующей успешной проверки плагин восстановится сам.",
         "notice_verify_body": "Что произошло: эту сборку Prefixfy невозможно проверить. В ней нет действующего ключа обновлений, поэтому подписанный манифест не проверить.\n\nЧто это значит: плагин не оформляет исходящие сообщения. Настройки сохраняются.\n\nЧто делать: установите официальную сборку Prefixfy из репозитория.",
         "notice_soft_body": "Что произошло: сейчас Prefixfy не может подтвердить, что эта сборка официальная. Не удалось завершить проверку свежего подписанного манифеста или чёрного списка (нет интернета, GitHub недоступен, последняя успешная проверка слишком старая или не удалось прочитать файл плагина).\n\nЧто приостановлено: все дополнительные функции (стили текста, Markdown, ротация и условные маски, теги, расписание, конфигурации чатов, вложение медиа, Premium Emoji, оформление при редактировании, импорт конфигураций). Работает только базовое оформление маской.\n\nЧто делать: проверьте подключение к интернету и нажмите «Проверить сейчас». Ничего не потеряно: после успешной проверки всё вернётся само.",
@@ -1662,8 +1686,11 @@ _NEW_STRINGS = {
         "tag_lines_empty": "行がまだありません",
         "tag_lines_limit": "最大 {n} 行まで",
         "check_now": "今すぐ確認",
-        "check_now_subtext": "このビルドをすぐに再検証します。",
-        "check_started": "確認中…",
+        "check_now_subtext": "保存された確認データを消去し、このビルドを最初から再検証します。",
+        "check_started": "キャッシュを消去して確認中…",
+        "check_confirm_title": "今すぐこのビルドを確認しますか？",
+        "check_confirm_body": "動作: Prefixfy は保存された検証データ（公式ビルドのマニフェスト、ブラックリスト、設定プロファイル）を削除し、リポジトリから再ダウンロードして、このビルドが公式のものか再確認します。\n\n用途: プラグインがビルドを確認できないと表示するとき、機能が一時停止しているとき、更新や再インストールの直後、またはステータスが古く見えるときに使います。\n\n安全性: 設定や構成には影響しません。確認のシリアル番号は保持されるため、古い署名済みコピーに差し替えることはできません。インターネット接続が必要です。確認中はオプション機能が一時停止することがあり、失敗した場合は次回の確認に成功するまで停止したままになります。",
+        "check_confirm_yes": "確認する",
         "about_plugin": "プラグインについて",
         "about_plugin_subtext": "バージョン、ビルド、検証ステータス。",
         "about_title": "Prefixfy について",
@@ -1687,6 +1714,14 @@ _NEW_STRINGS = {
         "notice_open_repo": "リポジトリ",
         "notice_reason_version": "インストール済みプラグインのバージョンまたはビルドラベルが、署名済みの公式マニフェストと異なります。",
         "notice_reason_file": "ビルドラベルは一致していますが、ファイルの内容（チェックサムまたはサイズ）が署名済みリリースと異なります。ファイルが変更・破損したか、一部しか更新されていません。",
+        "status_outdated": "不合格: このビルドは古く、新しい公式リリースがあります",
+        "status_modified": "不合格: このビルドは改変されており、公式リリースと異なります",
+        "modified_build": "改変されたビルド",
+        "modified_required_subtext": "この Prefixfy ファイルは公式リリース {version} と異なります。公式ビルドを再インストールしてください。それまでメッセージの装飾は行われません。",
+        "notice_reason_outdated": "インストール済みのビルドは最新の公式リリースより古いものです。",
+        "notice_reason_modified": "ビルドラベルは公式リリースと一致しますが、ファイルの内容（チェックサムまたはサイズ）が異なります。ファイルが編集・破損したか、一部しか更新されていません。",
+        "notice_reason_unreleased": "ビルドラベルが公開済みのどの公式リリースよりも新しいため、このビルドは非公式か、編集されたものです。",
+        "notice_modified_body": "状況: インストール済みのビルド（{installed}）は公式リリース（{latest}）ではありません。\n\n{reason}\n\n影響: 単に古いバージョンというだけでなく、ファイルが公開されたものと異なります。公式ビルドをインストールするまで、Prefixfy は送信メッセージを整形せず、設定も非表示になります。設定や構成は削除されません。\n\n対処: リポジトリ（下のボタン）から公式の Prefixfy（{latest}）を再インストールし、Telegram を再起動してください。",
         "notice_update_body": "状況: インストール済みのビルド（{installed}）が、署名済みの公式リリース（{latest}）と一致しません。\n\n{reason}\n\n影響: 公式ビルドになるまで、Prefixfy は送信メッセージを整形せず、設定も非表示になります。設定や構成は削除されません。\n\n対処: リポジトリ（下のボタン）から最新の公式 Prefixfy（{latest}）をインストールし、Telegram を再起動してください。次回の確認に成功すると、プラグインは自動的に復旧します。",
         "notice_verify_body": "状況: この Prefixfy ビルドは検証できません。有効な更新キーがないため、署名済みマニフェストを確認できません。\n\n影響: プラグインは送信メッセージを整形しません。設定は保持されます。\n\n対処: リポジトリから公式の Prefixfy ビルドをインストールしてください。",
         "notice_soft_body": "状況: 現在、Prefixfy はこのビルドが公式のものであることを確認できません。署名済みマニフェストまたはブラックリストの最新確認を完了できませんでした（インターネット未接続、GitHub に到達できない、前回の成功した確認が古すぎる、またはプラグインファイルを読み取れない）。\n\n一時停止中: すべてのオプション機能（テキストスタイル、Markdown、マスクのローテーションと条件付きマスク、タグ、スケジュール、チャット別設定、メディア添付、Premium Emoji、編集時の処理、設定のインポート）。基本的なマスク整形のみ動作します。\n\n対処: インターネット接続を確認し、「今すぐ確認」をタップしてください。失われるものはありません。確認に成功すると、すべて自動的に元に戻ります。",
@@ -1711,8 +1746,11 @@ _NEW_STRINGS = {
         "tag_lines_empty": "아직 문구가 없습니다",
         "tag_lines_limit": "최대 {n}줄",
         "check_now": "지금 확인",
-        "check_now_subtext": "이 빌드를 즉시 다시 검증합니다.",
-        "check_started": "확인 중…",
+        "check_now_subtext": "저장된 확인 데이터를 지우고 이 빌드를 처음부터 다시 검증합니다.",
+        "check_started": "캐시를 지우고 확인 중…",
+        "check_confirm_title": "지금 이 빌드를 확인할까요?",
+        "check_confirm_body": "동작: Prefixfy가 저장된 검증 데이터(공식 빌드 매니페스트, 블랙리스트, 설정 프로필)를 삭제하고 저장소에서 다시 내려받아 이 빌드가 공식 빌드인지 다시 확인합니다.\n\n용도: 플러그인이 빌드를 확인할 수 없다고 표시하거나, 기능이 일시 중지되었거나, 방금 업데이트 또는 재설치했거나, 상태가 오래된 것처럼 보일 때 사용하세요.\n\n안전성: 설정과 구성은 건드리지 않습니다. 확인 일련번호는 유지되므로 더 오래된 서명본으로 바꿔치기할 수 없습니다. 인터넷이 필요하며, 확인 중에는 선택 기능이 일시 중지될 수 있고 실패하면 다음 확인에 성공할 때까지 중지된 상태로 남습니다.",
+        "check_confirm_yes": "확인",
         "about_plugin": "플러그인 정보",
         "about_plugin_subtext": "버전, 빌드, 검증 상태.",
         "about_title": "Prefixfy 정보",
@@ -1736,6 +1774,14 @@ _NEW_STRINGS = {
         "notice_open_repo": "저장소",
         "notice_reason_version": "설치된 플러그인의 버전 또는 빌드 라벨이 서명된 공식 매니페스트와 다릅니다.",
         "notice_reason_file": "빌드 라벨은 일치하지만 파일 내용(체크섬 또는 크기)이 서명된 릴리스와 다릅니다. 파일이 수정되었거나 손상되었거나 일부만 업데이트되었습니다.",
+        "status_outdated": "실패: 이 빌드는 오래되었으며 더 새로운 공식 릴리스가 있습니다",
+        "status_modified": "실패: 이 빌드는 수정되어 공식 릴리스와 다릅니다",
+        "modified_build": "수정된 빌드",
+        "modified_required_subtext": "이 Prefixfy 파일은 공식 릴리스 {version}과(와) 다릅니다. 공식 빌드를 다시 설치하세요. 그때까지 플러그인은 메시지를 꾸미지 않습니다.",
+        "notice_reason_outdated": "설치된 빌드가 최신 공식 릴리스보다 오래되었습니다.",
+        "notice_reason_modified": "빌드 라벨은 공식 릴리스와 일치하지만 파일 내용(체크섬 또는 크기)이 다릅니다. 파일이 편집되었거나 손상되었거나 일부만 업데이트되었습니다.",
+        "notice_reason_unreleased": "빌드 라벨이 공개된 어떤 공식 릴리스보다 새로우므로 비공식 빌드이거나 편집된 빌드입니다.",
+        "notice_modified_body": "무슨 일이 있었나요: 설치된 빌드({installed})는 공식 릴리스({latest})가 아닙니다.\n\n{reason}\n\n의미: 단순히 오래된 버전이 아니라 파일이 공개된 것과 다릅니다. 공식 빌드를 설치하기 전까지 Prefixfy는 보내는 메시지를 꾸미지 않으며 설정이 숨겨집니다. 설정과 구성은 삭제되지 않습니다.\n\n해야 할 일: 저장소(아래 버튼)에서 공식 Prefixfy({latest})를 다시 설치하고 Telegram을 다시 시작하세요.",
         "notice_update_body": "무슨 일이 있었나요: 설치된 빌드({installed})가 서명된 공식 릴리스({latest})와 일치하지 않습니다.\n\n{reason}\n\n의미: 공식 빌드가 될 때까지 Prefixfy는 보내는 메시지를 꾸미지 않으며 설정이 숨겨집니다. 설정과 구성은 삭제되지 않습니다.\n\n해야 할 일: 저장소(아래 버튼)에서 최신 공식 Prefixfy({latest})를 설치하고 Telegram을 다시 시작하세요. 다음 확인에 성공하면 플러그인이 자동으로 복구됩니다.",
         "notice_verify_body": "무슨 일이 있었나요: 이 Prefixfy 빌드를 확인할 수 없습니다. 유효한 업데이트 키가 없어 서명된 매니페스트를 검증할 수 없습니다.\n\n의미: 플러그인이 보내는 메시지를 꾸미지 않습니다. 설정은 유지됩니다.\n\n해야 할 일: 저장소에서 공식 Prefixfy 빌드를 설치하세요.",
         "notice_soft_body": "무슨 일이 있었나요: 현재 Prefixfy가 이 빌드가 공식 빌드인지 확인할 수 없습니다. 서명된 매니페스트 또는 블랙리스트의 최신 확인을 완료하지 못했습니다(인터넷 없음, GitHub 접속 불가, 마지막 성공한 확인이 너무 오래됨, 또는 플러그인 파일을 읽을 수 없음).\n\n일시 중지된 것: 모든 선택 기능(텍스트 스타일, Markdown, 마스크 순환 및 조건부 마스크, 태그, 일정, 채팅별 구성, 미디어 첨부, Premium Emoji, 편집 시 처리, 구성 가져오기). 기본 마스크 꾸미기만 작동합니다.\n\n해야 할 일: 인터넷 연결을 확인하고 “지금 확인”을 누르세요. 잃는 것은 없습니다. 확인에 성공하면 모든 것이 자동으로 돌아옵니다.",
@@ -1760,8 +1806,11 @@ _NEW_STRINGS = {
         "tag_lines_empty": "Aucune ligne pour le moment",
         "tag_lines_limit": "{n} lignes au maximum",
         "check_now": "Vérifier maintenant",
-        "check_now_subtext": "Revérifier cette version tout de suite.",
-        "check_started": "Vérification…",
+        "check_now_subtext": "Effacer les données de vérification enregistrées et revérifier ce build depuis zéro.",
+        "check_started": "Effacement du cache et vérification…",
+        "check_confirm_title": "Vérifier ce build maintenant ?",
+        "check_confirm_body": "Ce que cela fait : Prefixfy supprime ses données de vérification enregistrées (manifeste du build officiel, liste noire et profil de réglages), les télécharge de nouveau depuis le dépôt et revérifie que ce build est officiel.\n\nÀ quoi cela sert : utilisez-le si le plugin indique que le build ne peut pas être vérifié, si des fonctions sont suspendues, si vous venez de mettre à jour ou de réinstaller le plugin, ou si l’état semble périmé.\n\nEst-ce sûr : vos réglages et configurations ne sont pas touchés. Les numéros de série des vérifications sont conservés, une copie signée plus ancienne ne peut donc pas être substituée. Internet est requis ; pendant la vérification, les fonctions facultatives peuvent être suspendues, et en cas d’échec elles le restent jusqu’à une prochaine vérification réussie.",
+        "check_confirm_yes": "Vérifier",
         "about_plugin": "À propos du plugin",
         "about_plugin_subtext": "Version, build et état de la vérification.",
         "about_title": "À propos de Prefixfy",
@@ -1785,6 +1834,14 @@ _NEW_STRINGS = {
         "notice_open_repo": "Dépôt",
         "notice_reason_version": "La version ou le libellé de build du plugin installé diffère du manifeste officiel signé.",
         "notice_reason_file": "Le libellé de build correspond, mais le contenu du fichier (somme de contrôle ou taille) diffère de la version signée. Le fichier a été modifié, endommagé ou seulement partiellement mis à jour.",
+        "status_outdated": "échec : ce build est obsolète, une version officielle plus récente existe",
+        "status_modified": "échec : ce build a été modifié et diffère de la version officielle",
+        "modified_build": "Build modifié",
+        "modified_required_subtext": "Ce fichier Prefixfy diffère de la version officielle {version}. Réinstallez le build officiel ; d’ici là, le plugin ne met pas en forme les messages.",
+        "notice_reason_outdated": "Le build installé est plus ancien que la dernière version officielle.",
+        "notice_reason_modified": "Le libellé de build correspond à la version officielle, mais le contenu du fichier (somme de contrôle ou taille) diffère. Le fichier a été modifié, endommagé ou seulement partiellement mis à jour.",
+        "notice_reason_unreleased": "Le libellé de build est plus récent que toute version officielle publiée : ce build est non officiel ou a été modifié.",
+        "notice_modified_body": "Ce qui s’est passé : le build installé ({installed}) n’est pas la version officielle ({latest}).\n\n{reason}\n\nCe que cela signifie : il ne s’agit pas seulement d’une ancienne version, le fichier diffère de celui publié. Tant qu’un build officiel n’est pas installé, Prefixfy ne met pas en forme les messages sortants et ses réglages sont masqués. Vos réglages et configurations ne sont pas supprimés.\n\nQue faire : réinstallez le Prefixfy officiel ({latest}) depuis le dépôt (bouton ci-dessous) et redémarrez Telegram.",
         "notice_update_body": "Ce qui s’est passé : le build installé ({installed}) ne correspond pas à la version officielle signée ({latest}).\n\n{reason}\n\nCe que cela signifie : tant que le build n’est pas officiel, Prefixfy ne met pas en forme les messages sortants et ses réglages sont masqués. Vos réglages et configurations ne sont pas supprimés.\n\nQue faire : installez le dernier Prefixfy officiel ({latest}) depuis le dépôt (bouton ci-dessous) et redémarrez Telegram. Le plugin se rétablit de lui-même après la prochaine vérification réussie.",
         "notice_verify_body": "Ce qui s’est passé : ce build de Prefixfy ne peut pas être vérifié. Il ne contient aucune clé de mise à jour valide, le manifeste signé ne peut donc pas être contrôlé.\n\nCe que cela signifie : le plugin ne met pas en forme les messages sortants. Vos réglages sont conservés.\n\nQue faire : installez le build officiel de Prefixfy depuis le dépôt.",
         "notice_soft_body": "Ce qui s’est passé : pour le moment, Prefixfy ne peut pas confirmer que ce build est officiel. Une vérification récente du manifeste signé ou de la liste noire n’a pas pu aboutir (pas d’Internet, GitHub injoignable, dernière vérification réussie trop ancienne, ou fichier du plugin illisible).\n\nCe qui est suspendu : toutes les fonctions facultatives (styles de texte, Markdown, rotation des masques et masques conditionnels, balises, planification, configurations de discussions, pièce jointe multimédia, Premium Emoji, traitement des modifications, import de configuration). Seule la mise en forme de base par masque fonctionne.\n\nQue faire : vérifiez votre connexion Internet et appuyez sur « Vérifier maintenant ». Rien n’est perdu : après une vérification réussie, tout revient automatiquement.",
@@ -1809,8 +1866,11 @@ _NEW_STRINGS = {
         "tag_lines_empty": "Noch keine Zeilen",
         "tag_lines_limit": "Höchstens {n} Zeilen",
         "check_now": "Jetzt prüfen",
-        "check_now_subtext": "Diesen Build sofort erneut verifizieren.",
-        "check_started": "Prüfung läuft…",
+        "check_now_subtext": "Gespeicherte Prüfdaten löschen und diesen Build von Grund auf neu prüfen.",
+        "check_started": "Cache wird gelöscht, Prüfung läuft…",
+        "check_confirm_title": "Diesen Build jetzt prüfen?",
+        "check_confirm_body": "Was passiert: Prefixfy löscht seine gespeicherten Prüfdaten (Manifest des offiziellen Builds, Sperrliste und Einstellungsprofil), lädt sie erneut aus dem Repository herunter und prüft noch einmal, ob dieser Build offiziell ist.\n\nWofür das gut ist: Nutzen Sie es, wenn das Plugin meldet, dass der Build nicht verifiziert werden kann, Funktionen pausiert sind, Sie das Plugin gerade aktualisiert oder neu installiert haben oder der Status veraltet wirkt.\n\nIst es sicher: Ihre Einstellungen und Konfigurationen bleiben unberührt. Die Seriennummern der Prüfungen bleiben erhalten, eine ältere signierte Kopie kann also nicht untergeschoben werden. Internet ist erforderlich; während der Prüfung können optionale Funktionen pausiert sein, und bei einem Fehlschlag bleiben sie es bis zur nächsten erfolgreichen Prüfung.",
+        "check_confirm_yes": "Prüfen",
         "about_plugin": "Über das Plugin",
         "about_plugin_subtext": "Version, Build und Verifizierungsstatus.",
         "about_title": "Über Prefixfy",
@@ -1834,6 +1894,14 @@ _NEW_STRINGS = {
         "notice_open_repo": "Repository",
         "notice_reason_version": "Version oder Build-Bezeichnung des installierten Plugins weicht vom signierten offiziellen Manifest ab.",
         "notice_reason_file": "Die Build-Bezeichnung stimmt überein, aber der Dateiinhalt (Prüfsumme oder Größe) weicht vom signierten Release ab. Die Datei wurde verändert, beschädigt oder nur teilweise aktualisiert.",
+        "status_outdated": "fehlgeschlagen: Dieser Build ist veraltet, es gibt ein neueres offizielles Release",
+        "status_modified": "fehlgeschlagen: Dieser Build wurde verändert und weicht vom offiziellen Release ab",
+        "modified_build": "Veränderter Build",
+        "modified_required_subtext": "Diese Prefixfy-Datei weicht vom offiziellen Release {version} ab. Installiere den offiziellen Build neu; bis dahin formatiert das Plugin keine Nachrichten.",
+        "notice_reason_outdated": "Der installierte Build ist älter als das neueste offizielle Release.",
+        "notice_reason_modified": "Die Build-Bezeichnung stimmt mit dem offiziellen Release überein, aber der Dateiinhalt (Prüfsumme oder Größe) weicht ab. Die Datei wurde bearbeitet, beschädigt oder nur teilweise aktualisiert.",
+        "notice_reason_unreleased": "Die Build-Bezeichnung ist neuer als jedes veröffentlichte offizielle Release, daher ist dieser Build inoffiziell oder wurde bearbeitet.",
+        "notice_modified_body": "Was passiert ist: Der installierte Build ({installed}) ist nicht das offizielle Release ({latest}).\n\n{reason}\n\nWas das bedeutet: Es ist nicht nur eine alte Version, die Datei weicht vom Veröffentlichten ab. Solange kein offizieller Build installiert ist, formatiert Prefixfy ausgehende Nachrichten nicht und die Einstellungen sind ausgeblendet. Ihre Einstellungen und Konfigurationen werden nicht gelöscht.\n\nWas zu tun ist: Installieren Sie das offizielle Prefixfy ({latest}) erneut aus dem Repository (Schaltfläche unten) und starten Sie Telegram neu.",
         "notice_update_body": "Was passiert ist: Der installierte Build ({installed}) entspricht nicht dem offiziellen signierten Release ({latest}).\n\n{reason}\n\nWas das bedeutet: Solange der Build nicht offiziell ist, formatiert Prefixfy ausgehende Nachrichten nicht und die Einstellungen sind ausgeblendet. Ihre Einstellungen und Konfigurationen werden nicht gelöscht.\n\nWas zu tun ist: Installieren Sie das neueste offizielle Prefixfy ({latest}) aus dem Repository (Schaltfläche unten) und starten Sie Telegram neu. Das Plugin erholt sich nach der nächsten erfolgreichen Prüfung von selbst.",
         "notice_verify_body": "Was passiert ist: Dieser Prefixfy-Build kann nicht verifiziert werden. Er enthält keinen gültigen Update-Schlüssel, daher lässt sich das signierte Manifest nicht prüfen.\n\nWas das bedeutet: Das Plugin formatiert ausgehende Nachrichten nicht. Ihre Einstellungen bleiben erhalten.\n\nWas zu tun ist: Installieren Sie den offiziellen Prefixfy-Build aus dem Repository.",
         "notice_soft_body": "Was passiert ist: Prefixfy kann derzeit nicht bestätigen, dass dieser Build offiziell ist. Eine aktuelle Prüfung des signierten Manifests oder der Sperrliste konnte nicht abgeschlossen werden (kein Internet, GitHub nicht erreichbar, die letzte erfolgreiche Prüfung ist zu alt oder die Plugin-Datei konnte nicht gelesen werden).\n\nWas pausiert ist: alle optionalen Funktionen (Textstile, Markdown, Masken-Rotation und bedingte Masken, Tags, Zeitplan, Chat-Konfigurationen, Medienanhang, Premium Emoji, Bearbeitungsverarbeitung, Konfigurationsimport). Nur die grundlegende Maskenformatierung funktioniert.\n\nWas zu tun ist: Prüfen Sie Ihre Internetverbindung und tippen Sie auf „Jetzt prüfen“. Es geht nichts verloren: Nach einer erfolgreichen Prüfung kehrt alles von selbst zurück.",
@@ -2890,11 +2958,34 @@ class FeatureFlags:
         self._serial = -1
         self._digest = ""
         self._soft = False
+        self._flags_off = False
         self._lock = threading.Lock()
+        self._recompute()
+
+    def _recompute(self):
+        self._flags_off = not any(value for name, value in self._values.items() if not name.startswith("lang_"))
 
     @property
     def soft(self) -> bool:
         return self._soft
+
+    @property
+    def flags_off(self) -> bool:
+        return self._flags_off
+
+    @property
+    def core_only(self) -> bool:
+        return self._soft or self._flags_off
+
+    @property
+    def serial(self) -> int:
+        return self._serial
+
+    def floor(self, serial: int, digest: str = ""):
+        with self._lock:
+            if serial > self._serial:
+                self._serial = serial
+                self._digest = digest
 
     def set_soft(self, value: bool) -> bool:
         with self._lock:
@@ -2920,6 +3011,7 @@ class FeatureFlags:
         merged = self._compose()
         changed = merged != self._values
         self._values = merged
+        self._recompute()
         return changed
 
     def apply(self, flags: Dict[str, bool], serial: int, accounts: Optional[Dict[int, Dict[str, bool]]] = None, digest: str = "") -> bool:
@@ -2976,6 +3068,8 @@ def filter_tags_hint(text: str) -> str:
     text = as_text(text)
     if all(FEATURES.on("tag_" + name) for name in MASK_TAG_NAMES):
         return text
+    if not any(FEATURES.on("tag_" + name) for name in MASK_TAG_NAMES):
+        return ""
     head, _, more = text.partition("\n")
     tokens = list(_HINT_TAG_RE.finditer(head))
     if not tokens:
@@ -3075,6 +3169,8 @@ class RuntimeSettings:
         self.style_only = frozenset(word.casefold() for word in parse_lines(get("style_words"))[:MAX_STYLE_WORDS])
         self.mask_rotation_enabled = bool(get("mask_rotation_enabled")) and FEATURES.on("mask_rotation")
         self.masks_list = [item.strip() for item in as_text(get("masks_list")).splitlines() if item.strip() and is_valid_mask(item.strip())][:MAX_MASKS_IN_LIST]
+        if bool(get("mask_rotation_enabled")) and not self.mask_rotation_enabled and self.masks_list and not self.mask.strip():
+            self.mask = self.masks_list[0]
         self.mask_rotation_mode = clamp_int(get("mask_rotation_mode"), 0, 0, 1)
         self.regex_exceptions = compile_regex_exceptions(get("regex_exceptions")) if FEATURES.on("regex_exceptions") else ()
         self.conditional_rules = parse_conditional_masks(get("conditional_masks"))[0] if FEATURES.on("conditional_masks") else ()
@@ -6427,8 +6523,21 @@ class RemoteControl:
         self._bl_known = False
         self._bl_last_ok = float("-inf")
         self._bl_path = os.path.join(get_plugins_dir(), BLACKLIST_CACHE_FILE)
+        self._serial_path = os.path.join(get_plugins_dir(), SERIALS_FILE)
+        self._serial_lock = threading.Lock()
+        self._floor: Dict[str, Dict[str, Any]] = {}
+        self._load_floor()
         self._load_cache()
         self._flags_path = os.path.join(get_plugins_dir(), FLAGS_CACHE_FILE)
+        legacy = os.path.join(get_plugins_dir(), FLAGS_CACHE_LEGACY_FILE)
+        try:
+            if os.path.exists(legacy):
+                if os.path.exists(self._flags_path):
+                    os.remove(legacy)
+                else:
+                    os.replace(legacy, self._flags_path)
+        except OSError:
+            pass
         self._load_flags_cache()
         self._load_blacklist_cache()
         self._poll_devices(notify=False, force=True)
@@ -6450,8 +6559,11 @@ class RemoteControl:
             self.soft()
             stop.wait(REMOTE_CHECK_INTERVAL if fetched and not self.outdated() else REMOTE_RETRY_INTERVAL)
 
-    def request_refresh(self):
+    def request_refresh(self, force: bool = False):
         if not self.enabled:
+            return
+        if force:
+            threading.Thread(target=self.refresh, kwargs={"force": True}, name="PrefixfyRemoteForce", daemon=True).start()
             return
         now = time.monotonic()
         if now - self._last_request < REMOTE_MANUAL_COOLDOWN:
@@ -6467,8 +6579,8 @@ class RemoteControl:
     def _download(name: str, limit: int = REMOTE_MAX_BYTES) -> bytes:
         import ssl
         request = urllib.request.Request(
-            f"{UPDATE_BASE_URL}{name}?t={int(time.time())}",
-            headers={"User-Agent": f"Prefixfy/{__build__}", "Cache-Control": "no-cache"},
+            f"{UPDATE_BASE_URL}{name}?t={int(time.time())}&n={uuid.uuid4().hex[:8]}",
+            headers={"User-Agent": f"Prefixfy/{__build__}", "Cache-Control": "no-cache, no-store", "Pragma": "no-cache"},
         )
         opener = urllib.request.build_opener(
             urllib.request.HTTPSHandler(context=ssl.create_default_context()),
@@ -6501,9 +6613,21 @@ class RemoteControl:
             return float("-inf")
         return time.monotonic() - age
 
-    def refresh(self) -> bool:
+    def refresh(self, force: bool = False) -> bool:
         if not self.enabled:
             return False
+        if force:
+            if not self._busy.acquire(timeout=REMOTE_TOTAL_TIMEOUT * 3 + 5):
+                return False
+            try:
+                self._invalidate_cache()
+                self._poll_devices(force=True)
+                try:
+                    return self._refresh(fresh=True)
+                finally:
+                    self._last_request = time.monotonic()
+            finally:
+                self._busy.release()
         if not self._busy.acquire(blocking=False):
             return True
         try:
@@ -6511,14 +6635,82 @@ class RemoteControl:
         finally:
             self._busy.release()
 
+    def _load_floor(self):
+        try:
+            with open(self._serial_path, "r", encoding="utf-8") as handle:
+                raw = json.load(handle)
+        except (OSError, ValueError):
+            return
+        if not isinstance(raw, dict):
+            return
+        floor: Dict[str, Dict[str, Any]] = {}
+        for kind in ("m", "b", "f"):
+            entry = raw.get(kind)
+            if not isinstance(entry, dict):
+                continue
+            serial, digest = entry.get("serial"), entry.get("digest")
+            if isinstance(serial, bool) or not isinstance(serial, int) or serial < 0 or not isinstance(digest, str):
+                continue
+            item: Dict[str, Any] = {"serial": serial, "digest": digest[:128]}
+            if kind == "m":
+                version = entry.get("version")
+                if not (isinstance(version, list) and version and all(isinstance(v, int) and not isinstance(v, bool) for v in version)):
+                    continue
+                item["version"] = version
+            floor[kind] = item
+        self._floor = floor
+        if "b" in floor:
+            self._bl_serial, self._bl_digest = floor["b"]["serial"], floor["b"]["digest"]
+        if "f" in floor:
+            FEATURES.floor(floor["f"]["serial"], floor["f"]["digest"])
+
+    def _remember(self, kind: str, serial: int, digest: str, version=None):
+        entry: Dict[str, Any] = {"serial": int(serial), "digest": as_text(digest)[:128]}
+        if version is not None:
+            entry["version"] = [int(part) for part in version]
+        with self._serial_lock:
+            old = self._floor.get(kind)
+            if old is not None and old["serial"] > entry["serial"]:
+                return
+            self._floor[kind] = entry
+            try:
+                temp = self._serial_path + ".tmp"
+                with open(temp, "w", encoding="utf-8") as handle:
+                    json.dump(self._floor, handle)
+                os.replace(temp, self._serial_path)
+            except OSError as exc:
+                self.plugin.log(f"Prefixfy serial store not saved: {exc}")
+
+    def _manifest_floor(self) -> Optional[Dict[str, Any]]:
+        entry = self._floor.get("m")
+        if not entry:
+            return None
+        return {"serial": entry["serial"], "version": tuple(entry["version"]), "digest": entry["digest"]}
+
+    def _invalidate_cache(self):
+        legacy = os.path.join(get_plugins_dir(), FLAGS_CACHE_LEGACY_FILE)
+        for path in (self._cache_path, self._bl_path, self._flags_path, legacy):
+            for target in (path, path + ".tmp"):
+                try:
+                    os.remove(target)
+                except FileNotFoundError:
+                    pass
+                except OSError as exc:
+                    self.plugin.log(f"Prefixfy cache file not removed ({os.path.basename(target)}): {exc}")
+        self._last_ok = float("-inf")
+        self._bl_known = False
+        self._bl_last_ok = float("-inf")
+        self._dev_checked = float("-inf")
+        self.plugin.log("Prefixfy: cached remote state cleared, serial numbers kept, checking again")
+
     def _snapshot(self) -> Tuple[bool, str]:
         return self.blocked(), self.latest_version()
 
-    def _refresh(self) -> bool:
+    def _refresh(self, fresh: bool = False) -> bool:
         try:
             state = verify_manifest(self._download(MANIFEST_FILE))
             with self._lock:
-                known = self._state
+                known = self._state or self._manifest_floor()
             if known is not None:
                 if state["serial"] < known["serial"]:
                     raise ValueError(f"manifest rollback rejected ({state['serial']} < {known['serial']})")
@@ -6537,8 +6729,9 @@ class RemoteControl:
             self._state = state
         self._cache_stale = False
         self._last_ok = time.monotonic()
+        self._remember("m", state["serial"], state["digest"], state["version"])
         self._save_cache()
-        self._refresh_blacklist()
+        self._refresh_blacklist(fresh)
         after = self._snapshot()
         if after[0] != before[0]:
             self._announce()
@@ -6548,10 +6741,10 @@ class RemoteControl:
             except Exception as exc:
                 self.plugin.log(f"Prefixfy settings refresh failed: {exc}")
         self.soft(after[0])
-        self._refresh_flags()
+        self._refresh_flags(fresh)
         return True
 
-    def _refresh_flags(self):
+    def _refresh_flags(self, fresh: bool = False):
         try:
             state = verify_flags(self._download(FLAGS_FILE, FLAGS_MAX_BYTES))
             if build_in_range(state["min_build"], state["max_build"]):
@@ -6561,15 +6754,24 @@ class RemoteControl:
             changed = FEATURES.apply(values, state["serial"], accounts, state["digest"])
         except urllib.error.HTTPError as exc:
             if exc.code != 404:
-                self.plugin.log(f"Prefixfy flags check failed: HTTP {exc.code}")
+                self.plugin.log(f"Prefixfy profile check failed: HTTP {exc.code}")
+                return
+            if fresh:
+                try:
+                    if FEATURES.apply({}, FEATURES.serial, {}, ""):
+                        self.plugin.log("Prefixfy settings profile reset")
+                        self.plugin._on_features_changed()
+                except ValueError as err:
+                    self.plugin.log(f"Prefixfy settings profile reset failed: {err}")
             return
         except Exception as exc:
-            self.plugin.log(f"Prefixfy flags check failed: {exc}")
+            self.plugin.log(f"Prefixfy profile check failed: {exc}")
             return
+        self._remember("f", state["serial"], state["digest"])
         self._save_flags_cache(state["signed"])
         if not changed:
             return
-        self.plugin.log(f"Prefixfy flags updated (serial {state['serial']}): {', '.join(FEATURES.overridden()) or 'defaults'}")
+        self.plugin.log(f"Prefixfy settings profile updated (serial {state['serial']})")
         self.plugin._on_features_changed()
 
     def _bl_hit(self, ids) -> bool:
@@ -6602,7 +6804,7 @@ class RemoteControl:
         if hit_changed:
             self._announce()
 
-    def _refresh_blacklist(self):
+    def _refresh_blacklist(self, fresh: bool = False):
         try:
             state = verify_blacklist(self._download(BLACKLIST_FILE, BLACKLIST_MAX_BYTES))
             if state["serial"] < self._bl_serial:
@@ -6611,6 +6813,8 @@ class RemoteControl:
                 raise ValueError(f"blacklist serial {state['serial']} reused with different content")
         except urllib.error.HTTPError as exc:
             if exc.code == 404:
+                if fresh:
+                    self._bl_ids = frozenset()
                 self._bl_known = True
                 self._bl_last_ok = time.monotonic()
             else:
@@ -6624,6 +6828,7 @@ class RemoteControl:
         self._bl_digest = state["digest"]
         self._bl_known = True
         self._bl_last_ok = time.monotonic()
+        self._remember("b", state["serial"], state["digest"])
         try:
             temp = self._bl_path + ".tmp"
             with open(temp, "w", encoding="utf-8") as handle:
@@ -6638,11 +6843,14 @@ class RemoteControl:
                 state = verify_blacklist(handle.read(BLACKLIST_MAX_BYTES + 1))
         except (OSError, ValueError):
             return
+        if state["serial"] < self._bl_serial:
+            return
         self._bl_ids = state["ids"]
         self._bl_serial = state["serial"]
         self._bl_digest = state["digest"]
         self._bl_known = True
         self._bl_last_ok = self._anchor(self._bl_path)
+        self._remember("b", state["serial"], state["digest"])
 
     def _load_flags_cache(self):
         try:
@@ -6652,6 +6860,7 @@ class RemoteControl:
                 FEATURES.apply(state["flags"], state["serial"], state["accounts"], state["digest"])
             else:
                 FEATURES.apply({}, state["serial"], {}, state["digest"])
+            self._remember("f", state["serial"], state["digest"])
         except (OSError, ValueError):
             pass
 
@@ -6662,7 +6871,7 @@ class RemoteControl:
                 json.dump(signed, handle)
             os.replace(temp, self._flags_path)
         except OSError as exc:
-            self.plugin.log(f"Prefixfy flags cache not saved: {exc}")
+            self.plugin.log(f"Prefixfy profile cache not saved: {exc}")
 
     def _load_cache(self):
         self._state = None
@@ -6674,6 +6883,11 @@ class RemoteControl:
         except (OSError, ValueError):
             self._state = None
             return
+        floor = self._manifest_floor()
+        if floor is not None and self._state["serial"] < floor["serial"]:
+            self._state = None
+            return
+        self._remember("m", self._state["serial"], self._state["digest"], self._state["version"])
         if self._state["version"][:3] < parse_version(__build__)[:3]:
             self._cache_stale = True
             return
@@ -6728,7 +6942,12 @@ class RemoteControl:
         latest = self._field("version", ())
         if not latest or self._cache_stale or not self.mismatched():
             return ""
-        return "version" if parse_version(__build__) != latest else "file"
+        build = parse_version(__build__)
+        if build and build < latest:
+            return "outdated"
+        if build and build > latest:
+            return "unreleased"
+        return "modified"
 
     def status(self) -> str:
         if not self.enabled:
@@ -6736,7 +6955,7 @@ class RemoteControl:
         if self.blacklisted():
             return "status_blacklisted"
         if self.mismatched():
-            return "status_mismatch"
+            return "status_outdated" if self.mismatch_reason() == "outdated" else "status_modified"
         if self._integrity_unknown():
             return "status_integrity"
         if self.verified():
@@ -6797,7 +7016,9 @@ class RemoteControl:
         if self.enabled and self.blacklisted():
             return "account_blocked_subtext", {}
         if self._field("version", ()) and self.mismatched():
-            return "update_required_subtext", {"version": self.required_version()}
+            if self.mismatch_reason() == "outdated":
+                return "update_required_subtext", {"version": self.required_version()}
+            return "modified_required_subtext", {"version": self.required_version()}
         return "verify_required_subtext", {}
 
     def _announce(self):
@@ -8001,11 +8222,14 @@ class PrefixfyPlugin(BasePlugin):
             key, kwargs = remote.notice()
             subtext = tr(key, **kwargs)
             checksum = remote.latest_checksum()
-            if checksum and key == "update_required_subtext":
+            if checksum and key in ("update_required_subtext", "modified_required_subtext"):
                 subtext += f"\nSHA-256 {checksum[:12]}…"
             if key == "account_blocked_subtext":
                 return [Text(text=tr("account_blocked"), subtext=subtext, icon=icon,
                              on_click=lambda *_: self._show_notice_dialog("account"))]
+            if key == "modified_required_subtext":
+                return [Text(text=tr("modified_build"), subtext=subtext, icon=icon,
+                             on_click=lambda *_: self._show_notice_dialog("modified"))]
             if key == "update_required_subtext":
                 return [Text(text=tr("update_required"), subtext=subtext, icon=icon,
                              on_click=lambda *_: self._show_notice_dialog("update"))]
@@ -8029,10 +8253,12 @@ class PrefixfyPlugin(BasePlugin):
             return tr("notice_soft_body")
         reason = ""
         if remote is not None:
-            reason = tr("notice_reason_file" if remote.mismatch_reason() == "file" else "notice_reason_version")
+            reason_kind = remote.mismatch_reason()
+            if reason_kind in ("outdated", "modified", "unreleased"):
+                reason = tr("notice_reason_" + reason_kind)
         latest = remote.latest_version() if remote is not None else ""
         return tr(
-            "notice_update_body",
+            "notice_modified_body" if kind == "modified" else "notice_update_body",
             installed=__build__, latest=latest or tr("about_unknown"), reason=reason,
         )
 
@@ -8042,14 +8268,14 @@ class PrefixfyPlugin(BasePlugin):
         if not activity:
             return
         titles = {
-            "update": "update_required", "verify": "verify_required",
+            "update": "update_required", "modified": "modified_build", "verify": "verify_required",
             "soft": "verify_soft", "account": "account_blocked",
         }
         builder = AlertDialogBuilder(activity)
         builder.set_title(tr(titles.get(kind, "verify_required")))
         builder.set_message(self._notice_dialog_text(kind))
         builder.set_positive_button(tr("notice_ok"), lambda bld, which: bld.dismiss())
-        if kind == "update":
+        if kind in ("update", "modified"):
             def open_repo(bld, which):
                 bld.dismiss()
                 self._open_repo()
@@ -8120,12 +8346,32 @@ class PrefixfyPlugin(BasePlugin):
         remote = getattr(self, "remote", None)
         if remote is None or getattr(self, "_check_running", False):
             return
+        activity = self._dialog_activity()
+        if not activity:
+            return
+        tr = self._tr
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(tr("check_confirm_title"))
+        builder.set_message(tr("check_confirm_body"))
+
+        def start(bld, which):
+            bld.dismiss()
+            self._run_check()
+
+        builder.set_positive_button(tr("check_confirm_yes"), start)
+        builder.set_negative_button(tr("cancel"), lambda bld, which: bld.dismiss())
+        self._show_builder(builder)
+
+    def _run_check(self):
+        remote = getattr(self, "remote", None)
+        if remote is None or getattr(self, "_check_running", False):
+            return
         self._check_running = True
         self._toast("check_started")
 
         def work():
             try:
-                remote.refresh()
+                remote.refresh(force=True)
                 if remote.blocked():
                     key, kwargs = remote.notice()
                     self._toast(key, **kwargs)
@@ -8719,12 +8965,20 @@ class PrefixfyPlugin(BasePlugin):
                 values[tag] = sanitize_tag_value(raw)
             return values[tag]
 
+        dropped = []
+
         def replace(match) -> str:
             tag = match.group(1).lower()
             flag = "tag_" + tag.split(":", 1)[0]
-            return value(tag) if FEATURES.on(flag) else match.group(0)
+            if FEATURES.on(flag):
+                return value(tag)
+            dropped.append(tag)
+            return ""
 
-        return MASK_TAG_RE.sub(replace, mask)
+        result = MASK_TAG_RE.sub(replace, mask)
+        if dropped:
+            result = re.sub(r"(?<=\S)[ \t]{2,}", " ", result).strip(" \t")
+        return result
 
     def _runtime_for_message(self, runtime, account: int, dialog_id, text: str = "", params=None):
         settings = runtime.settings
