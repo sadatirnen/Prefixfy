@@ -1,9 +1,4 @@
 {
-  "accounts": {
-    "727461793": {
-      "tag_weather": true
-    }
-  },
   "flags": {
     "attached_media": true,
     "chat_configs": true,
@@ -89,7 +84,7 @@
     "tag_tz": true,
     "tag_until": true,
     "tag_username": true,
-    "tag_weather": false,
+    "tag_weather": true,
     "tag_week": true,
     "tag_weekday": true,
     "tag_weekday_short": true,
@@ -99,7 +94,7 @@
     "text_styles": true
   },
   "format": 1,
-  "issued_at": 1793704810,
-  "serial": 1793704810,
-  "signature": "CtuLk35LlChuVxlhx4iAbEENVOvLLNPspMZVIdEpD5Z5LVjO4Rw+HHEOvDbrEbCfw68riiu+BC2NWgRzM9iTMbrWer4fcvCnI2PU9qJiv7nTw7EZoKU1hN+So5rShDTl7TX3Ybuv76iwq3xLQo9vikKPw5gZXaWZe5TIF9ENBs0d/+gKPxUAcTZdK+UPP5sBFiQu9S+IJup1UYoAEXY+idSwQSOrmnaiCbejBphx9aYSK06XNXC0z/xOcZIA/ydjrqQAg8ZxFyu8A5gFkA/6NjwSk0SH9ZCqlnQpX+jFwm7VYzlZ40InJ9ksdoyNeMqAw/nH1V9foBVf8gfccXSxXhfVtv8hIKmWKmrK+YwCmI4fc0bAG9GYqcEsjILrXlYkTZBz/UAyPyBbRccHZR5nMxe7t7p1y6TjM3J6x8JYjHeQnMQRaQVMu2mCD5aUSxh7Vj1C0TI51YmsS6yOl2JdjpK5+oDxeDo1sTc5w+D9K7ElR2EcJ3xVnJMjmoow2cgK"
+  "issued_at": 1793705027,
+  "serial": 1793705027,
+  "signature": "Gh+7ftTJQoE0yod5iwIhcTa6TnwFCLXFM8Mk8yuzwkSNW1UwnQ5Rx2baTlw5vouBs9/dlDFQYbnTb1liZnLv5+3CH0by7XbC5hd+mZH8lvtrWxwAg08r27fRT6kJnhpvmzy2Jc1XNMZU/Om3GbHDdRQWBuCqlAiTxkH80xZ3cnI5d2Ot7dfIKSfsV5Ul5eoJDENlIArvntjnVkZbCrBGIgFjHrf6+JDqBRA/7hkF98YgRBwEYr29lp2RSvgw/Oye5EJbqDpT6j03rdWzmXtQYgbGHQgYOvY1mOp74fXTGghoFZPl2VuhfbI65VXfbKqfb3WypaSNodHMTTOV8XW/HxWV/a/RzNCK3JW1zfQ0gQAYZWDP81H7lwvX5wVQxxvUB12fed5VdX/njmDCMmEyuL3Gs8HNrNq0h453ffq6LIkazv2Yp27OP90e0WmbTgL1ti9UAHGT28s7PpaedhWA4fXOZbmgrBGzRv3OdcU3l1cR0fB5nD7ZazYMxkpZBqhl"
 }
