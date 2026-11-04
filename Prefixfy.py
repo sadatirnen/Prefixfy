@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 6 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "32.1.0"
-__build__ = "32.1.0_20261103.1_16"
+__version__ = "33.0.0"
+__build__ = "33.0.0_20261104.1_17"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -1922,6 +1922,152 @@ for _code, _table in LocalizationManager.STRINGS.items():
         _table["mask_tags_hint"] = _table["mask_tags_hint"] + "\n" + _extra.get("tags_more", _base["tags_more"])
 
 
+_ACCOUNT_STRINGS = {
+    "ru": {
+        "acct_header": "Аккаунты",
+        "acct_mode": "Настройки по аккаунтам",
+        "acct_mode_subtext": "Отдельный набор настроек для каждого аккаунта. Пока вы ничего не меняли, у всех аккаунтов настройки общие.",
+        "acct_target": "Аккаунт для настройки",
+        "acct_auto": "Авто (текущий аккаунт)",
+        "acct_common": "Общие (для всех)",
+        "acct_auto_now": "Авто показывает",
+        "acct_editing": "Открыты настройки",
+        "acct_own": "свои настройки",
+        "acct_shared": "общие настройки",
+        "acct_common_hint": "общие настройки (для аккаунтов без своих)",
+        "acct_none": "аккаунт не определён",
+        "acct_reset": "Сбросить к общим настройкам",
+        "acct_reset_subtext": "Удалить свои настройки этого аккаунта",
+        "acct_reset_title": "Сброс настроек аккаунта",
+        "acct_reset_confirm": "Удалить свои настройки этого аккаунта? Он снова будет использовать общие настройки.",
+        "acct_reset_btn": "Сбросить",
+        "acct_reset_done": "Настройки аккаунта сброшены к общим",
+        "acct_import_title": "Куда применить конфигурацию?",
+        "acct_import_all": "Все аккаунты",
+        "acct_import_common": "Общие (аккаунты без своих настроек)",
+    },
+    "en": {
+        "acct_header": "Accounts",
+        "acct_mode": "Per-account settings",
+        "acct_mode_subtext": "A separate set of settings for each account. Until you change something, all accounts share the same settings.",
+        "acct_target": "Account to configure",
+        "acct_auto": "Auto (current account)",
+        "acct_common": "Common (for all)",
+        "acct_auto_now": "Auto is showing",
+        "acct_editing": "Settings open for",
+        "acct_own": "own settings",
+        "acct_shared": "common settings",
+        "acct_common_hint": "common settings (for accounts without their own)",
+        "acct_none": "account not detected",
+        "acct_reset": "Reset to common settings",
+        "acct_reset_subtext": "Remove this account's own settings",
+        "acct_reset_title": "Reset account settings",
+        "acct_reset_confirm": "Remove this account's own settings? It will use the common settings again.",
+        "acct_reset_btn": "Reset",
+        "acct_reset_done": "Account settings reset to common",
+        "acct_import_title": "Apply the configuration to",
+        "acct_import_all": "All accounts",
+        "acct_import_common": "Common (accounts without their own settings)",
+    },
+    "ja": {
+        "acct_header": "アカウント",
+        "acct_mode": "アカウント別の設定",
+        "acct_mode_subtext": "アカウントごとに個別の設定を持てます。変更するまで、すべてのアカウントで共通の設定が使われます。",
+        "acct_target": "設定するアカウント",
+        "acct_auto": "自動（現在のアカウント）",
+        "acct_common": "共通（全アカウント）",
+        "acct_auto_now": "自動で表示中",
+        "acct_editing": "開いている設定",
+        "acct_own": "個別の設定",
+        "acct_shared": "共通の設定",
+        "acct_common_hint": "共通の設定（個別設定のないアカウント用）",
+        "acct_none": "アカウントを特定できません",
+        "acct_reset": "共通の設定に戻す",
+        "acct_reset_subtext": "このアカウントの個別設定を削除します",
+        "acct_reset_title": "アカウント設定のリセット",
+        "acct_reset_confirm": "このアカウントの個別設定を削除しますか？再び共通の設定が使われます。",
+        "acct_reset_btn": "リセット",
+        "acct_reset_done": "アカウントの設定を共通に戻しました",
+        "acct_import_title": "設定の適用先",
+        "acct_import_all": "すべてのアカウント",
+        "acct_import_common": "共通（個別設定のないアカウント）",
+    },
+    "ko": {
+        "acct_header": "계정",
+        "acct_mode": "계정별 설정",
+        "acct_mode_subtext": "계정마다 별도의 설정 세트를 사용합니다. 변경하기 전까지는 모든 계정이 같은 설정을 공유합니다.",
+        "acct_target": "설정할 계정",
+        "acct_auto": "자동(현재 계정)",
+        "acct_common": "공통(모든 계정)",
+        "acct_auto_now": "자동으로 표시 중",
+        "acct_editing": "열려 있는 설정",
+        "acct_own": "개별 설정",
+        "acct_shared": "공통 설정",
+        "acct_common_hint": "공통 설정(개별 설정이 없는 계정용)",
+        "acct_none": "계정을 확인할 수 없음",
+        "acct_reset": "공통 설정으로 되돌리기",
+        "acct_reset_subtext": "이 계정의 개별 설정을 삭제합니다",
+        "acct_reset_title": "계정 설정 초기화",
+        "acct_reset_confirm": "이 계정의 개별 설정을 삭제할까요? 다시 공통 설정을 사용합니다.",
+        "acct_reset_btn": "초기화",
+        "acct_reset_done": "계정 설정을 공통으로 되돌렸습니다",
+        "acct_import_title": "구성을 적용할 대상",
+        "acct_import_all": "모든 계정",
+        "acct_import_common": "공통(개별 설정이 없는 계정)",
+    },
+    "fr": {
+        "acct_header": "Comptes",
+        "acct_mode": "Réglages par compte",
+        "acct_mode_subtext": "Un jeu de réglages distinct pour chaque compte. Tant que vous ne changez rien, tous les comptes partagent les mêmes réglages.",
+        "acct_target": "Compte à configurer",
+        "acct_auto": "Auto (compte actuel)",
+        "acct_common": "Communs (pour tous)",
+        "acct_auto_now": "Auto affiche",
+        "acct_editing": "Réglages ouverts pour",
+        "acct_own": "réglages propres",
+        "acct_shared": "réglages communs",
+        "acct_common_hint": "réglages communs (pour les comptes sans réglages propres)",
+        "acct_none": "compte non détecté",
+        "acct_reset": "Revenir aux réglages communs",
+        "acct_reset_subtext": "Supprimer les réglages propres de ce compte",
+        "acct_reset_title": "Réinitialiser les réglages du compte",
+        "acct_reset_confirm": "Supprimer les réglages propres de ce compte ? Il utilisera de nouveau les réglages communs.",
+        "acct_reset_btn": "Réinitialiser",
+        "acct_reset_done": "Réglages du compte ramenés aux réglages communs",
+        "acct_import_title": "Appliquer la configuration à",
+        "acct_import_all": "Tous les comptes",
+        "acct_import_common": "Communs (comptes sans réglages propres)",
+    },
+    "de": {
+        "acct_header": "Konten",
+        "acct_mode": "Einstellungen pro Konto",
+        "acct_mode_subtext": "Ein eigener Einstellungssatz für jedes Konto. Solange nichts geändert wird, teilen alle Konten dieselben Einstellungen.",
+        "acct_target": "Konto zum Konfigurieren",
+        "acct_auto": "Auto (aktuelles Konto)",
+        "acct_common": "Gemeinsam (für alle)",
+        "acct_auto_now": "Auto zeigt",
+        "acct_editing": "Geöffnete Einstellungen für",
+        "acct_own": "eigene Einstellungen",
+        "acct_shared": "gemeinsame Einstellungen",
+        "acct_common_hint": "gemeinsame Einstellungen (für Konten ohne eigene)",
+        "acct_none": "Konto nicht erkannt",
+        "acct_reset": "Auf gemeinsame Einstellungen zurücksetzen",
+        "acct_reset_subtext": "Eigene Einstellungen dieses Kontos entfernen",
+        "acct_reset_title": "Kontoeinstellungen zurücksetzen",
+        "acct_reset_confirm": "Eigene Einstellungen dieses Kontos entfernen? Es nutzt dann wieder die gemeinsamen Einstellungen.",
+        "acct_reset_btn": "Zurücksetzen",
+        "acct_reset_done": "Kontoeinstellungen auf gemeinsame zurückgesetzt",
+        "acct_import_title": "Konfiguration anwenden auf",
+        "acct_import_all": "Alle Konten",
+        "acct_import_common": "Gemeinsam (Konten ohne eigene Einstellungen)",
+    },
+}
+for _code, _table in LocalizationManager.STRINGS.items():
+    _acct_extra = _ACCOUNT_STRINGS.get(_code, _ACCOUNT_STRINGS["en"])
+    for _key, _value in _ACCOUNT_STRINGS["ru"].items():
+        _table[_key] = _acct_extra.get(_key, _ACCOUNT_STRINGS["en"].get(_key, _value))
+
+
 _SYNODIC_MONTH = 29.530588853
 
 
@@ -2653,6 +2799,15 @@ def sanitize_tag_value(value) -> str:
 
 CHAT_CONFIGS_KEY = "Prefixfy_chat_configs"
 SCHEDULE_KEY = "Prefixfy_schedule"
+ACCT_MODE_KEY = "Prefixfy_acct_mode"
+ACCT_TARGET_KEY = "Prefixfy_acct_target"
+ACCT_LIVE_KEY = "Prefixfy_acct_live"
+ACCT_SELECTOR_KEY = "Prefixfy_acct_selector"
+ACCT_AUTO = "auto"
+ACCT_COMMON = "common"
+ACCT_ALL = "all"
+ACCT_DIR_NAME = "Prefixfy_accounts"
+_ACCT_FILE_RE = re.compile(r"([0-9]{1,16})\.json")
 MAX_SCHEDULE_RULES = 24
 _SCHEDULE_DAYS = {
     "mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6,
@@ -2932,6 +3087,9 @@ FEATURE_FLAGS: Dict[str, bool] = {
     "premium_emoji": True,
     "schedule": True,
     "chat_configs": True,
+    # Единый флаг режима «Настройки по аккаунтам». False — функция полностью выключена
+    # (нет интерфейса, нет переключения, отправка идёт по общему набору, как в 32.x).
+    "account_settings": True,
     "config_import": True,
     "lang_auto": True,
     "lang_en": True,
@@ -4305,7 +4463,7 @@ class RuntimeManager:
         with self._lock:
             try:
                 configurations = getattr(self.plugin, "configurations", None)
-                config_id = configurations.active_id if configurations is not None else "default"
+                config_id = configurations.live_config_id() if configurations is not None else "default"
                 self.runtime = Runtime(self.plugin.settings.snapshot(), config_id, self.plugin.log)
             except Exception as exc:
                 self.plugin.log(f"Prefixfy runtime rebuild failed: {exc}")
@@ -4951,9 +5109,45 @@ class ConfigTransfer:
         ):
             self.discard_container_media(data)
 
-    def _finish_import(self, data, components, as_new, name, fragment):
+    def _ask_import_target(self, data, components, fragment) -> bool:
+        plugin = self.plugin
+        activity = plugin._dialog_activity(fragment)
+        if not activity:
+            return False
+        configs = plugin.configurations
+        accounts = plugin._accounts()
+        choices: List[Any] = [ACCT_ALL, ACCT_COMMON] + list(accounts.values())
+        labels = [self._tr("acct_import_all"), self._tr("acct_import_common")]
+        labels += [plugin._acct_label(slot, uid, mark=True) for slot, uid in accounts.items()]
+        current = ACCT_COMMON if configs.edit_uid is None else configs.edit_uid
+        labels = [("✓ " if choice == current else "") + label for choice, label in zip(choices, labels)]
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(self._tr("acct_import_title"))
+
+        def picked(bld, which):
+            bld.dismiss()
+            if 0 <= which < len(choices):
+                self._finish_import(data, components, False, None, fragment, target=choices[which])
+            else:
+                self.discard_container_media(data)
+
+        def cancelled(bld, which):
+            bld.dismiss()
+            self.discard_container_media(data)
+            self._toast("configuration_import_cancelled", fragment)
+
+        builder.set_items(labels, picked)
+        builder.set_negative_button(self._tr("cancel"), cancelled)
+        return bool(plugin._show_builder(builder))
+
+    def _finish_import(self, data, components, as_new, name, fragment, target=None):
+        if target is None and not as_new and self.plugin._acct_on() and self._ask_import_target(data, components, fragment):
+            return
         try:
-            self.plugin.configurations.import_data(data, components, as_new=as_new, name=name)
+            if target is None:
+                self.plugin.configurations.import_data(data, components, as_new=as_new, name=name)
+            else:
+                self.plugin.configurations.import_to_accounts(data, components, target)
             self.plugin.reload_settings_ui()
             self._toast("configuration_imported", fragment)
         except ConfigurationError as exc:
@@ -5296,6 +5490,8 @@ class ConfigurationsManager:
         ensure_dir_exists(self.media_dir)
         ensure_dir_exists(self.store_dir)
         self.active_id = ""
+        self.edit_uid: Optional[int] = self._stored_live_uid()
+        self.accounts = AccountProfiles(self)
         self.configurations: Dict[str, dict] = {}
         self._load_store()
         if not self.configurations:
@@ -5581,6 +5777,8 @@ class ConfigurationsManager:
         if self._degraded:
             return
         referenced = {os.path.abspath(as_text(self.settings.get("attached_media_path")))}
+        for path in self.accounts.media_paths():
+            referenced.add(os.path.abspath(path))
         for data in self.configurations.values():
             for snapshot in (data.get("current", {}), data.get("baseline", {})):
                 referenced.add(os.path.abspath(as_text(snapshot.get("attached_media_path"))))
@@ -5668,6 +5866,14 @@ class ConfigurationsManager:
     def save_active(self) -> bool:
         with self._lock:
             self._autosave_dirty = False
+            uid = self.edit_uid
+            if uid is not None:
+                if not self.accounts.has(uid) and self._same_as_shared(self._snapshot()):
+                    return True
+                saved = self.accounts.save(uid, self._snapshot_with_media(f"acc_{uid}", "current"))
+                if not saved:
+                    self._autosave_dirty = True
+                return saved
             if self.active_id not in self.configurations:
                 return True
             saved = self._sync_params(self.active_id, "current", self._snapshot_with_media(self.active_id, "current"))
@@ -5765,7 +5971,7 @@ class ConfigurationsManager:
         with self._lock:
             self._autosave_dirty = False
             self.active_id = config_id
-            self._load_snapshot(self._current(config_id))
+            self._load_snapshot(self._target_snapshot())
             self._write_index()
             self._collect_orphan_media()
         self.plugin.refresh_chat_menu_item()
@@ -5928,7 +6134,9 @@ class ConfigurationsManager:
         baseline = config.get("baseline", {})
         if plugin_defaults and self.is_imported(self.active_id):
             baseline = dict(SETTING_DEFAULTS)
-        current = dict(config.get("current", {}))
+        uid = self.edit_uid
+        current = dict((self.accounts.get(uid) if uid is not None else None) or config.get("current", {}))
+        owner_id = self.active_id if uid is None else f"acc_{uid}"
         for component in components:
             for key in COMPONENT_KEYS.get(component, ()):
                 if key in baseline:
@@ -5937,17 +6145,136 @@ class ConfigurationsManager:
             baseline_media = as_text(baseline.get("attached_media_path"))
             if baseline.get("attached_media_enabled", False) and os.path.isfile(baseline_media):
                 current["attached_media_path"] = self._clone_with_media(
-                    {"attached_media_path": baseline_media}, self.active_id, "current"
+                    {"attached_media_path": baseline_media}, owner_id, "current"
                 ).get("attached_media_path", "")
             elif not baseline.get("attached_media_enabled", False):
                 current["attached_media_path"] = ""
         with self._lock:
-            if not self._sync_params(self.active_id, "current", current):
+            if uid is not None:
+                if not self.accounts.save(uid, current):
+                    self._retry_later()
+            elif not self._sync_params(self.active_id, "current", current):
                 self._retry_later()
             self._load_snapshot(current)
         self.plugin.refresh_chat_menu_item()
         self._refresh_ui()
         self.plugin._toast("configuration_restored")
+
+    # ------------------------------------------------------------------
+    # Режим «Настройки по аккаунтам» (единый флаг FEATURES["account_settings"])
+    # Живые настройки = рабочая копия того набора, который открыт в редакторе:
+    # edit_uid is None — общий набор (активная конфигурация), иначе — набор аккаунта.
+    # ------------------------------------------------------------------
+    @property
+    def acct_selector_key(self) -> str:
+        return f"{ACCT_SELECTOR_KEY}_{self._ui_revision}"
+
+    def live_config_id(self) -> str:
+        return f"acc_{self.edit_uid}" if self.edit_uid is not None else self.active_id
+
+    def _stored_live_uid(self) -> Optional[int]:
+        try:
+            raw = as_text(self.plugin.get_setting(ACCT_LIVE_KEY, "")).strip()
+        except Exception:
+            return None
+        return int(raw) if raw.isdigit() and 0 < int(raw) <= 2 ** 53 else None
+
+    def _write_live_marker(self):
+        try:
+            self.plugin.set_setting(ACCT_LIVE_KEY, "" if self.edit_uid is None else str(self.edit_uid))
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy account marker failed: {exc}")
+
+    def _target_snapshot(self) -> dict:
+        own = self.accounts.get(self.edit_uid) if self.edit_uid is not None else None
+        return own if own is not None else self._current(self.active_id)
+
+    def _same_as_shared(self, snapshot: dict) -> bool:
+        shared = self._current(self.active_id)
+        return all(
+            snapshot.get(key) == self._coerce(key, shared.get(key, SETTING_DEFAULTS[key]))
+            for key in self.CONFIG_KEYS
+        )
+
+    def _switch_live(self, uid: Optional[int]):
+        self.edit_uid = uid
+        self._load_snapshot(self._target_snapshot())
+        self._write_live_marker()
+
+    def resolve_target(self) -> Optional[int]:
+        plugin = self.plugin
+        if not plugin._acct_on():
+            return None
+        raw = as_text(plugin.get_setting(ACCT_TARGET_KEY, ACCT_AUTO)).strip()
+        accounts = plugin._accounts()
+        if raw == ACCT_AUTO:
+            return accounts.get(plugin._current_account_slot())
+        if raw.isdigit() and int(raw) in accounts.values():
+            return int(raw)
+        return None
+
+    def sync_target(self) -> bool:
+        with self._lock:
+            uid = self.resolve_target()
+            if uid == self.edit_uid:
+                return False
+            if not self._save_active_checked():
+                return False
+            self._switch_live(uid)
+        self.plugin.refresh_chat_menu_item()
+        return True
+
+    def reset_account(self):
+        with self._lock:
+            uid = self.edit_uid
+            if uid is None or not self.accounts.has(uid):
+                return
+            self._autosave_dirty = False
+            self.accounts.delete(uid)
+            self._load_snapshot(self._target_snapshot())
+        self.plugin.refresh_chat_menu_item()
+        self._refresh_ui()
+        self.plugin._toast("acct_reset_done")
+
+    def _import_into(self, uid: Optional[int], data, components):
+        self._switch_live(uid)
+        self.plugin.transfer.apply_components(data, components)
+        if uid is None:
+            if not self._save_active_checked():
+                self.plugin.log("Prefixfy import applied but not yet saved: retry scheduled")
+        elif not self.accounts.save(uid, self._snapshot_with_media(f"acc_{uid}", "current")):
+            raise ConfigurationSaveError("account configuration could not be saved")
+
+    def import_to_accounts(self, data, components, target):
+        """target: ACCT_ALL (общий набор + все свои наборы), ACCT_COMMON или user_id аккаунта."""
+        remote = getattr(self.plugin, "remote", None)
+        if remote is not None and not remote.allows():
+            raise ConfigurationError("plugin update required")
+        if not FEATURES.on("config_import"):
+            raise ConfigurationError("configuration import is switched off")
+        present = set(self.plugin._accounts().values())
+        if target == ACCT_ALL:
+            plan = [None] + [uid for uid in self.accounts.uids() if uid in present]
+        elif target == ACCT_COMMON:
+            plan = [None]
+        elif isinstance(target, int) and not isinstance(target, bool) and target in present:
+            plan = [target]
+        else:
+            raise ConfigurationError("unknown import target")
+        with self._lock:
+            if not self._save_active_checked():
+                raise ConfigurationSaveError("active configuration could not be saved")
+            origin = self.edit_uid
+            try:
+                for uid in plan:
+                    self._import_into(uid, data, components)
+            finally:
+                self._switch_live(origin)
+        if "schedule" in components:
+            section = extract_component(data, "schedule")
+            if section is not None:
+                self.plugin.import_schedule_section(section, None)
+        self.plugin.refresh_chat_menu_item()
 
     def request_add(self, view=None):
         def confirm(value, editor):
@@ -6396,6 +6723,151 @@ def device_account_ids(logger=None) -> Optional[frozenset]:
         if logger:
             logger(f"Prefixfy device accounts lookup failed: {exc}")
         return None
+
+
+def device_account_map(logger=None) -> Dict[int, int]:
+    """{индекс_слота: user_id} для активных аккаунтов этого устройства."""
+    result: Dict[int, int] = {}
+    try:
+        config_class = find_class("org.telegram.messenger.UserConfig")
+        try:
+            count = int(config_class.MAX_ACCOUNT_COUNT)
+        except Exception:
+            count = 16
+        for index in range(max(1, min(count, 32))):
+            config = config_class.getInstance(index)
+            if config is None or not bool(config.isClientActivated()):
+                continue
+            user_id = java_int(config.getClientUserId())
+            if user_id and user_id > 0:
+                result[index] = user_id
+    except Exception as exc:
+        if logger:
+            logger(f"Prefixfy account map lookup failed: {exc}")
+    return result
+
+
+class AccountProfiles:
+    """Собственные наборы настроек отдельных аккаунтов («Настройки по аккаунтам»).
+
+    Файл <uid>.json появляется лениво, при первой правке в редакторе этого аккаунта.
+    Нет файла — аккаунт использует общий набор (то, что было до появления режима).
+    """
+
+    def __init__(self, manager):
+        self.manager = manager
+        self.directory = os.path.join(get_plugins_dir(), ACCT_DIR_NAME)
+        ensure_dir_exists(self.directory)
+        self.generation = 0
+        self._lock = threading.RLock()
+        self._data: Dict[int, Dict[str, Any]] = {}
+        self._runtimes: Dict[int, Tuple[int, "Runtime"]] = {}
+        self._load()
+
+    def _path(self, uid) -> str:
+        return os.path.join(self.directory, f"{int(uid)}.json")
+
+    def _clean(self, params) -> Dict[str, Any]:
+        coerce = ConfigurationsManager._coerce
+        return {key: coerce(key, params.get(key, SETTING_DEFAULTS[key])) for key in ConfigurationsManager.CONFIG_KEYS}
+
+    def _load(self):
+        try:
+            entries = sorted(os.listdir(self.directory))
+        except OSError as exc:
+            self.manager.plugin.log(f"Prefixfy accounts: listing failed: {exc}")
+            return
+        for entry in entries:
+            match = _ACCT_FILE_RE.fullmatch(entry)
+            if match is None:
+                continue
+            try:
+                with open(os.path.join(self.directory, entry), "r", encoding="utf-8") as handle:
+                    payload = json.load(handle)
+                params = payload.get("params") if isinstance(payload, dict) else None
+                if isinstance(params, dict):
+                    self._data[int(match.group(1))] = self._clean(params)
+            except Exception as exc:
+                self.manager.plugin.log(f"Prefixfy accounts: cannot read {entry}: {exc}")
+
+    def invalidate(self):
+        with self._lock:
+            self.generation += 1
+            self._runtimes.clear()
+
+    def uids(self) -> List[int]:
+        with self._lock:
+            return sorted(self._data)
+
+    def has(self, uid) -> bool:
+        if uid is None:
+            return False
+        with self._lock:
+            return int(uid) in self._data
+
+    def get(self, uid) -> Optional[Dict[str, Any]]:
+        if uid is None:
+            return None
+        with self._lock:
+            found = self._data.get(int(uid))
+            return dict(found) if found is not None else None
+
+    def save(self, uid, params) -> bool:
+        uid = int(uid)
+        clean = self._clean(params)
+        with self._lock:
+            if self._data.get(uid) == clean:
+                return True
+            try:
+                ConfigurationsManager._atomic_write(
+                    self._path(uid), json.dumps({"version": 1, "params": clean}, ensure_ascii=False, separators=(",", ":"))
+                )
+            except Exception as exc:
+                self.manager.plugin.log(f"Prefixfy accounts: write failed ({uid}): {exc}")
+                return False
+            self._data[uid] = clean
+            self._runtimes.pop(uid, None)
+            self.generation += 1
+        return True
+
+    def delete(self, uid):
+        uid = int(uid)
+        with self._lock:
+            params = self._data.pop(uid, None)
+            self._runtimes.pop(uid, None)
+            self.generation += 1
+        try:
+            if os.path.isfile(self._path(uid)):
+                os.remove(self._path(uid))
+        except OSError as exc:
+            self.manager.plugin.log(f"Prefixfy accounts: delete failed ({uid}): {exc}")
+        if params:
+            media = as_text(params.get("attached_media_path"))
+            if media and os.path.basename(media).startswith(f"acc_{uid}") and is_plugin_file(media) and os.path.isfile(media):
+                delete_file(media)
+
+    def media_paths(self) -> List[str]:
+        with self._lock:
+            return [as_text(item.get("attached_media_path")) for item in self._data.values() if item.get("attached_media_path")]
+
+    def runtime_for(self, uid) -> Optional["Runtime"]:
+        if uid is None:
+            return None
+        uid = int(uid)
+        with self._lock:
+            cached = self._runtimes.get(uid)
+            if cached is not None and cached[0] == self.generation:
+                return cached[1]
+            params = self._data.get(uid)
+            if params is None:
+                return None
+            try:
+                runtime = Runtime(RuntimeSettings(dict(params)), f"acc_{uid}", self.manager.plugin.log)
+            except Exception as exc:
+                self.manager.plugin.log(f"Prefixfy account runtime failed ({uid}): {exc}")
+                return None
+            self._runtimes[uid] = (self.generation, runtime)
+            return runtime
 
 
 class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
@@ -7071,6 +7543,10 @@ class PrefixfyPlugin(BasePlugin):
         self._remove_stale_files()
         self._migrate_language_setting()
         self.configurations = ConfigurationsManager(self)
+        try:
+            self.configurations.sync_target()
+        except Exception as exc:
+            self.log(f"Prefixfy account target sync failed: {exc}")
         self.set_setting(LANGUAGE_LAYOUT_KEY, LANGUAGE_LAYOUT_VERSION)
         self.runtime_manager.rebuild()
 
@@ -7512,6 +7988,156 @@ class PrefixfyPlugin(BasePlugin):
             rules = rename_schedule_target(rules, source, new_name)[0]
         self.set_setting(SCHEDULE_KEY, rules)
 
+    # ------------------------------------------------------------------
+    # Режим «Настройки по аккаунтам»
+    # ------------------------------------------------------------------
+    _acc_cache = (0.0, {})
+
+    def _accounts(self) -> Dict[int, int]:
+        stamp, data = self._acc_cache
+        now = time.monotonic()
+        if stamp == 0.0 or now - stamp > DEVICE_RECHECK_INTERVAL:
+            data = device_account_map(self.log)
+            self._acc_cache = (now, data)
+        return data
+
+    def _acct_available(self) -> bool:
+        return FEATURES.on("account_settings") and len(self._accounts()) >= 2
+
+    def _acct_on(self) -> bool:
+        return self._acct_available() and bool(self.get_setting(ACCT_MODE_KEY, False))
+
+    @staticmethod
+    def _current_account_slot() -> Optional[int]:
+        try:
+            return int(get_selected_account())
+        except Exception:
+            return None
+
+    def _acct_name(self, slot) -> str:
+        if slot is None:
+            return ""
+        try:
+            user = find_class("org.telegram.messenger.UserConfig").getInstance(int(slot)).getCurrentUser()
+            full = f"{as_text(getattr(user, 'first_name', None))} {as_text(getattr(user, 'last_name', None))}".strip()
+            return full or as_text(getattr(user, "username", None))
+        except Exception:
+            return ""
+
+    def _acct_label(self, slot, uid, mark: bool = False) -> str:
+        name = self._acct_name(slot)
+        text = f"{name} • ID {uid}" if name else f"ID {uid}"
+        if mark and self.configurations.accounts.has(uid):
+            text += " ✱"
+        return text
+
+    def _base_runtime(self, account) -> Optional["Runtime"]:
+        """Базовый рантайм для аккаунта: свой набор, иначе общий. Без режима — как в 32.x."""
+        live = self.runtime_manager.runtime
+        configs = getattr(self, "configurations", None)
+        if configs is None or live is None:
+            return live
+        on = self._acct_on()
+        if configs.edit_uid is None and not on:
+            return live
+        if on:
+            try:
+                uid = self._accounts().get(int(account))
+            except Exception:
+                uid = None
+            if uid is not None:
+                if uid == configs.edit_uid:
+                    return live
+                own = configs.accounts.runtime_for(uid)
+                if own is not None:
+                    return own
+        if configs.edit_uid is None:
+            return live
+        return configs.runtime_for(configs.active_id) or live
+
+    def _settings_accounts(self) -> List[Any]:
+        if not self._acct_available():
+            return []
+        tr = self._tr
+        icon = self._icon("msg_contacts", "msg_info")
+        items: List[Any] = [
+            Header(text=tr("acct_header")),
+            Switch(key=ACCT_MODE_KEY, text=tr("acct_mode"), default=False, subtext=tr("acct_mode_subtext"),
+                   icon=icon, on_change=self._on_acct_mode),
+        ]
+        if not bool(self.get_setting(ACCT_MODE_KEY, False)):
+            return items
+        configs = self.configurations
+        accounts = self._accounts()
+        uids = list(accounts.values())
+        target = as_text(self.get_setting(ACCT_TARGET_KEY, ACCT_AUTO)).strip()
+        if target == ACCT_AUTO:
+            index = 0
+        elif target.isdigit() and int(target) in uids:
+            index = 2 + uids.index(int(target))
+        else:
+            index = 1
+        names = [tr("acct_auto"), tr("acct_common")] + [self._acct_label(s, u, mark=True) for s, u in accounts.items()]
+        key = configs.acct_selector_key
+        try:
+            self.set_setting(key, index)
+        except Exception as exc:
+            self.log(f"Prefixfy account selector state failed: {exc}")
+        items.append(Selector(key=key, text=tr("acct_target"), default=index, items=names, icon=icon,
+                              on_change=self._on_acct_target))
+        shown = configs.edit_uid
+        if shown is None:
+            subtext = tr("acct_none") if target == ACCT_AUTO else tr("acct_common_hint")
+        else:
+            slot = next((s for s, u in accounts.items() if u == shown), None)
+            subtext = self._acct_label(slot, shown) + " • " + tr("acct_own" if configs.accounts.has(shown) else "acct_shared")
+        items.append(Text(text=tr("acct_auto_now" if target == ACCT_AUTO else "acct_editing"), subtext=subtext,
+                          icon=icon, on_click=lambda *_: None))
+        if shown is not None and configs.accounts.has(shown):
+            items.append(Text(text=tr("acct_reset"), subtext=tr("acct_reset_subtext"), icon=self._icon("msg_retry"),
+                              on_click=self._confirm_reset_account))
+        return items
+
+    def _acct_apply(self):
+        try:
+            self.configurations.sync_target()
+        except Exception as exc:
+            self.log(f"Prefixfy account target sync failed: {exc}")
+        self.configurations._refresh_ui()
+
+    def _on_acct_mode(self, enabled):
+        self.set_setting(ACCT_MODE_KEY, bool(enabled))
+        self._acct_apply()
+
+    def _on_acct_target(self, index):
+        uids = list(self._accounts().values())
+        if index == 0:
+            value = ACCT_AUTO
+        elif index == 1:
+            value = ACCT_COMMON
+        elif isinstance(index, int) and 2 <= index < 2 + len(uids):
+            value = str(uids[index - 2])
+        else:
+            return
+        self.set_setting(ACCT_TARGET_KEY, value)
+        self._acct_apply()
+
+    def _confirm_reset_account(self, view=None):
+        activity = self._dialog_activity()
+        if not activity:
+            return
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(self._tr("acct_reset_title"))
+        builder.set_message(self._tr("acct_reset_confirm"))
+
+        def confirmed(bld, which):
+            bld.dismiss()
+            self.configurations.reset_account()
+
+        builder.set_positive_button(self._tr("acct_reset_btn"), confirmed)
+        builder.set_negative_button(self._tr("cancel"), lambda bld, which: bld.dismiss())
+        self._show_builder(builder)
+
     def _runtime_for_chat(self, runtime, dialog_id):
         configs = getattr(self, "configurations", None)
         if configs is None:
@@ -7523,7 +8149,7 @@ class PrefixfyPlugin(BasePlugin):
             rules = self._schedule_rules() if FEATURES.on("schedule") else None
             if rules:
                 config_id = schedule_match(rules, datetime.now(), configs.find_id_by_name)
-        if config_id is None or config_id == configs.active_id:
+        if config_id is None or config_id == runtime.config_id:
             return runtime
         return configs.runtime_for(config_id) or runtime
 
@@ -8187,6 +8813,13 @@ class PrefixfyPlugin(BasePlugin):
         return items
 
     def _on_features_changed(self):
+        configurations = getattr(self, "configurations", None)
+        if configurations is not None:
+            try:
+                configurations.accounts.invalidate()
+                configurations.sync_target()
+            except Exception as exc:
+                self.log(f"Prefixfy account target sync failed: {exc}")
         try:
             self.runtime_manager.rebuild()
         except Exception as exc:
@@ -8403,6 +9036,11 @@ class PrefixfyPlugin(BasePlugin):
         if notice and self.remote.blocked():
             return notice + self._settings_about()
         settings: List[Any] = list(notice)
+        try:
+            self.configurations.sync_target()
+        except Exception as exc:
+            self.log(f"Prefixfy account target sync failed: {exc}")
+        settings += self._settings_accounts()
         settings.append(
             self._switch("chat_scope_enabled", self._tr("enable_plugin"), self._tr("enable_plugin_subtext"), "msg_settings"),
         )
@@ -9038,7 +9676,7 @@ class PrefixfyPlugin(BasePlugin):
         if FEATURES.on("premium_emoji") and self.settings.get("capture_custom_emoji", False) and self._capture_custom_emoji(params, account):
             return HookResult(strategy=HookStrategy.CANCEL)
 
-        runtime = self.runtime_manager.runtime
+        runtime = self._base_runtime(account)
         if runtime is None:
             return HookResult()
 
@@ -9186,6 +9824,7 @@ class PrefixfyPlugin(BasePlugin):
 
         if not self.remote.allows():
             return
+        runtime = self._base_runtime(account) or runtime
         runtime = self._runtime_for_chat(runtime, dialog_id)
         settings = runtime.settings
         if not settings.process_edit:
