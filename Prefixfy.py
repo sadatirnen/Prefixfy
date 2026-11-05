@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, OTA-обновления (вручную, по мере выхода или по времени), интерфейс на 6 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "34.0.2"
-__build__ = "34.0.2_20261105.3_20"
+__version__ = "34.1.0"
+__build__ = "34.1.0_20261105.4_21"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -107,12 +107,13 @@ UPDATE_ALLOWED_HOSTS = ("raw.githubusercontent.com",)
 UPDATE_PUBLIC_KEYS: Tuple[str, ...] = (
     "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAnCpVgdegnDqZoaOi5H5EOpHiwY8jhprNdIT3jGVauC0Nijz2L/iauWaVxnEOwDT2tqp1tJQ6CrdQxOS/PKV/7QLtGtAseKdpo/4tZjHgx2N9TAPMVb+zK3oWYk+0+OcLFIUoczCa1aZuwaScBqQchmgTj4sQwIbhWDhquE2EtyiF1+6S6GCgV5KyJrqylt2pAcif5z3ixUV27MPzaPbQmuyU+3amsIXDxGcdTFwlHMg/ThFVz77bwV5fkfaNdJrZGDp3+FKSIfjN68v2scL6O9oYHhkDg4AEPUYQkJmNTMnqc0ABFSW9MGuGsMTa0MKNDMaBY5iP2aQmfzLddorBP4ovfOZRzZguFVltFGd44xVOE1w5ceL1WVH+pW+4HX0Ck5FWnHbttaQiLoxXuiIK+F927LLM0yCmKLZC9tcIfMdBXgcaHp1ZaKGOIVvRs8SRaVnQ2z51v3NtjHbakGKwcXit2JlgyKvrHPG2AQj8ci7tApB6BWYffsNkFM4bCBIlAgMBAAE=",
 )
-REMOTE_CHECK_INTERVAL = 15 * 60
+REMOTE_CHECK_CHOICES = (15, 30, 45, 60, 120, 180)   # минуты: до часа шаг 15 минут, дальше шаг 1 час
+REMOTE_CHECK_DEFAULT_INDEX = 0                       # 15 минут
+REMOTE_MAX_AGE_FACTOR = 2                            # макс. возраст кэша = интервал проверки * 2
 REMOTE_RETRY_INTERVAL = 60
 REMOTE_MANUAL_COOLDOWN = 10.0
 REMOTE_TIMEOUT = 10
 REMOTE_TOTAL_TIMEOUT = 20
-REMOTE_MAX_AGE = 60 * 60
 REMOTE_MAX_BYTES = 64 * 1024
 OTA_STATE_FILE = ".pfx_ota"            # маркер обновления, список отклонённых сборок
 OTA_PREV_FILE = ".pfx_prev"            # копия предыдущей версии для отката
@@ -272,6 +273,7 @@ OTA_SETTING_DEFAULTS = {
     "ota_auto": False,        # автообновление выключено, пока пользователь его не включит
     "ota_mode": 0,            # 0 - по мере выхода, 1 - в выбранное время
     "ota_time": "04:00",      # системное время устройства, ЧЧ:ММ
+    "check_interval": REMOTE_CHECK_DEFAULT_INDEX,   # индекс в REMOTE_CHECK_CHOICES
 }
 
 MEDIA_EXTENSIONS = frozenset({
@@ -2107,7 +2109,7 @@ _OTA_STRINGS = {
         "ota_failed": "Не удалось обновить: {reason}",
         "ota_busy": "Обновление уже выполняется",
         "ota_rolled_back": "Новая версия не запустилась, возвращена предыдущая.",
-        "ota_check_note": "Если есть новая официальная версия и OTA разрешён разработчиком, она будет скачана и установлена сразу.",
+        "ota_check_note": "Если найдена новая официальная версия, эта проверка её не установит: появится уведомление, а поставить обновление можно кнопкой «Скачать» под «Требуется обновление».",
     },
     "en": {
         "ota_section": "Updates (OTA)",
@@ -2131,7 +2133,7 @@ _OTA_STRINGS = {
         "ota_failed": "Update failed: {reason}",
         "ota_busy": "An update is already in progress",
         "ota_rolled_back": "The new version did not start, the previous one was restored.",
-        "ota_check_note": "If a new official version exists and the developer allows OTA, it will be downloaded and installed right away.",
+        "ota_check_note": "If a new official version is found, this check will not install it: you will get a notice, and you can install the update with the “Download” button under “Update required”.",
     },
     "ja": {
         "ota_section": "アップデート (OTA)",
@@ -2155,7 +2157,7 @@ _OTA_STRINGS = {
         "ota_failed": "更新に失敗しました: {reason}",
         "ota_busy": "更新はすでに実行中です",
         "ota_rolled_back": "新しいバージョンが起動しなかったため、前のバージョンに戻しました。",
-        "ota_check_note": "新しい公式バージョンがあり、開発者が OTA を許可している場合は、すぐにダウンロードしてインストールします。",
+        "ota_check_note": "新しい公式バージョンが見つかっても、この確認ではインストールされません。通知が表示されるので、「アップデートが必要です」の下の「ダウンロード」からインストールしてください。",
     },
     "ko": {
         "ota_section": "업데이트 (OTA)",
@@ -2179,7 +2181,7 @@ _OTA_STRINGS = {
         "ota_failed": "업데이트 실패: {reason}",
         "ota_busy": "이미 업데이트가 진행 중입니다",
         "ota_rolled_back": "새 버전이 시작되지 않아 이전 버전으로 복원했습니다.",
-        "ota_check_note": "새 공식 버전이 있고 개발자가 OTA를 허용하면 바로 내려받아 설치합니다.",
+        "ota_check_note": "새 공식 버전이 발견되어도 이 확인으로는 설치되지 않습니다. 알림이 표시되며, '업데이트 필요' 아래의 '다운로드'로 설치할 수 있습니다.",
     },
     "fr": {
         "ota_section": "Mises à jour (OTA)",
@@ -2203,7 +2205,7 @@ _OTA_STRINGS = {
         "ota_failed": "Échec de la mise à jour : {reason}",
         "ota_busy": "Une mise à jour est déjà en cours",
         "ota_rolled_back": "La nouvelle version n’a pas démarré, la précédente a été restaurée.",
-        "ota_check_note": "Si une nouvelle version officielle existe et que le développeur autorise l’OTA, elle sera téléchargée et installée aussitôt.",
+        "ota_check_note": "Si une nouvelle version officielle est trouvée, cette vérification ne l’installera pas : une notification s’affichera et vous pourrez installer la mise à jour avec « Télécharger » sous « Mise à jour requise ».",
     },
     "de": {
         "ota_section": "Updates (OTA)",
@@ -2227,7 +2229,7 @@ _OTA_STRINGS = {
         "ota_failed": "Update fehlgeschlagen: {reason}",
         "ota_busy": "Ein Update läuft bereits",
         "ota_rolled_back": "Die neue Version ist nicht gestartet, die vorherige wurde wiederhergestellt.",
-        "ota_check_note": "Gibt es eine neue offizielle Version und erlaubt der Entwickler OTA, wird sie sofort heruntergeladen und installiert.",
+        "ota_check_note": "Wird eine neue offizielle Version gefunden, installiert diese Prüfung sie nicht: Du erhältst einen Hinweis und kannst das Update über „Herunterladen“ unter „Update erforderlich“ installieren.",
     },
 }
 for _code, _table in LocalizationManager.STRINGS.items():
@@ -2236,6 +2238,19 @@ for _code, _table in LocalizationManager.STRINGS.items():
         _table[_key] = _ota_extra.get(_key, _OTA_STRINGS["en"].get(_key, _value))
     if _table.get("check_confirm_body"):
         _table["check_confirm_body"] = _table["check_confirm_body"] + "\n\n" + _table["ota_check_note"]
+
+_INTERVAL_STRINGS = {
+    "ru": {"check_interval": "Интервал проверки репозитория", "interval_minutes": "{n} мин", "interval_hours": "{n} ч"},
+    "en": {"check_interval": "Repository check interval", "interval_minutes": "{n} min", "interval_hours": "{n} h"},
+    "ja": {"check_interval": "リポジトリの確認間隔", "interval_minutes": "{n}分", "interval_hours": "{n}時間"},
+    "ko": {"check_interval": "저장소 확인 간격", "interval_minutes": "{n}분", "interval_hours": "{n}시간"},
+    "fr": {"check_interval": "Intervalle de vérification du dépôt", "interval_minutes": "{n} min", "interval_hours": "{n} h"},
+    "de": {"check_interval": "Prüfintervall des Repositorys", "interval_minutes": "{n} Min.", "interval_hours": "{n} Std."},
+}
+for _code, _table in LocalizationManager.STRINGS.items():
+    _int_extra = _INTERVAL_STRINGS.get(_code, _INTERVAL_STRINGS["en"])
+    for _key, _value in _INTERVAL_STRINGS["ru"].items():
+        _table[_key] = _int_extra.get(_key, _INTERVAL_STRINGS["en"].get(_key, _value))
 
 _OTA_DL_STRINGS = {
     "ru": {
@@ -7371,6 +7386,29 @@ class RemoteControl:
         self._ota_day = None
         self._poll_devices(notify=False, force=True)
 
+    def check_interval(self) -> float:
+        """Интервал опроса репозитория в секундах (настройка под кнопкой «Проверить сейчас»)."""
+        index = clamp_int(
+            self.plugin.settings.get("check_interval"),
+            REMOTE_CHECK_DEFAULT_INDEX, 0, len(REMOTE_CHECK_CHOICES) - 1,
+        )
+        return REMOTE_CHECK_CHOICES[index] * 60.0
+
+    def max_age(self) -> float:
+        """Сколько живёт кэш подписанного манифеста: выбранный интервал, умноженный на 2."""
+        return self.check_interval() * REMOTE_MAX_AGE_FACTOR
+
+    def reschedule(self):
+        """После смены интервала: перезапустить опрос, не дёргая сеть без нужды."""
+        if not self.enabled or self._unloaded.is_set():
+            return
+        delay = 0.0
+        if self.verified():
+            delay = max(0.0, self.check_interval() - (time.monotonic() - self._last_ok))
+        self._stop.set()
+        self._stop = stop = threading.Event()
+        threading.Thread(target=self._run, args=(stop, delay), name="PrefixfyRemote", daemon=True).start()
+
     def start(self):
         if not self.enabled:
             self.plugin.log("Prefixfy is blocked: no update public key in this build")
@@ -7383,12 +7421,14 @@ class RemoteControl:
         self._unloaded.set()
         self._stop.set()
 
-    def _run(self, stop):
+    def _run(self, stop, delay: float = 0.0):
+        if delay > 0 and stop.wait(delay):
+            return
         while not stop.is_set():
             fetched = self.refresh()
             self.soft()
             self.ota_auto_step(fetched)
-            wait = REMOTE_CHECK_INTERVAL if fetched and not self.outdated() else REMOTE_RETRY_INTERVAL
+            wait = self.check_interval() if fetched and not self.outdated() else REMOTE_RETRY_INTERVAL
             extra = self._ota_next_wait()
             if extra is not None:
                 wait = max(30.0, min(wait, extra))
@@ -7407,7 +7447,7 @@ class RemoteControl:
         threading.Thread(target=self.refresh, name="PrefixfyRemoteNow", daemon=True).start()
 
     def ensure_fresh(self):
-        if time.monotonic() - self._last_ok >= REMOTE_CHECK_INTERVAL:
+        if time.monotonic() - self._last_ok >= self.check_interval():
             self.request_refresh()
 
     @staticmethod
@@ -7805,7 +7845,7 @@ class RemoteControl:
         with self._lock:
             has_state = self._state is not None
         now = time.monotonic()
-        return has_state and self._bl_known and now - self._last_ok <= REMOTE_MAX_AGE and now - self._bl_last_ok <= BLACKLIST_MAX_AGE
+        return has_state and self._bl_known and now - self._last_ok <= self.max_age() and now - self._bl_last_ok <= BLACKLIST_MAX_AGE
 
     def blocked(self) -> bool:
         if not self.enabled:
@@ -9545,7 +9585,30 @@ class PrefixfyPlugin(BasePlugin):
                 text=self._tr("check_now"), subtext=self._tr("check_now_subtext"),
                 icon=self._icon("msg_retry"), on_click=self._check_now,
             ),
+            Selector(
+                key="check_interval", text=self._tr("check_interval"),
+                default=self._check_interval_index(),
+                items=[self._interval_label(minutes) for minutes in REMOTE_CHECK_CHOICES],
+                icon=self._icon("msg_timer", "msg_recent"), on_change=self._on_check_interval_change,
+            ),
         ]
+
+    def _check_interval_index(self) -> int:
+        return clamp_int(
+            self.settings.get("check_interval"), REMOTE_CHECK_DEFAULT_INDEX, 0, len(REMOTE_CHECK_CHOICES) - 1,
+        )
+
+    def _interval_label(self, minutes: int) -> str:
+        if minutes % 60 == 0:
+            return self._tr("interval_hours", n=minutes // 60)
+        return self._tr("interval_minutes", n=minutes)
+
+    def _on_check_interval_change(self, index):
+        index = clamp_int(index, REMOTE_CHECK_DEFAULT_INDEX, 0, len(REMOTE_CHECK_CHOICES) - 1)
+        self.settings.set("check_interval", index)
+        remote = getattr(self, "remote", None)
+        if remote is not None:
+            remote.reschedule()
 
     def _on_ota_auto_change(self, enabled):
         enabled = bool(enabled)
