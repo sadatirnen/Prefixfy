@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, OTA-обновления (вручную, по мере выхода или по времени), интерфейс на 6 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "34.0.1"
-__build__ = "34.0.1_20261105.2_19"
+__version__ = "34.0.2"
+__build__ = "34.0.2_20261105.3_20"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -2098,7 +2098,7 @@ _OTA_STRINGS = {
         "ota_disabled": "OTA отключён разработчиком",
         "ota_disabled_subtext": "Обновления временно недоступны. Установите новую версию вручную из репозитория.",
         "ota_auto_disabled": "Автообновление отключено разработчиком",
-        "ota_auto_disabled_subtext": "Обновляйте вручную: кнопка «Проверить сейчас» или репозиторий.",
+        "ota_auto_disabled_subtext": "Обновляйте вручную: кнопка «Скачать» под «Требуется обновление» или репозиторий.",
         "ota_available": "Доступна версия {version}",
         "ota_available_subtext": "Нажмите, чтобы скачать и установить сейчас.",
         "ota_update_now": "Обновить сейчас",
@@ -2122,7 +2122,7 @@ _OTA_STRINGS = {
         "ota_disabled": "OTA is disabled by the developer",
         "ota_disabled_subtext": "Updates are temporarily unavailable. Install the new version manually from the repository.",
         "ota_auto_disabled": "Auto-update is disabled by the developer",
-        "ota_auto_disabled_subtext": "Update manually with “Check now” or from the repository.",
+        "ota_auto_disabled_subtext": "Update manually with the “Download” button under “Update required” or from the repository.",
         "ota_available": "Version {version} is available",
         "ota_available_subtext": "Tap to download and install it now.",
         "ota_update_now": "Update now",
@@ -2146,7 +2146,7 @@ _OTA_STRINGS = {
         "ota_disabled": "OTA は開発者により無効化されています",
         "ota_disabled_subtext": "現在アップデートは利用できません。リポジトリから新しいバージョンを手動でインストールしてください。",
         "ota_auto_disabled": "自動アップデートは開発者により無効化されています",
-        "ota_auto_disabled_subtext": "「今すぐ確認」またはリポジトリから手動で更新してください。",
+        "ota_auto_disabled_subtext": "「アップデートが必要です」の下の「ダウンロード」またはリポジトリから手動で更新してください。",
         "ota_available": "バージョン {version} が利用可能です",
         "ota_available_subtext": "タップして今すぐダウンロードしてインストールします。",
         "ota_update_now": "今すぐ更新",
@@ -2170,7 +2170,7 @@ _OTA_STRINGS = {
         "ota_disabled": "개발자가 OTA를 비활성화했습니다",
         "ota_disabled_subtext": "업데이트를 일시적으로 사용할 수 없습니다. 저장소에서 새 버전을 직접 설치하세요.",
         "ota_auto_disabled": "개발자가 자동 업데이트를 비활성화했습니다",
-        "ota_auto_disabled_subtext": "'지금 확인'이나 저장소에서 직접 업데이트하세요.",
+        "ota_auto_disabled_subtext": "'업데이트 필요' 아래의 '다운로드'나 저장소에서 직접 업데이트하세요.",
         "ota_available": "버전 {version} 사용 가능",
         "ota_available_subtext": "탭하여 지금 내려받아 설치합니다.",
         "ota_update_now": "지금 업데이트",
@@ -2194,7 +2194,7 @@ _OTA_STRINGS = {
         "ota_disabled": "OTA désactivé par le développeur",
         "ota_disabled_subtext": "Les mises à jour sont temporairement indisponibles. Installez la nouvelle version manuellement depuis le dépôt.",
         "ota_auto_disabled": "Mise à jour automatique désactivée par le développeur",
-        "ota_auto_disabled_subtext": "Mettez à jour manuellement avec « Vérifier maintenant » ou depuis le dépôt.",
+        "ota_auto_disabled_subtext": "Mettez à jour manuellement avec « Télécharger » sous « Mise à jour requise » ou depuis le dépôt.",
         "ota_available": "La version {version} est disponible",
         "ota_available_subtext": "Touchez pour la télécharger et l’installer maintenant.",
         "ota_update_now": "Mettre à jour",
@@ -2218,7 +2218,7 @@ _OTA_STRINGS = {
         "ota_disabled": "OTA vom Entwickler deaktiviert",
         "ota_disabled_subtext": "Updates sind vorübergehend nicht verfügbar. Installiere die neue Version manuell aus dem Repository.",
         "ota_auto_disabled": "Automatische Updates vom Entwickler deaktiviert",
-        "ota_auto_disabled_subtext": "Aktualisiere manuell mit „Jetzt prüfen“ oder über das Repository.",
+        "ota_auto_disabled_subtext": "Aktualisiere manuell mit „Herunterladen“ unter „Update erforderlich“ oder über das Repository.",
         "ota_available": "Version {version} ist verfügbar",
         "ota_available_subtext": "Tippen, um sie jetzt herunterzuladen und zu installieren.",
         "ota_update_now": "Jetzt aktualisieren",
@@ -2240,6 +2240,7 @@ for _code, _table in LocalizationManager.STRINGS.items():
 _OTA_DL_STRINGS = {
     "ru": {
         "ota_download": "Скачать",
+        "check_update_found": "Найдено обновление Prefixfy {version}. Нажмите «Скачать» под «Требуется обновление», чтобы установить.",
         "ota_download_subtext": "Версия {version}. Сначала откроется информация об обновлении.",
         "ota_dl_title": "Обновление Prefixfy",
         "ota_dl_size": "Размер",
@@ -2249,6 +2250,7 @@ _OTA_DL_STRINGS = {
     },
     "en": {
         "ota_download": "Download",
+        "check_update_found": "Prefixfy {version} update found. Tap “Download” under “Update required” to install it.",
         "ota_download_subtext": "Version {version}. Update details are shown first.",
         "ota_dl_title": "Prefixfy update",
         "ota_dl_size": "Size",
@@ -2258,6 +2260,7 @@ _OTA_DL_STRINGS = {
     },
     "ja": {
         "ota_download": "ダウンロード",
+        "check_update_found": "Prefixfy {version} のアップデートが見つかりました。インストールするには「アップデートが必要です」の下の「ダウンロード」をタップしてください。",
         "ota_download_subtext": "バージョン {version}。最初にアップデートの詳細が表示されます。",
         "ota_dl_title": "Prefixfy のアップデート",
         "ota_dl_size": "サイズ",
@@ -2267,6 +2270,7 @@ _OTA_DL_STRINGS = {
     },
     "ko": {
         "ota_download": "다운로드",
+        "check_update_found": "Prefixfy {version} 업데이트를 찾았습니다. 설치하려면 '업데이트 필요' 아래의 '다운로드'를 누르세요.",
         "ota_download_subtext": "버전 {version}. 먼저 업데이트 정보가 표시됩니다.",
         "ota_dl_title": "Prefixfy 업데이트",
         "ota_dl_size": "크기",
@@ -2276,6 +2280,7 @@ _OTA_DL_STRINGS = {
     },
     "fr": {
         "ota_download": "Télécharger",
+        "check_update_found": "Mise à jour Prefixfy {version} trouvée. Touchez « Télécharger » sous « Mise à jour requise » pour l’installer.",
         "ota_download_subtext": "Version {version}. Les détails de la mise à jour s’affichent d’abord.",
         "ota_dl_title": "Mise à jour de Prefixfy",
         "ota_dl_size": "Taille",
@@ -2285,6 +2290,7 @@ _OTA_DL_STRINGS = {
     },
     "de": {
         "ota_download": "Herunterladen",
+        "check_update_found": "Prefixfy-Update {version} gefunden. Tippe unter „Update erforderlich“ auf „Herunterladen“, um es zu installieren.",
         "ota_download_subtext": "Version {version}. Zuerst werden die Update-Details angezeigt.",
         "ota_dl_title": "Prefixfy-Update",
         "ota_dl_size": "Größe",
@@ -8015,7 +8021,7 @@ class RemoteControl:
         threading.Thread(target=work, name="PrefixfyOTAKick", daemon=True).start()
 
     def ota_manual(self, refreshed: bool) -> Optional[Tuple[str, Dict[str, Any]]]:
-        """Кнопки «Проверить сейчас» и «Обновить сейчас». None, если ставить нечего."""
+        """Кнопка «Скачать и установить». None, если ставить нечего. «Проверить сейчас» сюда не попадает."""
         state = self.ota_candidate()
         if state is None:
             return None
@@ -9614,7 +9620,7 @@ class PrefixfyPlugin(BasePlugin):
         self._show_builder(builder)
 
     def _ota_update_now(self, *_):
-        self._run_check()
+        self._run_check(install=True)
 
     def _settings_ota(self) -> List[Any]:
         tr = self._tr
@@ -9670,7 +9676,7 @@ class PrefixfyPlugin(BasePlugin):
         builder.set_negative_button(tr("cancel"), lambda bld, which: bld.dismiss())
         self._show_builder(builder)
 
-    def _run_check(self):
+    def _run_check(self, install: bool = False):
         remote = getattr(self, "remote", None)
         if remote is None or getattr(self, "_check_running", False):
             return
@@ -9680,7 +9686,13 @@ class PrefixfyPlugin(BasePlugin):
         def work():
             try:
                 refreshed = remote.refresh(force=True)
-                outcome = remote.ota_manual(refreshed)
+                outcome = None
+                if install:
+                    outcome = remote.ota_manual(refreshed)
+                elif refreshed:
+                    found = remote.ota_candidate() if FEATURES.enabled("ota") else None
+                    if found is not None:
+                        outcome = ("check_update_found", {"version": format_version(found["version"])})
                 if outcome is not None:
                     self._toast(outcome[0], **outcome[1])
                 elif remote.blocked():
