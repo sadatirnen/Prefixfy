@@ -64,11 +64,11 @@ except ImportError:
 __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = (
-    "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, интерфейс на 6 языках."
+    "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, OTA-обновления (вручную, по мере выхода или по времени), интерфейс на 6 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "33.0.0"
-__build__ = "33.0.0_20261104.1_17"
+__version__ = "34.0.0"
+__build__ = "34.0.0_20261105.1_18"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -114,6 +114,15 @@ REMOTE_TIMEOUT = 10
 REMOTE_TOTAL_TIMEOUT = 20
 REMOTE_MAX_AGE = 60 * 60
 REMOTE_MAX_BYTES = 64 * 1024
+OTA_STATE_FILE = ".pfx_ota"            # маркер обновления, список отклонённых сборок
+OTA_PREV_FILE = ".pfx_prev"            # копия предыдущей версии для отката
+OTA_DEFAULT_FILE = "prefixfy.py"       # имя файла в репозитории, если манифест его не указал
+OTA_FLAGS_MAX_AGE = 120.0              # флаги должны быть проверены не раньше, чем N секунд назад
+OTA_LOAD_TIMEOUT = 45.0                # сколько ждать загрузки новой версии до отката
+OTA_CONFIRM_SEC = 20.0                 # сколько новая версия должна проработать, чтобы считаться рабочей
+OTA_MAX_BOOTS = 3                      # подряд неподтверждённых запусков до отката
+OTA_BAD_LIMIT = 20
+OTA_TIME_RE = re.compile(r"\s*([01]?[0-9]|2[0-3])\s*:\s*([0-5][0-9])\s*")
 MASK_PLACEHOLDER = "[text]"
 DEFAULT_SEPARATORS = "•, ·, —, ~, |"
 LANGUAGE_MODES = (None, "ru", "en", "ja", "ko", "fr", "de")
@@ -256,6 +265,13 @@ SETTING_DEFAULTS = {
 
 TRANSIENT_SETTING_DEFAULTS = {
     "capture_custom_emoji": False,
+}
+
+# Настройки OTA относятся к устройству, а не к конфигурации: в экспорт/импорт не попадают.
+OTA_SETTING_DEFAULTS = {
+    "ota_auto": False,        # автообновление выключено, пока пользователь его не включит
+    "ota_mode": 0,            # 0 - по мере выхода, 1 - в выбранное время
+    "ota_time": "04:00",      # системное время устройства, ЧЧ:ММ
 }
 
 MEDIA_EXTENSIONS = frozenset({
@@ -2068,6 +2084,221 @@ for _code, _table in LocalizationManager.STRINGS.items():
         _table[_key] = _acct_extra.get(_key, _ACCOUNT_STRINGS["en"].get(_key, _value))
 
 
+_OTA_STRINGS = {
+    "ru": {
+        "ota_section": "Обновления (OTA)",
+        "ota_auto": "Автообновление",
+        "ota_auto_subtext": "Скачивать и ставить новые официальные версии сами. Подпись и контрольные суммы проверяются перед установкой.",
+        "ota_mode": "Режим автообновления",
+        "ota_mode_available": "По мере получения",
+        "ota_mode_time": "В выбранное время",
+        "ota_time": "Время обновления",
+        "ota_time_subtext": "Системное время устройства, формат ЧЧ:ММ (например 04:00).",
+        "ota_time_invalid": "Введите время в формате ЧЧ:ММ, например 04:00",
+        "ota_disabled": "OTA отключён разработчиком",
+        "ota_disabled_subtext": "Обновления временно недоступны. Установите новую версию вручную из репозитория.",
+        "ota_auto_disabled": "Автообновление отключено разработчиком",
+        "ota_auto_disabled_subtext": "Обновляйте вручную: кнопка «Проверить сейчас» или репозиторий.",
+        "ota_available": "Доступна версия {version}",
+        "ota_available_subtext": "Нажмите, чтобы скачать и установить сейчас.",
+        "ota_update_now": "Обновить сейчас",
+        "ota_installed": "Prefixfy {version} установлен. Перезапускаю плагин…",
+        "ota_restart_manual": "Prefixfy {version} установлен. Выключите и снова включите плагин, чтобы применить.",
+        "ota_failed": "Не удалось обновить: {reason}",
+        "ota_busy": "Обновление уже выполняется",
+        "ota_rolled_back": "Новая версия не запустилась, возвращена предыдущая.",
+        "ota_check_note": "Если есть новая официальная версия и OTA разрешён разработчиком, она будет скачана и установлена сразу.",
+    },
+    "en": {
+        "ota_section": "Updates (OTA)",
+        "ota_auto": "Auto-update",
+        "ota_auto_subtext": "Download and install new official versions automatically. The signature and checksums are verified before installing.",
+        "ota_mode": "Auto-update mode",
+        "ota_mode_available": "As soon as available",
+        "ota_mode_time": "At a chosen time",
+        "ota_time": "Update time",
+        "ota_time_subtext": "Device system time, HH:MM format (for example 04:00).",
+        "ota_time_invalid": "Enter the time as HH:MM, for example 04:00",
+        "ota_disabled": "OTA is disabled by the developer",
+        "ota_disabled_subtext": "Updates are temporarily unavailable. Install the new version manually from the repository.",
+        "ota_auto_disabled": "Auto-update is disabled by the developer",
+        "ota_auto_disabled_subtext": "Update manually with “Check now” or from the repository.",
+        "ota_available": "Version {version} is available",
+        "ota_available_subtext": "Tap to download and install it now.",
+        "ota_update_now": "Update now",
+        "ota_installed": "Prefixfy {version} installed. Restarting the plugin…",
+        "ota_restart_manual": "Prefixfy {version} installed. Turn the plugin off and on again to apply it.",
+        "ota_failed": "Update failed: {reason}",
+        "ota_busy": "An update is already in progress",
+        "ota_rolled_back": "The new version did not start, the previous one was restored.",
+        "ota_check_note": "If a new official version exists and the developer allows OTA, it will be downloaded and installed right away.",
+    },
+    "ja": {
+        "ota_section": "アップデート (OTA)",
+        "ota_auto": "自動アップデート",
+        "ota_auto_subtext": "新しい公式バージョンを自動でダウンロードしてインストールします。インストール前に署名とチェックサムを検証します。",
+        "ota_mode": "自動アップデートのモード",
+        "ota_mode_available": "公開され次第",
+        "ota_mode_time": "指定した時刻",
+        "ota_time": "アップデート時刻",
+        "ota_time_subtext": "端末のシステム時刻、HH:MM 形式（例: 04:00）。",
+        "ota_time_invalid": "時刻を HH:MM 形式で入力してください（例: 04:00）",
+        "ota_disabled": "OTA は開発者により無効化されています",
+        "ota_disabled_subtext": "現在アップデートは利用できません。リポジトリから新しいバージョンを手動でインストールしてください。",
+        "ota_auto_disabled": "自動アップデートは開発者により無効化されています",
+        "ota_auto_disabled_subtext": "「今すぐ確認」またはリポジトリから手動で更新してください。",
+        "ota_available": "バージョン {version} が利用可能です",
+        "ota_available_subtext": "タップして今すぐダウンロードしてインストールします。",
+        "ota_update_now": "今すぐ更新",
+        "ota_installed": "Prefixfy {version} をインストールしました。プラグインを再起動します…",
+        "ota_restart_manual": "Prefixfy {version} をインストールしました。適用するにはプラグインをオフにしてからオンにしてください。",
+        "ota_failed": "更新に失敗しました: {reason}",
+        "ota_busy": "更新はすでに実行中です",
+        "ota_rolled_back": "新しいバージョンが起動しなかったため、前のバージョンに戻しました。",
+        "ota_check_note": "新しい公式バージョンがあり、開発者が OTA を許可している場合は、すぐにダウンロードしてインストールします。",
+    },
+    "ko": {
+        "ota_section": "업데이트 (OTA)",
+        "ota_auto": "자동 업데이트",
+        "ota_auto_subtext": "새 공식 버전을 자동으로 내려받아 설치합니다. 설치 전에 서명과 체크섬을 검증합니다.",
+        "ota_mode": "자동 업데이트 모드",
+        "ota_mode_available": "배포되는 즉시",
+        "ota_mode_time": "지정한 시간",
+        "ota_time": "업데이트 시간",
+        "ota_time_subtext": "기기 시스템 시간, HH:MM 형식 (예: 04:00).",
+        "ota_time_invalid": "시간을 HH:MM 형식으로 입력하세요 (예: 04:00)",
+        "ota_disabled": "개발자가 OTA를 비활성화했습니다",
+        "ota_disabled_subtext": "업데이트를 일시적으로 사용할 수 없습니다. 저장소에서 새 버전을 직접 설치하세요.",
+        "ota_auto_disabled": "개발자가 자동 업데이트를 비활성화했습니다",
+        "ota_auto_disabled_subtext": "'지금 확인'이나 저장소에서 직접 업데이트하세요.",
+        "ota_available": "버전 {version} 사용 가능",
+        "ota_available_subtext": "탭하여 지금 내려받아 설치합니다.",
+        "ota_update_now": "지금 업데이트",
+        "ota_installed": "Prefixfy {version} 설치 완료. 플러그인을 다시 시작합니다…",
+        "ota_restart_manual": "Prefixfy {version} 설치 완료. 적용하려면 플러그인을 껐다가 다시 켜세요.",
+        "ota_failed": "업데이트 실패: {reason}",
+        "ota_busy": "이미 업데이트가 진행 중입니다",
+        "ota_rolled_back": "새 버전이 시작되지 않아 이전 버전으로 복원했습니다.",
+        "ota_check_note": "새 공식 버전이 있고 개발자가 OTA를 허용하면 바로 내려받아 설치합니다.",
+    },
+    "fr": {
+        "ota_section": "Mises à jour (OTA)",
+        "ota_auto": "Mise à jour automatique",
+        "ota_auto_subtext": "Télécharge et installe seul les nouvelles versions officielles. La signature et les sommes de contrôle sont vérifiées avant l’installation.",
+        "ota_mode": "Mode de mise à jour automatique",
+        "ota_mode_available": "Dès que disponible",
+        "ota_mode_time": "À une heure choisie",
+        "ota_time": "Heure de mise à jour",
+        "ota_time_subtext": "Heure système de l’appareil, format HH:MM (par exemple 04:00).",
+        "ota_time_invalid": "Saisissez l’heure au format HH:MM, par exemple 04:00",
+        "ota_disabled": "OTA désactivé par le développeur",
+        "ota_disabled_subtext": "Les mises à jour sont temporairement indisponibles. Installez la nouvelle version manuellement depuis le dépôt.",
+        "ota_auto_disabled": "Mise à jour automatique désactivée par le développeur",
+        "ota_auto_disabled_subtext": "Mettez à jour manuellement avec « Vérifier maintenant » ou depuis le dépôt.",
+        "ota_available": "La version {version} est disponible",
+        "ota_available_subtext": "Touchez pour la télécharger et l’installer maintenant.",
+        "ota_update_now": "Mettre à jour",
+        "ota_installed": "Prefixfy {version} installé. Redémarrage du plugin…",
+        "ota_restart_manual": "Prefixfy {version} installé. Désactivez puis réactivez le plugin pour l’appliquer.",
+        "ota_failed": "Échec de la mise à jour : {reason}",
+        "ota_busy": "Une mise à jour est déjà en cours",
+        "ota_rolled_back": "La nouvelle version n’a pas démarré, la précédente a été restaurée.",
+        "ota_check_note": "Si une nouvelle version officielle existe et que le développeur autorise l’OTA, elle sera téléchargée et installée aussitôt.",
+    },
+    "de": {
+        "ota_section": "Updates (OTA)",
+        "ota_auto": "Automatische Updates",
+        "ota_auto_subtext": "Neue offizielle Versionen automatisch herunterladen und installieren. Signatur und Prüfsummen werden vor der Installation geprüft.",
+        "ota_mode": "Modus der automatischen Updates",
+        "ota_mode_available": "Sobald verfügbar",
+        "ota_mode_time": "Zu einer gewählten Uhrzeit",
+        "ota_time": "Update-Zeit",
+        "ota_time_subtext": "Systemzeit des Geräts, Format HH:MM (zum Beispiel 04:00).",
+        "ota_time_invalid": "Zeit im Format HH:MM eingeben, zum Beispiel 04:00",
+        "ota_disabled": "OTA vom Entwickler deaktiviert",
+        "ota_disabled_subtext": "Updates sind vorübergehend nicht verfügbar. Installiere die neue Version manuell aus dem Repository.",
+        "ota_auto_disabled": "Automatische Updates vom Entwickler deaktiviert",
+        "ota_auto_disabled_subtext": "Aktualisiere manuell mit „Jetzt prüfen“ oder über das Repository.",
+        "ota_available": "Version {version} ist verfügbar",
+        "ota_available_subtext": "Tippen, um sie jetzt herunterzuladen und zu installieren.",
+        "ota_update_now": "Jetzt aktualisieren",
+        "ota_installed": "Prefixfy {version} installiert. Plugin wird neu gestartet…",
+        "ota_restart_manual": "Prefixfy {version} installiert. Schalte das Plugin aus und wieder ein, um es anzuwenden.",
+        "ota_failed": "Update fehlgeschlagen: {reason}",
+        "ota_busy": "Ein Update läuft bereits",
+        "ota_rolled_back": "Die neue Version ist nicht gestartet, die vorherige wurde wiederhergestellt.",
+        "ota_check_note": "Gibt es eine neue offizielle Version und erlaubt der Entwickler OTA, wird sie sofort heruntergeladen und installiert.",
+    },
+}
+for _code, _table in LocalizationManager.STRINGS.items():
+    _ota_extra = _OTA_STRINGS.get(_code, _OTA_STRINGS["en"])
+    for _key, _value in _OTA_STRINGS["ru"].items():
+        _table[_key] = _ota_extra.get(_key, _OTA_STRINGS["en"].get(_key, _value))
+    if _table.get("check_confirm_body"):
+        _table["check_confirm_body"] = _table["check_confirm_body"] + "\n\n" + _table["ota_check_note"]
+
+_OTA_DL_STRINGS = {
+    "ru": {
+        "ota_download": "Скачать",
+        "ota_download_subtext": "Версия {version}. Сначала откроется информация об обновлении.",
+        "ota_dl_title": "Обновление Prefixfy",
+        "ota_dl_size": "Размер",
+        "ota_dl_confirm": "Скачать и установить",
+        "ota_dl_warning": "Внимание: при скачивании по мобильной сети оператор может взимать дополнительную плату за трафик. Лучше подключиться к Wi-Fi.",
+        "ota_unit_kb": "КБ", "ota_unit_mb": "МБ",
+    },
+    "en": {
+        "ota_download": "Download",
+        "ota_download_subtext": "Version {version}. Update details are shown first.",
+        "ota_dl_title": "Prefixfy update",
+        "ota_dl_size": "Size",
+        "ota_dl_confirm": "Download and install",
+        "ota_dl_warning": "Warning: downloading over a mobile network may incur extra charges from your carrier. Wi-Fi is recommended.",
+        "ota_unit_kb": "KB", "ota_unit_mb": "MB",
+    },
+    "ja": {
+        "ota_download": "ダウンロード",
+        "ota_download_subtext": "バージョン {version}。最初にアップデートの詳細が表示されます。",
+        "ota_dl_title": "Prefixfy のアップデート",
+        "ota_dl_size": "サイズ",
+        "ota_dl_confirm": "ダウンロードしてインストール",
+        "ota_dl_warning": "注意: モバイル回線でダウンロードすると、通信事業者から追加料金が発生する場合があります。Wi-Fi の利用をおすすめします。",
+        "ota_unit_kb": "KB", "ota_unit_mb": "MB",
+    },
+    "ko": {
+        "ota_download": "다운로드",
+        "ota_download_subtext": "버전 {version}. 먼저 업데이트 정보가 표시됩니다.",
+        "ota_dl_title": "Prefixfy 업데이트",
+        "ota_dl_size": "크기",
+        "ota_dl_confirm": "다운로드 및 설치",
+        "ota_dl_warning": "주의: 모바일 네트워크로 다운로드하면 통신사에서 추가 요금이 부과될 수 있습니다. Wi-Fi 사용을 권장합니다.",
+        "ota_unit_kb": "KB", "ota_unit_mb": "MB",
+    },
+    "fr": {
+        "ota_download": "Télécharger",
+        "ota_download_subtext": "Version {version}. Les détails de la mise à jour s’affichent d’abord.",
+        "ota_dl_title": "Mise à jour de Prefixfy",
+        "ota_dl_size": "Taille",
+        "ota_dl_confirm": "Télécharger et installer",
+        "ota_dl_warning": "Attention : le téléchargement via le réseau mobile peut entraîner des frais supplémentaires de la part de votre opérateur. Le Wi-Fi est recommandé.",
+        "ota_unit_kb": "Ko", "ota_unit_mb": "Mo",
+    },
+    "de": {
+        "ota_download": "Herunterladen",
+        "ota_download_subtext": "Version {version}. Zuerst werden die Update-Details angezeigt.",
+        "ota_dl_title": "Prefixfy-Update",
+        "ota_dl_size": "Größe",
+        "ota_dl_confirm": "Herunterladen und installieren",
+        "ota_dl_warning": "Achtung: Beim Herunterladen über das Mobilfunknetz können zusätzliche Kosten durch den Anbieter entstehen. WLAN wird empfohlen.",
+        "ota_unit_kb": "KB", "ota_unit_mb": "MB",
+    },
+}
+for _code, _table in LocalizationManager.STRINGS.items():
+    _dl_extra = _OTA_DL_STRINGS.get(_code, _OTA_DL_STRINGS["en"])
+    for _key, _value in _OTA_DL_STRINGS["ru"].items():
+        _table[_key] = _dl_extra.get(_key, _OTA_DL_STRINGS["en"].get(_key, _value))
+
+
 _SYNODIC_MONTH = 29.530588853
 
 
@@ -3091,6 +3322,11 @@ FEATURE_FLAGS: Dict[str, bool] = {
     # (нет интерфейса, нет переключения, отправка идёт по общему набору, как в 32.x).
     "account_settings": True,
     "config_import": True,
+    # OTA. Разработчик может выключить удалённо через подписанный flags.json,
+    # если обновления окажутся нестабильными. "ota": False выключает всё (и ручное, и авто),
+    # "ota_auto": False выключает только автоматическую установку.
+    "ota": True,
+    "ota_auto": True,
     "lang_auto": True,
     "lang_en": True,
     "lang_ja": True,
@@ -3155,6 +3391,10 @@ class FeatureFlags:
         if self._soft and not name.startswith("lang_"):
             return False
         return self._values.get(name, True)
+
+    def enabled(self, name: str) -> bool:
+        """Значение флага без учёта «мягкой» блокировки (для OTA: это аварийный выключатель)."""
+        return bool(self._values.get(name, True))
 
     def _compose(self) -> Dict[str, bool]:
         merged = dict(self._global)
@@ -3363,7 +3603,7 @@ class RuntimeSettings:
 
 
 class PrefixfySettings:
-    DEFAULTS = {**SETTING_DEFAULTS, **TRANSIENT_SETTING_DEFAULTS}
+    DEFAULTS = {**SETTING_DEFAULTS, **TRANSIENT_SETTING_DEFAULTS, **OTA_SETTING_DEFAULTS}
 
     def __init__(self, plugin):
         self.plugin = plugin
@@ -6952,6 +7192,111 @@ class WeatherCache:
         return text
 
 
+def parse_ota_time(value) -> Optional[Tuple[int, int]]:
+    match = OTA_TIME_RE.fullmatch(as_text(value))
+    return (int(match.group(1)), int(match.group(2))) if match else None
+
+
+def _ota_state_path() -> str:
+    return os.path.join(get_plugins_dir(), OTA_STATE_FILE)
+
+
+def _ota_prev_path() -> str:
+    return os.path.join(get_plugins_dir(), OTA_PREV_FILE)
+
+
+def _ota_read() -> Dict[str, Any]:
+    try:
+        with open(_ota_state_path(), "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _ota_write(data: Dict[str, Any], log=None):
+    path = _ota_state_path()
+    try:
+        temp = path + ".tmp"
+        with open(temp, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        os.replace(temp, path)
+    except OSError as exc:
+        if log:
+            log(f"Prefixfy OTA state not saved: {exc}")
+
+
+def _ota_bad_serials() -> List[int]:
+    bad = _ota_read().get("bad", [])
+    return [item for item in bad if isinstance(item, int) and not isinstance(item, bool)] if isinstance(bad, list) else []
+
+
+def _write_file_atomic(path: str, data: bytes):
+    temp = path + ".ota"
+    try:
+        with open(temp, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp, path)
+    finally:
+        try:
+            os.remove(temp)
+        except OSError:
+            pass
+
+
+def _ota_rollback(reason: str, log) -> bool:
+    """Вернуть предыдущую версию файла и запомнить, что новая сборка не заработала."""
+    data = _ota_read()
+    path = data.get("path") or globals().get("__file__")
+    if not path:
+        return False
+    try:
+        with open(_ota_prev_path(), "rb") as handle:
+            previous = handle.read()
+        compile(previous, "prefixfy_prev.py", "exec")
+        _write_file_atomic(path, previous)
+    except Exception as exc:
+        log(f"Prefixfy OTA rollback failed: {exc}")
+        return False
+    bad = _ota_bad_serials()
+    serial = data.get("serial")
+    if isinstance(serial, int) and not isinstance(serial, bool) and serial not in bad:
+        bad.append(serial)
+    _ota_write({"bad": bad[-OTA_BAD_LIMIT:], "state": "rolled_back", "reason": as_text(reason)[:80]}, log)
+    log(f"Prefixfy OTA rolled back: {reason}")
+    return True
+
+
+def _host_set_plugin_enabled(enabled: bool, log) -> bool:
+    """Единственное место, привязанное к API хоста: включить или выключить этот плагин.
+
+    Имена класса и метода могут отличаться между сборками клиента, поэтому всё защищено.
+    Если вызов недоступен, OTA сообщит пользователю, что плагин нужно перезапустить вручную.
+    """
+    try:
+        controller = find_class("com.exteragram.messenger.plugins.PluginsController").getInstance()
+    except Exception as exc:
+        log(f"Prefixfy OTA: plugin controller not available: {exc}")
+        return False
+    for args in ((__id__, bool(enabled), None), (__id__, bool(enabled))):
+        try:
+            controller.setPluginEnabled(*args)
+            return True
+        except Exception:
+            continue
+    log("Prefixfy OTA: setPluginEnabled call failed")
+    return False
+
+
+def _host_restart_plugin(log) -> bool:
+    if not _host_set_plugin_enabled(False, log):
+        return False
+    time.sleep(1.5)
+    return _host_set_plugin_enabled(True, log)
+
+
 def _self_file_digests() -> Optional[Tuple[str, str, int]]:
     path = globals().get("__file__")
     if not path:
@@ -7012,6 +7357,11 @@ class RemoteControl:
             pass
         self._load_flags_cache()
         self._load_blacklist_cache()
+        self._ota_lock = threading.Lock()
+        self._unloaded = threading.Event()
+        self._flags_ok = float("-inf")
+        self._ota_done = ""
+        self._ota_day = None
         self._poll_devices(notify=False, force=True)
 
     def start(self):
@@ -7023,13 +7373,19 @@ class RemoteControl:
         threading.Thread(target=self._run, args=(stop,), name="PrefixfyRemote", daemon=True).start()
 
     def stop(self):
+        self._unloaded.set()
         self._stop.set()
 
     def _run(self, stop):
         while not stop.is_set():
             fetched = self.refresh()
             self.soft()
-            stop.wait(REMOTE_CHECK_INTERVAL if fetched and not self.outdated() else REMOTE_RETRY_INTERVAL)
+            self.ota_auto_step(fetched)
+            wait = REMOTE_CHECK_INTERVAL if fetched and not self.outdated() else REMOTE_RETRY_INTERVAL
+            extra = self._ota_next_wait()
+            if extra is not None:
+                wait = max(30.0, min(wait, extra))
+            stop.wait(wait)
 
     def request_refresh(self, force: bool = False):
         if not self.enabled:
@@ -7228,6 +7584,7 @@ class RemoteControl:
             if exc.code != 404:
                 self.plugin.log(f"Prefixfy profile check failed: HTTP {exc.code}")
                 return
+            self._flags_ok = time.monotonic()
             if fresh:
                 try:
                     if FEATURES.apply({}, FEATURES.serial, {}, ""):
@@ -7240,6 +7597,7 @@ class RemoteControl:
             self.plugin.log(f"Prefixfy profile check failed: {exc}")
             return
         self._remember("f", state["serial"], state["digest"])
+        self._flags_ok = time.monotonic()
         self._save_flags_cache(state["signed"])
         if not changed:
             return
@@ -7493,6 +7851,183 @@ class RemoteControl:
             return "modified_required_subtext", {"version": self.required_version()}
         return "verify_required_subtext", {}
 
+    # ------------------------------------------------------------ OTA
+    def _ota_cfg(self) -> Tuple[bool, int, Optional[Tuple[int, int]]]:
+        settings = self.plugin.settings
+        return (
+            bool(settings.get("ota_auto")),
+            clamp_int(settings.get("ota_mode"), 0, 0, 1),
+            parse_ota_time(settings.get("ota_time")),
+        )
+
+    def ota_candidate(self) -> Optional[Dict[str, Any]]:
+        """Подписанный манифест новой версии, если её можно поставить по воздуху."""
+        if not self.enabled or self._cache_stale:
+            return None
+        with self._lock:
+            state = self._state
+        if not state or self.mismatch_reason() != "outdated" or self.blacklisted():
+            return None
+        if state["serial"] in _ota_bad_serials() or format_version(state["version"]) == self._ota_done:
+            return None
+        return state
+
+    def _ota_fetch(self, state: Dict[str, Any]) -> bytes:
+        name = state["file"] or OTA_DEFAULT_FILE
+        size = state["size"]
+        data = self._download(name, size or MANIFEST_MAX_FILE_SIZE)
+        if size and len(data) != size:
+            raise ValueError("size mismatch")
+        if not hmac.compare_digest(hashlib.sha256(data).hexdigest(), state["sha256"]):
+            raise ValueError("sha256 mismatch")
+        if state["sha512"] and not hmac.compare_digest(hashlib.sha512(data).hexdigest(), state["sha512"]):
+            raise ValueError("sha512 mismatch")
+        source = data.decode("utf-8")
+        match = re.search(r'^__build__\s*=\s*"([^"]+)"', source, re.MULTILINE)
+        if match is None or parse_version(match.group(1)) != state["version"]:
+            raise ValueError("build label differs from the manifest")
+        if state["version"] <= parse_version(__build__):
+            raise ValueError("not newer than the installed build")
+        compile(source, name, "exec")
+        return data
+
+    def _ota_replace(self, data: bytes, state: Dict[str, Any]):
+        path = globals().get("__file__")
+        if not path:
+            raise OSError("plugin path is unknown")
+        path = os.path.realpath(path)
+        if not os.access(os.path.dirname(path), os.W_OK):
+            raise OSError("plugin folder is read-only")
+        with open(path, "rb") as handle:
+            current = handle.read()
+        if current == data:
+            raise ValueError("this version is already installed")
+        _write_file_atomic(_ota_prev_path(), current)
+        _ota_write({
+            "state": "pending", "to": format_version(state["version"]), "serial": state["serial"],
+            "prev": __build__, "path": path, "boots": 0, "bad": _ota_bad_serials(),
+        }, self.plugin.log)
+        _write_file_atomic(path, data)
+
+    def ota_install(self, state: Dict[str, Any], manual: bool = False) -> Tuple[str, Dict[str, Any]]:
+        version = format_version(state["version"])
+        if not FEATURES.enabled("ota") or (not manual and not FEATURES.enabled("ota_auto")):
+            return "ota_disabled", {}
+        if time.monotonic() - self._flags_ok > OTA_FLAGS_MAX_AGE:
+            return "ota_failed", {"reason": "flags not verified"}
+        if not self._ota_lock.acquire(blocking=False):
+            return "ota_busy", {}
+        try:
+            self._ota_replace(self._ota_fetch(state), state)
+            self._ota_done = version
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy OTA failed: {exc}")
+            return "ota_failed", {"reason": as_text(exc)[:80]}
+        finally:
+            self._ota_lock.release()
+        threading.Thread(target=self._ota_apply, name="PrefixfyOTAApply", daemon=True).start()
+        return "ota_installed", {"version": version}
+
+    def _ota_apply(self):
+        """Перезапуск плагина и наблюдение: если новая версия не загрузилась, вернуть прежнюю."""
+        log = self.plugin.log
+        if not _host_restart_plugin(log):
+            self._ota_report(("ota_restart_manual", {"version": self._ota_done}))
+            return
+        deadline = time.monotonic() + OTA_LOAD_TIMEOUT
+        while time.monotonic() < deadline:
+            if int(_ota_read().get("boots") or 0) >= 1:
+                return
+            time.sleep(1.0)
+        if not self._unloaded.is_set():
+            self._ota_report(("ota_restart_manual", {"version": self._ota_done}))
+            return
+        if _ota_rollback("new build did not load", log):
+            _host_restart_plugin(log)
+
+    def ota_loaded(self):
+        """Вызывается новой сборкой после успешной загрузки: считает запуски и подтверждает рабочую версию."""
+        data = _ota_read()
+        if data.get("state") != "pending" or data.get("to") != __build__:
+            return
+        boots = int(data.get("boots") or 0) + 1
+        if boots > OTA_MAX_BOOTS:
+            if _ota_rollback("unconfirmed starts in a row", self.plugin.log):
+                threading.Thread(target=_host_restart_plugin, args=(self.plugin.log,), daemon=True).start()
+            return
+        data["boots"] = boots
+        _ota_write(data, self.plugin.log)
+        timer = threading.Timer(OTA_CONFIRM_SEC, self._ota_confirm)
+        timer.daemon = True
+        timer.start()
+
+    def _ota_confirm(self):
+        if self._unloaded.is_set():
+            return
+        data = _ota_read()
+        if data.get("state") == "pending" and data.get("to") == __build__:
+            data["state"] = "ok"
+            _ota_write(data, self.plugin.log)
+            self.plugin.log(f"Prefixfy OTA: {__build__} confirmed")
+
+    def _ota_next_wait(self) -> Optional[float]:
+        auto, mode, when = self._ota_cfg()
+        if not (auto and mode == 1 and when and FEATURES.enabled("ota") and FEATURES.enabled("ota_auto")):
+            return None
+        now = datetime.now()
+        target = now.replace(hour=when[0], minute=when[1], second=0, microsecond=0)
+        if self._ota_day != now.date():
+            return max(0.0, (target - now).total_seconds()) if now < target else 0.0
+        return (target + timedelta(days=1) - now).total_seconds()
+
+    def ota_reschedule(self):
+        """После смены режима или времени: ближайший запуск должен быть в будущем, а не сразу."""
+        _, mode, when = self._ota_cfg()
+        now = datetime.now()
+        self._ota_day = now.date() if mode == 1 and when and (now.hour, now.minute) >= when else None
+        if not self._unloaded.is_set():
+            self.start()
+
+    def ota_auto_step(self, fetched: bool):
+        try:
+            auto, mode, when = self._ota_cfg()
+            if not (auto and fetched and FEATURES.enabled("ota") and FEATURES.enabled("ota_auto")):
+                return
+            if mode == 1:
+                now = datetime.now()
+                if when is None or self._ota_day == now.date() or (now.hour, now.minute) < when:
+                    return
+                self._ota_day = now.date()
+            state = self.ota_candidate()
+            if state is not None:
+                self._ota_report(self.ota_install(state, manual=False))
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy OTA step failed: {exc}")
+
+    def ota_kick(self):
+        """Автообновление только что включили: не ждать следующего опроса."""
+        def work():
+            try:
+                self.ota_auto_step(self.refresh())
+            except Exception as exc:
+                self.plugin.log(f"Prefixfy OTA kick failed: {exc}")
+        threading.Thread(target=work, name="PrefixfyOTAKick", daemon=True).start()
+
+    def ota_manual(self, refreshed: bool) -> Optional[Tuple[str, Dict[str, Any]]]:
+        """Кнопки «Проверить сейчас» и «Обновить сейчас». None, если ставить нечего."""
+        state = self.ota_candidate()
+        if state is None:
+            return None
+        if not refreshed:
+            return "ota_failed", {"reason": "check failed"}
+        return self.ota_install(state, manual=True)
+
+    def _ota_report(self, result: Tuple[str, Dict[str, Any]]):
+        try:
+            self.plugin._toast(result[0], **result[1])
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy OTA notice failed: {exc}")
+
     def _announce(self):
         if self.blocked():
             self._soft_notified = False
@@ -7520,6 +8055,22 @@ class RemoteControl:
 
 class PrefixfyPlugin(BasePlugin):
     def on_plugin_load(self):
+        try:
+            self._on_plugin_load_impl()
+        except Exception:
+            try:
+                data = _ota_read()
+                if data.get("state") == "pending" and data.get("to") == __build__ and _ota_rollback("load failed", self.log):
+                    threading.Thread(target=_host_restart_plugin, args=(self.log,), daemon=True).start()
+            except Exception:
+                pass
+            raise
+        try:
+            self.remote.ota_loaded()
+        except Exception as exc:
+            self.log(f"Prefixfy OTA confirm failed: {exc}")
+
+    def _on_plugin_load_impl(self):
         self.settings = PrefixfySettings(self)
         self.localization = LocalizationManager(self)
         self.runtime_manager = RuntimeManager(self)
@@ -7691,7 +8242,7 @@ class PrefixfyPlugin(BasePlugin):
         self._prefixfy_hooks.extend(hooks)
 
     def handle_setting_changed(self, key):
-        if key in TRANSIENT_SETTING_DEFAULTS:
+        if key in TRANSIENT_SETTING_DEFAULTS or key in OTA_SETTING_DEFAULTS:
             return
         self.runtime_manager.on_setting_changed()
         configurations = getattr(self, "configurations", None)
@@ -8864,8 +9415,16 @@ class PrefixfyPlugin(BasePlugin):
                 return [Text(text=tr("modified_build"), subtext=subtext, icon=icon,
                              on_click=lambda *_: self._show_notice_dialog("modified"))]
             if key == "update_required_subtext":
-                return [Text(text=tr("update_required"), subtext=subtext, icon=icon,
+                rows = [Text(text=tr("update_required"), subtext=subtext, icon=icon,
                              on_click=lambda *_: self._show_notice_dialog("update"))]
+                candidate = remote.ota_candidate() if FEATURES.enabled("ota") else None
+                if candidate is not None:
+                    rows.append(Text(
+                        text=tr("ota_download"),
+                        subtext=tr("ota_download_subtext", version=format_version(candidate["version"])),
+                        icon=self._icon("msg_download", "msg_retry"), on_click=self._show_ota_download_dialog,
+                    ))
+                return rows
             return [Text(text=tr("verify_required"), subtext=subtext, icon=icon,
                          on_click=lambda *_: self._show_notice_dialog("verify"))]
         if remote.suspended(False):
@@ -8913,6 +9472,12 @@ class PrefixfyPlugin(BasePlugin):
                 bld.dismiss()
                 self._open_repo()
             builder.set_negative_button(tr("notice_open_repo"), open_repo)
+            set_neutral = getattr(builder, "set_neutral_button", None)
+            if kind == "update" and set_neutral is not None and remote is not None and FEATURES.enabled("ota") and remote.ota_candidate() is not None:
+                def update_now(bld, which):
+                    bld.dismiss()
+                    self._show_ota_download_dialog()
+                set_neutral(tr("ota_download"), update_now)
         elif kind == "soft":
             def check(bld, which):
                 bld.dismiss()
@@ -8975,6 +9540,115 @@ class PrefixfyPlugin(BasePlugin):
             ),
         ]
 
+    def _on_ota_auto_change(self, enabled):
+        enabled = bool(enabled)
+        self.settings.set("ota_auto", enabled, reload_settings=True)
+        self.remote.ota_reschedule()
+        if enabled:
+            self.remote.ota_kick()
+
+    def _on_ota_mode_change(self, index):
+        self.settings.set("ota_mode", clamp_int(index, 0, 0, 1), reload_settings=True)
+        self.remote.ota_reschedule()
+
+    def _on_ota_time_change(self, value):
+        parsed = parse_ota_time(value)
+        if parsed is None:
+            self._toast("ota_time_invalid")
+            self.reload_settings_ui(250)
+            return
+        self.settings.set("ota_time", f"{parsed[0]:02d}:{parsed[1]:02d}", reload_settings=True)
+        self.remote.ota_reschedule()
+
+    def _ota_size_text(self, size) -> str:
+        tr = self._tr
+        if not isinstance(size, int) or isinstance(size, bool) or size <= 0:
+            return tr("about_unknown")
+        value = f"{size / 1048576:.1f} {tr('ota_unit_mb')}" if size >= 1048576 else f"{max(1, round(size / 1024))} {tr('ota_unit_kb')}"
+        return value.replace(".", ",") if self.localization.language() in ("ru", "fr", "de") else value
+
+    def _ota_info_text(self, state) -> str:
+        tr = self._tr
+        unknown = tr("about_unknown")
+        parts = tuple(state["version"])
+        main = date_text = number = serial = unknown
+        if len(parts) >= 3:
+            main = f"{parts[0]}.{parts[1]}.{parts[2]}"
+        if len(parts) == 6:
+            raw_date = f"{parts[3]:08d}"
+            try:
+                date_text = datetime.strptime(raw_date, "%Y%m%d").strftime("%Y-%m-%d")
+            except ValueError:
+                date_text = raw_date
+            number, serial = str(parts[4]), str(parts[5])
+        lines = [
+            f"{tr('about_version')}: {main}",
+            f"{tr('about_build_date')}: {date_text}",
+            f"{tr('about_build_number')}: {number}",
+            f"{tr('about_serial')}: {serial}",
+            f"{tr('about_build_label')}: {format_version(parts) or unknown}",
+            f"{tr('ota_dl_size')}: {self._ota_size_text(state.get('size'))}",
+        ]
+        return "\n".join(lines) + "\n\n" + tr("ota_dl_warning")
+
+    def _show_ota_download_dialog(self, *_):
+        remote = getattr(self, "remote", None)
+        state = remote.ota_candidate() if remote is not None and FEATURES.enabled("ota") else None
+        if state is None:
+            return
+        activity = self._dialog_activity()
+        if not activity:
+            return
+        tr = self._tr
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(tr("ota_dl_title"))
+        builder.set_message(self._ota_info_text(state))
+
+        def confirm(bld, which):
+            bld.dismiss()
+            self._ota_update_now()
+
+        builder.set_positive_button(tr("ota_dl_confirm"), confirm)
+        builder.set_negative_button(tr("cancel"), lambda bld, which: bld.dismiss())
+        self._show_builder(builder)
+
+    def _ota_update_now(self, *_):
+        self._run_check()
+
+    def _settings_ota(self) -> List[Any]:
+        tr = self._tr
+        remote = getattr(self, "remote", None)
+        icon = self._icon("msg_download", "msg_retry")
+        items: List[Any] = [Header(text=tr("ota_section"))]
+        if not FEATURES.enabled("ota"):
+            items.append(Text(text=tr("ota_disabled"), subtext=tr("ota_disabled_subtext"),
+                              icon=self._icon("msg_report", "msg_info"), on_click=lambda *_: None))
+            return items
+        if not FEATURES.enabled("ota_auto"):
+            items.append(Text(text=tr("ota_auto_disabled"), subtext=tr("ota_auto_disabled_subtext"),
+                              icon=self._icon("msg_report", "msg_info"), on_click=lambda *_: None))
+            return items
+        items.append(Switch(
+            key="ota_auto", text=tr("ota_auto"), default=PrefixfySettings.DEFAULTS["ota_auto"],
+            subtext=tr("ota_auto_subtext"), icon=icon, on_change=self._on_ota_auto_change,
+        ))
+        if not self.settings.get("ota_auto"):
+            return items
+        mode = clamp_int(self.settings.get("ota_mode"), 0, 0, 1)
+        items.append(Selector(
+            key="ota_mode", text=tr("ota_mode"), default=mode,
+            items=[tr("ota_mode_available"), tr("ota_mode_time")], icon=icon,
+            on_change=self._on_ota_mode_change,
+        ))
+        if mode == 1:
+            when = parse_ota_time(self.settings.get("ota_time")) or parse_ota_time(OTA_SETTING_DEFAULTS["ota_time"])
+            items.append(Input(
+                key="ota_time", text=tr("ota_time"), default=f"{when[0]:02d}:{when[1]:02d}",
+                subtext=tr("ota_time_subtext"), icon=self._icon("msg_calendar", "msg_recent"),
+                on_change=self._on_ota_time_change,
+            ))
+        return items
+
     def _check_now(self, *_):
         remote = getattr(self, "remote", None)
         if remote is None or getattr(self, "_check_running", False):
@@ -9004,8 +9678,11 @@ class PrefixfyPlugin(BasePlugin):
 
         def work():
             try:
-                remote.refresh(force=True)
-                if remote.blocked():
+                refreshed = remote.refresh(force=True)
+                outcome = remote.ota_manual(refreshed)
+                if outcome is not None:
+                    self._toast(outcome[0], **outcome[1])
+                elif remote.blocked():
                     key, kwargs = remote.notice()
                     self._toast(key, **kwargs)
                 elif remote.soft():
@@ -9034,7 +9711,7 @@ class PrefixfyPlugin(BasePlugin):
         self.remote.request_refresh()
         notice = self._remote_notice()
         if notice and self.remote.blocked():
-            return notice + self._settings_about()
+            return notice + self._settings_ota() + self._settings_about()
         settings: List[Any] = list(notice)
         try:
             self.configurations.sync_target()
@@ -9047,7 +9724,7 @@ class PrefixfyPlugin(BasePlugin):
         for section in (
             self._settings_configurations, self._settings_scope, self._settings_mask, self._settings_style,
             self._settings_separator, self._settings_exceptions, self._settings_media, self._settings_language,
-            self._settings_about,
+            self._settings_ota, self._settings_about,
         ):
             settings += section()
         return settings
