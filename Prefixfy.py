@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, OTA-обновления (вручную, по мере выхода или по времени), интерфейс на 6 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "34.1.0"
-__build__ = "34.1.0_20261105.4_21"
+__version__ = "34.2.0"
+__build__ = "34.2.0_20261105.5_22"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -8061,7 +8061,7 @@ class RemoteControl:
         threading.Thread(target=work, name="PrefixfyOTAKick", daemon=True).start()
 
     def ota_manual(self, refreshed: bool) -> Optional[Tuple[str, Dict[str, Any]]]:
-        """Кнопка «Скачать и установить». None, если ставить нечего. «Проверить сейчас» сюда не попадает."""
+        """Кнопка «Скачать и установить». None, если ставить нечего. В режиме автообновления «по мере выхода» сюда попадает и «Проверить сейчас»."""
         state = self.ota_candidate()
         if state is None:
             return None
@@ -8689,8 +8689,9 @@ class PrefixfyPlugin(BasePlugin):
         else:
             slot = next((s for s, u in accounts.items() if u == shown), None)
             subtext = self._acct_label(slot, shown) + " • " + tr("acct_own" if configs.accounts.has(shown) else "acct_shared")
-        items.append(Text(text=tr("acct_auto_now" if target == ACCT_AUTO else "acct_editing"), subtext=subtext,
-                          icon=icon, on_click=lambda *_: None))
+        if target == ACCT_AUTO or shown is None:
+            items.append(Text(text=tr("acct_auto_now" if target == ACCT_AUTO else "acct_editing"), subtext=subtext,
+                              icon=icon, on_click=lambda *_: None))
         if shown is not None:
             items.append(Text(text=tr("acct_reset"), subtext=tr("acct_reset_subtext"), icon=self._icon("msg_retry"),
                               on_click=self._confirm_reset_account))
@@ -9739,10 +9740,18 @@ class PrefixfyPlugin(BasePlugin):
         builder.set_negative_button(tr("cancel"), lambda bld, which: bld.dismiss())
         self._show_builder(builder)
 
+    def _ota_on_check(self) -> bool:
+        if not (FEATURES.enabled("ota") and FEATURES.enabled("ota_auto")):
+            return False
+        if not self.settings.get("ota_auto"):
+            return False
+        return clamp_int(self.settings.get("ota_mode"), 0, 0, 1) == 0
+
     def _run_check(self, install: bool = False):
         remote = getattr(self, "remote", None)
         if remote is None or getattr(self, "_check_running", False):
             return
+        install = install or self._ota_on_check()
         self._check_running = True
         self._toast("check_started")
 
