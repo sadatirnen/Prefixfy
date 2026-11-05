@@ -1,11 +1,6 @@
 {
-  "accounts": {
-    "727461793": {
-      "account_settings": true
-    }
-  },
   "flags": {
-    "account_settings": false,
+    "account_settings": true,
     "attached_media": true,
     "chat_configs": true,
     "chat_type_rules": true,
@@ -26,6 +21,8 @@
     "md_quote": true,
     "md_spoiler": true,
     "md_strike": true,
+    "ota": true,
+    "ota_auto": true,
     "premium_emoji": true,
     "regex_exceptions": true,
     "schedule": true,
@@ -100,7 +97,7 @@
     "text_styles": true
   },
   "format": 1,
-  "issued_at": 1793789184,
-  "serial": 1793789184,
-  "signature": "QjkKoM9xXZjSk/TUV/LfB3dQ6awOtNyTzTBo687uMtRz5mPk8rc6BKuZjnk/4aGnRtkJoUD/pzfnYsdpwh63zcHNNWkArx2sJ2e4jXb33gJlCwW2R8DlCcgQtyd+zA4hRBbYjMBV81Ofh1po4sluNBeg7VTcxWZRZhhDoRB3MuYL8Gl4YZe17WE9c0xM+aq+lsZHP7ZV3z8e1uum25vDGjvTze/HmXa0/ALB84K2WeA2sllxR5gVBMtbhN+alTAtKPZkDrNS69gtOMpOeVfFkH+ln10LlWy0PZZ6gCKWewdqhATyjLbjzpMIdFiXeyYEoGgrJ/24R8s1E2qPyJsuOvKYe6wce1Ns2W+ytgxzxj6svNt7COJAExfFqIRwWlze0k0F1NJ8sOu8z6FvCZFNhH/VeZNhG6OW8ShbeeatUUwpRHzulMBgTu2uyGHJnIn6ujwYRmQvEHASBmNNZFkHfxTDAZxG8h9bZ1dN+o1j+nVGlGmPZDKahyw8LfBJkOyT"
+  "issued_at": 1793864621,
+  "serial": 1793864621,
+  "signature": "ZelZ7x2x6T0yNmGCDkhqdeQnpc9fX7i6TSyA0qAIWxrbg9CjaKQ9DGpgVqM6u2RmOC7b0UeKHDASYzFMbEuE8h0WIRq+Vy/OyDN+pqfAP5y+pGCY5BMFiTUee9Y8SeeH5MGPzBWWuR6TCW03WHlew1SlAfh9aA9IIp6MQghcqaabyZwfiosZzSmLwm7CL0VAqeXa7wS5kMw3d8u8gqZNvefHooZybX2qxv2AobKjc6NEfmW0HK7whi1mhsBkAFNrvkhq0nnGDrhIf3xDED8GrWrKHzNPq1dBaGEDAoiVjae3g3vHHSnrIX26oetP3Ilgcqxlu7wGKLap3Dw16bIF+eSU1l2HFttq9UZLZHtckM3z4x33cmYjfwgu5QumMeZPZ9mB0TYTtKt7IWwHMiiPqPam/viGXywFO70t4ay6byMAfiMef57QbYvsr+OrNQDyqGEFu4YOLSZJOhY29x2+NnEoDk4FOOg7j5tT7tEelk95jypiESq5yWSq/XA3eXN2"
 }
