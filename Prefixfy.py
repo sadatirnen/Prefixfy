@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, OTA-обновления (вручную, по мере выхода или по времени), интерфейс на 6 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "34.0.0"
-__build__ = "34.0.0_20261105.1_18"
+__version__ = "34.0.1"
+__build__ = "34.0.1_20261105.2_19"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -6467,10 +6467,11 @@ class ConfigurationsManager:
     def reset_account(self):
         with self._lock:
             uid = self.edit_uid
-            if uid is None or not self.accounts.has(uid):
+            if uid is None:
                 return
             self._autosave_dirty = False
-            self.accounts.delete(uid)
+            if self.accounts.has(uid):
+                self.accounts.delete(uid)
             self._load_snapshot(self._target_snapshot())
         self.plugin.refresh_chat_menu_item()
         self._refresh_ui()
@@ -8644,7 +8645,7 @@ class PrefixfyPlugin(BasePlugin):
             subtext = self._acct_label(slot, shown) + " • " + tr("acct_own" if configs.accounts.has(shown) else "acct_shared")
         items.append(Text(text=tr("acct_auto_now" if target == ACCT_AUTO else "acct_editing"), subtext=subtext,
                           icon=icon, on_click=lambda *_: None))
-        if shown is not None and configs.accounts.has(shown):
+        if shown is not None:
             items.append(Text(text=tr("acct_reset"), subtext=tr("acct_reset_subtext"), icon=self._icon("msg_retry"),
                               on_click=self._confirm_reset_account))
         return items
