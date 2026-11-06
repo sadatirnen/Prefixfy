@@ -74,8 +74,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "35.0.1"
-__build__ = "35.0.1_20261106.6_28"
+__version__ = "35.1.0"
+__build__ = "35.1.0_20261107.0_27"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -92,6 +92,7 @@ FLAGS_DOMAIN = b"Prefixfy-flags-v1\n"
 FLAGS_CACHE_FILE = ".pfx_profile"
 FLAGS_CACHE_LEGACY_FILE = "Prefixfy_flags.json"
 SERIALS_FILE = ".pfx_serials"
+KNOWN_BUILDS_FILE = ".pfx_known"
 FLAGS_MAX_COUNT = 128
 FLAGS_MAX_ACCOUNTS = 1024
 FLAGS_MAX_BYTES = 256 * 1024
@@ -1638,11 +1639,11 @@ _NEW_STRINGS = {
         "status_outdated": "failed: this build is outdated, a newer official release exists",
         "status_modified": "failed: this build was modified and differs from the official release",
         "modified_build": "Modified build",
-        "modified_required_subtext": "This Prefixfy file differs from the official release {version}. Reinstall the official build; until then the plugin won’t format messages.",
+        "modified_required_subtext": "This Prefixfy file differs from the official release {version}. The plugin is reinstalling the official build automatically; until then it won’t format messages.",
         "notice_reason_outdated": "The installed build is older than the latest official release.",
         "notice_reason_modified": "The build label matches the official release, but the file contents (checksum or size) differ. The file was edited, damaged or only partly updated.",
         "notice_reason_unreleased": "The build label is newer than any published official release, so this build is unofficial or was edited.",
-        "notice_modified_body": "What happened: the installed build ({installed}) is not the official release ({latest}).\n\n{reason}\n\nWhat it means: this is not just an old version, the file differs from what was published. Until an official build is installed, Prefixfy does not format outgoing messages and its settings are hidden. Your settings and configurations are not deleted.\n\nWhat to do: reinstall the official Prefixfy ({latest}) from the repository (button below) and restart Telegram.",
+        "notice_modified_body": "What happened: the installed build ({installed}) is not the official release ({latest}).\n\n{reason}\n\nWhat it means: this is not just an old version, the file differs from what was published. Until an official build is installed, Prefixfy does not format outgoing messages and its settings are hidden. Your settings and configurations are not deleted.\n\nWhat to do: nothing, as long as updates are available: Prefixfy is already downloading and installing the latest official build ({latest}) by itself and will restart. If that fails, reinstall it from the repository (button below) and restart Telegram.",
         "notice_update_body": "What happened: the installed build ({installed}) does not match the official signed release ({latest}).\n\n{reason}\n\nWhat it means: until the build is official, Prefixfy does not format outgoing messages and its settings are hidden. Your settings and configurations are not deleted.\n\nWhat to do: install the latest official Prefixfy ({latest}) from the repository (button below) and restart Telegram. The plugin recovers by itself after the next successful check.",
         "notice_verify_body": "What happened: this Prefixfy build cannot be verified. It has no valid update key, so the signed manifest cannot be checked.\n\nWhat it means: the plugin does not format outgoing messages. Your settings are kept.\n\nWhat to do: install the official Prefixfy build from the repository.",
         "notice_soft_body": "What happened: right now Prefixfy cannot confirm that this build is official. A fresh signed manifest or blacklist check could not be completed (no internet, GitHub is unreachable, the last successful check is too old, or the plugin file could not be read).\n\nWhat is paused: all optional features (text styles, Markdown, mask rotation and conditional masks, tags, schedule, chat configurations, media attachment, Premium Emoji, edit processing, configuration import). Only the basic mask formatting works.\n\nWhat to do: check your internet connection and tap “Check now”. Nothing is lost: after a successful check everything returns by itself.",
@@ -1698,11 +1699,11 @@ _NEW_STRINGS = {
         "status_outdated": "не пройдена: сборка устарела, есть более новый официальный релиз",
         "status_modified": "не пройдена: сборка изменена и отличается от официального релиза",
         "modified_build": "Изменённая сборка",
-        "modified_required_subtext": "Этот файл Prefixfy отличается от официального релиза {version}. Переустановите официальную сборку; пока плагин не оформляет сообщения.",
+        "modified_required_subtext": "Этот файл Prefixfy отличается от официального релиза {version}. Плагин автоматически переустанавливает официальную сборку; до этого он не оформляет сообщения.",
         "notice_reason_outdated": "Установленная сборка старше последнего официального релиза.",
         "notice_reason_modified": "Метка сборки совпадает с официальным релизом, но содержимое файла (контрольная сумма или размер) отличается. Файл изменён, повреждён или обновлён не полностью.",
         "notice_reason_unreleased": "Метка сборки новее любого опубликованного официального релиза, поэтому сборка неофициальная или была изменена.",
-        "notice_modified_body": "Что произошло: установленная сборка ({installed}) не является официальным релизом ({latest}).\n\n{reason}\n\nЧто это значит: это не просто старая версия, файл отличается от опубликованного. Пока не установлена официальная сборка, Prefixfy не оформляет исходящие сообщения, а его настройки скрыты. Ваши настройки и конфигурации не удаляются.\n\nЧто делать: переустановите официальный Prefixfy ({latest}) из репозитория (кнопка ниже) и перезапустите Telegram.",
+        "notice_modified_body": "Что произошло: установленная сборка ({installed}) не является официальным релизом ({latest}).\n\n{reason}\n\nЧто это значит: это не просто старая версия, файл отличается от опубликованного. Пока не установлена официальная сборка, Prefixfy не оформляет исходящие сообщения, а его настройки скрыты. Ваши настройки и конфигурации не удаляются.\n\nЧто делать: ничего — Prefixfy сам скачивает и устанавливает последнюю официальную сборку ({latest}) и перезапускается. Если не получится, переустановите её из репозитория (кнопка ниже) и перезапустите Telegram.",
         "notice_update_body": "Что произошло: установленная сборка ({installed}) не совпадает с официальным подписанным релизом ({latest}).\n\n{reason}\n\nЧто это значит: пока сборка не официальная, Prefixfy не оформляет исходящие сообщения, а его настройки скрыты. Ваши настройки и конфигурации не удаляются.\n\nЧто делать: установите последнюю официальную версию Prefixfy ({latest}) из репозитория (кнопка ниже) и перезапустите Telegram. После следующей успешной проверки плагин восстановится сам.",
         "notice_verify_body": "Что произошло: эту сборку Prefixfy невозможно проверить. В ней нет действующего ключа обновлений, поэтому подписанный манифест не проверить.\n\nЧто это значит: плагин не оформляет исходящие сообщения. Настройки сохраняются.\n\nЧто делать: установите официальную сборку Prefixfy из репозитория.",
         "notice_soft_body": "Что произошло: сейчас Prefixfy не может подтвердить, что эта сборка официальная. Не удалось завершить проверку свежего подписанного манифеста или чёрного списка (нет интернета, GitHub недоступен, последняя успешная проверка слишком старая или не удалось прочитать файл плагина).\n\nЧто приостановлено: все дополнительные функции (стили текста, Markdown, ротация и условные маски, теги, расписание, конфигурации чатов, вложение медиа, Premium Emoji, оформление при редактировании, импорт конфигураций). Работает только базовое оформление маской.\n\nЧто делать: проверьте подключение к интернету и нажмите «Проверить сейчас». Ничего не потеряно: после успешной проверки всё вернётся само.",
@@ -1757,11 +1758,11 @@ _NEW_STRINGS = {
         "status_outdated": "不合格: このビルドは古く、新しい公式リリースがあります",
         "status_modified": "不合格: このビルドは改変されており、公式リリースと異なります",
         "modified_build": "改変されたビルド",
-        "modified_required_subtext": "この Prefixfy ファイルは公式リリース {version} と異なります。公式ビルドを再インストールしてください。それまでメッセージの装飾は行われません。",
+        "modified_required_subtext": "この Prefixfy ファイルは公式リリース {version} と異なります。プラグインが公式ビルドを自動的に再インストールします。それまでメッセージの装飾は行われません。",
         "notice_reason_outdated": "インストール済みのビルドは最新の公式リリースより古いものです。",
         "notice_reason_modified": "ビルドラベルは公式リリースと一致しますが、ファイルの内容（チェックサムまたはサイズ）が異なります。ファイルが編集・破損したか、一部しか更新されていません。",
         "notice_reason_unreleased": "ビルドラベルが公開済みのどの公式リリースよりも新しいため、このビルドは非公式か、編集されたものです。",
-        "notice_modified_body": "状況: インストール済みのビルド（{installed}）は公式リリース（{latest}）ではありません。\n\n{reason}\n\n影響: 単に古いバージョンというだけでなく、ファイルが公開されたものと異なります。公式ビルドをインストールするまで、Prefixfy は送信メッセージを整形せず、設定も非表示になります。設定や構成は削除されません。\n\n対処: リポジトリ（下のボタン）から公式の Prefixfy（{latest}）を再インストールし、Telegram を再起動してください。",
+        "notice_modified_body": "状況: インストール済みのビルド（{installed}）は公式リリース（{latest}）ではありません。\n\n{reason}\n\n影響: 単に古いバージョンというだけでなく、ファイルが公開されたものと異なります。公式ビルドをインストールするまで、Prefixfy は送信メッセージを整形せず、設定も非表示になります。設定や構成は削除されません。\n\n対処: 特に操作は不要です。Prefixfy は最新の公式ビルド（{latest}）を自動でダウンロードしてインストールし、再起動します。失敗した場合は、リポジトリ（下のボタン）から再インストールし、Telegram を再起動してください。",
         "notice_update_body": "状況: インストール済みのビルド（{installed}）が、署名済みの公式リリース（{latest}）と一致しません。\n\n{reason}\n\n影響: 公式ビルドになるまで、Prefixfy は送信メッセージを整形せず、設定も非表示になります。設定や構成は削除されません。\n\n対処: リポジトリ（下のボタン）から最新の公式 Prefixfy（{latest}）をインストールし、Telegram を再起動してください。次回の確認に成功すると、プラグインは自動的に復旧します。",
         "notice_verify_body": "状況: この Prefixfy ビルドは検証できません。有効な更新キーがないため、署名済みマニフェストを確認できません。\n\n影響: プラグインは送信メッセージを整形しません。設定は保持されます。\n\n対処: リポジトリから公式の Prefixfy ビルドをインストールしてください。",
         "notice_soft_body": "状況: 現在、Prefixfy はこのビルドが公式のものであることを確認できません。署名済みマニフェストまたはブラックリストの最新確認を完了できませんでした（インターネット未接続、GitHub に到達できない、前回の成功した確認が古すぎる、またはプラグインファイルを読み取れない）。\n\n一時停止中: すべてのオプション機能（テキストスタイル、Markdown、マスクのローテーションと条件付きマスク、タグ、スケジュール、チャット別設定、メディア添付、Premium Emoji、編集時の処理、設定のインポート）。基本的なマスク整形のみ動作します。\n\n対処: インターネット接続を確認し、「今すぐ確認」をタップしてください。失われるものはありません。確認に成功すると、すべて自動的に元に戻ります。",
@@ -1816,11 +1817,11 @@ _NEW_STRINGS = {
         "status_outdated": "실패: 이 빌드는 오래되었으며 더 새로운 공식 릴리스가 있습니다",
         "status_modified": "실패: 이 빌드는 수정되어 공식 릴리스와 다릅니다",
         "modified_build": "수정된 빌드",
-        "modified_required_subtext": "이 Prefixfy 파일은 공식 릴리스 {version}과(와) 다릅니다. 공식 빌드를 다시 설치하세요. 그때까지 플러그인은 메시지를 꾸미지 않습니다.",
+        "modified_required_subtext": "이 Prefixfy 파일은 공식 릴리스 {version}과(와) 다릅니다. 플러그인이 공식 빌드를 자동으로 다시 설치합니다. 그때까지 플러그인은 메시지를 꾸미지 않습니다.",
         "notice_reason_outdated": "설치된 빌드가 최신 공식 릴리스보다 오래되었습니다.",
         "notice_reason_modified": "빌드 라벨은 공식 릴리스와 일치하지만 파일 내용(체크섬 또는 크기)이 다릅니다. 파일이 편집되었거나 손상되었거나 일부만 업데이트되었습니다.",
         "notice_reason_unreleased": "빌드 라벨이 공개된 어떤 공식 릴리스보다 새로우므로 비공식 빌드이거나 편집된 빌드입니다.",
-        "notice_modified_body": "무슨 일이 있었나요: 설치된 빌드({installed})는 공식 릴리스({latest})가 아닙니다.\n\n{reason}\n\n의미: 단순히 오래된 버전이 아니라 파일이 공개된 것과 다릅니다. 공식 빌드를 설치하기 전까지 Prefixfy는 보내는 메시지를 꾸미지 않으며 설정이 숨겨집니다. 설정과 구성은 삭제되지 않습니다.\n\n해야 할 일: 저장소(아래 버튼)에서 공식 Prefixfy({latest})를 다시 설치하고 Telegram을 다시 시작하세요.",
+        "notice_modified_body": "무슨 일이 있었나요: 설치된 빌드({installed})는 공식 릴리스({latest})가 아닙니다.\n\n{reason}\n\n의미: 단순히 오래된 버전이 아니라 파일이 공개된 것과 다릅니다. 공식 빌드를 설치하기 전까지 Prefixfy는 보내는 메시지를 꾸미지 않으며 설정이 숨겨집니다. 설정과 구성은 삭제되지 않습니다.\n\n해야 할 일: 따로 할 일은 없습니다. Prefixfy가 최신 공식 빌드({latest})를 자동으로 내려받아 설치하고 다시 시작합니다. 실패하면 저장소(아래 버튼)에서 다시 설치하고 Telegram을 다시 시작하세요.",
         "notice_update_body": "무슨 일이 있었나요: 설치된 빌드({installed})가 서명된 공식 릴리스({latest})와 일치하지 않습니다.\n\n{reason}\n\n의미: 공식 빌드가 될 때까지 Prefixfy는 보내는 메시지를 꾸미지 않으며 설정이 숨겨집니다. 설정과 구성은 삭제되지 않습니다.\n\n해야 할 일: 저장소(아래 버튼)에서 최신 공식 Prefixfy({latest})를 설치하고 Telegram을 다시 시작하세요. 다음 확인에 성공하면 플러그인이 자동으로 복구됩니다.",
         "notice_verify_body": "무슨 일이 있었나요: 이 Prefixfy 빌드를 확인할 수 없습니다. 유효한 업데이트 키가 없어 서명된 매니페스트를 검증할 수 없습니다.\n\n의미: 플러그인이 보내는 메시지를 꾸미지 않습니다. 설정은 유지됩니다.\n\n해야 할 일: 저장소에서 공식 Prefixfy 빌드를 설치하세요.",
         "notice_soft_body": "무슨 일이 있었나요: 현재 Prefixfy가 이 빌드가 공식 빌드인지 확인할 수 없습니다. 서명된 매니페스트 또는 블랙리스트의 최신 확인을 완료하지 못했습니다(인터넷 없음, GitHub 접속 불가, 마지막 성공한 확인이 너무 오래됨, 또는 플러그인 파일을 읽을 수 없음).\n\n일시 중지된 것: 모든 선택 기능(텍스트 스타일, Markdown, 마스크 순환 및 조건부 마스크, 태그, 일정, 채팅별 구성, 미디어 첨부, Premium Emoji, 편집 시 처리, 구성 가져오기). 기본 마스크 꾸미기만 작동합니다.\n\n해야 할 일: 인터넷 연결을 확인하고 “지금 확인”을 누르세요. 잃는 것은 없습니다. 확인에 성공하면 모든 것이 자동으로 돌아옵니다.",
@@ -1875,11 +1876,11 @@ _NEW_STRINGS = {
         "status_outdated": "échec : ce build est obsolète, une version officielle plus récente existe",
         "status_modified": "échec : ce build a été modifié et diffère de la version officielle",
         "modified_build": "Build modifié",
-        "modified_required_subtext": "Ce fichier Prefixfy diffère de la version officielle {version}. Réinstallez le build officiel ; d’ici là, le plugin ne met pas en forme les messages.",
+        "modified_required_subtext": "Ce fichier Prefixfy diffère de la version officielle {version}. Le plugin réinstalle automatiquement le build officiel ; d’ici là, il ne met pas en forme les messages.",
         "notice_reason_outdated": "Le build installé est plus ancien que la dernière version officielle.",
         "notice_reason_modified": "Le libellé de build correspond à la version officielle, mais le contenu du fichier (somme de contrôle ou taille) diffère. Le fichier a été modifié, endommagé ou seulement partiellement mis à jour.",
         "notice_reason_unreleased": "Le libellé de build est plus récent que toute version officielle publiée : ce build est non officiel ou a été modifié.",
-        "notice_modified_body": "Ce qui s’est passé : le build installé ({installed}) n’est pas la version officielle ({latest}).\n\n{reason}\n\nCe que cela signifie : il ne s’agit pas seulement d’une ancienne version, le fichier diffère de celui publié. Tant qu’un build officiel n’est pas installé, Prefixfy ne met pas en forme les messages sortants et ses réglages sont masqués. Vos réglages et configurations ne sont pas supprimés.\n\nQue faire : réinstallez le Prefixfy officiel ({latest}) depuis le dépôt (bouton ci-dessous) et redémarrez Telegram.",
+        "notice_modified_body": "Ce qui s’est passé : le build installé ({installed}) n’est pas la version officielle ({latest}).\n\n{reason}\n\nCe que cela signifie : il ne s’agit pas seulement d’une ancienne version, le fichier diffère de celui publié. Tant qu’un build officiel n’est pas installé, Prefixfy ne met pas en forme les messages sortants et ses réglages sont masqués. Vos réglages et configurations ne sont pas supprimés.\n\nQue faire : rien, Prefixfy télécharge et installe lui-même le dernier build officiel ({latest}), puis redémarre. En cas d’échec, réinstallez-le depuis le dépôt (bouton ci-dessous) et redémarrez Telegram.",
         "notice_update_body": "Ce qui s’est passé : le build installé ({installed}) ne correspond pas à la version officielle signée ({latest}).\n\n{reason}\n\nCe que cela signifie : tant que le build n’est pas officiel, Prefixfy ne met pas en forme les messages sortants et ses réglages sont masqués. Vos réglages et configurations ne sont pas supprimés.\n\nQue faire : installez le dernier Prefixfy officiel ({latest}) depuis le dépôt (bouton ci-dessous) et redémarrez Telegram. Le plugin se rétablit de lui-même après la prochaine vérification réussie.",
         "notice_verify_body": "Ce qui s’est passé : ce build de Prefixfy ne peut pas être vérifié. Il ne contient aucune clé de mise à jour valide, le manifeste signé ne peut donc pas être contrôlé.\n\nCe que cela signifie : le plugin ne met pas en forme les messages sortants. Vos réglages sont conservés.\n\nQue faire : installez le build officiel de Prefixfy depuis le dépôt.",
         "notice_soft_body": "Ce qui s’est passé : pour le moment, Prefixfy ne peut pas confirmer que ce build est officiel. Une vérification récente du manifeste signé ou de la liste noire n’a pas pu aboutir (pas d’Internet, GitHub injoignable, dernière vérification réussie trop ancienne, ou fichier du plugin illisible).\n\nCe qui est suspendu : toutes les fonctions facultatives (styles de texte, Markdown, rotation des masques et masques conditionnels, balises, planification, configurations de discussions, pièce jointe multimédia, Premium Emoji, traitement des modifications, import de configuration). Seule la mise en forme de base par masque fonctionne.\n\nQue faire : vérifiez votre connexion Internet et appuyez sur « Vérifier maintenant ». Rien n’est perdu : après une vérification réussie, tout revient automatiquement.",
@@ -1934,11 +1935,11 @@ _NEW_STRINGS = {
         "status_outdated": "fehlgeschlagen: Dieser Build ist veraltet, es gibt ein neueres offizielles Release",
         "status_modified": "fehlgeschlagen: Dieser Build wurde verändert und weicht vom offiziellen Release ab",
         "modified_build": "Veränderter Build",
-        "modified_required_subtext": "Diese Prefixfy-Datei weicht vom offiziellen Release {version} ab. Installiere den offiziellen Build neu; bis dahin formatiert das Plugin keine Nachrichten.",
+        "modified_required_subtext": "Diese Prefixfy-Datei weicht vom offiziellen Release {version} ab. Das Plugin installiert den offiziellen Build automatisch neu; bis dahin formatiert es keine Nachrichten.",
         "notice_reason_outdated": "Der installierte Build ist älter als das neueste offizielle Release.",
         "notice_reason_modified": "Die Build-Bezeichnung stimmt mit dem offiziellen Release überein, aber der Dateiinhalt (Prüfsumme oder Größe) weicht ab. Die Datei wurde bearbeitet, beschädigt oder nur teilweise aktualisiert.",
         "notice_reason_unreleased": "Die Build-Bezeichnung ist neuer als jedes veröffentlichte offizielle Release, daher ist dieser Build inoffiziell oder wurde bearbeitet.",
-        "notice_modified_body": "Was passiert ist: Der installierte Build ({installed}) ist nicht das offizielle Release ({latest}).\n\n{reason}\n\nWas das bedeutet: Es ist nicht nur eine alte Version, die Datei weicht vom Veröffentlichten ab. Solange kein offizieller Build installiert ist, formatiert Prefixfy ausgehende Nachrichten nicht und die Einstellungen sind ausgeblendet. Ihre Einstellungen und Konfigurationen werden nicht gelöscht.\n\nWas zu tun ist: Installieren Sie das offizielle Prefixfy ({latest}) erneut aus dem Repository (Schaltfläche unten) und starten Sie Telegram neu.",
+        "notice_modified_body": "Was passiert ist: Der installierte Build ({installed}) ist nicht das offizielle Release ({latest}).\n\n{reason}\n\nWas das bedeutet: Es ist nicht nur eine alte Version, die Datei weicht vom Veröffentlichten ab. Solange kein offizieller Build installiert ist, formatiert Prefixfy ausgehende Nachrichten nicht und die Einstellungen sind ausgeblendet. Ihre Einstellungen und Konfigurationen werden nicht gelöscht.\n\nWas zu tun ist: nichts, Prefixfy lädt den neuesten offiziellen Build ({latest}) selbst herunter, installiert ihn und startet neu. Schlägt das fehl, installieren Sie ihn aus dem Repository (Schaltfläche unten) neu und starten Sie Telegram neu.",
         "notice_update_body": "Was passiert ist: Der installierte Build ({installed}) entspricht nicht dem offiziellen signierten Release ({latest}).\n\n{reason}\n\nWas das bedeutet: Solange der Build nicht offiziell ist, formatiert Prefixfy ausgehende Nachrichten nicht und die Einstellungen sind ausgeblendet. Ihre Einstellungen und Konfigurationen werden nicht gelöscht.\n\nWas zu tun ist: Installieren Sie das neueste offizielle Prefixfy ({latest}) aus dem Repository (Schaltfläche unten) und starten Sie Telegram neu. Das Plugin erholt sich nach der nächsten erfolgreichen Prüfung von selbst.",
         "notice_verify_body": "Was passiert ist: Dieser Prefixfy-Build kann nicht verifiziert werden. Er enthält keinen gültigen Update-Schlüssel, daher lässt sich das signierte Manifest nicht prüfen.\n\nWas das bedeutet: Das Plugin formatiert ausgehende Nachrichten nicht. Ihre Einstellungen bleiben erhalten.\n\nWas zu tun ist: Installieren Sie den offiziellen Prefixfy-Build aus dem Repository.",
         "notice_soft_body": "Was passiert ist: Prefixfy kann derzeit nicht bestätigen, dass dieser Build offiziell ist. Eine aktuelle Prüfung des signierten Manifests oder der Sperrliste konnte nicht abgeschlossen werden (kein Internet, GitHub nicht erreichbar, die letzte erfolgreiche Prüfung ist zu alt oder die Plugin-Datei konnte nicht gelesen werden).\n\nWas pausiert ist: alle optionalen Funktionen (Textstile, Markdown, Masken-Rotation und bedingte Masken, Tags, Zeitplan, Chat-Konfigurationen, Medienanhang, Premium Emoji, Bearbeitungsverarbeitung, Konfigurationsimport). Nur die grundlegende Maskenformatierung funktioniert.\n\nWas zu tun ist: Prüfen Sie Ihre Internetverbindung und tippen Sie auf „Jetzt prüfen“. Es geht nichts verloren: Nach einer erfolgreichen Prüfung kehrt alles von selbst zurück.",
@@ -2120,6 +2121,7 @@ _OTA_STRINGS = {
         "ota_disabled_subtext": "Обновления временно недоступны. Установите новую версию вручную из репозитория.",
         "ota_installed": "Prefixfy {version} установлен. Перезапускаю плагин…",
         "ota_restart_manual": "Prefixfy {version} установлен. Выключите и снова включите плагин, чтобы применить.",
+        "ota_modified_found": "Обнаружена модификация плагина. Устанавливаю официальную сборку {version}…",
         "ota_failed": "Не удалось обновить: {reason}",
         "ota_busy": "Обновление уже выполняется",
         "ota_check_note": "Если найдена новая официальная версия, эта проверка её не установит: появится уведомление, а поставить обновление можно кнопкой «Скачать» под «Требуется обновление».",
@@ -2138,6 +2140,7 @@ _OTA_STRINGS = {
         "ota_disabled_subtext": "Updates are temporarily unavailable. Install the new version manually from the repository.",
         "ota_installed": "Prefixfy {version} installed. Restarting the plugin…",
         "ota_restart_manual": "Prefixfy {version} installed. Turn the plugin off and on again to apply it.",
+        "ota_modified_found": "Plugin modification detected. Installing the official build {version}…",
         "ota_failed": "Update failed: {reason}",
         "ota_busy": "An update is already in progress",
         "ota_check_note": "If a new official version is found, this check will not install it: you will get a notice, and you can install the update with the “Download” button under “Update required”.",
@@ -2156,6 +2159,7 @@ _OTA_STRINGS = {
         "ota_disabled_subtext": "現在アップデートは利用できません。リポジトリから新しいバージョンを手動でインストールしてください。",
         "ota_installed": "Prefixfy {version} をインストールしました。プラグインを再起動します…",
         "ota_restart_manual": "Prefixfy {version} をインストールしました。適用するにはプラグインをオフにしてからオンにしてください。",
+        "ota_modified_found": "プラグインの改変を検出しました。公式ビルド {version} をインストールします…",
         "ota_failed": "更新に失敗しました: {reason}",
         "ota_busy": "更新はすでに実行中です",
         "ota_check_note": "新しい公式バージョンが見つかっても、この確認ではインストールされません。通知が表示されるので、「アップデートが必要です」の下の「ダウンロード」からインストールしてください。",
@@ -2174,6 +2178,7 @@ _OTA_STRINGS = {
         "ota_disabled_subtext": "업데이트를 일시적으로 사용할 수 없습니다. 저장소에서 새 버전을 직접 설치하세요.",
         "ota_installed": "Prefixfy {version} 설치 완료. 플러그인을 다시 시작합니다…",
         "ota_restart_manual": "Prefixfy {version} 설치 완료. 적용하려면 플러그인을 껐다가 다시 켜세요.",
+        "ota_modified_found": "플러그인 변조가 감지되었습니다. 공식 빌드 {version}을(를) 설치합니다…",
         "ota_failed": "업데이트 실패: {reason}",
         "ota_busy": "이미 업데이트가 진행 중입니다",
         "ota_check_note": "새 공식 버전이 발견되어도 이 확인으로는 설치되지 않습니다. 알림이 표시되며, '업데이트 필요' 아래의 '다운로드'로 설치할 수 있습니다.",
@@ -2192,6 +2197,7 @@ _OTA_STRINGS = {
         "ota_disabled_subtext": "Les mises à jour sont temporairement indisponibles. Installez la nouvelle version manuellement depuis le dépôt.",
         "ota_installed": "Prefixfy {version} installé. Redémarrage du plugin…",
         "ota_restart_manual": "Prefixfy {version} installé. Désactivez puis réactivez le plugin pour l’appliquer.",
+        "ota_modified_found": "Modification du plugin détectée. Installation du build officiel {version}…",
         "ota_failed": "Échec de la mise à jour : {reason}",
         "ota_busy": "Une mise à jour est déjà en cours",
         "ota_check_note": "Si une nouvelle version officielle est trouvée, cette vérification ne l’installera pas : une notification s’affichera et vous pourrez installer la mise à jour avec « Télécharger » sous « Mise à jour requise ».",
@@ -2210,6 +2216,7 @@ _OTA_STRINGS = {
         "ota_disabled_subtext": "Updates sind vorübergehend nicht verfügbar. Installiere die neue Version manuell aus dem Repository.",
         "ota_installed": "Prefixfy {version} installiert. Plugin wird neu gestartet…",
         "ota_restart_manual": "Prefixfy {version} installiert. Schalte das Plugin aus und wieder ein, um es anzuwenden.",
+        "ota_modified_found": "Änderung am Plugin erkannt. Der offizielle Build {version} wird installiert…",
         "ota_failed": "Update fehlgeschlagen: {reason}",
         "ota_busy": "Ein Update läuft bereits",
         "ota_check_note": "Wird eine neue offizielle Version gefunden, installiert diese Prüfung sie nicht: Du erhältst einen Hinweis und kannst das Update über „Herunterladen“ unter „Update erforderlich“ installieren.",
@@ -8018,6 +8025,8 @@ class RemoteControl:
         self._bl_path = os.path.join(get_plugins_dir(), BLACKLIST_CACHE_FILE)
         self._serial_path = os.path.join(get_plugins_dir(), SERIALS_FILE)
         self._serial_lock = threading.Lock()
+        self._known_path = os.path.join(get_plugins_dir(), KNOWN_BUILDS_FILE)
+        self._known: Dict[str, str] = self._load_known()
         self._floor: Dict[str, Dict[str, Any]] = {}
         self._load_floor()
         self._load_cache()
@@ -8041,6 +8050,10 @@ class RemoteControl:
         self._ota_day = None
         self._ota_fails = 0
         self._ota_retry_at = 0.0
+        self._force_lock = threading.Lock()
+        self._force_fails = 0
+        self._force_retry_at = 0.0
+        self._force_notified = False
         self._poll_devices(notify=False, force=True)
 
     def check_interval(self) -> float:
@@ -8267,6 +8280,7 @@ class RemoteControl:
         self._last_ok = time.monotonic()
         self._remember("m", state["serial"], state["digest"], state["version"])
         self._save_cache()
+        self._remember_known()
         self._refresh_blacklist(fresh)
         after = self._snapshot()
         if after[0] != before[0]:
@@ -8278,6 +8292,7 @@ class RemoteControl:
                 self.plugin.log(f"Prefixfy settings refresh failed: {exc}")
         self.soft(after[0])
         self._refresh_flags(fresh)
+        self._kick_force()
         return True
 
     def _refresh_flags(self, fresh: bool = False):
@@ -8482,10 +8497,45 @@ class RemoteControl:
             return ""
         build = parse_version(__build__)
         if build and build < latest:
+            known = self._known.get(format_version(build))
+            if known and self._self_hash and known != self._self_hash:
+                return "modified"
             return "outdated"
         if build and build > latest:
             return "unreleased"
         return "modified"
+
+    def _load_known(self) -> Dict[str, str]:
+        """Контрольные суммы сборок, которые уже были подтверждены как официальные на этом устройстве."""
+        try:
+            with open(self._known_path, "r", encoding="utf-8") as handle:
+                raw = json.load(handle)
+        except (OSError, ValueError, RecursionError):
+            return {}
+        if not isinstance(raw, dict):
+            return {}
+        return {str(key): value for key, value in raw.items() if isinstance(value, str) and _HEX64_RE.fullmatch(value)}
+
+    def _remember_known(self):
+        """Файл совпал с подписанным манифестом: запоминаем его сумму, чтобы позже отличить старую сборку от изменённой."""
+        if self._cache_stale or not self._self_hash or not self._field("version", ()) or self.mismatched():
+            return
+        label = format_version(parse_version(__build__))
+        if not label or self._known.get(label) == self._self_hash:
+            return
+        known = dict(self._known)
+        known.pop(label, None)
+        known[label] = self._self_hash
+        known = dict(list(known.items())[-8:])
+        try:
+            temp = self._known_path + ".tmp"
+            with open(temp, "w", encoding="utf-8") as handle:
+                json.dump(known, handle)
+            os.replace(temp, self._known_path)
+        except OSError as exc:
+            self.plugin.log(f"Prefixfy known builds not saved: {exc}")
+            return
+        self._known = known
 
     def status(self) -> str:
         if not self.enabled:
@@ -8574,13 +8624,13 @@ class RemoteControl:
             return None
         with self._lock:
             state = self._state
-        if not state or self.mismatch_reason() != "outdated" or self.blacklisted():
+        if not state or self.mismatch_reason() not in ("outdated", "modified", "unreleased") or self.blacklisted():
             return None
         if state["serial"] in _ota_bad_serials() or format_version(state["version"]) == self._ota_done:
             return None
         return state
 
-    def _ota_fetch(self, state: Dict[str, Any]) -> bytes:
+    def _ota_fetch(self, state: Dict[str, Any], force: bool = False) -> bytes:
         name = state["file"] or OTA_DEFAULT_FILE
         size = state["size"]
         data = self._download(name, size or MANIFEST_MAX_FILE_SIZE)
@@ -8594,7 +8644,7 @@ class RemoteControl:
         match = re.search(r'^__build__\s*=\s*"([^"]+)"', source, re.MULTILINE)
         if match is None or parse_version(match.group(1)) != state["version"]:
             raise ValueError("build label differs from the manifest")
-        if state["version"] <= parse_version(__build__):
+        if state["version"] <= parse_version(__build__) and not force:
             raise ValueError("not newer than the installed build")
         if re.search(r'^__id__\s*=\s*"' + re.escape(__id__) + r'"\s*$', source, re.MULTILINE) is None:
             raise ValueError("plugin id differs from the installed plugin")
@@ -8628,8 +8678,9 @@ class RemoteControl:
             return "ota_failed", {"reason": "flags not verified"}
         if not self._ota_lock.acquire(blocking=False):
             return "ota_busy", {}
+        force = self.mismatch_reason() in ("modified", "unreleased")
         try:
-            self._ota_replace(self._ota_fetch(state), state)
+            self._ota_replace(self._ota_fetch(state, force), state)
             self._ota_done = version
         except Exception as exc:
             self.plugin.log(f"Prefixfy OTA failed: {exc}")
@@ -8700,8 +8751,51 @@ class RemoteControl:
         if not self._unloaded.is_set():
             self.start()
 
+    def _kick_force(self):
+        """Файл признан изменённым: сразу запускаем принудительную установку, не дожидаясь очередного опроса."""
+        if self._unloaded.is_set() or self.mismatch_reason() not in ("modified", "unreleased"):
+            return
+        threading.Thread(target=self.ota_force_step, args=(True,), name="PrefixfyOTAForce", daemon=True).start()
+
+    def ota_force_step(self, fetched: bool = True) -> bool:
+        """Принудительное OTA для изменённой сборки: настройки автообновления и расписание не учитываются."""
+        if not self._force_lock.acquire(blocking=False):
+            return True
+        try:
+            if not fetched or self._unloaded.is_set() or self.mismatch_reason() not in ("modified", "unreleased"):
+                return False
+            if not FEATURES.enabled("ota"):
+                return False
+            state = self.ota_candidate()
+            if state is None:
+                return False
+            if time.monotonic() < self._force_retry_at:
+                return True
+            version = format_version(state["version"])
+            if not self._force_notified:
+                self._force_notified = True
+                self.plugin.log(f"Prefixfy: build {__build__} was modified, installing the official {version}")
+                self._ota_report(("ota_modified_found", {"version": version}))
+            kind, info = self.ota_install(state)
+            if kind == "ota_installed":
+                self._force_fails = 0
+                self._force_retry_at = 0.0
+            elif kind != "ota_busy" and info.get("reason") != "flags not verified":
+                self._force_fails += 1
+                self._force_retry_at = time.monotonic() + min(3600.0, 60.0 * 2 ** min(self._force_fails - 1, 6))
+                if self._force_fails <= 1:
+                    self._ota_report((kind, info))
+            return True
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy forced OTA step failed: {exc}")
+            return False
+        finally:
+            self._force_lock.release()
+
     def ota_auto_step(self, fetched: bool):
         try:
+            if self.mismatch_reason() != "outdated":
+                return
             auto, mode, when = self._ota_cfg()
             if not (auto and fetched and FEATURES.enabled("ota")):
                 return
@@ -10233,8 +10327,16 @@ class PrefixfyPlugin(BasePlugin):
                 return [Text(text=tr("account_blocked"), subtext=subtext, icon=icon,
                              on_click=lambda *_: self._show_notice_dialog("account"))]
             if key == "modified_required_subtext":
-                return [Text(text=tr("modified_build"), subtext=subtext, icon=icon,
+                rows = [Text(text=tr("modified_build"), subtext=subtext, icon=icon,
                              on_click=lambda *_: self._show_notice_dialog("modified"))]
+                candidate = remote.ota_candidate() if FEATURES.enabled("ota") else None
+                if candidate is not None:
+                    rows.append(Text(
+                        text=tr("ota_download"),
+                        subtext=tr("ota_download_subtext", version=format_version(candidate["version"])),
+                        icon=self._icon("msg_download", "msg_retry"), on_click=self._show_ota_download_dialog,
+                    ))
+                return rows
             if key == "update_required_subtext":
                 rows = [Text(text=tr("update_required"), subtext=subtext, icon=icon,
                              on_click=lambda *_: self._show_notice_dialog("update"))]
@@ -10294,7 +10396,7 @@ class PrefixfyPlugin(BasePlugin):
                 self._open_repo()
             builder.set_negative_button(tr("notice_open_repo"), open_repo)
             set_neutral = getattr(builder, "set_neutral_button", None)
-            if kind == "update" and set_neutral is not None and remote is not None and FEATURES.enabled("ota") and remote.ota_candidate() is not None:
+            if set_neutral is not None and remote is not None and FEATURES.enabled("ota") and remote.ota_candidate() is not None:
                 def update_now(bld, which):
                     bld.dismiss()
                     self._show_ota_download_dialog()
