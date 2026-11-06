@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, OTA-обновления (вручную, по мере выхода или по времени), интерфейс на 6 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "34.2.0"
-__build__ = "34.2.0_20261105.5_22"
+__version__ = "34.3.0"
+__build__ = "34.3.0_20261106.1_23"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -146,7 +146,7 @@ MAX_CHAT_COUNTS = 2000
 CHAT_COUNTS_KEY = "Prefixfy_chat_counts"
 MAX_REGEX_EXCEPTIONS = 20
 MAX_REGEX_LENGTH = 200
-REGEX_TEXT_LIMIT = 4096
+REGEX_TEXT_LIMIT = 1024
 CHAT_TITLE_TTL = 60
 CHAT_TITLE_CACHE_MAX = 64
 DIALOG_KINDS_MAX = 256
@@ -270,7 +270,7 @@ TRANSIENT_SETTING_DEFAULTS = {
 
 # Настройки OTA относятся к устройству, а не к конфигурации: в экспорт/импорт не попадают.
 OTA_SETTING_DEFAULTS = {
-    "ota_auto": False,        # автообновление выключено, пока пользователь его не включит
+    "ota_auto": True,         # автообновление включено по умолчанию: чистая установка, сброс и обновление с версий до 34.0.0
     "ota_mode": 0,            # 0 - по мере выхода, 1 - в выбранное время
     "ota_time": "04:00",      # системное время устройства, ЧЧ:ММ
     "check_interval": REMOTE_CHECK_DEFAULT_INDEX,   # индекс в REMOTE_CHECK_CHOICES
@@ -2990,6 +2990,141 @@ def _regex_has_backref(items) -> bool:
     return False
 
 
+_REGEX_PROBE = tuple(chr(code) for code in range(256)) + tuple("\u044f\u044d\u0451\u6f22\u7ae0\u3000\u200d\U0001F600")
+_REGEX_WIDE = 64
+
+
+def _regex_category_matches(category, ch: str) -> bool:
+    name = str(getattr(category, "name", category))
+    negate = "NOT_" in name
+    if "DIGIT" in name:
+        hit = ch.isdecimal()
+    elif "SPACE" in name:
+        hit = ch.isspace()
+    elif "WORD" in name:
+        hit = ch.isalnum() or ch == "_"
+    elif "LINEBREAK" in name:
+        hit = ch == "\n"
+    else:
+        return True
+    return hit != negate
+
+
+def _regex_literal_matches(code: int, ch: str, ignore_case: bool) -> bool:
+    if ord(ch) == code:
+        return True
+    if ignore_case:
+        other = chr(code)
+        return ch.lower() == other.lower() or ch.upper() == other.upper()
+    return False
+
+
+def _regex_item_matches(item, ch: str, ignore_case: bool) -> bool:
+    op, av = item
+    if op == _re_constants.LITERAL:
+        return _regex_literal_matches(av, ch, ignore_case)
+    if op == _re_constants.NOT_LITERAL:
+        return not _regex_literal_matches(av, ch, ignore_case)
+    if op == _re_constants.ANY:
+        return True
+    if op == _re_constants.IN:
+        negate = False
+        hit = False
+        for kind, value in av:
+            if kind == _re_constants.NEGATE:
+                negate = True
+            elif kind == _re_constants.LITERAL:
+                hit = hit or _regex_literal_matches(value, ch, ignore_case)
+            elif kind == _re_constants.RANGE:
+                variants = {ch, ch.lower(), ch.upper()} if ignore_case else {ch}
+                hit = hit or any(value[0] <= ord(variant) <= value[1] for variant in variants if len(variant) == 1)
+            elif kind == _re_constants.CATEGORY:
+                hit = hit or _regex_category_matches(value, ch)
+            else:
+                return True
+        return hit != negate
+    return True
+
+
+def _regex_simple_item(items):
+    seq = list(_regex_seq(items))
+    if len(seq) != 1:
+        return None
+    item = seq[0]
+    return item if item[0] in (_re_constants.LITERAL, _re_constants.NOT_LITERAL, _re_constants.ANY, _re_constants.IN) else None
+
+
+def _regex_bodies_overlap(first, second, ignore_case: bool) -> bool:
+    if first is None or second is None:
+        return True
+    return any(
+        _regex_item_matches(first, ch, ignore_case) and _regex_item_matches(second, ch, ignore_case)
+        for ch in _REGEX_PROBE
+    )
+
+
+def _regex_wide_repeat(op, av) -> bool:
+    return _regex_is_repeat(op) and (av[1] == _re_constants.MAXREPEAT or av[1] > _REGEX_WIDE)
+
+
+def _regex_adjacent_overlap(items, ignore_case: bool) -> bool:
+    """Соседние неограниченные повторы, способные съесть одни и те же символы (a*a*b, .*-.*=),
+    дают полиномиальный перебор: сообщение в 4096 знаков подвесит отправку."""
+    chain: List[Any] = []
+    for op, av in _regex_seq(items):
+        if op in (_re_constants.AT, _re_constants.ASSERT, _re_constants.ASSERT_NOT):
+            if op != _re_constants.AT and _regex_adjacent_overlap(av[1], ignore_case):
+                return True
+            continue
+        if _regex_wide_repeat(op, av):
+            if _regex_adjacent_overlap(av[2], ignore_case):
+                return True
+            body = _regex_simple_item(av[2])
+            if any(_regex_bodies_overlap(earlier, body, ignore_case) for earlier in chain):
+                return True
+            chain = [body] if av[0] > 0 else chain + [body]
+            continue
+        if op == _re_constants.SUBPATTERN:
+            inner = av[-1]
+            seq = list(_regex_seq(inner))
+            if len(seq) == 1 and _regex_wide_repeat(seq[0][0], seq[0][1]):
+                if _regex_adjacent_overlap(inner, ignore_case):
+                    return True
+                node_op, node_av = seq[0]
+                body = _regex_simple_item(node_av[2])
+                if any(_regex_bodies_overlap(earlier, body, ignore_case) for earlier in chain):
+                    return True
+                chain = [body] if node_av[0] > 0 else chain + [body]
+                continue
+            if _regex_adjacent_overlap(inner, ignore_case):
+                return True
+            if _regex_has_unbounded(inner):
+                if chain:
+                    return True
+                chain = [None]
+            continue
+        if op == _re_constants.BRANCH:
+            if any(_regex_adjacent_overlap(branch, ignore_case) for branch in av[1]):
+                return True
+            if any(_regex_has_unbounded(branch) for branch in av[1]):
+                if chain:
+                    return True
+                chain = [None]
+            continue
+        if _regex_is_repeat(op):
+            if _regex_adjacent_overlap(av[2], ignore_case):
+                return True
+            if av[1] > 1 and _regex_has_unbounded(av[2]):
+                return True
+            if av[0] > 0 and _regex_simple_item(av[2]) is not None:
+                body = _regex_simple_item(av[2])
+                chain = [earlier for earlier in chain if _regex_bodies_overlap(earlier, body, ignore_case)]
+            continue
+        if op in (_re_constants.LITERAL, _re_constants.NOT_LITERAL, _re_constants.ANY, _re_constants.IN):
+            chain = [earlier for earlier in chain if _regex_bodies_overlap(earlier, (op, av), ignore_case)]
+    return False
+
+
 @lru_cache(maxsize=256)
 def regex_is_safe(pattern: str) -> bool:
     if _re_parser is None:
@@ -3001,6 +3136,7 @@ def regex_is_safe(pattern: str) -> bool:
             and not _regex_nested_repeat(tree)
             and not _regex_repeated_ambiguity(tree)
             and not _regex_has_backref(tree)
+            and not _regex_adjacent_overlap(tree, bool(getattr(getattr(tree, "state", None), "flags", 0) & re.IGNORECASE))
         )
     except Exception:
         return False
@@ -3304,6 +3440,23 @@ def is_plugin_file(path) -> bool:
         return os.path.realpath(text).startswith(base + os.sep)
     except Exception:
         return False
+
+
+MEDIA_STORE_DIRS = frozenset({"Prefixfy_media", "Prefixfy_configurations", "Prefixfy_store", "Prefixfy_accounts"})
+
+
+def is_media_store_file(path) -> bool:
+    """Файл внутри папок самого плагина (или обычный медиафайл рядом): чужие файлы и служебные данные не подходят."""
+    if not is_plugin_file(path):
+        return False
+    try:
+        real = os.path.realpath(as_text(path))
+        top = os.path.relpath(real, os.path.realpath(get_plugins_dir())).split(os.sep, 1)[0]
+    except Exception:
+        return False
+    if top in MEDIA_STORE_DIRS:
+        return True
+    return os.path.splitext(real)[1].lower() in MEDIA_EXTENSIONS and not os.path.basename(real).startswith(".")
 
 
 def safe_extension(name) -> str:
@@ -4707,7 +4860,7 @@ class Runtime:
 
     def attached_media(self) -> Optional[Tuple[str, str, str]]:
         s = self.settings
-        if not s.media_enabled or not s.media_path or not is_plugin_file(s.media_path) or not os.path.isfile(s.media_path):
+        if not s.media_enabled or not s.media_path or not is_media_store_file(s.media_path) or not os.path.isfile(s.media_path):
             return None
         name = s.media_name or os.path.basename(s.media_path)
         return s.media_path, name, s.media_mime or mimetypes.guess_type(name)[0] or ""
@@ -5018,7 +5171,7 @@ class ConfigTransfer:
 
     def media_exists(self) -> bool:
         path = self.media_path()
-        return bool(path and is_plugin_file(path) and os.path.isfile(path))
+        return bool(path and is_media_store_file(path) and os.path.isfile(path))
 
     def media_info(self) -> Dict[str, str]:
         name = as_text(self.settings.get("attached_media_name", "")) or os.path.basename(self.media_path())
@@ -5036,7 +5189,7 @@ class ConfigTransfer:
     def _commit_media(self, temp_path, target, name, mime):
         old = self.media_path()
         os.replace(temp_path, target)
-        if old and old != target and is_plugin_file(old) and os.path.isfile(old):
+        if old and old != target and is_media_store_file(old) and os.path.isfile(old):
             delete_file(old)
         with self.plugin.runtime_manager.bulk():
             self.settings.set("attached_media_path", target)
@@ -5078,7 +5231,7 @@ class ConfigTransfer:
 
     def delete_media(self):
         path = self.media_path()
-        if path and is_plugin_file(path) and os.path.isfile(path):
+        if path and is_media_store_file(path) and os.path.isfile(path):
             delete_file(path)
         with self.plugin.runtime_manager.bulk():
             self.settings.set("attached_media_path", "")
@@ -6069,7 +6222,7 @@ class ConfigurationsManager:
         return {key: self._coerce(key, self.settings.get(key, SETTING_DEFAULTS[key])) for key in self.CONFIG_KEYS}
 
     def _copy_media(self, source: str, config_id: str, role: str) -> Optional[str]:
-        if not source or not is_plugin_file(source) or not os.path.isfile(source):
+        if not source or not is_media_store_file(source) or not os.path.isfile(source):
             return None
         suffix = "-baseline" if role == "baseline" else ""
         target = os.path.join(self.media_dir, f"{config_id}{suffix}{safe_extension(source) or '.bin'}")
@@ -6108,7 +6261,7 @@ class ConfigurationsManager:
     def _remove_media_of(self, record: dict):
         for snapshot in (record.get("current", {}), record.get("baseline", {})):
             path = as_text(snapshot.get("attached_media_path"))
-            if path and is_plugin_file(path) and os.path.isfile(path):
+            if path and is_media_store_file(path) and os.path.isfile(path):
                 delete_file(path)
 
     def _current(self, config_id=None) -> dict:
@@ -6677,7 +6830,7 @@ class ConfigurationsManager:
 _VERSION_RE = re.compile(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(?:_([0-9]{8})\.([0-9]{1,4})_([0-9]{1,12}))?")
 _HEX64_RE = re.compile(r"[0-9a-f]{64}")
 _HEX128_RE = re.compile(r"[0-9a-f]{128}")
-_MANIFEST_FILE_RE = re.compile(r"[A-Za-z0-9._\-]{1,80}")
+_MANIFEST_FILE_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._\-]{0,79}")
 
 
 def parse_version(value) -> Tuple[int, ...]:
@@ -6842,7 +6995,7 @@ def verify_manifest(raw: bytes) -> Dict[str, Any]:
         raise ValueError("manifest: missing or bad sha256")
     if sha512 and not _HEX128_RE.fullmatch(sha512):
         raise ValueError("manifest: bad sha512")
-    if name and not _MANIFEST_FILE_RE.fullmatch(name):
+    if name and (not _MANIFEST_FILE_RE.fullmatch(name) or ".." in name):
         raise ValueError("manifest: bad file name")
     size = body.get("size", 0)
     if "size" in body and (isinstance(size, bool) or not isinstance(size, int) or not 0 < size <= MANIFEST_MAX_FILE_SIZE):
@@ -7105,7 +7258,7 @@ class AccountProfiles:
             self.manager.plugin.log(f"Prefixfy accounts: delete failed ({uid}): {exc}")
         if params:
             media = as_text(params.get("attached_media_path"))
-            if media and os.path.basename(media).startswith(f"acc_{uid}") and is_plugin_file(media) and os.path.isfile(media):
+            if media and os.path.basename(media).startswith(f"acc_{uid}") and is_media_store_file(media) and os.path.isfile(media):
                 delete_file(media)
 
     def media_paths(self) -> List[str]:
@@ -7232,7 +7385,7 @@ def _ota_read() -> Dict[str, Any]:
         with open(_ota_state_path(), "r", encoding="utf-8") as handle:
             data = json.load(handle)
         return data if isinstance(data, dict) else {}
-    except (OSError, ValueError):
+    except (OSError, ValueError, RecursionError):
         return {}
 
 
@@ -7268,15 +7421,32 @@ def _write_file_atomic(path: str, data: bytes):
             pass
 
 
+def _ota_own_path(data: Dict[str, Any]) -> str:
+    """Файл, который можно перезаписывать при откате: только сам плагин, а не путь из файла состояния."""
+    own = globals().get("__file__")
+    if own:
+        return os.path.realpath(own)
+    stored = as_text(data.get("path"))
+    try:
+        base = os.path.realpath(get_plugins_dir())
+        real = os.path.realpath(stored) if stored else ""
+    except Exception:
+        return ""
+    return real if real.startswith(base + os.sep) and real.endswith(".py") else ""
+
+
 def _ota_rollback(reason: str, log) -> bool:
     """Вернуть предыдущую версию файла и запомнить, что новая сборка не заработала."""
     data = _ota_read()
-    path = data.get("path") or globals().get("__file__")
+    path = _ota_own_path(data)
     if not path:
         return False
     try:
         with open(_ota_prev_path(), "rb") as handle:
             previous = handle.read()
+        expected = as_text(data.get("prev_sha256"))
+        if expected and not hmac.compare_digest(hashlib.sha256(previous).hexdigest(), expected):
+            raise ValueError("saved previous version is damaged")
         compile(previous, "prefixfy_prev.py", "exec")
         _write_file_atomic(path, previous)
     except Exception as exc:
@@ -7384,6 +7554,8 @@ class RemoteControl:
         self._flags_ok = float("-inf")
         self._ota_done = ""
         self._ota_day = None
+        self._ota_fails = 0
+        self._ota_retry_at = 0.0
         self._poll_devices(notify=False, force=True)
 
     def check_interval(self) -> float:
@@ -7514,7 +7686,7 @@ class RemoteControl:
         try:
             with open(self._serial_path, "r", encoding="utf-8") as handle:
                 raw = json.load(handle)
-        except (OSError, ValueError):
+        except (OSError, ValueError, RecursionError):
             return
         if not isinstance(raw, dict):
             return
@@ -7935,6 +8107,8 @@ class RemoteControl:
             raise ValueError("build label differs from the manifest")
         if state["version"] <= parse_version(__build__):
             raise ValueError("not newer than the installed build")
+        if re.search(r'^__id__\s*=\s*"' + re.escape(__id__) + r'"\s*$', source, re.MULTILINE) is None:
+            raise ValueError("plugin id differs from the installed plugin")
         compile(source, name, "exec")
         return data
 
@@ -7953,6 +8127,7 @@ class RemoteControl:
         _ota_write({
             "state": "pending", "to": format_version(state["version"]), "serial": state["serial"],
             "prev": __build__, "path": path, "boots": 0, "bad": _ota_bad_serials(),
+            "prev_sha256": hashlib.sha256(current).hexdigest(),
         }, self.plugin.log)
         _write_file_atomic(path, data)
 
@@ -8045,16 +8220,38 @@ class RemoteControl:
                 if when is None or self._ota_day == now.date() or (now.hour, now.minute) < when:
                     return
                 self._ota_day = now.date()
+            if time.monotonic() < self._ota_retry_at:
+                return
             state = self.ota_candidate()
-            if state is not None:
-                self._ota_report(self.ota_install(state, manual=False))
+            if state is None:
+                return
+            result = self.ota_install(state, manual=False)
+            self._ota_backoff(result)
+            transient = result[0] == "ota_busy" or result[1].get("reason") == "flags not verified"
+            if not transient and self._ota_fails <= 1:
+                self._ota_report(result)
         except Exception as exc:
             self.plugin.log(f"Prefixfy OTA step failed: {exc}")
+
+    def _ota_backoff(self, result: Tuple[str, Dict[str, Any]]):
+        """Неудачная установка не повторяется каждую минуту: 5 минут, затем вдвое дольше, не больше 6 часов."""
+        kind, info = result
+        if kind == "ota_installed":
+            self._ota_fails = 0
+            self._ota_retry_at = 0.0
+            return
+        if kind in ("ota_busy", "ota_disabled") or info.get("reason") == "flags not verified":
+            return
+        self._ota_fails += 1
+        delay = min(6 * 3600.0, 300.0 * 2 ** min(self._ota_fails - 1, 8))
+        self._ota_retry_at = time.monotonic() + delay
 
     def ota_kick(self):
         """Автообновление только что включили: не ждать следующего опроса."""
         def work():
             try:
+                self._ota_fails = 0
+                self._ota_retry_at = 0.0
                 self.ota_auto_step(self.refresh())
             except Exception as exc:
                 self.plugin.log(f"Prefixfy OTA kick failed: {exc}")
