@@ -25,7 +25,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
 
 from base_plugin import BasePlugin, HookResult, HookStrategy, MenuItemData, MenuItemType, MethodHook
-from ui.settings import Header, Input, Selector, Switch, Text
+from ui.settings import Divider, Header, Input, Selector, Switch, Text
 from ui.alert import AlertDialogBuilder
 from ui.bulletin import BulletinHelper
 from android.widget import CheckBox, EditText as AndroidEditText, LinearLayout
@@ -47,6 +47,12 @@ from client_utils import (
 from hook_utils import find_class
 
 try:
+    from android_utils import run_on_ui_thread
+except ImportError:
+    def run_on_ui_thread(func, *args, **kwargs):
+        return func()
+
+try:
     from client_utils import send_message as _send_message
 except ImportError:
     _send_message = None
@@ -65,10 +71,11 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, OTA-обновления (вручную, по мере выхода или по времени), интерфейс на 6 языках."
+    " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "34.4.2"
-__build__ = "34.4.2_20261106.4_26"
+__version__ = "35.0.0"
+__build__ = "35.0.0_20261106.5_27"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -242,6 +249,7 @@ SETTING_DEFAULTS = {
     "separator_enabled": False,
     "custom_emojis": DEFAULT_SEPARATORS,
     "emoji_count": 1,
+    "separator_frequency": 4,          # индекс в FREQUENCY_STEPS: 4 = 100% (как в 34.x)
     "exceptions": "",
     "ignore_special": True,
     "ignore_emoji_only": True,
@@ -262,6 +270,23 @@ SETTING_DEFAULTS = {
     "attached_media_path": "",
     "attached_media_name": "",
     "attached_media_mime": "",
+    # 35.0.0: «милые» эффекты (значения по умолчанию сверяются с CUTE_* ниже, см. assert)
+    "cute_enabled": False,
+    "cute_kaomoji": False,
+    "cute_sparkles": False,
+    "cute_exclamations": False,
+    "cute_punctuation": False,
+    "cute_uwu_suffixes": False,
+    "cute_actions": False,
+    "cute_actions_newline": False,
+    "cute_lowercase": False,
+    "cute_uwu_speak": False,
+    "cute_stutter": False,
+    "cute_stretch": False,
+    "cute_soft_sign": False,
+    "cute_sentence_frequency": 2,
+    "cute_word_frequency": 1,
+    "cute_stretch_max": 0,
 }
 
 TRANSIENT_SETTING_DEFAULTS = {
@@ -274,6 +299,11 @@ OTA_SETTING_DEFAULTS = {
     "ota_mode": 0,            # 0 - по мере выхода, 1 - в выбранное время
     "ota_time": "04:00",      # системное время устройства, ЧЧ:ММ
     "check_interval": REMOTE_CHECK_DEFAULT_INDEX,   # индекс в REMOTE_CHECK_CHOICES
+}
+
+# Настройки устройства (как OTA): не входят в конфигурации, экспорт и импорт.
+DEVICE_SETTING_DEFAULTS = {
+    "drawer_shortcut": True,   # пункт «Настройки Prefixfy» в боковом меню
 }
 
 MEDIA_EXTENSIONS = frozenset({
@@ -2278,6 +2308,230 @@ for _code, _table in LocalizationManager.STRINGS.items():
         _table[_key] = _dl_extra.get(_key, _OTA_DL_STRINGS["en"].get(_key, _value))
 
 
+_CUTE_STRINGS = {
+    "ru": {
+        "separator_frequency": "Частота разделителей",
+        "separator_frequency_subtext": "С какой вероятностью разделитель вставляется между двумя словами. 100% — между каждой парой.",
+        "cute_header": "Милые эффекты",
+        "cute_enabled": "Включить милые эффекты",
+        "cute_enabled_subtext": "Каомодзи, UwU, действия и другие украшения текста. Ссылки, @упоминания, #теги и код не трогаются.",
+        "cute_preview": "Предпросмотр",
+        "cute_preview_sample": "Привет! Как дела? Сегодня отличный день.",
+        "cute_preview_none": "Включите хотя бы один эффект. Нажмите, чтобы обновить предпросмотр.",
+        "cute_preview_tap": "Нажмите, чтобы обновить.",
+        "cute_sentence_frequency": "Частота эффектов предложений",
+        "cute_sentence_frequency_subtext": "Каомодзи, спарклы, пунктуация, суффиксы и действия.",
+        "cute_word_frequency": "Частота эффектов слов",
+        "cute_word_frequency_subtext": "Заикание, растягивание гласных и мягкий знак.",
+        "cute_kaomoji": "Каомодзи в конце предложения (◕‿◕)",
+        "cute_sparkles": "Звёздочки вокруг предложения ✨",
+        "cute_exclamations": "Милые восклицания (! → !✨)",
+        "cute_punctuation": "Милая пунктуация (. → .~, ? → ?✨)",
+        "cute_uwu_suffixes": "UwU-суффиксы (nya~, owo)",
+        "cute_actions": "Милые действия (*обнимает*)",
+        "cute_actions_newline": "Действия на новой строке",
+        "cute_lowercase": "Только строчные буквы",
+        "cute_uwu_speak": "UwU-речь (р/л → в, r/l → w)",
+        "cute_stutter": "Заикание (п-привет)",
+        "cute_stretch": "Растягивать гласные (милооо)",
+        "cute_stretch_max": "Макс. длина растянутой гласной",
+        "cute_stretch_2x": "Двойная (x2)",
+        "cute_stretch_3x": "Тройная (x3)",
+        "cute_soft_sign": "Мягкий знак в конце слов (котикь)",
+        "cute_soft_sign_subtext": "Только для русских слов.",
+        "config_cute": "Милые эффекты",
+        "shortcuts_header": "Быстрый доступ",
+        "drawer_shortcut": "Настройки в боковом меню",
+        "drawer_shortcut_subtext": "Добавляет пункт открытия настроек Prefixfy в боковое меню.",
+        "drawer_item": "Настройки Prefixfy",
+    },
+    "en": {
+        "separator_frequency": "Separator frequency",
+        "separator_frequency_subtext": "Chance that a separator is inserted between two words. 100% means between every pair.",
+        "cute_header": "Cute effects",
+        "cute_enabled": "Enable cute effects",
+        "cute_enabled_subtext": "Kaomoji, UwU, actions and other text decorations. Links, @mentions, #tags and code are left alone.",
+        "cute_preview": "Preview",
+        "cute_preview_sample": "Hello! How are you? It is a lovely day.",
+        "cute_preview_none": "Turn on at least one effect. Tap to refresh the preview.",
+        "cute_preview_tap": "Tap to refresh.",
+        "cute_sentence_frequency": "Sentence effects frequency",
+        "cute_sentence_frequency_subtext": "Kaomoji, sparkles, punctuation, suffixes and actions.",
+        "cute_word_frequency": "Word effects frequency",
+        "cute_word_frequency_subtext": "Stuttering, vowel stretching and the soft sign.",
+        "cute_kaomoji": "Kaomoji at the end of a sentence (◕‿◕)",
+        "cute_sparkles": "Sparkles around a sentence ✨",
+        "cute_exclamations": "Cute exclamations (! → !✨)",
+        "cute_punctuation": "Cute punctuation (. → .~, ? → ?✨)",
+        "cute_uwu_suffixes": "UwU suffixes (nya~, owo)",
+        "cute_actions": "Cute actions (*hugs*)",
+        "cute_actions_newline": "Actions on a new line",
+        "cute_lowercase": "Lowercase only",
+        "cute_uwu_speak": "UwU-speak (r/l → w)",
+        "cute_stutter": "Stuttering (h-hello)",
+        "cute_stretch": "Stretch vowels (cuuute)",
+        "cute_stretch_max": "Max stretched vowel length",
+        "cute_stretch_2x": "Double (x2)",
+        "cute_stretch_3x": "Triple (x3)",
+        "cute_soft_sign": "Soft sign at word ends (kotikь)",
+        "cute_soft_sign_subtext": "Russian words only.",
+        "config_cute": "Cute effects",
+        "shortcuts_header": "Shortcuts",
+        "drawer_shortcut": "Settings in the side menu",
+        "drawer_shortcut_subtext": "Adds an item that opens the Prefixfy settings to the side menu.",
+        "drawer_item": "Prefixfy settings",
+    },
+    "ja": {
+        "separator_frequency": "区切り文字の頻度",
+        "separator_frequency_subtext": "2つの単語の間に区切り文字を入れる確率です。100%ですべての単語の間に入ります。",
+        "cute_header": "かわいい効果",
+        "cute_enabled": "かわいい効果を有効にする",
+        "cute_enabled_subtext": "顔文字、UwU、アクションなどでテキストを飾ります。リンク、@メンション、#タグ、コードはそのままです。",
+        "cute_preview": "プレビュー",
+        "cute_preview_sample": "こんにちは！元気ですか？今日はいい天気です。",
+        "cute_preview_none": "効果を1つ以上オンにしてください。タップでプレビューを更新します。",
+        "cute_preview_tap": "タップで更新します。",
+        "cute_sentence_frequency": "文の効果の頻度",
+        "cute_sentence_frequency_subtext": "顔文字、きらきら、句読点、語尾、アクション。",
+        "cute_word_frequency": "単語の効果の頻度",
+        "cute_word_frequency_subtext": "どもり、母音の引き伸ばし、軟音記号。",
+        "cute_kaomoji": "文末に顔文字 (◕‿◕)",
+        "cute_sparkles": "文をきらきらで囲む ✨",
+        "cute_exclamations": "かわいい感嘆符 (! → !✨)",
+        "cute_punctuation": "かわいい句読点 (. → .~, ? → ?✨)",
+        "cute_uwu_suffixes": "UwU語尾 (nya~, owo)",
+        "cute_actions": "かわいいアクション (*ぎゅっ*)",
+        "cute_actions_newline": "アクションを改行して表示",
+        "cute_lowercase": "小文字のみ",
+        "cute_uwu_speak": "UwU話法 (r/l → w)",
+        "cute_stutter": "どもり (h-hello)",
+        "cute_stretch": "母音を伸ばす (cuuute)",
+        "cute_stretch_max": "母音の最大の長さ",
+        "cute_stretch_2x": "2倍 (x2)",
+        "cute_stretch_3x": "3倍 (x3)",
+        "cute_soft_sign": "語末に軟音記号 (kotikь)",
+        "cute_soft_sign_subtext": "ロシア語の単語のみ。",
+        "config_cute": "かわいい効果",
+        "shortcuts_header": "ショートカット",
+        "drawer_shortcut": "サイドメニューに設定を表示",
+        "drawer_shortcut_subtext": "サイドメニューに Prefixfy の設定を開く項目を追加します。",
+        "drawer_item": "Prefixfy の設定",
+    },
+    "ko": {
+        "separator_frequency": "구분자 빈도",
+        "separator_frequency_subtext": "두 단어 사이에 구분자를 넣을 확률입니다. 100%면 모든 단어 사이에 들어갑니다.",
+        "cute_header": "귀여운 효과",
+        "cute_enabled": "귀여운 효과 켜기",
+        "cute_enabled_subtext": "이모티콘, UwU, 행동 묘사 등으로 텍스트를 꾸밉니다. 링크, @멘션, #태그, 코드는 건드리지 않습니다.",
+        "cute_preview": "미리보기",
+        "cute_preview_sample": "안녕! 잘 지내? 오늘은 정말 좋은 날이야.",
+        "cute_preview_none": "효과를 하나 이상 켜세요. 눌러서 미리보기를 새로고칩니다.",
+        "cute_preview_tap": "눌러서 새로고침합니다.",
+        "cute_sentence_frequency": "문장 효과 빈도",
+        "cute_sentence_frequency_subtext": "이모티콘, 반짝이, 문장부호, 어미, 행동 묘사.",
+        "cute_word_frequency": "단어 효과 빈도",
+        "cute_word_frequency_subtext": "말더듬, 모음 늘이기, 연음 부호.",
+        "cute_kaomoji": "문장 끝에 이모티콘 (◕‿◕)",
+        "cute_sparkles": "문장을 반짝이로 감싸기 ✨",
+        "cute_exclamations": "귀여운 느낌표 (! → !✨)",
+        "cute_punctuation": "귀여운 문장부호 (. → .~, ? → ?✨)",
+        "cute_uwu_suffixes": "UwU 어미 (nya~, owo)",
+        "cute_actions": "귀여운 행동 묘사 (*꼬옥 안아줌*)",
+        "cute_actions_newline": "행동 묘사를 새 줄에",
+        "cute_lowercase": "소문자만 사용",
+        "cute_uwu_speak": "UwU 말투 (r/l → w)",
+        "cute_stutter": "말더듬 (h-hello)",
+        "cute_stretch": "모음 늘이기 (cuuute)",
+        "cute_stretch_max": "늘인 모음의 최대 길이",
+        "cute_stretch_2x": "2배 (x2)",
+        "cute_stretch_3x": "3배 (x3)",
+        "cute_soft_sign": "단어 끝에 연음 부호 (kotikь)",
+        "cute_soft_sign_subtext": "러시아어 단어에만 적용됩니다.",
+        "config_cute": "귀여운 효과",
+        "shortcuts_header": "바로가기",
+        "drawer_shortcut": "사이드 메뉴에 설정 표시",
+        "drawer_shortcut_subtext": "사이드 메뉴에 Prefixfy 설정을 여는 항목을 추가합니다.",
+        "drawer_item": "Prefixfy 설정",
+    },
+    "fr": {
+        "separator_frequency": "Fréquence des séparateurs",
+        "separator_frequency_subtext": "Probabilité d’insérer un séparateur entre deux mots. 100 % : entre chaque paire de mots.",
+        "cute_header": "Effets mignons",
+        "cute_enabled": "Activer les effets mignons",
+        "cute_enabled_subtext": "Kaomoji, UwU, actions et autres décorations du texte. Les liens, @mentions, #hashtags et le code restent intacts.",
+        "cute_preview": "Aperçu",
+        "cute_preview_sample": "Salut ! Comment vas-tu ? Quelle belle journée.",
+        "cute_preview_none": "Activez au moins un effet. Touchez pour actualiser l’aperçu.",
+        "cute_preview_tap": "Touchez pour actualiser.",
+        "cute_sentence_frequency": "Fréquence des effets de phrase",
+        "cute_sentence_frequency_subtext": "Kaomoji, étincelles, ponctuation, suffixes et actions.",
+        "cute_word_frequency": "Fréquence des effets de mot",
+        "cute_word_frequency_subtext": "Bégaiement, voyelles étirées et signe mou.",
+        "cute_kaomoji": "Kaomoji en fin de phrase (◕‿◕)",
+        "cute_sparkles": "Étincelles autour de la phrase ✨",
+        "cute_exclamations": "Exclamations mignonnes (! → !✨)",
+        "cute_punctuation": "Ponctuation mignonne (. → .~, ? → ?✨)",
+        "cute_uwu_suffixes": "Suffixes UwU (nya~, owo)",
+        "cute_actions": "Actions mignonnes (*câlin*)",
+        "cute_actions_newline": "Actions sur une nouvelle ligne",
+        "cute_lowercase": "Minuscules uniquement",
+        "cute_uwu_speak": "Parler UwU (r/l → w)",
+        "cute_stutter": "Bégaiement (b-bonjour)",
+        "cute_stretch": "Étirer les voyelles (miiignon)",
+        "cute_stretch_max": "Longueur max. des voyelles étirées",
+        "cute_stretch_2x": "Double (x2)",
+        "cute_stretch_3x": "Triple (x3)",
+        "cute_soft_sign": "Signe mou en fin de mot (kotikь)",
+        "cute_soft_sign_subtext": "Uniquement pour les mots russes.",
+        "config_cute": "Effets mignons",
+        "shortcuts_header": "Raccourcis",
+        "drawer_shortcut": "Réglages dans le menu latéral",
+        "drawer_shortcut_subtext": "Ajoute au menu latéral un élément qui ouvre les réglages de Prefixfy.",
+        "drawer_item": "Réglages Prefixfy",
+    },
+    "de": {
+        "separator_frequency": "Häufigkeit der Trennzeichen",
+        "separator_frequency_subtext": "Wahrscheinlichkeit, dass zwischen zwei Wörtern ein Trennzeichen steht. 100 %: zwischen jedem Wortpaar.",
+        "cute_header": "Süße Effekte",
+        "cute_enabled": "Süße Effekte aktivieren",
+        "cute_enabled_subtext": "Kaomoji, UwU, Aktionen und weitere Textverzierungen. Links, @Erwähnungen, #Tags und Code bleiben unberührt.",
+        "cute_preview": "Vorschau",
+        "cute_preview_sample": "Hallo! Wie geht es dir? Heute ist ein schöner Tag.",
+        "cute_preview_none": "Aktiviere mindestens einen Effekt. Tippen aktualisiert die Vorschau.",
+        "cute_preview_tap": "Zum Aktualisieren tippen.",
+        "cute_sentence_frequency": "Häufigkeit der Satzeffekte",
+        "cute_sentence_frequency_subtext": "Kaomoji, Glitzer, Satzzeichen, Endungen und Aktionen.",
+        "cute_word_frequency": "Häufigkeit der Worteffekte",
+        "cute_word_frequency_subtext": "Stottern, gedehnte Vokale und Weichheitszeichen.",
+        "cute_kaomoji": "Kaomoji am Satzende (◕‿◕)",
+        "cute_sparkles": "Glitzer um den Satz ✨",
+        "cute_exclamations": "Süße Ausrufe (! → !✨)",
+        "cute_punctuation": "Süße Satzzeichen (. → .~, ? → ?✨)",
+        "cute_uwu_suffixes": "UwU-Endungen (nya~, owo)",
+        "cute_actions": "Süße Aktionen (*umarmt*)",
+        "cute_actions_newline": "Aktionen in einer neuen Zeile",
+        "cute_lowercase": "Nur Kleinbuchstaben",
+        "cute_uwu_speak": "UwU-Sprache (r/l → w)",
+        "cute_stutter": "Stottern (h-hallo)",
+        "cute_stretch": "Vokale dehnen (süüüß)",
+        "cute_stretch_max": "Max. Länge gedehnter Vokale",
+        "cute_stretch_2x": "Doppelt (x2)",
+        "cute_stretch_3x": "Dreifach (x3)",
+        "cute_soft_sign": "Weichheitszeichen am Wortende (kotikь)",
+        "cute_soft_sign_subtext": "Nur für russische Wörter.",
+        "config_cute": "Süße Effekte",
+        "shortcuts_header": "Verknüpfungen",
+        "drawer_shortcut": "Einstellungen im Seitenmenü",
+        "drawer_shortcut_subtext": "Fügt dem Seitenmenü einen Eintrag hinzu, der die Prefixfy-Einstellungen öffnet.",
+        "drawer_item": "Prefixfy-Einstellungen",
+    },
+}
+for _code, _table in LocalizationManager.STRINGS.items():
+    _cute_extra = _CUTE_STRINGS.get(_code, _CUTE_STRINGS["en"])
+    for _key, _value in _CUTE_STRINGS["ru"].items():
+        _table[_key] = _cute_extra.get(_key, _CUTE_STRINGS["en"].get(_key, _value))
+
+
 _SYNODIC_MONTH = 29.530588853
 
 
@@ -3450,6 +3704,8 @@ FEATURE_FLAGS: Dict[str, bool] = {
     "premium_emoji": True,
     "schedule": True,
     "chat_configs": True,
+    "cute_effects": True,
+    "drawer_shortcut": True,
     # Единый флаг режима «Настройки по аккаунтам». False — функция полностью выключена
     # (нет интерфейса, нет переключения, отправка идёт по общему набору, как в 32.x).
     "account_settings": True,
@@ -3640,13 +3896,106 @@ def has_language_choice() -> bool:
     return any(LANGUAGE_MODES[index] != "ru" for index in enabled_language_indices())
 
 
+# ----------------------------------------------------------------------
+# 35.0.0: «милые» эффекты (CuteTransformation) и частота вставки разделителей
+# ----------------------------------------------------------------------
+FREQUENCY_STEPS = (0.10, 0.25, 0.50, 0.75, 1.00)
+FREQUENCY_ITEMS = tuple(f"{round(step * 100)}%" for step in FREQUENCY_STEPS)
+SEPARATOR_FREQUENCY_DEFAULT = len(FREQUENCY_STEPS) - 1        # 100%: как в 34.x, разделитель между каждой парой слов
+CUTE_SENTENCE_FREQUENCY_DEFAULT = 2                           # 50%
+CUTE_WORD_FREQUENCY_DEFAULT = 1                               # 25%: слова портить реже, чтобы текст читался
+
+CUTE_EFFECT_KEYS = (
+    "cute_kaomoji", "cute_sparkles", "cute_exclamations", "cute_punctuation", "cute_uwu_suffixes", "cute_actions",
+    "cute_lowercase", "cute_uwu_speak", "cute_stutter", "cute_stretch", "cute_soft_sign",
+)
+CUTE_BOOL_KEYS = CUTE_EFFECT_KEYS + ("cute_actions_newline",)
+CUTE_INT_KEYS = {
+    "cute_sentence_frequency": (CUTE_SENTENCE_FREQUENCY_DEFAULT, 0, len(FREQUENCY_STEPS) - 1),
+    "cute_word_frequency": (CUTE_WORD_FREQUENCY_DEFAULT, 0, len(FREQUENCY_STEPS) - 1),
+    "cute_stretch_max": (0, 0, 1),
+}
+CUTE_KEYS = ("cute_enabled",) + CUTE_BOOL_KEYS + tuple(CUTE_INT_KEYS)
+
+
+def frequency_step(value, default: int) -> float:
+    return FREQUENCY_STEPS[clamp_int(value, default, 0, len(FREQUENCY_STEPS) - 1)]
+
+
+CUTE_KAOMOJIS = (
+    "(◕‿◕)", "♡(˘▽˘)♡", "(つ≧▽≦)つ", "(≧◡≦)", "(*^ω^*)", "(っ˘ω˘ς)", "(´｡• ω •｡`)", "ʕ•ᴥ•ʔ", "(づ｡◕‿‿◕｡)づ",
+    "ฅ^•ﻌ•^ฅ", "(*˘︶˘*)", "(*¯︶¯*)", "( ˘ ³˘)♥", "(っ•ᴗ•)っ", "ლ(╹◡╹ლ)", "(๑˃ᴗ˂)ﻭ", "(灬ºωº灬)♡", "૮₍˶ᵔ ᵕ ᵔ˶₎ა",
+    "(*ฅ́˘ฅ̀*)", "(●'◡'●)", "ฅ(^◕ᴥ◕^)ฅ", "(=^･ω･^=)", "ʕっ•ᴥ•ʔっ", "ʕ ꈍᴥꈍʔ", "ʕ´•ᴥ•`ʔ", "(◡ ω ◡)", "(◕ᴗ◕✿)",
+    "꒰⑅ᵕ༚ᵕ꒱˖♡", "ପ(๑•ᴗ•๑)ଓ ♡", "(⁄ ⁄•⁄ω⁄•⁄ ⁄)",
+)
+CUTE_SPARKLES = (
+    "✨", "⭐", "★", "☆", "₊˚⊹", "⋆｡°✩", "☆彡", "✧･ﾟ", "♡", "❀", "❁", "❃", "❋", "✿", "♫", "♪", "✧˖°", "⋆｡˚", "⋆⭒˚｡⋆",
+    "✧*。", "‧₊˚✧", "ପ♡ଓ", "✩°｡⋆⸜", "✮", "✩₊˚.⋆", "☽˚｡⋆", "❥", "༘⋆", "*ੈ✩‧₊˚", "ೃ࿔₊", "˗ˏˋ ★ ˎˊ˗",
+)
+CUTE_UWU_SUFFIXES = (
+    "~", " nya~", " uwu", " owo", " >w<", " :3", " nyaaa", "σωσ", "◡ ω ◡", " OwO", " UwU~", " hehe~", " rawr~", " mew",
+    " purr~", " ehehe", " uwu~", " (⁄ ⁄>⁄ω⁄<⁄ ⁄)", " kyaa~", " nyaa", " nyuu~", " mya~", " (◕ᴗ◕✿)", " teehee", " hehehe",
+    " awoo~", " *blushes*", " purrr", " pwease", " nya?",
+)
+CUTE_EXCLAMATIONS = (
+    "~!", "!!", "!!!", "!~", "!❤", "!✨", "!💖", "!⭐", "!!!1!", "! nya~", "!?!?", "!!!💕", "~!!~", "! ꒰◍ᐡᐤᐡ◍꒱",
+    "! ❁◕ ‿ ◕❁", "!!♡", "! (*ฅ́˘ฅ̀*)", "~✿!", "! ♡₊˚", "!⋆₊", "! 🎀", "! 🌸", "!🌟", "!☆",
+)
+CUTE_PERIODS = (
+    ".~", ".✨", ".🌸", ".💖", "~~", " ^^", "₊˚ʚ ᗢ₊˚✧", "✿", ".♡", ".˚ʚ♡ɞ˚", ".ᐟ", ".⋆", ".♬", ".⋆˙⟡♡",
+    ".𓆩♡𓆪", ".*ੈ✩‧₊˚", ".𓍢ִ໋🌷͙֒", ".:₊˚◞♡", "◞♡ₓₒ",
+)
+CUTE_QUESTIONS = (
+    "?!!", "???", "❓💖", "?~", "❓✨", " <(°.°<)", " uwu?", "?✧", "?🥺", "?(ㅅ´ ˘ `)", "??♡", "??🌸", "?☆", "?♡",
+    "?꒰◍ᐡᐤᐡ◍꒱", "?⁺◟(◔ั₀◔ั )◞⁺", " (◕ᴗ◕✿)?", "?⋆", "?𓍢ִ໋🌷͙֒", " nyaa?",
+)
+CUTE_ACTIONS = {
+    "ru": ("*обнимает*", "*нежно обнимает*", "*гладит по голове*", "*хихикает*", "*мурлычет*", "*улыбается*", "*подмигивает*",
+           "*машет лапкой*", "*краснеет*", "*прыгает от радости*", "*делает большие глаза*", "*играет с волосами*",
+           "*качает хвостиком*", "*делает милое личико*", "*танцует от счастья*", "*прячется за лапками*", "*радостно вздыхает*"),
+    "en": ("*hugs*", "*gentle hug*", "*pats head*", "*giggles*", "*purrs*", "*smiles*", "*winks*", "*waves paw*", "*blushes*",
+           "*jumps with joy*", "*makes big eyes*", "*plays with hair*", "*wags tail*", "*makes cute face*", "*happy dance*",
+           "*hides behind paws*", "*happy sigh*", "*nuzzles*", "*tippy taps*", "*boops nose*"),
+    "ja": ("*ぎゅっ*", "*なでなで*", "*にこにこ*", "*くすくす*", "*ごろごろ*", "*ウインク*", "*てれてれ*", "*ぴょんぴょん*",
+           "*しっぽふりふり*", "*うるうる*", "*すりすり*"),
+    "ko": ("*꼬옥 안아줌*", "*쓰담쓰담*", "*키득키득*", "*골골*", "*방긋*", "*윙크*", "*부끄부끄*", "*폴짝폴짝*",
+           "*꼬리 살랑살랑*", "*눈 반짝반짝*", "*볼 비비기*"),
+    "fr": ("*câlin*", "*caresse la tête*", "*glousse*", "*ronronne*", "*sourit*", "*fait un clin d’œil*", "*rougit*",
+           "*saute de joie*", "*remue la queue*", "*fait les yeux doux*", "*frotte son nez*"),
+    "de": ("*umarmt*", "*streichelt den Kopf*", "*kichert*", "*schnurrt*", "*lächelt*", "*zwinkert*", "*wird rot*",
+           "*hüpft vor Freude*", "*wedelt mit dem Schwanz*", "*macht große Augen*", "*stupst die Nase an*"),
+}
+CUTE_VOWELS = {"ru": "аеёиоуыэюяАЕЁИОУЫЭЮЯ", "en": "aeiouAEIOU"}
+CUTE_SOFT_SIGN_CONSONANTS = "бвгджзклмнпрстфхцчшщ"
+CUTE_UWU_TABLE = str.maketrans({"r": "w", "l": "w", "R": "W", "L": "W", "р": "в", "л": "в", "Р": "В", "Л": "В"})
+
+assert SETTING_DEFAULTS["separator_frequency"] == SEPARATOR_FREQUENCY_DEFAULT
+assert all(SETTING_DEFAULTS[_key] is False for _key in ("cute_enabled",) + CUTE_BOOL_KEYS)
+assert all(SETTING_DEFAULTS[_key] == _spec[0] for _key, _spec in CUTE_INT_KEYS.items())
+
+
+class CuteOptions:
+    """Настройки «милых» эффектов, разобранные один раз при сборке RuntimeSettings."""
+    __slots__ = ("enabled", "active", "sentence_p", "word_p", "stretch_max", "language") + tuple(k[5:] for k in CUTE_BOOL_KEYS)
+
+    def __init__(self, get, language: Optional[str] = None):
+        self.enabled = bool(get("cute_enabled")) and FEATURES.on("cute_effects")
+        for key in CUTE_BOOL_KEYS:
+            setattr(self, key[5:], bool(get(key)))
+        self.sentence_p = frequency_step(get("cute_sentence_frequency"), CUTE_SENTENCE_FREQUENCY_DEFAULT)
+        self.word_p = frequency_step(get("cute_word_frequency"), CUTE_WORD_FREQUENCY_DEFAULT)
+        self.stretch_max = 2 if clamp_int(get("cute_stretch_max"), 0, 0, 1) == 0 else 3
+        self.language = language if language in CUTE_ACTIONS else "en"
+        self.active = self.enabled and any(getattr(self, key[5:]) for key in CUTE_EFFECT_KEYS)
+
+
 class RuntimeSettings:
     __slots__ = (
         "language", "chat_scope_enabled", "process_message", "process_media", "process_edit",
         "process_edit_message", "process_edit_media", "skip_once_on_edit",
         "mask", "mask_parts", "mask_link", "markdown_enabled", "markdown_style", "markdown_wrap", "text_style_enabled", "text_style",
         "text_style_random", "text_style_translit", "style_only", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "regex_exceptions", "conditional_rules", "chat_type_rules",
-        "separator_enabled", "separators", "separator_count",
+        "separator_enabled", "separators", "separator_count", "separator_chance", "cute",
         "exceptions", "ignore_special", "ignore_emoji_only", "disabled_chats",
         "media_enabled", "media_path", "media_name", "media_mime", "raw",
     )
@@ -3692,6 +4041,8 @@ class RuntimeSettings:
         self.separator_enabled = bool(get("separator_enabled"))
         self.separators = parse_separators(get("custom_emojis"))
         self.separator_count = clamp_int(get("emoji_count"), 1, 1, MAX_SEPARATOR_COUNT)
+        self.separator_chance = frequency_step(get("separator_frequency"), SEPARATOR_FREQUENCY_DEFAULT)
+        self.cute = CuteOptions(get, LANGUAGE_MODES[self.language])
         self.exceptions = parse_lines(get("exceptions"))
         self.ignore_special = bool(get("ignore_special"))
         self.ignore_emoji_only = bool(get("ignore_emoji_only"))
@@ -3715,7 +4066,7 @@ class RuntimeSettings:
 
 
 class PrefixfySettings:
-    DEFAULTS = {**SETTING_DEFAULTS, **TRANSIENT_SETTING_DEFAULTS, **OTA_SETTING_DEFAULTS}
+    DEFAULTS = {**SETTING_DEFAULTS, **TRANSIENT_SETTING_DEFAULTS, **OTA_SETTING_DEFAULTS, **DEVICE_SETTING_DEFAULTS}
 
     def __init__(self, plugin):
         self.plugin = plugin
@@ -3869,6 +4220,7 @@ class SeparatorTransformation(Transformation):
         prepared = (inject_custom_emoji(_MD_SENTINEL_RE.sub("", item), table) for item in settings.separators)
         self.separators = tuple(item for item in prepared if item) or tuple(DEFAULT_SEPARATORS.split(", "))
         self.count = settings.separator_count
+        self.chance = settings.separator_chance
         self._gap = self._WORD_GAP if settings.text_style_enabled and settings.text_style == STYLE_VAPORWAVE else self._WHITESPACE
 
     @staticmethod
@@ -3902,6 +4254,10 @@ class SeparatorTransformation(Transformation):
             parts = [tokens[0]]
             for index in range(1, len(tokens), 2):
                 gap, word = tokens[index], tokens[index + 1]
+                if self.chance < 1.0 and random.random() >= self.chance:
+                    parts.append(gap)
+                    parts.append(word)
+                    continue
                 chosen = []
                 for _ in range(self.count):
                     chosen.append(pool[position % len(pool)])
@@ -3942,6 +4298,171 @@ _LEADING_SPECIAL_RE = re.compile(
     r")(?![A-Za-z0-9_@])"
 )
 _PLACEHOLDER_RE = re.compile("\uE000(\\d+)\uE001")
+
+
+class CuteTransformation(Transformation):
+    """«Милые» эффекты из cutemessages: каомодзи, спарклы, пунктуация, UwU, действия, заикание и т.д.
+
+    Работает по предложениям и словам исходного текста и стоит в конвейере ПЕРЕД маской: префикс и суффикс маски
+    не считаются предложениями, а стиль шрифта применяется уже к готовому тексту. Ссылки, @упоминания, #теги,
+    команды и код защищены: либо заменены маркерами (_PLACEHOLDER_RE), либо пропускаются по _SKIP_RE.
+    """
+    _SPLIT_RE = re.compile(r"([.!?…]+(?:[ \t]+|$))")
+    _WORD_RE = re.compile(r"\w")
+    _TOKEN_RE = re.compile(r"(\s+)")
+    _LEAD_RE = re.compile(r"^([^\w\s]+)")
+    _TRAIL_RE = re.compile(r"([^\w\s]+)$")
+    _TAIL_RE = re.compile(r"([.!?…]*)(\s*)$")
+    _SKIP_RE = re.compile(r"[]|://|(?<!\w)(?:www\.|[@#/$])\w|\w@\w|\w\.[A-Za-z]{2,}\b")
+    _CYRILLIC_RE = re.compile("[Ѐ-ӿ]")
+    _JAPANESE_RE = re.compile("[぀-ヿ一-鿿]")
+    _KOREAN_RE = re.compile("[가-힯]")
+
+    def __init__(self, settings: "RuntimeSettings"):
+        self.options = settings.cute
+
+    # -- вспомогательное ------------------------------------------------
+    @staticmethod
+    def _chance(probability: float) -> bool:
+        return probability >= 1.0 or random.random() < probability
+
+    def _actions_for(self, text: str) -> Tuple[str, ...]:
+        if self._CYRILLIC_RE.search(text):
+            code = "ru"
+        elif self._JAPANESE_RE.search(text):
+            code = "ja"
+        elif self._KOREAN_RE.search(text):
+            code = "ko"
+        else:
+            code = self.options.language
+        return CUTE_ACTIONS.get(code) or CUTE_ACTIONS["en"]
+
+    # -- слова ------------------------------------------------------------
+    def _stutter(self, word: str) -> str:
+        if len(word) > 1 and word[0].isalpha() and "-" not in word:
+            first = word[0]
+            prefix = first + "-"
+            if random.random() < 0.4:
+                prefix += first.lower() + "-"
+            if first.isupper() and not word.isupper():
+                word = first.lower() + word[1:]
+            return prefix + word
+        return word
+
+    def _stretch(self, word: str) -> str:
+        if sum(1 for char in word if char.isalpha()) < 2:
+            return word
+        vowels = CUTE_VOWELS["ru"] if self._CYRILLIC_RE.search(word) else CUTE_VOWELS["en"]
+        limit = self.options.stretch_max
+        out: List[str] = []
+        for char in word:
+            out.append(char)
+            if char in vowels and random.random() < 0.6:
+                streak = 0
+                for previous in reversed(out):
+                    if previous != char:
+                        break
+                    streak += 1
+                if streak < limit:
+                    out.extend(char * random.randint(1, limit - streak))
+        return "".join(out)
+
+    @staticmethod
+    def _soften(word: str) -> str:
+        if len(word) >= 3 and not word.isupper() and word[-1].lower() in CUTE_SOFT_SIGN_CONSONANTS:
+            return word + "ь"
+        return word
+
+    def _word(self, token: str) -> str:
+        if self._SKIP_RE.search(token):
+            return token
+        lead, word, trail = "", token, ""
+        found = self._LEAD_RE.match(word)
+        if found:
+            lead, word = found.group(1), word[len(found.group(1)):]
+        found = self._TRAIL_RE.search(word)
+        if found:
+            trail, word = found.group(1), word[:-len(found.group(1))]
+        if not word:
+            return token
+        opt = self.options
+        if opt.lowercase:
+            word = word.lower()
+        if opt.uwu_speak:
+            word = word.translate(CUTE_UWU_TABLE)
+        if opt.stutter and self._chance(opt.word_p):
+            word = self._stutter(word)
+        if opt.stretch and self._chance(opt.word_p):
+            word = self._stretch(word)
+        if opt.soft_sign and self._chance(opt.word_p):
+            word = self._soften(word)
+        return lead + word + trail
+
+    def _words(self, core: str) -> str:
+        opt = self.options
+        if not (opt.lowercase or opt.uwu_speak or opt.stutter or opt.stretch or opt.soft_sign):
+            return core
+        tokens = self._TOKEN_RE.split(core)
+        for index in range(0, len(tokens), 2):
+            if tokens[index]:
+                tokens[index] = self._word(tokens[index])
+        return "".join(tokens)
+
+    # -- предложения -----------------------------------------------------
+    def _sentence(self, body: str, delim: str, has_next: bool, actions: Tuple[str, ...]) -> str:
+        core = body.strip(" \t")
+        if not core or not self._WORD_RE.search(_PLACEHOLDER_RE.sub("", core)):
+            return body + delim
+        lead = body[:len(body) - len(body.lstrip(" \t"))]
+        trail = body[len(body.rstrip(" \t")):]
+        opt = self.options
+        probability = opt.sentence_p
+        core = self._words(core)
+
+        if opt.uwu_suffixes and self._chance(probability):
+            suffix = random.choice(CUTE_UWU_SUFFIXES)
+            core += suffix if suffix.startswith(("~", " ")) else " " + suffix
+        if opt.sparkles and self._chance(probability * 0.7):
+            core = f"{random.choice(CUTE_SPARKLES)} {core} {random.choice(CUTE_SPARKLES)}"
+
+        tail = self._TAIL_RE.match(delim)
+        punct, space = (tail.group(1), tail.group(2)) if tail else (delim, "")
+        if punct:
+            if opt.exclamations and len(punct) <= 3 and set(punct) == {"!"} and self._chance(probability):
+                punct = random.choice(CUTE_EXCLAMATIONS)
+            elif opt.punctuation and self._chance(probability):
+                if "?" in punct and set(punct) <= {"?", "!"}:
+                    punct = random.choice(CUTE_QUESTIONS)
+                elif punct == ".":
+                    punct = random.choice(CUTE_PERIODS)
+
+        if opt.kaomoji and self._chance(probability):
+            punct += " " + random.choice(CUTE_KAOMOJIS)
+        action = ""
+        if opt.actions and self._chance(probability):
+            picked = random.choice(actions)
+            if opt.actions_newline:
+                action = "\n" + picked + ("\n" if has_next else "")
+                if has_next:
+                    space = ""
+            else:
+                action = " " + picked
+        return lead + core + trail + punct + action + space
+
+    def _line(self, line: str, actions: Tuple[str, ...]) -> str:
+        parts = self._SPLIT_RE.split(line)
+        out: List[str] = []
+        for index in range(0, len(parts), 2):
+            delim = parts[index + 1] if index + 1 < len(parts) else ""
+            has_next = any(part.strip() for part in parts[index + 2:])
+            out.append(self._sentence(parts[index], delim, has_next, actions))
+        return "".join(out)
+
+    def transform(self, text: str) -> str:
+        if not text or not self.options.active:
+            return text
+        actions = self._actions_for(text)
+        return "\n".join(self._line(line, actions) for line in text.split("\n"))
 
 
 def has_marker_chars(text: str) -> bool:
@@ -3986,6 +4507,8 @@ class TransformationPipeline:
         self.styling = False
         self._prepared_memo = None
         self._layout_memo = None
+        if settings.cute.active:
+            self.transformations.append(CuteTransformation(settings))
         if settings.mask_is_active:
             mask = MaskTransformation(settings)
             self.transformations.append(mask)
@@ -4874,10 +5397,11 @@ class ConfigurationSaveError(RuntimeError):
 CONFIG_FORMAT = "Prefixfy-config"
 LEGACY_CONFIG_FORMATS = ("maskify-config",)
 CONFIG_VERSION = 15
-COMPONENTS = ("mask", "separator", "exceptions", "language", "media", "schedule")
+COMPONENTS = ("mask", "separator", "cute", "exceptions", "language", "media", "schedule")
 COMPONENT_ALIASES = {
     "mask": ("mask",),
     "separator": ("separator", "separators"),
+    "cute": ("cute",),
     "exceptions": ("exceptions",),
     "language": ("language",),
     "media": ("media", "attached_media"),
@@ -4886,7 +5410,8 @@ COMPONENT_ALIASES = {
 COMPONENT_KEYS = {
     "language": ("language",),
     "mask": ("mask", "markdown_enabled", "markdown_style", "text_style_enabled", "text_style", "text_style_random", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "conditional_masks", "text_style_translit", "style_words", "tag_lines"),
-    "separator": ("separator_enabled", "custom_emojis", "emoji_count"),
+    "separator": ("separator_enabled", "custom_emojis", "emoji_count", "separator_frequency"),
+    "cute": CUTE_KEYS,
     "exceptions": ("exceptions", "ignore_special", "ignore_emoji_only", "disabled_chats", "chat_scope_enabled", "regex_exceptions", "chat_type_rules"),
     "media": ("attached_media_enabled", "attached_media_path", "attached_media_name", "attached_media_mime"),
     "schedule": (),
@@ -5009,11 +5534,25 @@ def validate_component(component: str, section: dict) -> bool:
         return True
     if component == "separator":
         values, count, enabled = section.get("values", DEFAULT_SEPARATORS), section.get("count", 1), section.get("enabled", False)
+        frequency = section.get("frequency", SEPARATOR_FREQUENCY_DEFAULT)
         return (
             isinstance(values, str) and bool(values.strip())
             and _is_int(count) and 1 <= count <= MAX_SEPARATOR_COUNT
             and isinstance(enabled, bool)
+            and _is_int(frequency) and 0 <= frequency < len(FREQUENCY_STEPS)
         )
+    if component == "cute":
+        for key in CUTE_KEYS:
+            if key not in section:
+                continue
+            value = section[key]
+            if key in CUTE_INT_KEYS:
+                _, low, high = CUTE_INT_KEYS[key]
+                if not (_is_int(value) and low <= value <= high):
+                    return False
+            elif not isinstance(value, bool):
+                return False
+        return True
     if component == "exceptions":
         values = section.get("values", "")
         chats = section.get("disabled_chats", "")
@@ -5567,6 +6106,10 @@ class ConfigTransfer:
                     self.settings.set("separator_enabled", section.get("enabled", False))
                     self.settings.set("custom_emojis", section.get("values", DEFAULT_SEPARATORS))
                     self.settings.set("emoji_count", section.get("count", 1))
+                    self.settings.set("separator_frequency", section.get("frequency", SEPARATOR_FREQUENCY_DEFAULT))
+                elif component == "cute":
+                    for key in CUTE_KEYS:
+                        self.settings.set(key, section.get(key, SETTING_DEFAULTS[key]))
                 elif component == "exceptions":
                     self.settings.set("exceptions", section.get("values", ""))
                     scope = section.get("chat_scope")
@@ -5694,6 +6237,12 @@ class ConfigTransfer:
                 "enabled": bool(s.get("separator_enabled")),
                 "values": as_text(s.get("custom_emojis")),
                 "count": s.separator_count(),
+                "frequency": clamp_int(s.get("separator_frequency"), SEPARATOR_FREQUENCY_DEFAULT, 0, len(FREQUENCY_STEPS) - 1),
+            }
+        if "cute" in components:
+            data["cute"] = {
+                key: clamp_int(s.get(key), *CUTE_INT_KEYS[key]) if key in CUTE_INT_KEYS else bool(s.get(key))
+                for key in CUTE_KEYS
             }
         if "exceptions" in components:
             scope_enabled = bool(s.get("chat_scope_enabled"))
@@ -8298,6 +8847,8 @@ class PrefixfyPlugin(BasePlugin):
         self._chat_titles: Dict[Tuple[int, int], Tuple[float, str]] = {}
         self._skip_once = None
         self._chat_toggle_menu_id = None
+        self._drawer_menu_id = None
+        self._drawer_signature = None
         self._capture_menu_id = None
         self._chat_config_menu_id = None
         self._bindings_cache = None
@@ -8360,6 +8911,7 @@ class PrefixfyPlugin(BasePlugin):
             if cache is not None:
                 cache.clear()
         self._remove_chat_menu_item()
+        self._remove_drawer_item()
         lock = getattr(self, "_internal_lock", None)
         if lock is not None:
             with lock:
@@ -8461,7 +9013,7 @@ class PrefixfyPlugin(BasePlugin):
         self._prefixfy_hooks.extend(hooks)
 
     def handle_setting_changed(self, key):
-        if key in TRANSIENT_SETTING_DEFAULTS or key in OTA_SETTING_DEFAULTS:
+        if key in TRANSIENT_SETTING_DEFAULTS or key in OTA_SETTING_DEFAULTS or key in DEVICE_SETTING_DEFAULTS:
             return
         self.runtime_manager.on_setting_changed()
         configurations = getattr(self, "configurations", None)
@@ -8668,6 +9220,7 @@ class PrefixfyPlugin(BasePlugin):
         )
 
     def refresh_chat_menu_item(self):
+        self._refresh_drawer_item()
         entries = self._chat_menu_entries()
         signature = (self.localization.language(), tuple(enabled for *_, enabled in entries))
         if getattr(self, "_menu_language", None) == signature and all(getattr(self, attr, None) for attr, _k, _h, enabled in entries if enabled):
@@ -9492,6 +10045,143 @@ class PrefixfyPlugin(BasePlugin):
             items.append(Text(text=tr("style_words"), subtext=self._style_words_subtext(), icon="msg_edit", on_click=self._show_style_words_editor))
         return items
 
+    # ------------------------------------------------------------------
+    # 35.0.0: милые эффекты, частота разделителей, пресеты, ярлык в боковом меню
+    # ------------------------------------------------------------------
+    def _frequency_handler(self, key: str, default: int):
+        high = len(FREQUENCY_STEPS) - 1
+        return lambda index: self.settings.set(key, clamp_int(index, default, 0, high))
+
+    def _frequency_selector(self, key: str, text: str, default: int) -> Any:
+        high = len(FREQUENCY_STEPS) - 1
+        return Selector(
+            key=key, text=text, default=clamp_int(self.settings.get(key), default, 0, high),
+            items=list(FREQUENCY_ITEMS), icon=self._icon("msg_timer", "msg_edit"),
+            on_change=self._frequency_handler(key, default),
+        )
+
+    def _cute_switch(self, key: str, text: str, subtext: str = "", icon: str = "msg_palette", reload_settings: bool = False):
+        options = dict(
+            key=key, text=text, default=PrefixfySettings.DEFAULTS[key], icon=icon,
+            on_change=self._bool_handler(key, reload_settings),
+        )
+        if subtext:
+            options["subtext"] = subtext
+        return Switch(**options)
+
+    def _cute_preview_text(self) -> str:
+        tr = self._tr
+        try:
+            snapshot = self.settings.snapshot()
+            if not any(getattr(snapshot.cute, key[5:]) for key in CUTE_EFFECT_KEYS):
+                return tr("cute_preview_none")
+            sample = tr("cute_preview_sample")
+            result = CuteTransformation(snapshot).transform(sample)
+            return f"{result}\n{tr('cute_preview_tap')}"
+        except Exception as exc:
+            self.log(f"Prefixfy cute preview failed: {exc}")
+            return tr("cute_preview_none")
+
+    def _settings_cute(self) -> List[Any]:
+        if not FEATURES.on("cute_effects"):
+            return []
+        tr, get = self._tr, self.settings.get
+        items: List[Any] = [
+            Header(text=tr("cute_header")),
+            self._cute_switch("cute_enabled", tr("cute_enabled"), tr("cute_enabled_subtext"),
+                              self._icon("menu_premium_effects", "msg_palette"), True),
+        ]
+        if not get("cute_enabled"):
+            return items
+        items.append(Text(text=tr("cute_preview"), subtext=self._cute_preview_text(),
+                          icon=self._icon("msg_emoji_cat", "msg_edit"), on_click=lambda view: self.reload_settings_ui()))
+        for key in ("cute_kaomoji", "cute_sparkles", "cute_exclamations", "cute_punctuation", "cute_uwu_suffixes", "cute_actions"):
+            items.append(self._cute_switch(key, tr(key), "", "msg_palette", True))
+        if get("cute_actions"):
+            items.append(self._cute_switch("cute_actions_newline", tr("cute_actions_newline"), "", "msg_reorder"))
+        if any(get(key) for key in ("cute_kaomoji", "cute_sparkles", "cute_exclamations", "cute_punctuation", "cute_uwu_suffixes", "cute_actions")):
+            items += [
+                self._frequency_selector("cute_sentence_frequency", tr("cute_sentence_frequency"), CUTE_SENTENCE_FREQUENCY_DEFAULT),
+                Divider(text=tr("cute_sentence_frequency_subtext")),
+            ]
+        items += [
+            self._cute_switch("cute_lowercase", tr("cute_lowercase"), "", "msg_text"),
+            self._cute_switch("cute_uwu_speak", tr("cute_uwu_speak"), "", "msg_text"),
+            self._cute_switch("cute_stutter", tr("cute_stutter"), "", "msg_text", True),
+            self._cute_switch("cute_stretch", tr("cute_stretch"), "", "msg_text", True),
+        ]
+        if get("cute_stretch"):
+            items.append(Selector(
+                key="cute_stretch_max", text=tr("cute_stretch_max"),
+                default=clamp_int(get("cute_stretch_max"), 0, 0, 1),
+                items=[tr("cute_stretch_2x"), tr("cute_stretch_3x")], icon=self._icon("msg_noise_on", "msg_edit"),
+                on_change=lambda index: self.settings.set("cute_stretch_max", clamp_int(index, 0, 0, 1)),
+            ))
+        items.append(self._cute_switch("cute_soft_sign", tr("cute_soft_sign"), tr("cute_soft_sign_subtext"), "msg_text", True))
+        if any(get(key) for key in ("cute_stutter", "cute_stretch", "cute_soft_sign")):
+            items += [
+                self._frequency_selector("cute_word_frequency", tr("cute_word_frequency"), CUTE_WORD_FREQUENCY_DEFAULT),
+                Divider(text=tr("cute_word_frequency_subtext")),
+            ]
+        return items
+
+    def _settings_shortcuts(self) -> List[Any]:
+        if not FEATURES.on("drawer_shortcut"):
+            return []
+        tr = self._tr
+        return [
+            Header(text=tr("shortcuts_header")),
+            Switch(
+                key="drawer_shortcut", text=tr("drawer_shortcut"), default=PrefixfySettings.DEFAULTS["drawer_shortcut"],
+                subtext=tr("drawer_shortcut_subtext"), icon=self._icon("msg_settings_14", "msg_settings"),
+                on_change=self._on_drawer_shortcut_change,
+            ),
+        ]
+
+    def _on_drawer_shortcut_change(self, enabled):
+        self.settings.set("drawer_shortcut", bool(enabled))
+        self._refresh_drawer_item()
+
+    def _open_own_settings(self):
+        try:
+            from com.exteragram.messenger.plugins.ui import PluginSettingsActivity
+            controller = find_class("com.exteragram.messenger.plugins.PluginsController").getInstance()
+            java_plugin = controller.plugins.get(__id__)
+            fragment = get_last_fragment()
+            if java_plugin is None or fragment is None:
+                return
+            fragment.presentFragment(PluginSettingsActivity(java_plugin))
+        except Exception as exc:
+            self.log(f"Prefixfy: opening plugin settings failed: {exc}")
+
+    def _refresh_drawer_item(self):
+        try:
+            wanted = FEATURES.on("drawer_shortcut") and bool(self.settings.get("drawer_shortcut"))
+            signature = (wanted, self.localization.language())
+            present = bool(getattr(self, "_drawer_menu_id", None))
+            if getattr(self, "_drawer_signature", None) == signature and present == wanted:
+                return
+            self._remove_drawer_item()
+            if wanted:
+                self._drawer_menu_id = self.add_menu_item(MenuItemData(
+                    menu_type=MenuItemType.DRAWER_MENU, text=self._tr("drawer_item"),
+                    icon=self._icon("msg_settings_14", "msg_settings"), priority=5,
+                    on_click=lambda context: run_on_ui_thread(self._open_own_settings),
+                ))
+            self._drawer_signature = signature
+        except Exception as exc:
+            self.log(f"Prefixfy drawer shortcut failed: {exc}")
+
+    def _remove_drawer_item(self):
+        menu_id = getattr(self, "_drawer_menu_id", None)
+        self._drawer_menu_id = None
+        self._drawer_signature = None
+        if menu_id:
+            try:
+                self.remove_menu_item(menu_id)
+            except Exception:
+                pass
+
     def _settings_separator(self) -> List[Any]:
         tr = self._tr
         items: List[Any] = [
@@ -9506,6 +10196,8 @@ class PrefixfyPlugin(BasePlugin):
                     subtext=tr("separator_count_subtext"), icon="msg_palette",
                     on_change=self._on_separator_count_change,
                 ),
+                self._frequency_selector("separator_frequency", tr("separator_frequency"), SEPARATOR_FREQUENCY_DEFAULT),
+                Divider(text=tr("separator_frequency_subtext")),
             ]
         return items
 
@@ -9976,8 +10668,8 @@ class PrefixfyPlugin(BasePlugin):
         )
         for section in (
             self._settings_configurations, self._settings_scope, self._settings_mask, self._settings_style,
-            self._settings_separator, self._settings_exceptions, self._settings_media, self._settings_language,
-            self._settings_ota, self._settings_about,
+            self._settings_separator, self._settings_cute, self._settings_exceptions, self._settings_media,
+            self._settings_language, self._settings_shortcuts, self._settings_ota, self._settings_about,
         ):
             settings += section()
         return settings
