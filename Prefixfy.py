@@ -74,8 +74,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "35.0.0"
-__build__ = "35.0.0_20261106.5_27"
+__version__ = "35.0.1"
+__build__ = "35.0.1_20261106.6_28"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -299,11 +299,6 @@ OTA_SETTING_DEFAULTS = {
     "ota_mode": 0,            # 0 - по мере выхода, 1 - в выбранное время
     "ota_time": "04:00",      # системное время устройства, ЧЧ:ММ
     "check_interval": REMOTE_CHECK_DEFAULT_INDEX,   # индекс в REMOTE_CHECK_CHOICES
-}
-
-# Настройки устройства (как OTA): не входят в конфигурации, экспорт и импорт.
-DEVICE_SETTING_DEFAULTS = {
-    "drawer_shortcut": True,   # пункт «Настройки Prefixfy» в боковом меню
 }
 
 MEDIA_EXTENSIONS = frozenset({
@@ -2340,10 +2335,6 @@ _CUTE_STRINGS = {
         "cute_soft_sign": "Мягкий знак в конце слов (котикь)",
         "cute_soft_sign_subtext": "Только для русских слов.",
         "config_cute": "Милые эффекты",
-        "shortcuts_header": "Быстрый доступ",
-        "drawer_shortcut": "Настройки в боковом меню",
-        "drawer_shortcut_subtext": "Добавляет пункт открытия настроек Prefixfy в боковое меню.",
-        "drawer_item": "Настройки Prefixfy",
     },
     "en": {
         "separator_frequency": "Separator frequency",
@@ -2376,10 +2367,6 @@ _CUTE_STRINGS = {
         "cute_soft_sign": "Soft sign at word ends (kotikь)",
         "cute_soft_sign_subtext": "Russian words only.",
         "config_cute": "Cute effects",
-        "shortcuts_header": "Shortcuts",
-        "drawer_shortcut": "Settings in the side menu",
-        "drawer_shortcut_subtext": "Adds an item that opens the Prefixfy settings to the side menu.",
-        "drawer_item": "Prefixfy settings",
     },
     "ja": {
         "separator_frequency": "区切り文字の頻度",
@@ -2412,10 +2399,6 @@ _CUTE_STRINGS = {
         "cute_soft_sign": "語末に軟音記号 (kotikь)",
         "cute_soft_sign_subtext": "ロシア語の単語のみ。",
         "config_cute": "かわいい効果",
-        "shortcuts_header": "ショートカット",
-        "drawer_shortcut": "サイドメニューに設定を表示",
-        "drawer_shortcut_subtext": "サイドメニューに Prefixfy の設定を開く項目を追加します。",
-        "drawer_item": "Prefixfy の設定",
     },
     "ko": {
         "separator_frequency": "구분자 빈도",
@@ -2448,10 +2431,6 @@ _CUTE_STRINGS = {
         "cute_soft_sign": "단어 끝에 연음 부호 (kotikь)",
         "cute_soft_sign_subtext": "러시아어 단어에만 적용됩니다.",
         "config_cute": "귀여운 효과",
-        "shortcuts_header": "바로가기",
-        "drawer_shortcut": "사이드 메뉴에 설정 표시",
-        "drawer_shortcut_subtext": "사이드 메뉴에 Prefixfy 설정을 여는 항목을 추가합니다.",
-        "drawer_item": "Prefixfy 설정",
     },
     "fr": {
         "separator_frequency": "Fréquence des séparateurs",
@@ -2484,10 +2463,6 @@ _CUTE_STRINGS = {
         "cute_soft_sign": "Signe mou en fin de mot (kotikь)",
         "cute_soft_sign_subtext": "Uniquement pour les mots russes.",
         "config_cute": "Effets mignons",
-        "shortcuts_header": "Raccourcis",
-        "drawer_shortcut": "Réglages dans le menu latéral",
-        "drawer_shortcut_subtext": "Ajoute au menu latéral un élément qui ouvre les réglages de Prefixfy.",
-        "drawer_item": "Réglages Prefixfy",
     },
     "de": {
         "separator_frequency": "Häufigkeit der Trennzeichen",
@@ -2520,10 +2495,6 @@ _CUTE_STRINGS = {
         "cute_soft_sign": "Weichheitszeichen am Wortende (kotikь)",
         "cute_soft_sign_subtext": "Nur für russische Wörter.",
         "config_cute": "Süße Effekte",
-        "shortcuts_header": "Verknüpfungen",
-        "drawer_shortcut": "Einstellungen im Seitenmenü",
-        "drawer_shortcut_subtext": "Fügt dem Seitenmenü einen Eintrag hinzu, der die Prefixfy-Einstellungen öffnet.",
-        "drawer_item": "Prefixfy-Einstellungen",
     },
 }
 for _code, _table in LocalizationManager.STRINGS.items():
@@ -3705,7 +3676,6 @@ FEATURE_FLAGS: Dict[str, bool] = {
     "schedule": True,
     "chat_configs": True,
     "cute_effects": True,
-    "drawer_shortcut": True,
     # Единый флаг режима «Настройки по аккаунтам». False — функция полностью выключена
     # (нет интерфейса, нет переключения, отправка идёт по общему набору, как в 32.x).
     "account_settings": True,
@@ -4066,7 +4036,7 @@ class RuntimeSettings:
 
 
 class PrefixfySettings:
-    DEFAULTS = {**SETTING_DEFAULTS, **TRANSIENT_SETTING_DEFAULTS, **OTA_SETTING_DEFAULTS, **DEVICE_SETTING_DEFAULTS}
+    DEFAULTS = {**SETTING_DEFAULTS, **TRANSIENT_SETTING_DEFAULTS, **OTA_SETTING_DEFAULTS}
 
     def __init__(self, plugin):
         self.plugin = plugin
@@ -8847,8 +8817,6 @@ class PrefixfyPlugin(BasePlugin):
         self._chat_titles: Dict[Tuple[int, int], Tuple[float, str]] = {}
         self._skip_once = None
         self._chat_toggle_menu_id = None
-        self._drawer_menu_id = None
-        self._drawer_signature = None
         self._capture_menu_id = None
         self._chat_config_menu_id = None
         self._bindings_cache = None
@@ -8911,7 +8879,6 @@ class PrefixfyPlugin(BasePlugin):
             if cache is not None:
                 cache.clear()
         self._remove_chat_menu_item()
-        self._remove_drawer_item()
         lock = getattr(self, "_internal_lock", None)
         if lock is not None:
             with lock:
@@ -9013,7 +8980,7 @@ class PrefixfyPlugin(BasePlugin):
         self._prefixfy_hooks.extend(hooks)
 
     def handle_setting_changed(self, key):
-        if key in TRANSIENT_SETTING_DEFAULTS or key in OTA_SETTING_DEFAULTS or key in DEVICE_SETTING_DEFAULTS:
+        if key in TRANSIENT_SETTING_DEFAULTS or key in OTA_SETTING_DEFAULTS:
             return
         self.runtime_manager.on_setting_changed()
         configurations = getattr(self, "configurations", None)
@@ -9220,7 +9187,6 @@ class PrefixfyPlugin(BasePlugin):
         )
 
     def refresh_chat_menu_item(self):
-        self._refresh_drawer_item()
         entries = self._chat_menu_entries()
         signature = (self.localization.language(), tuple(enabled for *_, enabled in entries))
         if getattr(self, "_menu_language", None) == signature and all(getattr(self, attr, None) for attr, _k, _h, enabled in entries if enabled):
@@ -10046,7 +10012,7 @@ class PrefixfyPlugin(BasePlugin):
         return items
 
     # ------------------------------------------------------------------
-    # 35.0.0: милые эффекты, частота разделителей, пресеты, ярлык в боковом меню
+    # 35.0.0: милые эффекты, частота разделителей, пресеты
     # ------------------------------------------------------------------
     def _frequency_handler(self, key: str, default: int):
         high = len(FREQUENCY_STEPS) - 1
@@ -10124,63 +10090,6 @@ class PrefixfyPlugin(BasePlugin):
                 Divider(text=tr("cute_word_frequency_subtext")),
             ]
         return items
-
-    def _settings_shortcuts(self) -> List[Any]:
-        if not FEATURES.on("drawer_shortcut"):
-            return []
-        tr = self._tr
-        return [
-            Header(text=tr("shortcuts_header")),
-            Switch(
-                key="drawer_shortcut", text=tr("drawer_shortcut"), default=PrefixfySettings.DEFAULTS["drawer_shortcut"],
-                subtext=tr("drawer_shortcut_subtext"), icon=self._icon("msg_settings_14", "msg_settings"),
-                on_change=self._on_drawer_shortcut_change,
-            ),
-        ]
-
-    def _on_drawer_shortcut_change(self, enabled):
-        self.settings.set("drawer_shortcut", bool(enabled))
-        self._refresh_drawer_item()
-
-    def _open_own_settings(self):
-        try:
-            from com.exteragram.messenger.plugins.ui import PluginSettingsActivity
-            controller = find_class("com.exteragram.messenger.plugins.PluginsController").getInstance()
-            java_plugin = controller.plugins.get(__id__)
-            fragment = get_last_fragment()
-            if java_plugin is None or fragment is None:
-                return
-            fragment.presentFragment(PluginSettingsActivity(java_plugin))
-        except Exception as exc:
-            self.log(f"Prefixfy: opening plugin settings failed: {exc}")
-
-    def _refresh_drawer_item(self):
-        try:
-            wanted = FEATURES.on("drawer_shortcut") and bool(self.settings.get("drawer_shortcut"))
-            signature = (wanted, self.localization.language())
-            present = bool(getattr(self, "_drawer_menu_id", None))
-            if getattr(self, "_drawer_signature", None) == signature and present == wanted:
-                return
-            self._remove_drawer_item()
-            if wanted:
-                self._drawer_menu_id = self.add_menu_item(MenuItemData(
-                    menu_type=MenuItemType.DRAWER_MENU, text=self._tr("drawer_item"),
-                    icon=self._icon("msg_settings_14", "msg_settings"), priority=5,
-                    on_click=lambda context: run_on_ui_thread(self._open_own_settings),
-                ))
-            self._drawer_signature = signature
-        except Exception as exc:
-            self.log(f"Prefixfy drawer shortcut failed: {exc}")
-
-    def _remove_drawer_item(self):
-        menu_id = getattr(self, "_drawer_menu_id", None)
-        self._drawer_menu_id = None
-        self._drawer_signature = None
-        if menu_id:
-            try:
-                self.remove_menu_item(menu_id)
-            except Exception:
-                pass
 
     def _settings_separator(self) -> List[Any]:
         tr = self._tr
@@ -10669,7 +10578,7 @@ class PrefixfyPlugin(BasePlugin):
         for section in (
             self._settings_configurations, self._settings_scope, self._settings_mask, self._settings_style,
             self._settings_separator, self._settings_cute, self._settings_exceptions, self._settings_media,
-            self._settings_language, self._settings_shortcuts, self._settings_ota, self._settings_about,
+            self._settings_language, self._settings_ota, self._settings_about,
         ):
             settings += section()
         return settings
