@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, OTA-обновления (вручную, по мере выхода или по времени), интерфейс на 6 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "34.4.0"
-__build__ = "34.4.0_20261106.2_24"
+__version__ = "34.4.1"
+__build__ = "34.4.1_20261106.3_25"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -2093,8 +2093,6 @@ _OTA_STRINGS = {
         "ota_time_invalid": "Введите время в формате ЧЧ:ММ, например 04:00",
         "ota_disabled": "OTA отключён разработчиком",
         "ota_disabled_subtext": "Обновления временно недоступны. Установите новую версию вручную из репозитория.",
-        "ota_auto_disabled": "Автообновление отключено разработчиком",
-        "ota_auto_disabled_subtext": "Обновляйте вручную: кнопка «Скачать» под «Требуется обновление» или репозиторий.",
         "ota_installed": "Prefixfy {version} установлен. Перезапускаю плагин…",
         "ota_restart_manual": "Prefixfy {version} установлен. Выключите и снова включите плагин, чтобы применить.",
         "ota_failed": "Не удалось обновить: {reason}",
@@ -2113,8 +2111,6 @@ _OTA_STRINGS = {
         "ota_time_invalid": "Enter the time as HH:MM, for example 04:00",
         "ota_disabled": "OTA is disabled by the developer",
         "ota_disabled_subtext": "Updates are temporarily unavailable. Install the new version manually from the repository.",
-        "ota_auto_disabled": "Auto-update is disabled by the developer",
-        "ota_auto_disabled_subtext": "Update manually with the “Download” button under “Update required” or from the repository.",
         "ota_installed": "Prefixfy {version} installed. Restarting the plugin…",
         "ota_restart_manual": "Prefixfy {version} installed. Turn the plugin off and on again to apply it.",
         "ota_failed": "Update failed: {reason}",
@@ -2133,8 +2129,6 @@ _OTA_STRINGS = {
         "ota_time_invalid": "時刻を HH:MM 形式で入力してください（例: 04:00）",
         "ota_disabled": "OTA は開発者により無効化されています",
         "ota_disabled_subtext": "現在アップデートは利用できません。リポジトリから新しいバージョンを手動でインストールしてください。",
-        "ota_auto_disabled": "自動アップデートは開発者により無効化されています",
-        "ota_auto_disabled_subtext": "「アップデートが必要です」の下の「ダウンロード」またはリポジトリから手動で更新してください。",
         "ota_installed": "Prefixfy {version} をインストールしました。プラグインを再起動します…",
         "ota_restart_manual": "Prefixfy {version} をインストールしました。適用するにはプラグインをオフにしてからオンにしてください。",
         "ota_failed": "更新に失敗しました: {reason}",
@@ -2153,8 +2147,6 @@ _OTA_STRINGS = {
         "ota_time_invalid": "시간을 HH:MM 형식으로 입력하세요 (예: 04:00)",
         "ota_disabled": "개발자가 OTA를 비활성화했습니다",
         "ota_disabled_subtext": "업데이트를 일시적으로 사용할 수 없습니다. 저장소에서 새 버전을 직접 설치하세요.",
-        "ota_auto_disabled": "개발자가 자동 업데이트를 비활성화했습니다",
-        "ota_auto_disabled_subtext": "'업데이트 필요' 아래의 '다운로드'나 저장소에서 직접 업데이트하세요.",
         "ota_installed": "Prefixfy {version} 설치 완료. 플러그인을 다시 시작합니다…",
         "ota_restart_manual": "Prefixfy {version} 설치 완료. 적용하려면 플러그인을 껐다가 다시 켜세요.",
         "ota_failed": "업데이트 실패: {reason}",
@@ -2173,8 +2165,6 @@ _OTA_STRINGS = {
         "ota_time_invalid": "Saisissez l’heure au format HH:MM, par exemple 04:00",
         "ota_disabled": "OTA désactivé par le développeur",
         "ota_disabled_subtext": "Les mises à jour sont temporairement indisponibles. Installez la nouvelle version manuellement depuis le dépôt.",
-        "ota_auto_disabled": "Mise à jour automatique désactivée par le développeur",
-        "ota_auto_disabled_subtext": "Mettez à jour manuellement avec « Télécharger » sous « Mise à jour requise » ou depuis le dépôt.",
         "ota_installed": "Prefixfy {version} installé. Redémarrage du plugin…",
         "ota_restart_manual": "Prefixfy {version} installé. Désactivez puis réactivez le plugin pour l’appliquer.",
         "ota_failed": "Échec de la mise à jour : {reason}",
@@ -2193,8 +2183,6 @@ _OTA_STRINGS = {
         "ota_time_invalid": "Zeit im Format HH:MM eingeben, zum Beispiel 04:00",
         "ota_disabled": "OTA vom Entwickler deaktiviert",
         "ota_disabled_subtext": "Updates sind vorübergehend nicht verfügbar. Installiere die neue Version manuell aus dem Repository.",
-        "ota_auto_disabled": "Automatische Updates vom Entwickler deaktiviert",
-        "ota_auto_disabled_subtext": "Aktualisiere manuell mit „Herunterladen“ unter „Update erforderlich“ oder über das Repository.",
         "ota_installed": "Prefixfy {version} installiert. Plugin wird neu gestartet…",
         "ota_restart_manual": "Prefixfy {version} installiert. Schalte das Plugin aus und wieder ein, um es anzuwenden.",
         "ota_failed": "Update fehlgeschlagen: {reason}",
@@ -3466,11 +3454,9 @@ FEATURE_FLAGS: Dict[str, bool] = {
     # (нет интерфейса, нет переключения, отправка идёт по общему набору, как в 32.x).
     "account_settings": True,
     "config_import": True,
-    # OTA. Разработчик может выключить удалённо через подписанный flags.json,
-    # если обновления окажутся нестабильными. "ota": False выключает всё (и ручное, и авто),
-    # "ota_auto": False выключает только автоматическую установку.
+    # OTA. Единый флаг: разработчик может выключить удалённо через подписанный flags.json,
+    # если обновления окажутся нестабильными. "ota": False выключает всё (и ручное, и авто).
     "ota": True,
-    "ota_auto": True,
     "lang_auto": True,
     "lang_en": True,
     "lang_ja": True,
@@ -8090,9 +8076,9 @@ class RemoteControl:
         }, self.plugin.log)
         _write_file_atomic(path, data)
 
-    def ota_install(self, state: Dict[str, Any], manual: bool = False) -> Tuple[str, Dict[str, Any]]:
+    def ota_install(self, state: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
         version = format_version(state["version"])
-        if not FEATURES.enabled("ota") or (not manual and not FEATURES.enabled("ota_auto")):
+        if not FEATURES.enabled("ota"):
             return "ota_disabled", {}
         if time.monotonic() - self._flags_ok > OTA_FLAGS_MAX_AGE:
             return "ota_failed", {"reason": "flags not verified"}
@@ -8154,7 +8140,7 @@ class RemoteControl:
 
     def _ota_next_wait(self) -> Optional[float]:
         auto, mode, when = self._ota_cfg()
-        if not (auto and mode == 1 and when and FEATURES.enabled("ota") and FEATURES.enabled("ota_auto")):
+        if not (auto and mode == 1 and when and FEATURES.enabled("ota")):
             return None
         now = datetime.now()
         target = now.replace(hour=when[0], minute=when[1], second=0, microsecond=0)
@@ -8173,7 +8159,7 @@ class RemoteControl:
     def ota_auto_step(self, fetched: bool):
         try:
             auto, mode, when = self._ota_cfg()
-            if not (auto and fetched and FEATURES.enabled("ota") and FEATURES.enabled("ota_auto")):
+            if not (auto and fetched and FEATURES.enabled("ota")):
                 return
             if mode == 1:
                 now = datetime.now()
@@ -8185,7 +8171,7 @@ class RemoteControl:
             state = self.ota_candidate()
             if state is None:
                 return
-            result = self.ota_install(state, manual=False)
+            result = self.ota_install(state)
             self._ota_backoff(result)
             transient = result[0] == "ota_busy" or result[1].get("reason") == "flags not verified"
             if not transient and self._ota_fails <= 1:
@@ -8224,7 +8210,7 @@ class RemoteControl:
             return None
         if not refreshed:
             return "ota_failed", {"reason": "check failed"}
-        return self.ota_install(state, manual=True)
+        return self.ota_install(state)
 
     def _ota_report(self, result: Tuple[str, Dict[str, Any]]):
         try:
@@ -9856,10 +9842,6 @@ class PrefixfyPlugin(BasePlugin):
             items.append(Text(text=tr("ota_disabled"), subtext=tr("ota_disabled_subtext"),
                               icon=self._icon("msg_report", "msg_info"), on_click=lambda *_: None))
             return items
-        if not FEATURES.enabled("ota_auto"):
-            items.append(Text(text=tr("ota_auto_disabled"), subtext=tr("ota_auto_disabled_subtext"),
-                              icon=self._icon("msg_report", "msg_info"), on_click=lambda *_: None))
-            return items
         items.append(Switch(
             key="ota_auto", text=tr("ota_auto"), default=PrefixfySettings.DEFAULTS["ota_auto"],
             subtext=tr("ota_auto_subtext"), icon=icon, on_change=self._on_ota_auto_change,
@@ -9902,7 +9884,7 @@ class PrefixfyPlugin(BasePlugin):
         self._show_builder(builder)
 
     def _ota_on_check(self) -> bool:
-        if not (FEATURES.enabled("ota") and FEATURES.enabled("ota_auto")):
+        if not FEATURES.enabled("ota"):
             return False
         if not self.settings.get("ota_auto"):
             return False
