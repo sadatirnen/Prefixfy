@@ -22,7 +22,6 @@
     "md_spoiler": true,
     "md_strike": true,
     "ota": true,
-    "ota_auto": true,
     "premium_emoji": true,
     "regex_exceptions": true,
     "schedule": true,
@@ -97,7 +96,7 @@
     "text_styles": true
   },
   "format": 1,
-  "issued_at": 1793864621,
-  "serial": 1793864621,
-  "signature": "ZelZ7x2x6T0yNmGCDkhqdeQnpc9fX7i6TSyA0qAIWxrbg9CjaKQ9DGpgVqM6u2RmOC7b0UeKHDASYzFMbEuE8h0WIRq+Vy/OyDN+pqfAP5y+pGCY5BMFiTUee9Y8SeeH5MGPzBWWuR6TCW03WHlew1SlAfh9aA9IIp6MQghcqaabyZwfiosZzSmLwm7CL0VAqeXa7wS5kMw3d8u8gqZNvefHooZybX2qxv2AobKjc6NEfmW0HK7whi1mhsBkAFNrvkhq0nnGDrhIf3xDED8GrWrKHzNPq1dBaGEDAoiVjae3g3vHHSnrIX26oetP3Ilgcqxlu7wGKLap3Dw16bIF+eSU1l2HFttq9UZLZHtckM3z4x33cmYjfwgu5QumMeZPZ9mB0TYTtKt7IWwHMiiPqPam/viGXywFO70t4ay6byMAfiMef57QbYvsr+OrNQDyqGEFu4YOLSZJOhY29x2+NnEoDk4FOOg7j5tT7tEelk95jypiESq5yWSq/XA3eXN2"
+  "issued_at": 1793950741,
+  "serial": 1793950741,
+  "signature": "fk3jSFGt36ryF7o0fLXjFuho7pWqIT/CZRAR4raAyA750PxgcgxXEAg8pvTSsth7mFeacB19Cm3+8jzh5C8zCPy7/AlVuCDEL82JxqrsX1waIAYQdifEHjP1OxEBiOGgpPnamycyUhQy8h7WG7ow1F8QddIBdyMLm+vSnXkDL9n15OhUuBnRGj8xilP7zxeE4mEBVdjpQ7xaTXWNgt8JhuFxfYOFzaumGWLVVka10dbG4iljvH95Zmcy0rp8xGtdWnY+5zhrqK4hrYC/doV6ejWOYzvagBudH3YZTtDSoxsc+pW/21HzqHtngQLKW8U6WstZC7CEAtyLVBujEW7IY+kpY9GjRlphVb/FDnX001qImyG20gxiY+5TCpPqtYTa6NMFz7RUt8JdtIJLXefGmeF1jzRZ2ccb9o4vQJmpt02gWO8DG+bHNL33E+wd8wyzfJfu+gwyTz36eVPAAndjOfXv82rX1DAARXiWa97kYv/j8TNkVxnNTlVhJ46ayKIC"
 }
