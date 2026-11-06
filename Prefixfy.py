@@ -67,9 +67,9 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, OTA-обновления (вручную, по мере выхода или по времени), интерфейс на 6 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "34.4.1"
-__build__ = "34.4.1_20261106.3_25"
-__icon__ = "http_Prefixfy_by_fStikBot/0"
+__version__ = "34.4.2"
+__build__ = "34.4.2_20261106.4_26"
+__icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
 
@@ -4665,6 +4665,31 @@ def entity_sources(params) -> List[Tuple[str, list]]:
             continue
         sources.append((name, _iter_entities(value)))
     return sources
+
+
+def custom_emoji_spans(side: str, table: List[Tuple[str, str]], base: int) -> List[Tuple[str, int, int, str]]:
+    """Позиции (UTF-16) Premium Emoji в одной стороне скомпилированной маски."""
+    spans: List[Tuple[str, int, int, str]] = []
+    opened: Dict[int, int] = {}
+    offset = base
+    limit = _MD_BASE + 2 * len(table)
+    for ch in side:
+        code = ord(ch)
+        if _MD_BASE <= code < limit:
+            entity_id, closing = divmod(code - _MD_BASE, 2)
+            if table[entity_id][0] != "CustomEmoji":
+                continue
+            if not closing:
+                opened[entity_id] = offset
+            else:
+                begin = opened.pop(entity_id, None)
+                if begin is not None and offset > begin:
+                    spans.append(("CustomEmoji", begin, offset - begin, table[entity_id][1]))
+        elif _MD_SENTINEL_RE.match(ch):
+            continue
+        else:
+            offset += 2 if code > 0xFFFF else 1
+    return spans
 
 
 def _format_emoji_markers(found) -> List[str]:
@@ -10602,6 +10627,9 @@ class PrefixfyPlugin(BasePlugin):
         field, text = self._select_field(settings, message, caption)
         if field is None:
             return HookResult()
+        resent = self._handle_resend(runtime, account, params, text)
+        if resent is not None:
+            return resent
         if self._skip_once is not None and not runtime.pipeline.ignores(text) and self._consume_skip_once(dialog_id):
             return HookResult()
         runtime, rotation_next = self._runtime_for_message(runtime, account, dialog_id, text, params)
@@ -10649,6 +10677,70 @@ class PrefixfyPlugin(BasePlugin):
             seen[key] = now + 30
             self._edit_seen = seen
         return found
+
+    def _resend_mask_match(self, runtime: Runtime, text: str):
+        """Маска с Premium Emoji уже стоит в тексте (повторная отправка неудавшегося сообщения)."""
+        settings = runtime.settings
+        masks = [settings.mask]
+        if settings.mask_rotation_enabled:
+            masks.extend(settings.masks_list)
+        masks.extend(candidate for _, candidate in settings.conditional_rules)
+        for mask in dict.fromkeys(masks):
+            if MASK_TAG_RE.search(mask) is not None:
+                continue
+            try:
+                probe = runtime if mask == settings.mask else runtime.derived(mask, settings.text_style)
+                part = probe.pipeline._mask()
+            except Exception as exc:
+                self.log(f"Prefixfy resend: mask check failed: {exc}")
+                continue
+            if part is None or not part.table:
+                continue
+            left = _MD_SENTINEL_RE.sub("", part.left)
+            right = _MD_SENTINEL_RE.sub("", part.right)
+            has_left = bool(left) and part._has_custom_emoji(part.left) and text.startswith(left)
+            has_right = bool(right) and part._has_custom_emoji(part.right) and text.endswith(right)
+            if has_left or has_right:
+                return part, has_left, has_right, right
+        return None
+
+    def _handle_resend(self, runtime: Runtime, account: int, params, text: str) -> Optional[HookResult]:
+        """Повторная отправка: маска уже нанесена, второй раз её не добавляем, а Premium Emoji возвращаем."""
+        match = self._resend_mask_match(runtime, text)
+        if match is None:
+            return None
+        part, has_left, has_right, right = match
+        wanted: List[Tuple[str, int, int, str]] = []
+        if has_left:
+            wanted += custom_emoji_spans(part.left, part.table, 0)
+        if has_right:
+            wanted += custom_emoji_spans(part.right, part.table, utf16_length(text) - utf16_length(right))
+        existing = getattr(params, "entities", None)
+        have = set()
+        if existing is not None:
+            for entity in _iter_entities(existing):
+                if _is_custom_emoji_entity(entity):
+                    try:
+                        have.add((int(entity.offset), _entity_document_id(entity)))
+                    except Exception:
+                        continue
+        try:
+            retry = getattr(params, "retryMessageObject", None) is not None
+        except Exception:
+            retry = False
+        if not retry and not have:
+            return None
+        if not wanted or not FEATURES.on("premium_emoji") or not self._account_is_premium(account):
+            return HookResult()
+        missing = [item for item in wanted if (item[1], int(item[3])) not in have]
+        if not missing:
+            return HookResult()
+        try:
+            params.entities = _make_tg_entities(missing, existing, 0)
+        except Exception as exc:
+            self.log(f"Prefixfy resend: Premium Emoji restore failed: {exc}")
+            return HookResult()
+        return HookResult(strategy=HookStrategy.MODIFY, params=params)
 
     def _edit_is_decorated(self, runtime: Runtime, text: str) -> bool:
         settings = runtime.settings
