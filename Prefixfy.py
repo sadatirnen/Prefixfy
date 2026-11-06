@@ -75,7 +75,7 @@ __description__ = (
 )
 __author__ = "@Prefixfy"
 __version__ = "35.1.0"
-__build__ = "35.1.0_20261107.0_27"
+__build__ = "35.1.0_20261107.0_29"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
