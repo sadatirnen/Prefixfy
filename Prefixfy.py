@@ -67,8 +67,8 @@ __description__ = (
     "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, OTA-обновления (вручную, по мере выхода или по времени), интерфейс на 6 языках."
 )
 __author__ = "@Prefixfy"
-__version__ = "34.3.0"
-__build__ = "34.3.0_20261106.1_23"
+__version__ = "34.4.0"
+__build__ = "34.4.0_20261106.2_24"
 __icon__ = "http_Prefixfy_by_fStikBot/0"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -1603,7 +1603,6 @@ _NEW_STRINGS = {
         "status_ok": "passed: this build matches the signed official release",
         "status_pending": "waiting for the first check",
         "status_soft": "not verified right now: optional features are paused",
-        "status_mismatch": "failed: this build does not match the official release",
         "status_blacklisted": "denied: an account on this device is blacklisted",
         "status_no_key": "failed: this build contains no update key",
         "status_integrity": "not verified: the plugin file could not be read for the check",
@@ -1664,7 +1663,6 @@ _NEW_STRINGS = {
         "status_ok": "пройдена: сборка совпадает с подписанным официальным релизом",
         "status_pending": "ожидание первой проверки",
         "status_soft": "сейчас не подтверждена: дополнительные функции приостановлены",
-        "status_mismatch": "не пройдена: сборка не совпадает с официальным релизом",
         "status_blacklisted": "отказано: аккаунт на этом устройстве в чёрном списке",
         "status_no_key": "не пройдена: в этой сборке нет ключа обновлений",
         "status_integrity": "не подтверждена: не удалось прочитать файл плагина для проверки",
@@ -1724,7 +1722,6 @@ _NEW_STRINGS = {
         "status_ok": "合格: このビルドは署名済みの公式リリースと一致しています",
         "status_pending": "最初の確認を待っています",
         "status_soft": "現在は未確認: オプション機能は一時停止中です",
-        "status_mismatch": "不合格: このビルドは公式リリースと一致しません",
         "status_blacklisted": "拒否: この端末のアカウントがブラックリストに登録されています",
         "status_no_key": "不合格: このビルドには更新キーが含まれていません",
         "status_integrity": "未確認: 確認のためにプラグインファイルを読み取れませんでした",
@@ -1784,7 +1781,6 @@ _NEW_STRINGS = {
         "status_ok": "통과: 이 빌드는 서명된 공식 릴리스와 일치합니다",
         "status_pending": "첫 번째 확인을 기다리는 중",
         "status_soft": "현재 확인되지 않음: 선택 기능이 일시 중지되었습니다",
-        "status_mismatch": "실패: 이 빌드는 공식 릴리스와 일치하지 않습니다",
         "status_blacklisted": "거부됨: 이 기기의 계정이 블랙리스트에 있습니다",
         "status_no_key": "실패: 이 빌드에는 업데이트 키가 없습니다",
         "status_integrity": "확인되지 않음: 확인을 위해 플러그인 파일을 읽을 수 없습니다",
@@ -1844,7 +1840,6 @@ _NEW_STRINGS = {
         "status_ok": "réussie : ce build correspond à la version officielle signée",
         "status_pending": "en attente de la première vérification",
         "status_soft": "non vérifié pour le moment : les fonctions facultatives sont suspendues",
-        "status_mismatch": "échec : ce build ne correspond pas à la version officielle",
         "status_blacklisted": "refusée : un compte de cet appareil figure sur la liste noire",
         "status_no_key": "échec : ce build ne contient aucune clé de mise à jour",
         "status_integrity": "non vérifié : le fichier du plugin n’a pas pu être lu pour la vérification",
@@ -1904,7 +1899,6 @@ _NEW_STRINGS = {
         "status_ok": "bestanden: Dieser Build entspricht dem signierten offiziellen Release",
         "status_pending": "wartet auf die erste Prüfung",
         "status_soft": "derzeit nicht verifiziert: optionale Funktionen sind pausiert",
-        "status_mismatch": "fehlgeschlagen: Dieser Build entspricht nicht dem offiziellen Release",
         "status_blacklisted": "abgelehnt: Ein Konto auf diesem Gerät steht auf der Sperrliste",
         "status_no_key": "fehlgeschlagen: Dieser Build enthält keinen Update-Schlüssel",
         "status_integrity": "nicht verifiziert: Die Plugin-Datei konnte für die Prüfung nicht gelesen werden",
@@ -1925,10 +1919,10 @@ _NEW_STRINGS = {
         "notice_soft_body": "Was passiert ist: Prefixfy kann derzeit nicht bestätigen, dass dieser Build offiziell ist. Eine aktuelle Prüfung des signierten Manifests oder der Sperrliste konnte nicht abgeschlossen werden (kein Internet, GitHub nicht erreichbar, die letzte erfolgreiche Prüfung ist zu alt oder die Plugin-Datei konnte nicht gelesen werden).\n\nWas pausiert ist: alle optionalen Funktionen (Textstile, Markdown, Masken-Rotation und bedingte Masken, Tags, Zeitplan, Chat-Konfigurationen, Medienanhang, Premium Emoji, Bearbeitungsverarbeitung, Konfigurationsimport). Nur die grundlegende Maskenformatierung funktioniert.\n\nWas zu tun ist: Prüfen Sie Ihre Internetverbindung und tippen Sie auf „Jetzt prüfen“. Es geht nichts verloren: Nach einer erfolgreichen Prüfung kehrt alles von selbst zurück.",
         "notice_account_body": "Was passiert ist: Eines der auf diesem Gerät angemeldeten Telegram-Konten steht auf der Prefixfy-Sperrliste.\n\nWas das bedeutet: Das Plugin ist auf diesem Gerät deaktiviert und formatiert keine Nachrichten. Die Einstellungen werden nicht verändert.\n\nWenn Sie glauben, dass es sich um einen Irrtum handelt, wenden Sie sich an den Plugin-Autor.",
         "check_ok": "Verifizierung bestanden",
-        "check_failed": "Verifizierung fehlgeschlagen. Prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+        "check_failed": "Verifizierung fehlgeschlagen. Prüfe deine Internetverbindung und versuche es erneut.",
         "verify_soft": "Funktionen pausiert",
         "verify_soft_subtext": "Dieser Prefixfy-Build konnte gerade nicht verifiziert werden, daher sind optionale Funktionen ausgeschaltet und nur die Grundformatierung funktioniert. Prüfen Sie Ihre Internetverbindung; sobald die Verifizierung gelingt, ist alles wieder da.",
-        "tags_more": "[reply] — Name der Person, der Sie antworten; [chatcount] — Nummer Ihrer Nachricht in diesem Chat; [battery] — Akkustand; [moon] — Mondphase; [line] — zufällige Zeile aus Ihrer Liste; [since:2026-12-31] / [until:2026-12-31] — vergangene / verbleibende Tage; [quote] — Anfang der Nachricht, auf die Sie antworten; [countdown:2026-12-31 18:00] — verbleibende Zeit (Tage, Stunden, Minuten); [weather] / [weather:Berlin] — Temperatur von wttr.in (Internet erforderlich).",
+        "tags_more": "[reply] — Name der Person, der du antwortest; [chatcount] — Nummer deiner Nachricht in diesem Chat; [battery] — Akkustand; [moon] — Mondphase; [line] — zufällige Zeile aus deiner Liste; [since:2026-12-31] / [until:2026-12-31] — vergangene / verbleibende Tage; [quote] — Anfang der Nachricht, auf die du antwortest; [countdown:2026-12-31 18:00] — verbleibende Zeit (Tage, Stunden, Minuten); [weather] / [weather:Berlin] — Temperatur von wttr.in (Internet erforderlich).",
     },
 }
 for _code, _table in LocalizationManager.STRINGS.items():
@@ -2090,9 +2084,9 @@ _OTA_STRINGS = {
     "ru": {
         "ota_section": "Обновления (OTA)",
         "ota_auto": "Автообновление",
-        "ota_auto_subtext": "Скачивать и ставить новые официальные версии сами. Подпись и контрольные суммы проверяются перед установкой.",
+        "ota_auto_subtext": "Скачивает и устанавливает обновления автоматически. Подпись и контрольные суммы проверяются перед установкой.",
         "ota_mode": "Режим автообновления",
-        "ota_mode_available": "По мере получения",
+        "ota_mode_available": "По мере выхода",
         "ota_mode_time": "В выбранное время",
         "ota_time": "Время обновления",
         "ota_time_subtext": "Системное время устройства, формат ЧЧ:ММ (например 04:00).",
@@ -2101,20 +2095,16 @@ _OTA_STRINGS = {
         "ota_disabled_subtext": "Обновления временно недоступны. Установите новую версию вручную из репозитория.",
         "ota_auto_disabled": "Автообновление отключено разработчиком",
         "ota_auto_disabled_subtext": "Обновляйте вручную: кнопка «Скачать» под «Требуется обновление» или репозиторий.",
-        "ota_available": "Доступна версия {version}",
-        "ota_available_subtext": "Нажмите, чтобы скачать и установить сейчас.",
-        "ota_update_now": "Обновить сейчас",
         "ota_installed": "Prefixfy {version} установлен. Перезапускаю плагин…",
         "ota_restart_manual": "Prefixfy {version} установлен. Выключите и снова включите плагин, чтобы применить.",
         "ota_failed": "Не удалось обновить: {reason}",
         "ota_busy": "Обновление уже выполняется",
-        "ota_rolled_back": "Новая версия не запустилась, возвращена предыдущая.",
         "ota_check_note": "Если найдена новая официальная версия, эта проверка её не установит: появится уведомление, а поставить обновление можно кнопкой «Скачать» под «Требуется обновление».",
     },
     "en": {
         "ota_section": "Updates (OTA)",
         "ota_auto": "Auto-update",
-        "ota_auto_subtext": "Download and install new official versions automatically. The signature and checksums are verified before installing.",
+        "ota_auto_subtext": "Downloads and installs updates automatically. The signature and checksums are verified before installing.",
         "ota_mode": "Auto-update mode",
         "ota_mode_available": "As soon as available",
         "ota_mode_time": "At a chosen time",
@@ -2125,14 +2115,10 @@ _OTA_STRINGS = {
         "ota_disabled_subtext": "Updates are temporarily unavailable. Install the new version manually from the repository.",
         "ota_auto_disabled": "Auto-update is disabled by the developer",
         "ota_auto_disabled_subtext": "Update manually with the “Download” button under “Update required” or from the repository.",
-        "ota_available": "Version {version} is available",
-        "ota_available_subtext": "Tap to download and install it now.",
-        "ota_update_now": "Update now",
         "ota_installed": "Prefixfy {version} installed. Restarting the plugin…",
         "ota_restart_manual": "Prefixfy {version} installed. Turn the plugin off and on again to apply it.",
         "ota_failed": "Update failed: {reason}",
         "ota_busy": "An update is already in progress",
-        "ota_rolled_back": "The new version did not start, the previous one was restored.",
         "ota_check_note": "If a new official version is found, this check will not install it: you will get a notice, and you can install the update with the “Download” button under “Update required”.",
     },
     "ja": {
@@ -2149,14 +2135,10 @@ _OTA_STRINGS = {
         "ota_disabled_subtext": "現在アップデートは利用できません。リポジトリから新しいバージョンを手動でインストールしてください。",
         "ota_auto_disabled": "自動アップデートは開発者により無効化されています",
         "ota_auto_disabled_subtext": "「アップデートが必要です」の下の「ダウンロード」またはリポジトリから手動で更新してください。",
-        "ota_available": "バージョン {version} が利用可能です",
-        "ota_available_subtext": "タップして今すぐダウンロードしてインストールします。",
-        "ota_update_now": "今すぐ更新",
         "ota_installed": "Prefixfy {version} をインストールしました。プラグインを再起動します…",
         "ota_restart_manual": "Prefixfy {version} をインストールしました。適用するにはプラグインをオフにしてからオンにしてください。",
         "ota_failed": "更新に失敗しました: {reason}",
         "ota_busy": "更新はすでに実行中です",
-        "ota_rolled_back": "新しいバージョンが起動しなかったため、前のバージョンに戻しました。",
         "ota_check_note": "新しい公式バージョンが見つかっても、この確認ではインストールされません。通知が表示されるので、「アップデートが必要です」の下の「ダウンロード」からインストールしてください。",
     },
     "ko": {
@@ -2173,20 +2155,16 @@ _OTA_STRINGS = {
         "ota_disabled_subtext": "업데이트를 일시적으로 사용할 수 없습니다. 저장소에서 새 버전을 직접 설치하세요.",
         "ota_auto_disabled": "개발자가 자동 업데이트를 비활성화했습니다",
         "ota_auto_disabled_subtext": "'업데이트 필요' 아래의 '다운로드'나 저장소에서 직접 업데이트하세요.",
-        "ota_available": "버전 {version} 사용 가능",
-        "ota_available_subtext": "탭하여 지금 내려받아 설치합니다.",
-        "ota_update_now": "지금 업데이트",
         "ota_installed": "Prefixfy {version} 설치 완료. 플러그인을 다시 시작합니다…",
         "ota_restart_manual": "Prefixfy {version} 설치 완료. 적용하려면 플러그인을 껐다가 다시 켜세요.",
         "ota_failed": "업데이트 실패: {reason}",
         "ota_busy": "이미 업데이트가 진행 중입니다",
-        "ota_rolled_back": "새 버전이 시작되지 않아 이전 버전으로 복원했습니다.",
         "ota_check_note": "새 공식 버전이 발견되어도 이 확인으로는 설치되지 않습니다. 알림이 표시되며, '업데이트 필요' 아래의 '다운로드'로 설치할 수 있습니다.",
     },
     "fr": {
         "ota_section": "Mises à jour (OTA)",
         "ota_auto": "Mise à jour automatique",
-        "ota_auto_subtext": "Télécharge et installe seul les nouvelles versions officielles. La signature et les sommes de contrôle sont vérifiées avant l’installation.",
+        "ota_auto_subtext": "Télécharge et installe automatiquement les nouvelles versions officielles. La signature et les sommes de contrôle sont vérifiées avant l’installation.",
         "ota_mode": "Mode de mise à jour automatique",
         "ota_mode_available": "Dès que disponible",
         "ota_mode_time": "À une heure choisie",
@@ -2197,20 +2175,16 @@ _OTA_STRINGS = {
         "ota_disabled_subtext": "Les mises à jour sont temporairement indisponibles. Installez la nouvelle version manuellement depuis le dépôt.",
         "ota_auto_disabled": "Mise à jour automatique désactivée par le développeur",
         "ota_auto_disabled_subtext": "Mettez à jour manuellement avec « Télécharger » sous « Mise à jour requise » ou depuis le dépôt.",
-        "ota_available": "La version {version} est disponible",
-        "ota_available_subtext": "Touchez pour la télécharger et l’installer maintenant.",
-        "ota_update_now": "Mettre à jour",
         "ota_installed": "Prefixfy {version} installé. Redémarrage du plugin…",
         "ota_restart_manual": "Prefixfy {version} installé. Désactivez puis réactivez le plugin pour l’appliquer.",
         "ota_failed": "Échec de la mise à jour : {reason}",
         "ota_busy": "Une mise à jour est déjà en cours",
-        "ota_rolled_back": "La nouvelle version n’a pas démarré, la précédente a été restaurée.",
         "ota_check_note": "Si une nouvelle version officielle est trouvée, cette vérification ne l’installera pas : une notification s’affichera et vous pourrez installer la mise à jour avec « Télécharger » sous « Mise à jour requise ».",
     },
     "de": {
         "ota_section": "Updates (OTA)",
         "ota_auto": "Automatische Updates",
-        "ota_auto_subtext": "Neue offizielle Versionen automatisch herunterladen und installieren. Signatur und Prüfsummen werden vor der Installation geprüft.",
+        "ota_auto_subtext": "Lädt neue offizielle Versionen automatisch herunter und installiert sie. Signatur und Prüfsummen werden vor der Installation geprüft.",
         "ota_mode": "Modus der automatischen Updates",
         "ota_mode_available": "Sobald verfügbar",
         "ota_mode_time": "Zu einer gewählten Uhrzeit",
@@ -2221,14 +2195,10 @@ _OTA_STRINGS = {
         "ota_disabled_subtext": "Updates sind vorübergehend nicht verfügbar. Installiere die neue Version manuell aus dem Repository.",
         "ota_auto_disabled": "Automatische Updates vom Entwickler deaktiviert",
         "ota_auto_disabled_subtext": "Aktualisiere manuell mit „Herunterladen“ unter „Update erforderlich“ oder über das Repository.",
-        "ota_available": "Version {version} ist verfügbar",
-        "ota_available_subtext": "Tippen, um sie jetzt herunterzuladen und zu installieren.",
-        "ota_update_now": "Jetzt aktualisieren",
         "ota_installed": "Prefixfy {version} installiert. Plugin wird neu gestartet…",
         "ota_restart_manual": "Prefixfy {version} installiert. Schalte das Plugin aus und wieder ein, um es anzuwenden.",
         "ota_failed": "Update fehlgeschlagen: {reason}",
         "ota_busy": "Ein Update läuft bereits",
-        "ota_rolled_back": "Die neue Version ist nicht gestartet, die vorherige wurde wiederhergestellt.",
         "ota_check_note": "Wird eine neue offizielle Version gefunden, installiert diese Prüfung sie nicht: Du erhältst einen Hinweis und kannst das Update über „Herunterladen“ unter „Update erforderlich“ installieren.",
     },
 }
@@ -3526,24 +3496,11 @@ class FeatureFlags:
         self._serial = -1
         self._digest = ""
         self._soft = False
-        self._flags_off = False
         self._lock = threading.Lock()
-        self._recompute()
-
-    def _recompute(self):
-        self._flags_off = not any(value for name, value in self._values.items() if not name.startswith("lang_"))
 
     @property
     def soft(self) -> bool:
         return self._soft
-
-    @property
-    def flags_off(self) -> bool:
-        return self._flags_off
-
-    @property
-    def core_only(self) -> bool:
-        return self._soft or self._flags_off
 
     @property
     def serial(self) -> int:
@@ -3583,7 +3540,6 @@ class FeatureFlags:
         merged = self._compose()
         changed = merged != self._values
         self._values = merged
-        self._recompute()
         return changed
 
     def apply(self, flags: Dict[str, bool], serial: int, accounts: Optional[Dict[int, Dict[str, bool]]] = None, digest: str = "") -> bool:
@@ -3610,10 +3566,6 @@ class FeatureFlags:
         with self._lock:
             self._ids = frozenset(ids)
             return self._swap()
-
-    def overridden(self) -> List[str]:
-        values = self._values
-        return sorted(f"{name}={'on' if value else 'off'}" for name, value in values.items() if value != self._defaults[name])
 
 
 FEATURES = FeatureFlags(FEATURE_FLAGS)
@@ -7313,7 +7265,9 @@ class WeatherCache:
         self._closed = False
 
     def close(self):
-        self._closed = True
+        with self._lock:
+            self._closed = True
+            self._items.clear()
 
     def get(self, city: str) -> str:
         key = as_text(city).strip().casefold()[:40]
@@ -7553,6 +7507,7 @@ class RemoteControl:
         self._unloaded = threading.Event()
         self._flags_ok = float("-inf")
         self._ota_done = ""
+        self._ota_timer = None
         self._ota_day = None
         self._ota_fails = 0
         self._ota_retry_at = 0.0
@@ -7592,6 +7547,10 @@ class RemoteControl:
     def stop(self):
         self._unloaded.set()
         self._stop.set()
+        timer = getattr(self, "_ota_timer", None)
+        if timer is not None:
+            timer.cancel()
+            self._ota_timer = None
 
     def _run(self, stop, delay: float = 0.0):
         if delay > 0 and stop.wait(delay):
@@ -7607,7 +7566,7 @@ class RemoteControl:
             stop.wait(wait)
 
     def request_refresh(self, force: bool = False):
-        if not self.enabled:
+        if not self.enabled or self._unloaded.is_set():
             return
         if force:
             threading.Thread(target=self.refresh, kwargs={"force": True}, name="PrefixfyRemoteForce", daemon=True).start()
@@ -8181,6 +8140,7 @@ class RemoteControl:
         _ota_write(data, self.plugin.log)
         timer = threading.Timer(OTA_CONFIRM_SEC, self._ota_confirm)
         timer.daemon = True
+        self._ota_timer = timer
         timer.start()
 
     def _ota_confirm(self):
@@ -8382,8 +8342,12 @@ class PrefixfyPlugin(BasePlugin):
                 pass
         self._prefixfy_hooks = []
         self._skip_once = None
-        self._dialog_kinds.clear()
-        self._chat_titles.clear()
+        self._bindings_cache = None
+        self._schedule_cache = None
+        for cache_name in ("_dialog_kinds", "_chat_titles"):
+            cache = getattr(self, cache_name, None)
+            if cache is not None:
+                cache.clear()
         self._remove_chat_menu_item()
         lock = getattr(self, "_internal_lock", None)
         if lock is not None:
@@ -10014,8 +9978,6 @@ class PrefixfyPlugin(BasePlugin):
     _MEDIA_FIELDS = ("photo", "document", "video", "media", "path")
     INTERNAL_SENDS_MAX = 128
     _skip_once = None
-    _dialog_kinds: Dict[int, str] = {}
-    _chat_titles: Dict[Tuple[int, int], Tuple[float, str]] = {}
     _mask_rotation_index = 0
     _last_random_mask = None
     _last_random_style = None
