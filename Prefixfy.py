@@ -74,8 +74,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "36.0.0"
-__build__ = "36.0.0_20261107.3_31"
+__version__ = "36.1.0"
+__build__ = "36.1.0_20261107.4_32"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -3715,13 +3715,131 @@ FEATURE_FLAGS.update({"tag_" + _tag: True for _tag in MASK_TAG_NAMES})
 FEATURE_FLAGS.update({"md_bold": True, "md_italic": True, "md_strike": True, "md_spoiler": True, "md_mono": True, "md_quote": True})
 _FLAG_NAME_RE = re.compile(r"[a-z][a-z0-9_]{0,31}")
 
+# 36.1.0: третье значение флага, "auto" (на манер A/B-теста). Плагин сам и совершенно случайно решает, показывать ли
+# функцию: каждые AUTO_INTERVAL секунд бросается монетка с шансом AUTO_PROBABILITY, при неудаче функция молча
+# пропадает (скрывается как выключенная, без серых пунктов), при удаче так же молча появляется. Явные on/off с
+# сервера и особые флаги аккаунта сильнее. Если в подписанных флагах нет ни одного auto, модуль спит.
+AUTO = "auto"
+AUTO_PROBABILITY = 0.5
+AUTO_INTERVAL = 6 * 3600.0
+AUTO_STATE_FILE = ".pfx_auto"
+AUTO_EXCLUDED = frozenset({"ota"})   # аварийный выключатель обновлений не может быть случайным
+
+
+class AutoFlags:
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._draws: Dict[str, Tuple[bool, float]] = {}
+        self._loaded = False
+        self._rng = random.SystemRandom()
+
+    @staticmethod
+    def _path() -> str:
+        return os.path.join(get_plugins_dir(), AUTO_STATE_FILE)
+
+    def _load(self):
+        if self._loaded:
+            return
+        self._loaded = True
+        try:
+            with open(self._path(), "r", encoding="utf-8") as handle:
+                raw = json.load(handle)
+        except (OSError, ValueError, RecursionError):
+            return
+        if not isinstance(raw, dict):
+            return
+        for name, item in raw.items():
+            if (isinstance(name, str) and isinstance(item, list) and len(item) == 2 and isinstance(item[0], bool)
+                    and isinstance(item[1], (int, float)) and not isinstance(item[1], bool)):
+                self._draws[name] = (item[0], float(item[1]))
+
+    def _save(self):
+        try:
+            path = self._path()
+            temp = path + ".tmp"
+            with open(temp, "w", encoding="utf-8") as handle:
+                json.dump({name: [on, stamp] for name, (on, stamp) in self._draws.items()}, handle)
+            os.replace(temp, path)
+        except OSError:
+            pass
+
+    def _expired(self, name: str, now: float) -> bool:
+        draw = self._draws.get(name)
+        return draw is None or now - draw[1] >= AUTO_INTERVAL or draw[1] > now + 60.0
+
+    def _roll(self, name: str, now: float) -> Tuple[bool, bool]:
+        """Новый бросок. Возвращает (старое значение или None, новое значение)."""
+        old = self._draws.get(name)
+        value = self._rng.random() < AUTO_PROBABILITY
+        self._draws[name] = (value, now)
+        return (old[0] if old else None, value)
+
+    def sync(self, names) -> None:
+        """Набор auto-флагов изменился: у новых монетка бросается сразу, у ушедших решение забывается."""
+        names = set(names)
+        with self._lock:
+            self._load()
+            now = time.time()
+            changed = False
+            for name in [n for n in self._draws if n not in names]:
+                del self._draws[name]
+                changed = True
+            for name in names:
+                if self._expired(name, now):
+                    self._roll(name, now)
+                    changed = True
+            if changed:
+                self._save()
+
+    def value(self, name: str) -> bool:
+        with self._lock:
+            self._load()
+            if name not in self._draws:
+                self._roll(name, time.time())
+                self._save()
+            return self._draws[name][0]
+
+    def tick(self, names) -> bool:
+        """Перебросить монетку у тех, чей срок вышел. True, если хоть одно решение изменилось."""
+        names = list(names)
+        if not names:
+            return False
+        with self._lock:
+            self._load()
+            now = time.time()
+            changed = rolled = False
+            for name in names:
+                if self._expired(name, now):
+                    before, after = self._roll(name, now)
+                    rolled = True
+                    changed = changed or before != after
+            if rolled:
+                self._save()
+            return changed
+
+    def next_wait(self, names) -> Optional[float]:
+        names = list(names)
+        if not names:
+            return None
+        with self._lock:
+            self._load()
+            now = time.time()
+            waits = []
+            for name in names:
+                draw = self._draws.get(name)
+                waits.append(0.0 if draw is None or draw[1] > now + 60.0 else max(0.0, draw[1] + AUTO_INTERVAL - now))
+            return min(waits)
+
 
 class FeatureFlags:
 
     def __init__(self, defaults: Dict[str, bool]):
         self._defaults = dict(defaults)
-        self._global = dict(defaults)
-        self._values = dict(defaults)
+        self._global: Dict[str, Any] = dict(defaults)
+        self._values: Dict[str, bool] = dict(defaults)
+        self._auto = AutoFlags()
+        self._auto_names: frozenset = frozenset()
         self._accounts: Dict[int, Dict[str, bool]] = {}
         self._ids: frozenset = frozenset()
         self._serial = -1
@@ -3765,7 +3883,20 @@ class FeatureFlags:
             votes = [item[name] for item in matched if name in item]
             if votes:
                 merged[name] = all(votes)
+            elif merged[name] == AUTO:
+                merged[name] = self._auto.value(name)
         return merged
+
+    def auto_tick(self) -> bool:
+        """Раз в AUTO_INTERVAL: перебросить монетки auto-флагов. True, если итоговые значения изменились."""
+        with self._lock:
+            if not self._auto_names or not self._auto.tick(self._auto_names):
+                return False
+            return self._swap()
+
+    def auto_wait(self) -> Optional[float]:
+        """Через сколько секунд нужен следующий бросок; None, если auto-флагов нет и модуль спит."""
+        return self._auto.next_wait(self._auto_names) if self._auto_names else None
 
     def _swap(self) -> bool:
         merged = self._compose()
@@ -3773,11 +3904,15 @@ class FeatureFlags:
         self._values = merged
         return changed
 
-    def apply(self, flags: Dict[str, bool], serial: int, accounts: Optional[Dict[int, Dict[str, bool]]] = None, digest: str = "") -> bool:
-        base = dict(self._defaults)
+    def apply(self, flags: Dict[str, Any], serial: int, accounts: Optional[Dict[int, Dict[str, bool]]] = None, digest: str = "") -> bool:
+        base: Dict[str, Any] = dict(self._defaults)
         for name, value in flags.items():
-            if name in base and isinstance(value, bool):
+            if name not in base:
+                continue
+            if isinstance(value, bool):
                 base[name] = value
+            elif value == AUTO and name not in AUTO_EXCLUDED:
+                base[name] = AUTO
         cleaned: Dict[int, Dict[str, bool]] = {}
         for account_id, overrides in (accounts or {}).items():
             if isinstance(account_id, int) and not isinstance(account_id, bool) and isinstance(overrides, dict):
@@ -3788,6 +3923,8 @@ class FeatureFlags:
             if serial == self._serial and digest and self._digest and digest != self._digest:
                 raise ValueError(f"flags serial {serial} reused with different content")
             self._global = base
+            self._auto_names = frozenset(name for name, value in base.items() if value == AUTO)
+            self._auto.sync(self._auto_names)
             self._accounts = cleaned
             self._serial = serial
             self._digest = digest
@@ -7532,9 +7669,9 @@ def verify_flags(raw: bytes) -> Dict[str, Any]:
     values = body.get("flags")
     if not isinstance(values, dict) or len(values) > FLAGS_MAX_COUNT:
         raise ValueError("flags: bad flags object")
-    known: Dict[str, bool] = {}
+    known: Dict[str, Any] = {}
     for name, value in values.items():
-        if name in FEATURE_FLAGS and isinstance(value, bool) and _FLAG_NAME_RE.fullmatch(name):
+        if name in FEATURE_FLAGS and _FLAG_NAME_RE.fullmatch(name) and (isinstance(value, bool) or value == AUTO):
             known[name] = value
     raw_accounts = body.get("accounts", {})
     if not isinstance(raw_accounts, dict) or len(raw_accounts) > FLAGS_MAX_ACCOUNTS:
@@ -8114,11 +8251,23 @@ class RemoteControl:
             fetched = self.refresh()
             self.soft()
             self.ota_auto_step(fetched)
+            self._auto_step()
             wait = self.check_interval() if fetched and not self.outdated() else REMOTE_RETRY_INTERVAL
             extra = self._ota_next_wait()
             if extra is not None:
                 wait = max(30.0, min(wait, extra))
+            auto_wait = FEATURES.auto_wait()
+            if auto_wait is not None:
+                wait = max(30.0, min(wait, auto_wait))
             stop.wait(wait)
+
+    def _auto_step(self):
+        """Режим auto: перебросить монетки, у кого срок вышел, и молча обновить функции."""
+        try:
+            if FEATURES.auto_tick():
+                self.plugin._on_features_changed()
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy auto flags step failed: {exc}")
 
     def request_refresh(self, force: bool = False):
         if not self.enabled or self._unloaded.is_set():
