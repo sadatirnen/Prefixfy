@@ -74,8 +74,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "35.1.0"
-__build__ = "35.1.0_20261107.1_29"
+__version__ = "35.1.1"
+__build__ = "35.1.1_20261107.2_30"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -8864,6 +8864,10 @@ class RemoteControl:
             self._notified = True
             try:
                 key, kwargs = self.notice()
+                if key == "update_required_subtext":
+                    return
+                if key == "modified_required_subtext" and FEATURES.enabled("ota") and self.ota_candidate() is not None:
+                    return
                 self.plugin._toast(key, **kwargs)
             except Exception as exc:
                 self.plugin.log(f"Prefixfy remote notice failed: {exc}")
@@ -10388,7 +10392,12 @@ class PrefixfyPlugin(BasePlugin):
         }
         builder = AlertDialogBuilder(activity)
         builder.set_title(tr(titles.get(kind, "verify_required")))
-        builder.set_message(self._notice_dialog_text(kind))
+        try:
+            message = self._notice_dialog_text(kind)
+        except Exception as exc:
+            self.log(f"Prefixfy notice text failed: {exc}")
+            message = tr("notice_update_body" if kind == "update" else "notice_verify_body", installed=__build__, latest="", reason="")
+        builder.set_message(message)
         builder.set_positive_button(tr("notice_ok"), lambda bld, which: bld.dismiss())
         if kind in ("update", "modified"):
             def open_repo(bld, which):
@@ -10400,7 +10409,10 @@ class PrefixfyPlugin(BasePlugin):
                 def update_now(bld, which):
                     bld.dismiss()
                     self._show_ota_download_dialog()
-                set_neutral(tr("ota_download"), update_now)
+                try:
+                    set_neutral(tr("ota_download"), update_now)
+                except Exception as exc:
+                    self.log(f"Prefixfy: neutral button failed in the notice dialog: {exc}")
         elif kind == "soft":
             def check(bld, which):
                 bld.dismiss()
