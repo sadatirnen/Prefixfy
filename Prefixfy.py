@@ -74,8 +74,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "35.1.1"
-__build__ = "35.1.1_20261107.2_30"
+__version__ = "36.0.0"
+__build__ = "36.0.0_20261107.3_31"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -1595,6 +1595,8 @@ class LocalizationManager:
 
 _NEW_STRINGS = {
     "en": {
+        "section_appearance": "Text appearance",
+        "section_general": "General",
         "style_translit": "Transliterate Cyrillic",
         "style_translit_subtext": "Latin-only styles will also work with Russian and Ukrainian text.",
         "style_words": "Style only these words",
@@ -1655,6 +1657,8 @@ _NEW_STRINGS = {
         "tags_more": "[reply] \u2014 name of the person you reply to; [chatcount] \u2014 your message number in this chat; [battery] \u2014 battery level; [moon] \u2014 moon phase; [line] \u2014 random line from your list; [since:2026-12-31] / [until:2026-12-31] \u2014 days passed / left; [quote] \u2014 start of the message you reply to; [countdown:2026-12-31 18:00] \u2014 time left (days, hours, minutes); [weather] / [weather:Paris] \u2014 temperature from wttr.in (online).",
     },
     "ru": {
+        "section_appearance": "Оформление текста",
+        "section_general": "Основное",
         "style_translit": "Транслитерировать кириллицу",
         "style_translit_subtext": "Латинские стили будут работать и с русским, и с украинским текстом.",
         "style_words": "Стиль только для слов",
@@ -1715,6 +1719,8 @@ _NEW_STRINGS = {
         "tags_more": "[reply] \u2014 имя того, кому отвечаете; [chatcount] \u2014 номер вашего сообщения в этом чате; [battery] \u2014 заряд батареи; [moon] \u2014 фаза луны; [line] \u2014 случайная строка из списка; [since:2026-12-31] / [until:2026-12-31] \u2014 дней прошло / осталось; [quote] \u2014 начало сообщения, на которое отвечаете; [countdown:2026-12-31 18:00] \u2014 сколько осталось (дни, часы, минуты); [weather] / [weather:Париж] \u2014 температура с wttr.in (нужен интернет).",
     },
     "ja": {
+        "section_appearance": "テキストの装飾",
+        "section_general": "基本",
         "style_translit": "キリル文字を音訳",
         "style_translit_subtext": "ラテン文字専用のスタイルが、ロシア語・ウクライナ語のテキストでも使えるようになります。",
         "style_words": "指定した単語のみにスタイルを適用",
@@ -1774,6 +1780,8 @@ _NEW_STRINGS = {
         "tags_more": "[reply] — 返信先の相手の名前; [chatcount] — このチャットでのあなたのメッセージ番号; [battery] — バッテリー残量; [moon] — 月齢; [line] — リストからランダムな1行; [since:2026-12-31] / [until:2026-12-31] — 経過日数 / 残り日数; [quote] — 返信先メッセージの冒頭; [countdown:2026-12-31 18:00] — 残り時間（日・時間・分）; [weather] / [weather:東京] — wttr.in の気温（オンライン時）。",
     },
     "ko": {
+        "section_appearance": "텍스트 꾸미기",
+        "section_general": "일반",
         "style_translit": "키릴 문자 음역",
         "style_translit_subtext": "라틴 문자 전용 스타일을 러시아어와 우크라이나어 텍스트에도 사용할 수 있습니다.",
         "style_words": "지정한 단어에만 스타일 적용",
@@ -1833,6 +1841,8 @@ _NEW_STRINGS = {
         "tags_more": "[reply] — 답장 대상의 이름; [chatcount] — 이 채팅에서 내 메시지 번호; [battery] — 배터리 잔량; [moon] — 달의 위상; [line] — 목록에서 무작위 한 줄; [since:2026-12-31] / [until:2026-12-31] — 경과한 일수 / 남은 일수; [quote] — 답장 대상 메시지의 시작 부분; [countdown:2026-12-31 18:00] — 남은 시간(일, 시간, 분); [weather] / [weather:서울] — wttr.in의 기온(인터넷 필요).",
     },
     "fr": {
+        "section_appearance": "Mise en forme du texte",
+        "section_general": "Général",
         "style_translit": "Translittérer le cyrillique",
         "style_translit_subtext": "Les styles réservés aux lettres latines fonctionneront aussi avec du texte russe et ukrainien.",
         "style_words": "Appliquer le style à ces mots uniquement",
@@ -1892,6 +1902,8 @@ _NEW_STRINGS = {
         "tags_more": "[reply] — nom de la personne à qui vous répondez ; [chatcount] — numéro de votre message dans cette discussion ; [battery] — niveau de batterie ; [moon] — phase de la lune ; [line] — ligne aléatoire de votre liste ; [since:2026-12-31] / [until:2026-12-31] — jours écoulés / restants ; [quote] — début du message auquel vous répondez ; [countdown:2026-12-31 18:00] — temps restant (jours, heures, minutes) ; [weather] / [weather:Paris] — température depuis wttr.in (Internet requis).",
     },
     "de": {
+        "section_appearance": "Textgestaltung",
+        "section_general": "Allgemein",
         "style_translit": "Kyrillisch transliterieren",
         "style_translit_subtext": "Reine Lateinschrift-Stile funktionieren dann auch mit russischem und ukrainischem Text.",
         "style_words": "Stil nur auf diese Wörter anwenden",
@@ -2108,7 +2120,7 @@ for _code, _table in LocalizationManager.STRINGS.items():
 
 _OTA_STRINGS = {
     "ru": {
-        "ota_section": "Обновления (OTA)",
+        "ota_section": "Обновления и проверка",
         "ota_auto": "Автообновление",
         "ota_auto_subtext": "Скачивает и устанавливает обновления автоматически. Подпись и контрольные суммы проверяются перед установкой.",
         "ota_mode": "Режим автообновления",
@@ -2127,7 +2139,7 @@ _OTA_STRINGS = {
         "ota_check_note": "Если найдена новая официальная версия, эта проверка её не установит: появится уведомление, а поставить обновление можно кнопкой «Скачать» под «Требуется обновление».",
     },
     "en": {
-        "ota_section": "Updates (OTA)",
+        "ota_section": "Updates & verification",
         "ota_auto": "Auto-update",
         "ota_auto_subtext": "Downloads and installs updates automatically. The signature and checksums are verified before installing.",
         "ota_mode": "Auto-update mode",
@@ -2146,7 +2158,7 @@ _OTA_STRINGS = {
         "ota_check_note": "If a new official version is found, this check will not install it: you will get a notice, and you can install the update with the “Download” button under “Update required”.",
     },
     "ja": {
-        "ota_section": "アップデート (OTA)",
+        "ota_section": "アップデートと検証",
         "ota_auto": "自動アップデート",
         "ota_auto_subtext": "新しい公式バージョンを自動でダウンロードしてインストールします。インストール前に署名とチェックサムを検証します。",
         "ota_mode": "自動アップデートのモード",
@@ -2165,7 +2177,7 @@ _OTA_STRINGS = {
         "ota_check_note": "新しい公式バージョンが見つかっても、この確認ではインストールされません。通知が表示されるので、「アップデートが必要です」の下の「ダウンロード」からインストールしてください。",
     },
     "ko": {
-        "ota_section": "업데이트 (OTA)",
+        "ota_section": "업데이트 및 확인",
         "ota_auto": "자동 업데이트",
         "ota_auto_subtext": "새 공식 버전을 자동으로 내려받아 설치합니다. 설치 전에 서명과 체크섬을 검증합니다.",
         "ota_mode": "자동 업데이트 모드",
@@ -2184,7 +2196,7 @@ _OTA_STRINGS = {
         "ota_check_note": "새 공식 버전이 발견되어도 이 확인으로는 설치되지 않습니다. 알림이 표시되며, '업데이트 필요' 아래의 '다운로드'로 설치할 수 있습니다.",
     },
     "fr": {
-        "ota_section": "Mises à jour (OTA)",
+        "ota_section": "Mises à jour et vérification",
         "ota_auto": "Mise à jour automatique",
         "ota_auto_subtext": "Télécharge et installe automatiquement les nouvelles versions officielles. La signature et les sommes de contrôle sont vérifiées avant l’installation.",
         "ota_mode": "Mode de mise à jour automatique",
@@ -2203,7 +2215,7 @@ _OTA_STRINGS = {
         "ota_check_note": "Si une nouvelle version officielle est trouvée, cette vérification ne l’installera pas : une notification s’affichera et vous pourrez installer la mise à jour avec « Télécharger » sous « Mise à jour requise ».",
     },
     "de": {
-        "ota_section": "Updates (OTA)",
+        "ota_section": "Updates und Prüfung",
         "ota_auto": "Automatische Updates",
         "ota_auto_subtext": "Lädt neue offizielle Versionen automatisch herunter und installiert sie. Signatur und Prüfsummen werden vor der Installation geprüft.",
         "ota_mode": "Modus der automatischen Updates",
@@ -9442,6 +9454,34 @@ class PrefixfyPlugin(BasePlugin):
             return live
         return configs.runtime_for(configs.active_id) or live
 
+    @staticmethod
+    def _section_body(items: List[Any]) -> List[Any]:
+        """Содержимое раздела без его собственного заголовка: для объединения нескольких разделов под одним."""
+        return items[1:] if items and isinstance(items[0], Header) else items
+
+    def _settings_general(self) -> List[Any]:
+        return [
+            Header(text=self._tr("section_general")),
+            self._switch("chat_scope_enabled", self._tr("enable_plugin"), self._tr("enable_plugin_subtext"), "msg_settings"),
+        ] + self._section_body(self._settings_accounts())
+
+    def _settings_appearance(self) -> List[Any]:
+        items: List[Any] = [Header(text=self._tr("section_appearance"))]
+        for part in (
+            self._settings_mask, self._settings_separator, self._settings_style,
+            self._settings_cute, self._settings_media,
+        ):
+            body = self._section_body(part())
+            if not body:
+                continue
+            if len(items) > 1:
+                try:
+                    items.append(Divider())
+                except TypeError:
+                    items.append(Divider(text=""))
+            items += body
+        return items
+
     def _settings_accounts(self) -> List[Any]:
         if not self._acct_available():
             return []
@@ -10036,7 +10076,7 @@ class PrefixfyPlugin(BasePlugin):
             ]
         if FEATURES.on("chat_type_rules"):
             items.append(Text(text=tr("chat_types"), subtext=self._chat_types_subtext(), icon=self._icon("msg_groups", "msg_info"), on_click=self._show_chat_types_editor))
-        return items
+        return items + self._section_body(self._settings_exceptions())
 
     def _settings_mask(self) -> List[Any]:
         tr = self._tr
@@ -10469,6 +10509,10 @@ class PrefixfyPlugin(BasePlugin):
                 text=self._tr("about_plugin"), subtext=self._tr("about_plugin_subtext"),
                 icon=self._icon("msg_info"), on_click=self._show_about,
             ),
+        ]
+
+    def _check_items(self) -> List[Any]:
+        return [
             Text(
                 text=self._tr("check_now"), subtext=self._tr("check_now_subtext"),
                 icon=self._icon("msg_retry"), on_click=self._check_now,
@@ -10574,10 +10618,13 @@ class PrefixfyPlugin(BasePlugin):
         self._run_check(install=True)
 
     def _settings_ota(self) -> List[Any]:
+        return [Header(text=self._tr("ota_section"))] + self._ota_auto_items() + self._check_items()
+
+    def _ota_auto_items(self) -> List[Any]:
         tr = self._tr
         remote = getattr(self, "remote", None)
         icon = self._icon("msg_download", "msg_retry")
-        items: List[Any] = [Header(text=tr("ota_section"))]
+        items: List[Any] = []
         if not FEATURES.enabled("ota"):
             items.append(Text(text=tr("ota_disabled"), subtext=tr("ota_disabled_subtext"),
                               icon=self._icon("msg_report", "msg_info"), on_click=lambda *_: None))
@@ -10685,13 +10732,10 @@ class PrefixfyPlugin(BasePlugin):
             self.configurations.sync_target()
         except Exception as exc:
             self.log(f"Prefixfy account target sync failed: {exc}")
-        settings += self._settings_accounts()
-        settings.append(
-            self._switch("chat_scope_enabled", self._tr("enable_plugin"), self._tr("enable_plugin_subtext"), "msg_settings"),
-        )
+        # Порядок разделов: основное -> что обрабатывать -> оформление -> вложения -> сам плагин.
         for section in (
-            self._settings_configurations, self._settings_scope, self._settings_mask, self._settings_style,
-            self._settings_separator, self._settings_cute, self._settings_exceptions, self._settings_media,
+            self._settings_general, self._settings_configurations, self._settings_scope,
+            self._settings_appearance,
             self._settings_language, self._settings_ota, self._settings_about,
         ):
             settings += section()
