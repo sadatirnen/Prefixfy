@@ -1,4 +1,5 @@
 import base64
+import difflib
 import hashlib
 import hmac
 import json
@@ -74,8 +75,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "36.1.0"
-__build__ = "36.1.0_20261107.4_32"
+__version__ = "36.2.0"
+__build__ = "36.2.0_20261107.5_33"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -4056,20 +4057,21 @@ CUTE_KAOMOJIS = (
 )
 CUTE_SPARKLES = (
     "✨", "⭐", "★", "☆", "₊˚⊹", "⋆｡°✩", "☆彡", "✧･ﾟ", "♡", "❀", "❁", "❃", "❋", "✿", "♫", "♪", "✧˖°", "⋆｡˚", "⋆⭒˚｡⋆",
-    "✧*。", "‧₊˚✧", "ପ♡ଓ", "✩°｡⋆⸜", "✮", "✩₊˚.⋆", "☽˚｡⋆", "❥", "༘⋆", "*ੈ✩‧₊˚", "ೃ࿔₊", "˗ˏˋ ★ ˎˊ˗",
+    "✧*。", "‧₊˚✧", "ପ♡ଓ", "✩°｡⋆⸜", "✮", "✩₊˚.⋆", "☽˚｡⋆", "❥", "༘⋆", "ੈ✩‧₊˚", "ೃ࿔₊", "˗ˏˋ ★ ˎˊ˗",
 )
 CUTE_UWU_SUFFIXES = (
     "~", " nya~", " uwu", " owo", " >w<", " :3", " nyaaa", "σωσ", "◡ ω ◡", " OwO", " UwU~", " hehe~", " rawr~", " mew",
     " purr~", " ehehe", " uwu~", " (⁄ ⁄>⁄ω⁄<⁄ ⁄)", " kyaa~", " nyaa", " nyuu~", " mya~", " (◕ᴗ◕✿)", " teehee", " hehehe",
-    " awoo~", " *blushes*", " purrr", " pwease", " nya?",
+    " awoo~", " purrr", " pwease",
 )
+CUTE_UWU_SUFFIXES_SPACED = tuple(item for item in CUTE_UWU_SUFFIXES if item.startswith(" "))
 CUTE_EXCLAMATIONS = (
     "~!", "!!", "!!!", "!~", "!❤", "!✨", "!💖", "!⭐", "!!!1!", "! nya~", "!?!?", "!!!💕", "~!!~", "! ꒰◍ᐡᐤᐡ◍꒱",
     "! ❁◕ ‿ ◕❁", "!!♡", "! (*ฅ́˘ฅ̀*)", "~✿!", "! ♡₊˚", "!⋆₊", "! 🎀", "! 🌸", "!🌟", "!☆",
 )
 CUTE_PERIODS = (
     ".~", ".✨", ".🌸", ".💖", "~~", " ^^", "₊˚ʚ ᗢ₊˚✧", "✿", ".♡", ".˚ʚ♡ɞ˚", ".ᐟ", ".⋆", ".♬", ".⋆˙⟡♡",
-    ".𓆩♡𓆪", ".*ੈ✩‧₊˚", ".𓍢ִ໋🌷͙֒", ".:₊˚◞♡", "◞♡ₓₒ",
+    ".𓆩♡𓆪", ".ੈ✩‧₊˚", ".𓍢ִ໋🌷͙֒", ".:₊˚◞♡", "◞♡ₓₒ",
 )
 CUTE_QUESTIONS = (
     "?!!", "???", "❓💖", "?~", "❓✨", " <(°.°<)", " uwu?", "?✧", "?🥺", "?(ㅅ´ ˘ `)", "??♡", "??🌸", "?☆", "?♡",
@@ -4091,7 +4093,19 @@ CUTE_ACTIONS = {
     "de": ("*umarmt*", "*streichelt den Kopf*", "*kichert*", "*schnurrt*", "*lächelt*", "*zwinkert*", "*wird rot*",
            "*hüpft vor Freude*", "*wedelt mit dem Schwanz*", "*macht große Augen*", "*stupst die Nase an*"),
 }
-CUTE_VOWELS = {"ru": "аеёиоуыэюяАЕЁИОУЫЭЮЯ", "en": "aeiouAEIOU"}
+CUTE_VOWELS = {
+    "ru": "аеёиоуыэюяАЕЁИОУЫЭЮЯ",
+    "en": "aeiouAEIOUàâäæéèêëîïôöœùûüÿÀÂÄÆÉÈÊËÎÏÔÖŒÙÛÜŸ",
+}
+# 36.2.0: сокращения, после которых точка не заканчивает предложение
+CUTE_TITLE_ABBREVIATIONS = frozenset((
+    "г", "ул", "пр", "пл", "д", "кв", "корп", "им", "проф", "акад", "тов", "гр",
+    "mr", "mrs", "ms", "dr", "prof", "sr", "jr", "st",
+))
+CUTE_ABBREVIATIONS = frozenset((
+    "гг", "в", "р", "с", "н", "э", "рис", "табл", "стр", "см", "ср", "напр", "тел", "руб", "коп", "тыс", "млн", "млрд",
+    "др", "англ", "рус", "обл", "vs", "fig", "approx", "dept", "inc", "ltd",
+))
 CUTE_SOFT_SIGN_CONSONANTS = "бвгджзклмнпрстфхцчшщ"
 CUTE_UWU_TABLE = str.maketrans({"r": "w", "l": "w", "R": "W", "L": "W", "р": "в", "л": "в", "Р": "В", "Л": "В"})
 
@@ -4432,6 +4446,9 @@ class CuteTransformation(Transformation):
     Работает по предложениям и словам исходного текста и стоит в конвейере ПЕРЕД маской: префикс и суффикс маски
     не считаются предложениями, а стиль шрифта применяется уже к готовому тексту. Ссылки, @упоминания, #теги,
     команды и код защищены: либо заменены маркерами (_PLACEHOLDER_RE), либо пропускаются по _SKIP_RE.
+
+    36.2.0: сокращения («т.е.», «см.», «Dr. Smith»), инициалы и маркеры списка («1.») не считаются концом предложения;
+    после ссылки эффекты ставятся через пробел, чтобы не склеиться с ней.
     """
     _SPLIT_RE = re.compile(r"([.!?…]+(?:[ \t]+|$))")
     _WORD_RE = re.compile(r"\w")
@@ -4439,10 +4456,14 @@ class CuteTransformation(Transformation):
     _LEAD_RE = re.compile(r"^([^\w\s]+)")
     _TRAIL_RE = re.compile(r"([^\w\s]+)$")
     _TAIL_RE = re.compile(r"([.!?…]*)(\s*)$")
-    _SKIP_RE = re.compile(r"[]|://|(?<!\w)(?:www\.|[@#/$])\w|\w@\w|\w\.[A-Za-z]{2,}\b")
-    _CYRILLIC_RE = re.compile("[Ѐ-ӿ]")
-    _JAPANESE_RE = re.compile("[぀-ヿ一-鿿]")
-    _KOREAN_RE = re.compile("[가-힯]")
+    _SKIP_RE = re.compile("[\uE000\uE001]|" + r"://|(?<!\w)(?:www\.|[@#/$])\w|\w@\w|\w\.\w")
+    _DOTTED_ABBR_RE = re.compile(r"(?:\w{1,2}\.)+\w{1,2}")
+    _CYRILLIC_RE = re.compile("[\u0400-\u04ff]")
+    _JAPANESE_RE = re.compile("[\u3040-\u30ff\u4e00-\u9fff]")
+    _KOREAN_RE = re.compile("[\uac00-\ud7af]")
+    _LATIN_RE = re.compile("[A-Za-z\u00c0-\u00ff\u0152\u0153\u0178]")
+    _GERMAN_RE = re.compile("[\u00e4\u00f6\u00fc\u00df\u00c4\u00d6\u00dc]")
+    _FRENCH_RE = re.compile("[\u00e0\u00e2\u00e7\u00e8\u00e9\u00ea\u00eb\u00ee\u00ef\u00f4\u00f9\u00fb\u0153]")
 
     def __init__(self, settings: "RuntimeSettings"):
         self.options = settings.cute
@@ -4452,16 +4473,57 @@ class CuteTransformation(Transformation):
     def _chance(probability: float) -> bool:
         return probability >= 1.0 or random.random() < probability
 
+    @staticmethod
+    def _spaced(text: str) -> str:
+        if not text or text[0].isspace() or text[0] in ".!?~…,":
+            return text
+        return " " + text
+
     def _actions_for(self, text: str) -> Tuple[str, ...]:
-        if self._CYRILLIC_RE.search(text):
-            code = "ru"
-        elif self._JAPANESE_RE.search(text):
-            code = "ja"
-        elif self._KOREAN_RE.search(text):
-            code = "ko"
-        else:
+        visible = " ".join(token for token in text.split() if not self._SKIP_RE.search(token))
+        scores = {
+            "ru": len(self._CYRILLIC_RE.findall(visible)),
+            "ja": len(self._JAPANESE_RE.findall(visible)),
+            "ko": len(self._KOREAN_RE.findall(visible)),
+            "latin": len(self._LATIN_RE.findall(visible)),
+        }
+        best = max(scores, key=scores.get)
+        if scores[best] == 0:
             code = self.options.language
+        elif best != "latin":
+            code = best
+        elif self._GERMAN_RE.search(visible):
+            code = "de"
+        elif self._FRENCH_RE.search(visible):
+            code = "fr"
+        elif self.options.language in ("fr", "de"):
+            code = self.options.language
+        else:
+            code = "en"
         return CUTE_ACTIONS.get(code) or CUTE_ACTIONS["en"]
+
+    def _ends_protected(self, core: str) -> bool:
+        parts = core.split()
+        return bool(parts) and self._SKIP_RE.search(parts[-1]) is not None
+
+    def _false_boundary(self, body: str, delim: str, following: str) -> bool:
+        if delim.strip() != ".":
+            return False
+        words = body.split()
+        first = following.lstrip()[:1]
+        if not words or not first:
+            return False
+        tail = words[-1]
+        if len(words) == 1 and tail.isdigit() and len(tail) <= 3:
+            return True
+        if len(tail) == 1 and tail.isalpha() and tail.isupper():
+            return first.isupper()
+        name = tail.casefold()
+        if name in CUTE_TITLE_ABBREVIATIONS:
+            return True
+        if name in CUTE_ABBREVIATIONS or self._DOTTED_ABBR_RE.fullmatch(tail):
+            return first.islower() or first.isdigit()
+        return False
 
     # -- слова ------------------------------------------------------------
     def _stutter(self, word: str) -> str:
@@ -4511,17 +4573,19 @@ class CuteTransformation(Transformation):
             trail, word = found.group(1), word[:-len(found.group(1))]
         if not word:
             return token
+        if "." in trail and word.casefold() in CUTE_ABBREVIATIONS | CUTE_TITLE_ABBREVIATIONS:
+            return token
         opt = self.options
         if opt.lowercase:
             word = word.lower()
         if opt.uwu_speak:
             word = word.translate(CUTE_UWU_TABLE)
-        if opt.stutter and self._chance(opt.word_p):
-            word = self._stutter(word)
         if opt.stretch and self._chance(opt.word_p):
             word = self._stretch(word)
         if opt.soft_sign and self._chance(opt.word_p):
             word = self._soften(word)
+        if opt.stutter and self._chance(opt.word_p):
+            word = self._stutter(word)
         return lead + word + trail
 
     def _words(self, core: str) -> str:
@@ -4539,49 +4603,63 @@ class CuteTransformation(Transformation):
         core = body.strip(" \t")
         if not core or not self._WORD_RE.search(_PLACEHOLDER_RE.sub("", core)):
             return body + delim
+        if core.isdigit() and delim.strip() == ".":
+            return body + delim
         lead = body[:len(body) - len(body.lstrip(" \t"))]
         trail = body[len(body.rstrip(" \t")):]
         opt = self.options
         probability = opt.sentence_p
         core = self._words(core)
+        protected_end = self._ends_protected(core)
 
         if opt.uwu_suffixes and self._chance(probability):
-            suffix = random.choice(CUTE_UWU_SUFFIXES)
-            core += suffix if suffix.startswith(("~", " ")) else " " + suffix
-        if opt.sparkles and self._chance(probability * 0.7):
-            core = f"{random.choice(CUTE_SPARKLES)} {core} {random.choice(CUTE_SPARKLES)}"
+            suffix = random.choice(CUTE_UWU_SUFFIXES_SPACED if protected_end else CUTE_UWU_SUFFIXES)
+            core += suffix if suffix.startswith((" ", "~")) else " " + suffix
+
+        left = right = ""
+        if opt.sparkles and self._chance(probability):
+            left, right = random.choice(CUTE_SPARKLES), random.choice(CUTE_SPARKLES)
 
         tail = self._TAIL_RE.match(delim)
         punct, space = (tail.group(1), tail.group(2)) if tail else (delim, "")
-        if punct:
+        if punct and not protected_end:
             if opt.exclamations and len(punct) <= 3 and set(punct) == {"!"} and self._chance(probability):
-                punct = random.choice(CUTE_EXCLAMATIONS)
+                punct = self._spaced(random.choice(CUTE_EXCLAMATIONS))
             elif opt.punctuation and self._chance(probability):
                 if "?" in punct and set(punct) <= {"?", "!"}:
-                    punct = random.choice(CUTE_QUESTIONS)
+                    punct = self._spaced(random.choice(CUTE_QUESTIONS))
                 elif punct == ".":
-                    punct = random.choice(CUTE_PERIODS)
+                    punct = self._spaced(random.choice(CUTE_PERIODS))
 
+        result = lead + (left + " " if left else "") + core + trail + punct
+        if right:
+            result += " " + right
         if opt.kaomoji and self._chance(probability):
-            punct += " " + random.choice(CUTE_KAOMOJIS)
+            result += " " + random.choice(CUTE_KAOMOJIS)
         action = ""
         if opt.actions and self._chance(probability):
             picked = random.choice(actions)
             if opt.actions_newline:
                 action = "\n" + picked + ("\n" if has_next else "")
-                if has_next:
-                    space = ""
+                space = ""
             else:
                 action = " " + picked
-        return lead + core + trail + punct + action + space
+        return result + action + space
 
     def _line(self, line: str, actions: Tuple[str, ...]) -> str:
         parts = self._SPLIT_RE.split(line)
+        pairs = [(parts[i], parts[i + 1] if i + 1 < len(parts) else "") for i in range(0, len(parts), 2)]
         out: List[str] = []
-        for index in range(0, len(parts), 2):
-            delim = parts[index + 1] if index + 1 < len(parts) else ""
-            has_next = any(part.strip() for part in parts[index + 2:])
-            out.append(self._sentence(parts[index], delim, has_next, actions))
+        index = 0
+        while index < len(pairs):
+            body, delim = pairs[index]
+            while delim and index + 1 < len(pairs) and self._false_boundary(body, delim, pairs[index + 1][0]):
+                index += 1
+                body = body + delim + pairs[index][0]
+                delim = pairs[index][1]
+            has_next = any(item[0].strip() for item in pairs[index + 1:])
+            out.append(self._sentence(body, delim, has_next, actions))
+            index += 1
         return "".join(out)
 
     def transform(self, text: str) -> str:
@@ -5097,20 +5175,54 @@ def _new_tg_entity(kind: str):
     raise RuntimeError(f"Telegram entity {kind} unavailable ({'; '.join(errors)})")
 
 
+def _diff_opcodes(original: str, final_text: str):
+    if len(original) * len(final_text) > 40_000_000:
+        return None
+    return difflib.SequenceMatcher(None, original, final_text, autojunk=False).get_opcodes()
+
+
+def _diff_map(opcodes, index: int, at_end: bool) -> Optional[int]:
+    probe = index - 1 if at_end else index
+    for tag, i1, i2, j1, j2 in opcodes:
+        if i1 <= probe < i2:
+            if tag == "equal":
+                return j1 + (probe - i1) + (1 if at_end else 0)
+            return j2 if at_end else j1
+    return None
+
+
 def _realign_entities(kept, original: str, final_text: str, start: int):
     result = []
     cursor = _utf16_index(final_text, start) if start else 0
+    opcodes = None
     for entity in sorted(kept, key=lambda item: int(item.offset)):
         try:
             offset, length = int(entity.offset), int(entity.length)
-            piece = original[_utf16_index(original, offset):_utf16_index(original, offset + length)]
+            first, last = _utf16_index(original, offset), _utf16_index(original, offset + length)
+            piece = original[first:last]
             if not piece:
                 continue
             found = final_text.find(piece, cursor)
-            if found < 0:
+            if found >= 0:
+                entity.offset = utf16_length(final_text[:found])
+                cursor = found + len(piece)
+                result.append(entity)
                 continue
-            entity.offset = utf16_length(final_text[:found])
-            cursor = found + len(piece)
+            if opcodes is None:
+                opcodes = _diff_opcodes(original, final_text) or ()
+            begin, finish = _diff_map(opcodes, first, False), _diff_map(opcodes, last, True)
+            if begin is None or finish is None or finish <= begin or finish - begin > len(piece) * 3 + 16:
+                continue
+            if not (last < len(original) and original[last].isalnum()):
+                while finish < len(final_text) and final_text[finish].isalpha():
+                    finish += 1
+            if begin < cursor:
+                begin = cursor
+                if finish <= begin:
+                    continue
+            entity.offset = utf16_length(final_text[:begin])
+            entity.length = utf16_length(final_text[begin:finish])
+            cursor = finish
             result.append(entity)
         except Exception:
             continue
@@ -10351,15 +10463,15 @@ class PrefixfyPlugin(BasePlugin):
         for key in ("cute_kaomoji", "cute_sparkles", "cute_exclamations", "cute_punctuation", "cute_uwu_suffixes", "cute_actions"):
             items.append(self._cute_switch(key, tr(key), "", "msg_palette", True))
         if get("cute_actions"):
-            items.append(self._cute_switch("cute_actions_newline", tr("cute_actions_newline"), "", "msg_reorder"))
+            items.append(self._cute_switch("cute_actions_newline", tr("cute_actions_newline"), "", "msg_reorder", True))
         if any(get(key) for key in ("cute_kaomoji", "cute_sparkles", "cute_exclamations", "cute_punctuation", "cute_uwu_suffixes", "cute_actions")):
             items += [
                 self._frequency_selector("cute_sentence_frequency", tr("cute_sentence_frequency"), CUTE_SENTENCE_FREQUENCY_DEFAULT),
                 Divider(text=tr("cute_sentence_frequency_subtext")),
             ]
         items += [
-            self._cute_switch("cute_lowercase", tr("cute_lowercase"), "", "msg_text"),
-            self._cute_switch("cute_uwu_speak", tr("cute_uwu_speak"), "", "msg_text"),
+            self._cute_switch("cute_lowercase", tr("cute_lowercase"), "", "msg_text", True),
+            self._cute_switch("cute_uwu_speak", tr("cute_uwu_speak"), "", "msg_text", True),
             self._cute_switch("cute_stutter", tr("cute_stutter"), "", "msg_text", True),
             self._cute_switch("cute_stretch", tr("cute_stretch"), "", "msg_text", True),
         ]
@@ -10368,7 +10480,7 @@ class PrefixfyPlugin(BasePlugin):
                 key="cute_stretch_max", text=tr("cute_stretch_max"),
                 default=clamp_int(get("cute_stretch_max"), 0, 0, 1),
                 items=[tr("cute_stretch_2x"), tr("cute_stretch_3x")], icon=self._icon("msg_noise_on", "msg_edit"),
-                on_change=lambda index: self.settings.set("cute_stretch_max", clamp_int(index, 0, 0, 1)),
+                on_change=lambda index: self.settings.set("cute_stretch_max", clamp_int(index, 0, 0, 1), reload_settings=True),
             ))
         items.append(self._cute_switch("cute_soft_sign", tr("cute_soft_sign"), tr("cute_soft_sign_subtext"), "msg_text", True))
         if any(get(key) for key in ("cute_stutter", "cute_stretch", "cute_soft_sign")):
