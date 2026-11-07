@@ -75,8 +75,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "36.2.0"
-__build__ = "36.2.0_20261107.5_33"
+__version__ = "36.3.0"
+__build__ = "36.3.0_20261107.6_34"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -8268,6 +8268,7 @@ class RemoteControl:
         self._notified = False
         self._soft_notified = False
         self._cache_stale = False
+        self._stale_grace_until = 0.0
         self._cache_path = os.path.join(get_plugins_dir(), "Prefixfy_remote.json")
         digests = _self_file_digests()
         if digests is None:
@@ -8714,8 +8715,13 @@ class RemoteControl:
             self._state = None
             return
         self._remember("m", self._state["serial"], self._state["digest"], self._state["version"])
-        if self._state["version"][:3] < parse_version(__build__)[:3]:
+        if self._state["version"] < parse_version(__build__):
+            # 36.3.0: распространение только через OTA, файл появляется сразу после выхода релиза.
+            # Кэш старее установленной сборки - это обновление, а не подделка: вердикт «сборка новее
+            # официальной» выносит только свежий манифест, скачанный в этом запуске, но не кэш с диска
+            # (иначе принудительное OTA откатит законную сборку на версию из старого кэша).
             self._cache_stale = True
+            self._stale_grace_until = time.monotonic() + REMOTE_TOTAL_TIMEOUT * 3
             return
         self._last_ok = self._anchor(self._cache_path)
 
@@ -9150,6 +9156,8 @@ class RemoteControl:
             self._soft_notified = False
             return
         if self._soft_notified:
+            return
+        if self._cache_stale and time.monotonic() < self._stale_grace_until:
             return
         self._soft_notified = True
         try:
@@ -11797,7 +11805,7 @@ class PrefixfyPlugin(BasePlugin):
             if editing is not None and java_int(editing.getId()) == message_id:
                 return editing
         except Exception:
-            pass
+            None
         try:
             controller = find_class("org.telegram.messenger.MessagesController").getInstance(int(account))
             return controller.dialogMessagesByIds.get(message_id)
