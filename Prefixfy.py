@@ -75,8 +75,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "36.3.0"
-__build__ = "36.3.0_20261107.6_34"
+__version__ = "36.3.1"
+__build__ = "36.3.1_20261107.7_35"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -1636,18 +1636,10 @@ _NEW_STRINGS = {
         "status_no_key": "failed: this build contains no update key",
         "status_integrity": "not verified: the plugin file could not be read for the check",
         "notice_ok": "OK",
-        "notice_open_repo": "Repository",
-        "notice_reason_version": "The version or build label of the installed plugin differs from the signed official manifest.",
-        "notice_reason_file": "The build label matches, but the file contents (checksum or size) differ from the signed release. The file was modified, damaged or only partly updated.",
         "status_outdated": "failed: this build is outdated, a newer official release exists",
         "status_modified": "failed: this build was modified and differs from the official release",
         "modified_build": "Modified build",
         "modified_required_subtext": "This Prefixfy file differs from the official release {version}. The plugin is reinstalling the official build automatically; until then it won’t format messages.",
-        "notice_reason_outdated": "The installed build is older than the latest official release.",
-        "notice_reason_modified": "The build label matches the official release, but the file contents (checksum or size) differ. The file was edited, damaged or only partly updated.",
-        "notice_reason_unreleased": "The build label is newer than any published official release, so this build is unofficial or was edited.",
-        "notice_modified_body": "What happened: the installed build ({installed}) is not the official release ({latest}).\n\n{reason}\n\nWhat it means: this is not just an old version, the file differs from what was published. Until an official build is installed, Prefixfy does not format outgoing messages and its settings are hidden. Your settings and configurations are not deleted.\n\nWhat to do: nothing, as long as updates are available: Prefixfy is already downloading and installing the latest official build ({latest}) by itself and will restart. If that fails, reinstall it from the repository (button below) and restart Telegram.",
-        "notice_update_body": "What happened: the installed build ({installed}) does not match the official signed release ({latest}).\n\n{reason}\n\nWhat it means: until the build is official, Prefixfy does not format outgoing messages and its settings are hidden. Your settings and configurations are not deleted.\n\nWhat to do: install the latest official Prefixfy ({latest}) from the repository (button below) and restart Telegram. The plugin recovers by itself after the next successful check.",
         "notice_verify_body": "What happened: this Prefixfy build cannot be verified. It has no valid update key, so the signed manifest cannot be checked.\n\nWhat it means: the plugin does not format outgoing messages. Your settings are kept.\n\nWhat to do: install the official Prefixfy build from the repository.",
         "notice_soft_body": "What happened: right now Prefixfy cannot confirm that this build is official. A fresh signed manifest or blacklist check could not be completed (no internet, GitHub is unreachable, the last successful check is too old, or the plugin file could not be read).\n\nWhat is paused: all optional features (text styles, Markdown, mask rotation and conditional masks, tags, schedule, chat configurations, media attachment, Premium Emoji, edit processing, configuration import). Only the basic mask formatting works.\n\nWhat to do: check your internet connection and tap “Check now”. Nothing is lost: after a successful check everything returns by itself.",
         "notice_account_body": "What happened: one of the Telegram accounts signed in on this device is on the Prefixfy blacklist.\n\nWhat it means: the plugin is disabled on this device and does not format messages. Settings are not changed.\n\nIf you believe this is a mistake, contact the plugin author.",
@@ -1698,18 +1690,10 @@ _NEW_STRINGS = {
         "status_no_key": "не пройдена: в этой сборке нет ключа обновлений",
         "status_integrity": "не подтверждена: не удалось прочитать файл плагина для проверки",
         "notice_ok": "OK",
-        "notice_open_repo": "Репозиторий",
-        "notice_reason_version": "Версия или метка сборки установленного плагина отличается от подписанного официального манифеста.",
-        "notice_reason_file": "Метка сборки совпадает, но содержимое файла (контрольная сумма или размер) отличается от подписанного релиза. Файл изменён, повреждён или обновлён не полностью.",
         "status_outdated": "не пройдена: сборка устарела, есть более новый официальный релиз",
         "status_modified": "не пройдена: сборка изменена и отличается от официального релиза",
         "modified_build": "Изменённая сборка",
         "modified_required_subtext": "Этот файл Prefixfy отличается от официального релиза {version}. Плагин автоматически переустанавливает официальную сборку; до этого он не оформляет сообщения.",
-        "notice_reason_outdated": "Установленная сборка старше последнего официального релиза.",
-        "notice_reason_modified": "Метка сборки совпадает с официальным релизом, но содержимое файла (контрольная сумма или размер) отличается. Файл изменён, повреждён или обновлён не полностью.",
-        "notice_reason_unreleased": "Метка сборки новее любого опубликованного официального релиза, поэтому сборка неофициальная или была изменена.",
-        "notice_modified_body": "Что произошло: установленная сборка ({installed}) не является официальным релизом ({latest}).\n\n{reason}\n\nЧто это значит: это не просто старая версия, файл отличается от опубликованного. Пока не установлена официальная сборка, Prefixfy не оформляет исходящие сообщения, а его настройки скрыты. Ваши настройки и конфигурации не удаляются.\n\nЧто делать: ничего — Prefixfy сам скачивает и устанавливает последнюю официальную сборку ({latest}) и перезапускается. Если не получится, переустановите её из репозитория (кнопка ниже) и перезапустите Telegram.",
-        "notice_update_body": "Что произошло: установленная сборка ({installed}) не совпадает с официальным подписанным релизом ({latest}).\n\n{reason}\n\nЧто это значит: пока сборка не официальная, Prefixfy не оформляет исходящие сообщения, а его настройки скрыты. Ваши настройки и конфигурации не удаляются.\n\nЧто делать: установите последнюю официальную версию Prefixfy ({latest}) из репозитория (кнопка ниже) и перезапустите Telegram. После следующей успешной проверки плагин восстановится сам.",
         "notice_verify_body": "Что произошло: эту сборку Prefixfy невозможно проверить. В ней нет действующего ключа обновлений, поэтому подписанный манифест не проверить.\n\nЧто это значит: плагин не оформляет исходящие сообщения. Настройки сохраняются.\n\nЧто делать: установите официальную сборку Prefixfy из репозитория.",
         "notice_soft_body": "Что произошло: сейчас Prefixfy не может подтвердить, что эта сборка официальная. Не удалось завершить проверку свежего подписанного манифеста или чёрного списка (нет интернета, GitHub недоступен, последняя успешная проверка слишком старая или не удалось прочитать файл плагина).\n\nЧто приостановлено: все дополнительные функции (стили текста, Markdown, ротация и условные маски, теги, расписание, конфигурации чатов, вложение медиа, Premium Emoji, оформление при редактировании, импорт конфигураций). Работает только базовое оформление маской.\n\nЧто делать: проверьте подключение к интернету и нажмите «Проверить сейчас». Ничего не потеряно: после успешной проверки всё вернётся само.",
         "notice_account_body": "Что произошло: один из аккаунтов Telegram, выполнивших вход на этом устройстве, внесён в чёрный список Prefixfy.\n\nЧто это значит: плагин отключён на этом устройстве и не оформляет сообщения. Настройки не меняются.\n\nЕсли считаете, что это ошибка, свяжитесь с автором плагина.",
@@ -1759,18 +1743,10 @@ _NEW_STRINGS = {
         "status_no_key": "不合格: このビルドには更新キーが含まれていません",
         "status_integrity": "未確認: 確認のためにプラグインファイルを読み取れませんでした",
         "notice_ok": "OK",
-        "notice_open_repo": "リポジトリ",
-        "notice_reason_version": "インストール済みプラグインのバージョンまたはビルドラベルが、署名済みの公式マニフェストと異なります。",
-        "notice_reason_file": "ビルドラベルは一致していますが、ファイルの内容（チェックサムまたはサイズ）が署名済みリリースと異なります。ファイルが変更・破損したか、一部しか更新されていません。",
         "status_outdated": "不合格: このビルドは古く、新しい公式リリースがあります",
         "status_modified": "不合格: このビルドは改変されており、公式リリースと異なります",
         "modified_build": "改変されたビルド",
         "modified_required_subtext": "この Prefixfy ファイルは公式リリース {version} と異なります。プラグインが公式ビルドを自動的に再インストールします。それまでメッセージの装飾は行われません。",
-        "notice_reason_outdated": "インストール済みのビルドは最新の公式リリースより古いものです。",
-        "notice_reason_modified": "ビルドラベルは公式リリースと一致しますが、ファイルの内容（チェックサムまたはサイズ）が異なります。ファイルが編集・破損したか、一部しか更新されていません。",
-        "notice_reason_unreleased": "ビルドラベルが公開済みのどの公式リリースよりも新しいため、このビルドは非公式か、編集されたものです。",
-        "notice_modified_body": "状況: インストール済みのビルド（{installed}）は公式リリース（{latest}）ではありません。\n\n{reason}\n\n影響: 単に古いバージョンというだけでなく、ファイルが公開されたものと異なります。公式ビルドをインストールするまで、Prefixfy は送信メッセージを整形せず、設定も非表示になります。設定や構成は削除されません。\n\n対処: 特に操作は不要です。Prefixfy は最新の公式ビルド（{latest}）を自動でダウンロードしてインストールし、再起動します。失敗した場合は、リポジトリ（下のボタン）から再インストールし、Telegram を再起動してください。",
-        "notice_update_body": "状況: インストール済みのビルド（{installed}）が、署名済みの公式リリース（{latest}）と一致しません。\n\n{reason}\n\n影響: 公式ビルドになるまで、Prefixfy は送信メッセージを整形せず、設定も非表示になります。設定や構成は削除されません。\n\n対処: リポジトリ（下のボタン）から最新の公式 Prefixfy（{latest}）をインストールし、Telegram を再起動してください。次回の確認に成功すると、プラグインは自動的に復旧します。",
         "notice_verify_body": "状況: この Prefixfy ビルドは検証できません。有効な更新キーがないため、署名済みマニフェストを確認できません。\n\n影響: プラグインは送信メッセージを整形しません。設定は保持されます。\n\n対処: リポジトリから公式の Prefixfy ビルドをインストールしてください。",
         "notice_soft_body": "状況: 現在、Prefixfy はこのビルドが公式のものであることを確認できません。署名済みマニフェストまたはブラックリストの最新確認を完了できませんでした（インターネット未接続、GitHub に到達できない、前回の成功した確認が古すぎる、またはプラグインファイルを読み取れない）。\n\n一時停止中: すべてのオプション機能（テキストスタイル、Markdown、マスクのローテーションと条件付きマスク、タグ、スケジュール、チャット別設定、メディア添付、Premium Emoji、編集時の処理、設定のインポート）。基本的なマスク整形のみ動作します。\n\n対処: インターネット接続を確認し、「今すぐ確認」をタップしてください。失われるものはありません。確認に成功すると、すべて自動的に元に戻ります。",
         "notice_account_body": "状況: この端末でサインインしている Telegram アカウントの1つが Prefixfy のブラックリストに登録されています。\n\n影響: この端末ではプラグインが無効になり、メッセージを整形しません。設定は変更されません。\n\n誤りだと思われる場合は、プラグインの作者に連絡してください。",
@@ -1820,18 +1796,10 @@ _NEW_STRINGS = {
         "status_no_key": "실패: 이 빌드에는 업데이트 키가 없습니다",
         "status_integrity": "확인되지 않음: 확인을 위해 플러그인 파일을 읽을 수 없습니다",
         "notice_ok": "확인",
-        "notice_open_repo": "저장소",
-        "notice_reason_version": "설치된 플러그인의 버전 또는 빌드 라벨이 서명된 공식 매니페스트와 다릅니다.",
-        "notice_reason_file": "빌드 라벨은 일치하지만 파일 내용(체크섬 또는 크기)이 서명된 릴리스와 다릅니다. 파일이 수정되었거나 손상되었거나 일부만 업데이트되었습니다.",
         "status_outdated": "실패: 이 빌드는 오래되었으며 더 새로운 공식 릴리스가 있습니다",
         "status_modified": "실패: 이 빌드는 수정되어 공식 릴리스와 다릅니다",
         "modified_build": "수정된 빌드",
         "modified_required_subtext": "이 Prefixfy 파일은 공식 릴리스 {version}과(와) 다릅니다. 플러그인이 공식 빌드를 자동으로 다시 설치합니다. 그때까지 플러그인은 메시지를 꾸미지 않습니다.",
-        "notice_reason_outdated": "설치된 빌드가 최신 공식 릴리스보다 오래되었습니다.",
-        "notice_reason_modified": "빌드 라벨은 공식 릴리스와 일치하지만 파일 내용(체크섬 또는 크기)이 다릅니다. 파일이 편집되었거나 손상되었거나 일부만 업데이트되었습니다.",
-        "notice_reason_unreleased": "빌드 라벨이 공개된 어떤 공식 릴리스보다 새로우므로 비공식 빌드이거나 편집된 빌드입니다.",
-        "notice_modified_body": "무슨 일이 있었나요: 설치된 빌드({installed})는 공식 릴리스({latest})가 아닙니다.\n\n{reason}\n\n의미: 단순히 오래된 버전이 아니라 파일이 공개된 것과 다릅니다. 공식 빌드를 설치하기 전까지 Prefixfy는 보내는 메시지를 꾸미지 않으며 설정이 숨겨집니다. 설정과 구성은 삭제되지 않습니다.\n\n해야 할 일: 따로 할 일은 없습니다. Prefixfy가 최신 공식 빌드({latest})를 자동으로 내려받아 설치하고 다시 시작합니다. 실패하면 저장소(아래 버튼)에서 다시 설치하고 Telegram을 다시 시작하세요.",
-        "notice_update_body": "무슨 일이 있었나요: 설치된 빌드({installed})가 서명된 공식 릴리스({latest})와 일치하지 않습니다.\n\n{reason}\n\n의미: 공식 빌드가 될 때까지 Prefixfy는 보내는 메시지를 꾸미지 않으며 설정이 숨겨집니다. 설정과 구성은 삭제되지 않습니다.\n\n해야 할 일: 저장소(아래 버튼)에서 최신 공식 Prefixfy({latest})를 설치하고 Telegram을 다시 시작하세요. 다음 확인에 성공하면 플러그인이 자동으로 복구됩니다.",
         "notice_verify_body": "무슨 일이 있었나요: 이 Prefixfy 빌드를 확인할 수 없습니다. 유효한 업데이트 키가 없어 서명된 매니페스트를 검증할 수 없습니다.\n\n의미: 플러그인이 보내는 메시지를 꾸미지 않습니다. 설정은 유지됩니다.\n\n해야 할 일: 저장소에서 공식 Prefixfy 빌드를 설치하세요.",
         "notice_soft_body": "무슨 일이 있었나요: 현재 Prefixfy가 이 빌드가 공식 빌드인지 확인할 수 없습니다. 서명된 매니페스트 또는 블랙리스트의 최신 확인을 완료하지 못했습니다(인터넷 없음, GitHub 접속 불가, 마지막 성공한 확인이 너무 오래됨, 또는 플러그인 파일을 읽을 수 없음).\n\n일시 중지된 것: 모든 선택 기능(텍스트 스타일, Markdown, 마스크 순환 및 조건부 마스크, 태그, 일정, 채팅별 구성, 미디어 첨부, Premium Emoji, 편집 시 처리, 구성 가져오기). 기본 마스크 꾸미기만 작동합니다.\n\n해야 할 일: 인터넷 연결을 확인하고 “지금 확인”을 누르세요. 잃는 것은 없습니다. 확인에 성공하면 모든 것이 자동으로 돌아옵니다.",
         "notice_account_body": "무슨 일이 있었나요: 이 기기에 로그인된 Telegram 계정 중 하나가 Prefixfy 블랙리스트에 있습니다.\n\n의미: 이 기기에서 플러그인이 비활성화되어 메시지를 꾸미지 않습니다. 설정은 변경되지 않습니다.\n\n잘못되었다고 생각되면 플러그인 제작자에게 문의하세요.",
@@ -1881,18 +1849,10 @@ _NEW_STRINGS = {
         "status_no_key": "échec : ce build ne contient aucune clé de mise à jour",
         "status_integrity": "non vérifié : le fichier du plugin n’a pas pu être lu pour la vérification",
         "notice_ok": "OK",
-        "notice_open_repo": "Dépôt",
-        "notice_reason_version": "La version ou le libellé de build du plugin installé diffère du manifeste officiel signé.",
-        "notice_reason_file": "Le libellé de build correspond, mais le contenu du fichier (somme de contrôle ou taille) diffère de la version signée. Le fichier a été modifié, endommagé ou seulement partiellement mis à jour.",
         "status_outdated": "échec : ce build est obsolète, une version officielle plus récente existe",
         "status_modified": "échec : ce build a été modifié et diffère de la version officielle",
         "modified_build": "Build modifié",
         "modified_required_subtext": "Ce fichier Prefixfy diffère de la version officielle {version}. Le plugin réinstalle automatiquement le build officiel ; d’ici là, il ne met pas en forme les messages.",
-        "notice_reason_outdated": "Le build installé est plus ancien que la dernière version officielle.",
-        "notice_reason_modified": "Le libellé de build correspond à la version officielle, mais le contenu du fichier (somme de contrôle ou taille) diffère. Le fichier a été modifié, endommagé ou seulement partiellement mis à jour.",
-        "notice_reason_unreleased": "Le libellé de build est plus récent que toute version officielle publiée : ce build est non officiel ou a été modifié.",
-        "notice_modified_body": "Ce qui s’est passé : le build installé ({installed}) n’est pas la version officielle ({latest}).\n\n{reason}\n\nCe que cela signifie : il ne s’agit pas seulement d’une ancienne version, le fichier diffère de celui publié. Tant qu’un build officiel n’est pas installé, Prefixfy ne met pas en forme les messages sortants et ses réglages sont masqués. Vos réglages et configurations ne sont pas supprimés.\n\nQue faire : rien, Prefixfy télécharge et installe lui-même le dernier build officiel ({latest}), puis redémarre. En cas d’échec, réinstallez-le depuis le dépôt (bouton ci-dessous) et redémarrez Telegram.",
-        "notice_update_body": "Ce qui s’est passé : le build installé ({installed}) ne correspond pas à la version officielle signée ({latest}).\n\n{reason}\n\nCe que cela signifie : tant que le build n’est pas officiel, Prefixfy ne met pas en forme les messages sortants et ses réglages sont masqués. Vos réglages et configurations ne sont pas supprimés.\n\nQue faire : installez le dernier Prefixfy officiel ({latest}) depuis le dépôt (bouton ci-dessous) et redémarrez Telegram. Le plugin se rétablit de lui-même après la prochaine vérification réussie.",
         "notice_verify_body": "Ce qui s’est passé : ce build de Prefixfy ne peut pas être vérifié. Il ne contient aucune clé de mise à jour valide, le manifeste signé ne peut donc pas être contrôlé.\n\nCe que cela signifie : le plugin ne met pas en forme les messages sortants. Vos réglages sont conservés.\n\nQue faire : installez le build officiel de Prefixfy depuis le dépôt.",
         "notice_soft_body": "Ce qui s’est passé : pour le moment, Prefixfy ne peut pas confirmer que ce build est officiel. Une vérification récente du manifeste signé ou de la liste noire n’a pas pu aboutir (pas d’Internet, GitHub injoignable, dernière vérification réussie trop ancienne, ou fichier du plugin illisible).\n\nCe qui est suspendu : toutes les fonctions facultatives (styles de texte, Markdown, rotation des masques et masques conditionnels, balises, planification, configurations de discussions, pièce jointe multimédia, Premium Emoji, traitement des modifications, import de configuration). Seule la mise en forme de base par masque fonctionne.\n\nQue faire : vérifiez votre connexion Internet et appuyez sur « Vérifier maintenant ». Rien n’est perdu : après une vérification réussie, tout revient automatiquement.",
         "notice_account_body": "Ce qui s’est passé : l’un des comptes Telegram connectés sur cet appareil figure sur la liste noire de Prefixfy.\n\nCe que cela signifie : le plugin est désactivé sur cet appareil et ne met pas en forme les messages. Les réglages ne sont pas modifiés.\n\nSi vous pensez qu’il s’agit d’une erreur, contactez l’auteur du plugin.",
@@ -1942,18 +1902,10 @@ _NEW_STRINGS = {
         "status_no_key": "fehlgeschlagen: Dieser Build enthält keinen Update-Schlüssel",
         "status_integrity": "nicht verifiziert: Die Plugin-Datei konnte für die Prüfung nicht gelesen werden",
         "notice_ok": "OK",
-        "notice_open_repo": "Repository",
-        "notice_reason_version": "Version oder Build-Bezeichnung des installierten Plugins weicht vom signierten offiziellen Manifest ab.",
-        "notice_reason_file": "Die Build-Bezeichnung stimmt überein, aber der Dateiinhalt (Prüfsumme oder Größe) weicht vom signierten Release ab. Die Datei wurde verändert, beschädigt oder nur teilweise aktualisiert.",
         "status_outdated": "fehlgeschlagen: Dieser Build ist veraltet, es gibt ein neueres offizielles Release",
         "status_modified": "fehlgeschlagen: Dieser Build wurde verändert und weicht vom offiziellen Release ab",
         "modified_build": "Veränderter Build",
         "modified_required_subtext": "Diese Prefixfy-Datei weicht vom offiziellen Release {version} ab. Das Plugin installiert den offiziellen Build automatisch neu; bis dahin formatiert es keine Nachrichten.",
-        "notice_reason_outdated": "Der installierte Build ist älter als das neueste offizielle Release.",
-        "notice_reason_modified": "Die Build-Bezeichnung stimmt mit dem offiziellen Release überein, aber der Dateiinhalt (Prüfsumme oder Größe) weicht ab. Die Datei wurde bearbeitet, beschädigt oder nur teilweise aktualisiert.",
-        "notice_reason_unreleased": "Die Build-Bezeichnung ist neuer als jedes veröffentlichte offizielle Release, daher ist dieser Build inoffiziell oder wurde bearbeitet.",
-        "notice_modified_body": "Was passiert ist: Der installierte Build ({installed}) ist nicht das offizielle Release ({latest}).\n\n{reason}\n\nWas das bedeutet: Es ist nicht nur eine alte Version, die Datei weicht vom Veröffentlichten ab. Solange kein offizieller Build installiert ist, formatiert Prefixfy ausgehende Nachrichten nicht und die Einstellungen sind ausgeblendet. Ihre Einstellungen und Konfigurationen werden nicht gelöscht.\n\nWas zu tun ist: nichts, Prefixfy lädt den neuesten offiziellen Build ({latest}) selbst herunter, installiert ihn und startet neu. Schlägt das fehl, installieren Sie ihn aus dem Repository (Schaltfläche unten) neu und starten Sie Telegram neu.",
-        "notice_update_body": "Was passiert ist: Der installierte Build ({installed}) entspricht nicht dem offiziellen signierten Release ({latest}).\n\n{reason}\n\nWas das bedeutet: Solange der Build nicht offiziell ist, formatiert Prefixfy ausgehende Nachrichten nicht und die Einstellungen sind ausgeblendet. Ihre Einstellungen und Konfigurationen werden nicht gelöscht.\n\nWas zu tun ist: Installieren Sie das neueste offizielle Prefixfy ({latest}) aus dem Repository (Schaltfläche unten) und starten Sie Telegram neu. Das Plugin erholt sich nach der nächsten erfolgreichen Prüfung von selbst.",
         "notice_verify_body": "Was passiert ist: Dieser Prefixfy-Build kann nicht verifiziert werden. Er enthält keinen gültigen Update-Schlüssel, daher lässt sich das signierte Manifest nicht prüfen.\n\nWas das bedeutet: Das Plugin formatiert ausgehende Nachrichten nicht. Ihre Einstellungen bleiben erhalten.\n\nWas zu tun ist: Installieren Sie den offiziellen Prefixfy-Build aus dem Repository.",
         "notice_soft_body": "Was passiert ist: Prefixfy kann derzeit nicht bestätigen, dass dieser Build offiziell ist. Eine aktuelle Prüfung des signierten Manifests oder der Sperrliste konnte nicht abgeschlossen werden (kein Internet, GitHub nicht erreichbar, die letzte erfolgreiche Prüfung ist zu alt oder die Plugin-Datei konnte nicht gelesen werden).\n\nWas pausiert ist: alle optionalen Funktionen (Textstile, Markdown, Masken-Rotation und bedingte Masken, Tags, Zeitplan, Chat-Konfigurationen, Medienanhang, Premium Emoji, Bearbeitungsverarbeitung, Konfigurationsimport). Nur die grundlegende Maskenformatierung funktioniert.\n\nWas zu tun ist: Prüfen Sie Ihre Internetverbindung und tippen Sie auf „Jetzt prüfen“. Es geht nichts verloren: Nach einer erfolgreichen Prüfung kehrt alles von selbst zurück.",
         "notice_account_body": "Was passiert ist: Eines der auf diesem Gerät angemeldeten Telegram-Konten steht auf der Prefixfy-Sperrliste.\n\nWas das bedeutet: Das Plugin ist auf diesem Gerät deaktiviert und formatiert keine Nachrichten. Die Einstellungen werden nicht verändert.\n\nWenn Sie glauben, dass es sich um einen Irrtum handelt, wenden Sie sich an den Plugin-Autor.",
@@ -10640,8 +10592,7 @@ class PrefixfyPlugin(BasePlugin):
                 return [Text(text=tr("account_blocked"), subtext=subtext, icon=icon,
                              on_click=lambda *_: self._show_notice_dialog("account"))]
             if key == "modified_required_subtext":
-                rows = [Text(text=tr("modified_build"), subtext=subtext, icon=icon,
-                             on_click=lambda *_: self._show_notice_dialog("modified"))]
+                rows = [Text(text=tr("modified_build"), subtext=subtext, icon=icon)]
                 candidate = remote.ota_candidate() if FEATURES.enabled("ota") else None
                 if candidate is not None:
                     rows.append(Text(
@@ -10651,8 +10602,7 @@ class PrefixfyPlugin(BasePlugin):
                     ))
                 return rows
             if key == "update_required_subtext":
-                rows = [Text(text=tr("update_required"), subtext=subtext, icon=icon,
-                             on_click=lambda *_: self._show_notice_dialog("update"))]
+                rows = [Text(text=tr("update_required"), subtext=subtext, icon=icon)]
                 candidate = remote.ota_candidate() if FEATURES.enabled("ota") else None
                 if candidate is not None:
                     rows.append(Text(
@@ -10672,57 +10622,30 @@ class PrefixfyPlugin(BasePlugin):
 
     def _notice_dialog_text(self, kind: str) -> str:
         tr = self._tr
-        remote = getattr(self, "remote", None)
         if kind == "account":
             return tr("notice_account_body")
         if kind == "verify":
             return tr("notice_verify_body")
         if kind == "soft":
             return tr("notice_soft_body")
-        reason = ""
-        if remote is not None:
-            reason_kind = remote.mismatch_reason()
-            if reason_kind in ("outdated", "modified", "unreleased"):
-                reason = tr("notice_reason_" + reason_kind)
-        latest = remote.latest_version() if remote is not None else ""
-        return tr(
-            "notice_modified_body" if kind == "modified" else "notice_update_body",
-            installed=__build__, latest=latest or tr("about_unknown"), reason=reason,
-        )
+        return tr("notice_verify_body")
 
     def _show_notice_dialog(self, kind: str):
         tr = self._tr
         activity = self._dialog_activity()
         if not activity:
             return
-        titles = {
-            "update": "update_required", "modified": "modified_build", "verify": "verify_required",
-            "soft": "verify_soft", "account": "account_blocked",
-        }
+        titles = {"verify": "verify_required", "soft": "verify_soft", "account": "account_blocked"}
         builder = AlertDialogBuilder(activity)
         builder.set_title(tr(titles.get(kind, "verify_required")))
         try:
             message = self._notice_dialog_text(kind)
         except Exception as exc:
             self.log(f"Prefixfy notice text failed: {exc}")
-            message = tr("notice_update_body" if kind == "update" else "notice_verify_body", installed=__build__, latest="", reason="")
+            message = tr("notice_verify_body")
         builder.set_message(message)
         builder.set_positive_button(tr("notice_ok"), lambda bld, which: bld.dismiss())
-        if kind in ("update", "modified"):
-            def open_repo(bld, which):
-                bld.dismiss()
-                self._open_repo()
-            builder.set_negative_button(tr("notice_open_repo"), open_repo)
-            set_neutral = getattr(builder, "set_neutral_button", None)
-            if set_neutral is not None and remote is not None and FEATURES.enabled("ota") and remote.ota_candidate() is not None:
-                def update_now(bld, which):
-                    bld.dismiss()
-                    self._show_ota_download_dialog()
-                try:
-                    set_neutral(tr("ota_download"), update_now)
-                except Exception as exc:
-                    self.log(f"Prefixfy: neutral button failed in the notice dialog: {exc}")
-        elif kind == "soft":
+        if kind == "soft":
             def check(bld, which):
                 bld.dismiss()
                 self._check_now()
