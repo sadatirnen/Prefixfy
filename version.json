@@ -1,11 +1,11 @@
 {
   "file": "Prefixfy.py",
   "format": 1,
-  "issued_at": 1794146384,
-  "serial": 37,
-  "sha256": "e7693ce011f813400bafdeacc9a8ce72d070144f0a2da6c9b334fee1f656d982",
-  "sha512": "31727aa1a1ad9a06bfd8f05646dd8ef9bb3d427c28ba90cc6403e0f11b051eb6abb83e3b759d041cb9c5ca4ebca92ab286417af588754d639ddf3153428ee0e8",
-  "signature": "i6syE52rH/B3G24TLq4JGheQVtkIQxCYbXDEdIrCfz34T7cSlsc1QHTwfxePs4Z+XSyjfBujCjlKPbKma/VUfCopeLilPMXPPy6Z3qlccgBQpjRX3blgxqO/ee9bMVoFAm/37DO5kK6oHuO4kbrHljfnTrinePGYT4QH6iFNS5d1TVbvSlwhcDYf4RQmuFgB/LAHr+6MbdcvjHB1epCVwqP2z/cfoK5m57H3YzpezTxhBTS2LQ5zR9wQKPKPTux1CWDDYWAFcbyV3DIKnTt6rRGh5bgKDnprAE+GUb6w0jpoKXFcfL5AQl7YTj7hjdY1frQ9/D71JQ37/k1m3As+GzxEC3CxR4G1qyPaiBwoLXpFYRmgz4a/6Hqbg9ladwT7Yo2IUVfOEt6Bqc6kbDNepfVnL6LLrb99LIyyZXhAfVlAfW6lLQ8EsV5YZp48d4sdhTdtCuz54ajDtYhhi3nhTBT6lg2+9OEDcapOzCEm2W3rLNt7sSVRlwSKUNJ2cKy+",
-  "size": 597643,
-  "version": "36.5.0_20261108.2_37"
+  "issued_at": 1794149120,
+  "serial": 38,
+  "sha256": "d86d12a2c5f37230c851bccf9f3ca12c02fa28ef2928f45fc7dd5faa56cfbd28",
+  "sha512": "eb74fe6c860bc50bbfc4db3cd8d55d4aeb17ab4e352cbc0b3b45cc208b590ec88d188fa83cdf108bc4e19204d759d364fd61e9987a62c361bab11e6190f89621",
+  "signature": "nAWcBDb2Ay3+7h7+2Wz1OMNoqcrP+1ZiPJV1E1FFK9k2GDjmmj06UHjDNNwT1ZXyFFYoaTuyAf6zoo3aRSh/sdWljJ8m+Cca2HvMJZ0pj8JTbP5BRCifh2Zm/19qhgFeqcmyJF12WaSSCldAdb1xPcCaYPlvonK6Kndt9X8ccydg1rgYjy/DJsWcg0yV2IgnZmel253o6U/Jk5txWYbJZuE5IKC1r+uufhYigjbbbuAFRGwljLqsu1ZU/e+ndUQVv5ZDmdCP9MvZR1rRph5ksNKwEfLNswNxQ1krFAORgTd6Kdb7GQQNRDTt7A80Dywzhz/i2r31Ga72HmyEY4/zo2gSTSK8uV0Z2P0hO0OSbYVvFiS1giwlomiaFIMpAR3hKWJdewgB31fynpabsl/9eqCh7QjRG/HATh5ZQT921lirD4BWTErqBtziHlnuR02iCpVMmqaSWynKabo5yKcKOjr2nMVveJOukG5e/2/URv/HJfWCkm6JtP21batJAHFu",
+  "size": 602850,
+  "version": "36.6.0_20261108.3_38"
 }
