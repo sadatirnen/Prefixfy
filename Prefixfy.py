@@ -3,6 +3,7 @@ import difflib
 import hashlib
 import hmac
 import json
+import math
 import mimetypes
 import os
 import random
@@ -75,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "36.3.1"
-__build__ = "36.3.1_20261107.7_35"
+__version__ = "36.4.0"
+__build__ = "36.4.0_20261108.1_36"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -3028,23 +3029,42 @@ def _regex_count_unbounded(items) -> int:
     return total
 
 
+def _regex_is_flexible(op, av) -> bool:
+    """Повтор с переменной длиной совпадения: a*, a+, a?, a{1,40}. Фиксированное a{3} гибким не считается."""
+    return _regex_is_repeat(op) and (av[1] == _re_constants.MAXREPEAT or av[1] > av[0])
+
+
+def _regex_has_flex(items) -> bool:
+    for op, av in _regex_seq(items):
+        if _regex_is_repeat(op):
+            if _regex_is_flexible(op, av) or _regex_has_flex(av[2]):
+                return True
+        elif op == _re_constants.SUBPATTERN:
+            if _regex_has_flex(av[-1]):
+                return True
+        elif op == _re_constants.BRANCH:
+            if any(_regex_has_flex(branch) for branch in av[1]):
+                return True
+    return False
+
+
 def _regex_ambiguous_body(items) -> bool:
     carriers, delimiter = 0, False
     for op, av in _regex_seq(items):
         if op in (_re_constants.AT, _re_constants.ASSERT, _re_constants.ASSERT_NOT):
             continue
         if _regex_is_repeat(op):
-            if av[1] == _re_constants.MAXREPEAT or _regex_has_unbounded(av[2]):
+            if _regex_is_flexible(op, av) or _regex_has_flex(av[2]):
                 carriers += 1
             elif av[0] > 0:
                 delimiter = True
         elif op == _re_constants.SUBPATTERN:
-            if _regex_has_unbounded(av[-1]):
+            if _regex_has_flex(av[-1]):
                 carriers += 1
             else:
                 delimiter = True
         elif op == _re_constants.BRANCH:
-            if any(_regex_has_unbounded(branch) for branch in av[1]):
+            if any(_regex_has_flex(branch) for branch in av[1]):
                 carriers += 1
             else:
                 delimiter = True
@@ -3704,7 +3724,7 @@ class AutoFlags:
             return
         for name, item in raw.items():
             if (isinstance(name, str) and isinstance(item, list) and len(item) == 2 and isinstance(item[0], bool)
-                    and isinstance(item[1], (int, float)) and not isinstance(item[1], bool)):
+                    and isinstance(item[1], (int, float)) and not isinstance(item[1], bool) and math.isfinite(item[1])):
                 self._draws[name] = (item[0], float(item[1]))
 
     def _save(self):
@@ -7633,6 +7653,9 @@ def _check_issued_at(value: int, what: str):
         seconds = float(value)
     elif 1_500_000_000_000 <= value < 4_000_000_000_000:
         seconds = value / 1000.0
+    elif value >= 4_000_000_000:
+        # ни секунды (до 2096 г.), ни миллисекунды (с 2017 г.): такая дата явно из далёкого будущего
+        raise ValueError(f"{what}: issued in the future")
     else:
         return
     now = time.time()
@@ -7783,7 +7806,10 @@ def _decrypt_blacklist_ids(blob: str) -> List[Any]:
     plain = unpacker.decompress(packed, BLACKLIST_MAX_BYTES)
     if unpacker.unconsumed_tail or not unpacker.eof:
         raise ValueError("blacklist: payload too large or truncated")
-    values = json.loads(plain.decode("utf-8"))
+    try:
+        values = json.loads(plain.decode("utf-8"))
+    except RecursionError as exc:
+        raise ValueError("blacklist: payload is too deeply nested") from exc
     if not isinstance(values, list):
         raise ValueError("blacklist: bad ids list")
     return values
@@ -7798,7 +7824,7 @@ def verify_blacklist(raw: bytes) -> Dict[str, Any]:
             raise ValueError("blacklist: bad encrypted payload")
         try:
             values = _decrypt_blacklist_ids(body["ids_enc"])
-        except (ValueError, zlib.error, UnicodeDecodeError) as exc:
+        except (ValueError, zlib.error, UnicodeDecodeError, RecursionError) as exc:
             raise ValueError(f"blacklist: cannot decrypt ids ({exc})")
     else:
         values = body.get("ids")
@@ -8489,7 +8515,7 @@ class RemoteControl:
             if known is not None:
                 if state["serial"] < known["serial"]:
                     raise ValueError(f"manifest rollback rejected ({state['serial']} < {known['serial']})")
-                if state["serial"] == known["serial"] and state["version"] == known["version"] and state["digest"] != known["digest"]:
+                if state["serial"] == known["serial"] and state["digest"] != known["digest"]:
                     raise ValueError(f"manifest serial {state['serial']} reused with different content")
                 if state["serial"] > known["serial"] and state["version"][:3] < known["version"][:3]:
                     raise ValueError(
