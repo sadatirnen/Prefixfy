@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "36.4.0"
-__build__ = "36.4.0_20261108.1_36"
+__version__ = "36.5.0"
+__build__ = "36.5.0_20261108.2_37"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -826,7 +826,7 @@ class LocalizationManager:
             "mask_too_long": "マスクが長すぎます（最大{n}文字）",
             "mask_preview_sample": "メッセージの例",
             "mask_preview_invalid": "マスクが無効です。[text] を1つだけ指定してください",
-            "separator_preview_words": "プレビュー用のサンプルテキスト",
+            "separator_preview_words": "プレビュー用の サンプル テキスト",
             "exceptions_count": "除外: {n}、チャット: {m}",
             "configuration_import_cancelled": "インポートをキャンセルしました",
             "import_configuration": "インポート",
@@ -1515,6 +1515,8 @@ class LocalizationManager:
         "russian": "ru", "english": "en", "japanese": "ja", "korean": "ko",
         "french": "fr", "german": "de", "deutsch": "de",
     }
+    RU_LIKE_CODES = frozenset(("ru", "uk", "be", "kk", "ky", "uz", "tg", "tk", "az", "hy", "ka", "tt", "ba", "cv", "os", "ce", "mo"))
+    _ru_like = False
     AUTO_LANGUAGE_TTL = 5.0
     AUTO_LANGUAGE_REFRESH = 2.0
 
@@ -1546,6 +1548,7 @@ class LocalizationManager:
         if info is None:
             return None
         readable = False
+        self._ru_like = False
         for attr in ("shortName", "pluralLangCode", "baseLangCode"):
             try:
                 value = getattr(info, attr, None)
@@ -1558,7 +1561,11 @@ class LocalizationManager:
                 found = self._match_language(value)
                 if found:
                     return found
-        return "ru" if readable else None
+                if as_text(value).strip().lower().replace("-", "_").split("_", 1)[0] in self.RU_LIKE_CODES:
+                    self._ru_like = True
+        if not readable:
+            return None
+        return "en" if language_enabled("en") and not self._ru_like else "ru"
 
     def language(self) -> str:
         forced = LANGUAGE_MODES[self.plugin.settings.language_index()]
@@ -1578,12 +1585,16 @@ class LocalizationManager:
 
     def tr(self, key: str, **kwargs) -> str:
         table = self.STRINGS.get(self.language(), self.STRINGS["ru"])
-        value = table.get(key) or self.STRINGS["ru"].get(key, key)
+        value = table.get(key) or self.STRINGS["en"].get(key) or self.STRINGS["ru"].get(key, key)
         if kwargs:
             try:
                 return value.format(**kwargs)
             except (KeyError, IndexError, ValueError):
-                pass
+                for code in ("en", "ru"):
+                    try:
+                        return self.STRINGS[code][key].format(**kwargs)
+                    except (KeyError, IndexError, ValueError):
+                        continue
         return value
 
     def language_items(self) -> List[str]:
@@ -2975,12 +2986,11 @@ class StyleLayout:
 def parse_chat_ids(raw) -> frozenset:
     result = set()
     for token in re.split(r"[\s,;]+", as_text(raw)):
-        if not token:
+        if not re.fullmatch(r"-?[0-9]{1,19}", token):
             continue
-        try:
-            result.add(int(token))
-        except ValueError:
-            continue
+        number = int(token)
+        if abs(number) < 2 ** 63:
+            result.add(number)
     return frozenset(result)
 
 
@@ -2991,7 +3001,8 @@ def parse_chat_type_rules(raw) -> frozenset:
 
 
 def dump_chat_type_rules(kinds) -> str:
-    chosen = [kind for kind in CHAT_KINDS if kind in set(kinds)]
+    wanted = set(kinds)
+    chosen = [kind for kind in CHAT_KINDS if kind in wanted]
     return "all" if len(chosen) in (0, len(CHAT_KINDS)) else ",".join(chosen)
 
 
@@ -3558,7 +3569,7 @@ def java_int(value) -> Optional[int]:
         if value is None or isinstance(value, bool):
             return None
         return int(value)
-    except (TypeError, ValueError, AttributeError):
+    except (TypeError, ValueError, AttributeError, OverflowError):
         return None
 
 
@@ -9265,11 +9276,11 @@ class PrefixfyPlugin(BasePlugin):
         except Exception:
             cls = None
         if cls is not None:
-            if hasattr(cls, "getName"):
-                return cls
             literal = getattr(cls, "class_", None)
             if literal is not None and hasattr(literal, "getName"):
                 return literal
+            if hasattr(cls, "getName") and hasattr(cls, "getDeclaredMethods"):
+                return cls
         try:
             from java import jclass
             class_type = jclass("java.lang.Class")
@@ -10073,9 +10084,7 @@ class PrefixfyPlugin(BasePlugin):
     def _show_separator_editor(self, view=None):
         def save(value, editor):
             separators = [item.strip() for item in value.split(",") if item.strip()]
-            if not separators:
-                return None
-            self.settings.set("custom_emojis", ", ".join(separators), reload_settings=True)
+            self.settings.set("custom_emojis", ", ".join(separators) if separators else DEFAULT_SEPARATORS, reload_settings=True)
 
         current = as_text(self.settings.get("custom_emojis"))
         self.show_text_dialog(
@@ -10275,14 +10284,37 @@ class PrefixfyPlugin(BasePlugin):
             return self._tr("exceptions_hint")
         return self._tr("exceptions_count", n=values, m=chats)
 
+    _ICON_KNOWN: Dict[str, bool] = {}
+
     @staticmethod
-    @lru_cache(maxsize=32)
     def _icon(name: str, fallback: str = "msg_settings") -> str:
+        known = PrefixfyPlugin._ICON_KNOWN
+        if name in known:
+            return name if known[name] else fallback
         try:
-            find_class("org.telegram.messenger.R$drawable").getField(name)
-            return name
+            holder = find_class("org.telegram.messenger.R$drawable")
         except Exception:
+            holder = None
+        if holder is None:
             return fallback
+        found = None
+        for probe in (getattr(holder, "class_", None), holder):
+            getter = getattr(probe, "getField", None) if probe is not None else None
+            if getter is None:
+                continue
+            try:
+                getter(name)
+                found = True
+            except Exception:
+                found = False
+            break
+        if found is None:
+            try:
+                found = hasattr(holder, name)
+            except Exception:
+                found = False
+        known[name] = bool(found)
+        return name if found else fallback
 
     def _switch(self, key: str, text: str, subtext: str, icon: str, reload_settings: bool = False):
         return Switch(
