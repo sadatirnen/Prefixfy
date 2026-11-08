@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "36.6.0"
-__build__ = "36.6.0_20261108.3_38"
+__version__ = "36.7.0"
+__build__ = "36.7.0_20261108.4_39"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -140,6 +140,12 @@ LANGUAGE_MODES = (None, "ru", "en", "ja", "ko", "fr", "de")
 LEGACY_LANGUAGE_MODES = (None, "ru", "en", "ja", "ko", "ar", "fr", "pl", "de", "uk")
 LANGUAGE_LAYOUT_KEY = "Prefixfy_language_layout"
 LANGUAGE_LAYOUT_VERSION = 2
+LANGUAGE_MIGRATED_KEY = "Prefixfy_language_migrated"        # какие наборы уже переведены на новую раскладку языков
+LANGUAGE_LIVE_KEY = "Prefixfy_language_live_layout"         # живая настройка языка уже переведена
+MAX_STORE_JSON_BYTES = 2 * 1024 * 1024                      # потолок размера любого служебного json-файла хранилища
+MAX_ACCOUNT_PROFILES = 256
+STALE_TMP_AGE = 3600                                         # .tmp-файлы старше часа считаются мусором
+IMPORT_TEMP_TTL = 3600
 MAX_SEPARATOR_COUNT = 99
 CAPTION_LIMIT = 1024
 PREMIUM_CAPTION_LIMIT = 4096
@@ -178,6 +184,7 @@ MASK_TAG_RE = re.compile(
     re.IGNORECASE,
 )
 _TAG_UNSAFE_RE = re.compile(r"[\[\]*_~|`\\\uE000-\uF8FF\s]+")
+_TAG_INVISIBLE_RE = re.compile(r"[\x00-\x08\x0e-\x1f\x7f-\x9f\u200b\u200e\u200f\u202a-\u202e\u2060-\u2064\u2066-\u206f\ufeff]")
 WEEKDAY_NAMES = {
     "ru": ("Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"),
     "en": ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"),
@@ -3368,7 +3375,9 @@ def parse_conditional_masks(raw):
 
 
 def sanitize_tag_value(value) -> str:
-    return _TAG_UNSAFE_RE.sub(" ", as_text(value)).strip()[:TAG_VALUE_LIMIT]
+    # значения тегов приходят из названий чатов, имён и цитат: чужой текст не должен менять направление письма
+    cleaned = _TAG_INVISIBLE_RE.sub("", as_text(value))
+    return _TAG_UNSAFE_RE.sub(" ", cleaned).strip()[:TAG_VALUE_LIMIT]
 
 
 CHAT_CONFIGS_KEY = "Prefixfy_chat_configs"
@@ -3632,17 +3641,20 @@ MEDIA_STORE_DIRS = frozenset({"Prefixfy_media", "Prefixfy_configurations", "Pref
 
 
 def is_media_store_file(path) -> bool:
-    """Файл внутри папок самого плагина (или обычный медиафайл рядом): чужие файлы и служебные данные не подходят."""
+    """Файл внутри папок самого плагина (или обычный медиафайл прямо в папке плагинов): чужие папки и служебные данные не подходят."""
     if not is_plugin_file(path):
         return False
     try:
         real = os.path.realpath(as_text(path))
-        top = os.path.relpath(real, os.path.realpath(get_plugins_dir())).split(os.sep, 1)[0]
+        relative = os.path.relpath(real, os.path.realpath(get_plugins_dir()))
+        top = relative.split(os.sep, 1)[0]
     except Exception:
         return False
     if top in MEDIA_STORE_DIRS:
         return True
-    return os.path.splitext(real)[1].lower() in MEDIA_EXTENSIONS and not os.path.basename(real).startswith(".")
+    # старые установки: медиафайл лежит прямо в папке плагинов; файлы во вложенных папках (в том числе чужих плагинов) не годятся
+    return (os.sep not in relative and os.path.splitext(real)[1].lower() in MEDIA_EXTENSIONS
+            and not os.path.basename(real).startswith("."))
 
 
 def safe_extension(name) -> str:
@@ -3654,6 +3666,51 @@ def temp_dir(name: str) -> str:
     path = os.path.join(get_cache_dir(), "Prefixfy_tmp", name)
     ensure_dir_exists(path)
     return path
+
+
+def is_inside(path, directory) -> bool:
+    try:
+        base = os.path.realpath(directory)
+        return os.path.realpath(as_text(path)).startswith(base + os.sep)
+    except Exception:
+        return False
+
+
+def is_import_temp(path) -> bool:
+    """Только файлы, которые плагин сам распаковал из контейнера, а не произвольный путь из чужого конфига."""
+    return bool(path) and is_inside(path, os.path.join(get_cache_dir(), "Prefixfy_tmp", "imports"))
+
+
+def unique_temp(path: str) -> str:
+    return f"{path}.{uuid.uuid4().hex[:8]}.tmp"
+
+
+def sweep_old_files(directory: str, max_age: float):
+    deadline = time.time() - max_age
+    try:
+        entries = os.listdir(directory)
+    except OSError:
+        return
+    for entry in entries:
+        path = os.path.join(directory, entry)
+        try:
+            if os.path.isfile(path) and os.path.getmtime(path) < deadline:
+                discard_file(path)
+        except OSError:
+            continue
+
+
+def copy_file_limited(source: str, target: str, limit: int):
+    total = 0
+    with open(source, "rb") as reader, open(target, "wb") as writer:
+        while True:
+            chunk = reader.read(64 * 1024)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > limit:
+                raise ValueError("media is too large")
+            writer.write(chunk)
 
 
 def unique_name(base: str, taken, ignore: str = "") -> str:
@@ -5723,9 +5780,16 @@ def _texts_within_limit(section, depth: int = 0) -> bool:
         if isinstance(value, str):
             if len(value) > MAX_SETTING_TEXT:
                 return False
-        elif isinstance(value, dict) and not _texts_within_limit(value, depth + 1):
-            return False
+        elif isinstance(value, dict):
+            if not _texts_within_limit(value, depth + 1):
+                return False
+        elif isinstance(value, list):
+            if len(value) > 4096 or any(isinstance(item, str) and len(item) > MAX_SETTING_TEXT for item in value):
+                return False
     return True
+
+
+_CHAT_KEY_RE = re.compile(r"-?[0-9]{1,20}")
 
 
 def validate_component(component: str, section: dict) -> bool:
@@ -5811,11 +5875,12 @@ def validate_component(component: str, section: dict) -> bool:
         chats, rules = section.get("chats", {}), section.get("rules", "")
         return (
             isinstance(chats, dict) and len(chats) <= 4096
-            and all(isinstance(k, str) and k.lstrip("-").isdigit() and isinstance(v, str) for k, v in chats.items())
+            and all(isinstance(k, str) and _CHAT_KEY_RE.fullmatch(k) and isinstance(v, str) for k, v in chats.items())
             and isinstance(rules, str) and len(rules) <= 64 * 1024 and isinstance(section.get("source", ""), str)
         )
     if component == "media":
-        return isinstance(section.get("enabled", False), bool) and isinstance(section.get("file", ""), str)
+        return (isinstance(section.get("enabled", False), bool) and isinstance(section.get("file", ""), str)
+                and isinstance(section.get("name", ""), str) and isinstance(section.get("mime", ""), str))
     return False
 
 
@@ -5847,6 +5912,24 @@ def _zip_entry_count_ok(path: str) -> bool:
     total = int.from_bytes(tail[position + 10:position + 12], "little")
     this_disk = int.from_bytes(tail[position + 8:position + 10], "little")
     return total == this_disk and 0 < total <= MAX_CONTAINER_ENTRIES
+
+
+def _check_zip_member(info: zipfile.ZipInfo, limit: int):
+    """Запись контейнера: не каталог, без пароля, только stored/deflate (без bz2/lzma), размер в пределах."""
+    if info.is_dir() or info.flag_bits & 0x1:
+        raise ConfigurationError("invalid container entry")
+    if info.compress_type not in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED):
+        raise ConfigurationError("unsupported compression")
+    if info.file_size > limit:
+        raise ConfigurationError("container entry is too large")
+
+
+def _container_media_section(data):
+    """Раздел media ровно в том виде, как его выберет extract_component: первый из алиасов, если это объект."""
+    for alias in COMPONENT_ALIASES["media"]:
+        if alias in data:
+            return data[alias] if isinstance(data[alias], dict) else None
+    return None
 
 
 def _read_zip_member(archive: zipfile.ZipFile, info: zipfile.ZipInfo, limit: int) -> bytes:
@@ -5914,10 +5997,18 @@ class ConfigTransfer:
         mime = as_text(self.settings.get("attached_media_mime", "")) or mimetypes.guess_type(name)[0] or "application/octet-stream"
         return {"name": name, "mime": mime}
 
+    _MIME_RE = re.compile(r"[a-z0-9.+\-]{1,60}/[a-z0-9.+\-]{1,80}")
+
     def _prepare_media_target(self, name, mime):
-        name = os.path.basename(as_text(name) or "attached_media.bin")
+        name = re.sub(r"[\x00-\x1f\x7f]", "", os.path.basename(as_text(name).replace("\\", "/"))).strip()[:120]
+        name = name or "attached_media.bin"
+        mime = as_text(mime).strip().lower()
+        if not self._MIME_RE.fullmatch(mime):
+            mime = mimetypes.guess_type(name)[0] or ""
         ext = safe_extension(name)
-        mime = as_text(mime) or mimetypes.guess_type(name)[0] or ""
+        if ext not in MEDIA_EXTENSIONS:
+            guessed = (mimetypes.guess_extension(mime) or "") if mime else ""
+            ext = guessed if guessed in MEDIA_EXTENSIONS else ""
         if not (mime.startswith(("image/", "video/")) or ext in MEDIA_EXTENSIONS):
             raise ValueError("unsupported media format")
         return name, mime, os.path.join(self.media_data_dir, "attached_media" + (ext or ".bin"))
@@ -5925,21 +6016,24 @@ class ConfigTransfer:
     def _commit_media(self, temp_path, target, name, mime):
         old = self.media_path()
         os.replace(temp_path, target)
-        if old and old != target and is_media_store_file(old) and os.path.isfile(old):
-            delete_file(old)
         with self.plugin.runtime_manager.bulk():
             self.settings.set("attached_media_path", target)
             self.settings.set("attached_media_name", name)
             self.settings.set("attached_media_mime", mime)
             self.settings.set("attached_media_enabled", True)
+        # Старый файл удаляем только из собственной папки импорта. Копии внутри Prefixfy_configurations могут принадлежать
+        # другой конфигурации или аккаунту: их убирает сборщик осиротевших файлов, когда на них никто не ссылается.
+        if (old and os.path.abspath(old) != os.path.abspath(target)
+                and is_inside(old, self.media_data_dir) and os.path.isfile(old)):
+            discard_file(old)
 
     def store_media_file(self, source_path, name, mime=None):
         name, mime, target = self._prepare_media_target(name, mime)
-        if os.path.getsize(source_path) > MAX_MEDIA_BYTES:
-            raise ValueError("media is too large")
-        temp = target + ".tmp"
+        if not os.path.isfile(source_path) or os.path.getsize(source_path) > MAX_MEDIA_BYTES:
+            raise ValueError("media is missing or too large")
+        temp = unique_temp(target)
         try:
-            shutil.copyfile(source_path, temp)
+            copy_file_limited(source_path, temp, MAX_MEDIA_BYTES)
             self._commit_media(temp, target, name, mime)
         except BaseException:
             discard_file(temp)
@@ -5953,7 +6047,7 @@ class ConfigTransfer:
         stream = activity.getContentResolver().openInputStream(uri)
         if stream is None:
             raise IOError("cannot read media")
-        temp = target + ".tmp"
+        temp = unique_temp(target)
         try:
             try:
                 with open(temp, "wb") as handle:
@@ -5967,13 +6061,14 @@ class ConfigTransfer:
 
     def delete_media(self):
         path = self.media_path()
-        if path and is_media_store_file(path) and os.path.isfile(path):
-            delete_file(path)
         with self.plugin.runtime_manager.bulk():
             self.settings.set("attached_media_path", "")
             self.settings.set("attached_media_name", "")
             self.settings.set("attached_media_mime", "")
             self.settings.set("attached_media_enabled", False, reload_settings=True)
+        # файл из папки конфигураций (копия набора) не трогаем: его уберёт сборщик, когда на него никто не ссылается
+        if path and is_inside(path, self.media_data_dir) and os.path.isfile(path):
+            discard_file(path)
 
     def _blocked(self, fragment=None) -> bool:
         remote = getattr(self.plugin, "remote", None)
@@ -6098,14 +6193,19 @@ class ConfigTransfer:
     def read_container(self, path: str) -> dict:
         if not _zip_entry_count_ok(path):
             raise ConfigurationError("not a .prefixfy container")
+        sweep_old_files(temp_dir("imports"), IMPORT_TEMP_TTL)
+        extracted = None
+        done = False
         try:
             with zipfile.ZipFile(path, "r") as archive:
+                # заголовок архива может врать о числе записей: проверяем то, что реально прочитано из каталога
+                if len(archive.infolist()) > MAX_CONTAINER_ENTRIES:
+                    raise ConfigurationError("too many container entries")
                 try:
                     info = archive.getinfo("config.json")
                 except KeyError:
                     raise ConfigurationError("config.json missing")
-                if info.file_size > MAX_CONFIG_JSON_BYTES:
-                    raise ConfigurationError("config.json is too large")
+                _check_zip_member(info, MAX_CONFIG_JSON_BYTES)
                 try:
                     data = json.loads(_read_zip_member(archive, info, MAX_CONFIG_JSON_BYTES).decode("utf-8"))
                 except (ValueError, RecursionError) as exc:
@@ -6115,37 +6215,45 @@ class ConfigTransfer:
                 if data.get("format") not in (None, CONFIG_FORMAT) + LEGACY_CONFIG_FORMATS:
                     raise ConfigurationError("unknown configuration format")
 
-                media = data.get("media")
-                if isinstance(media, dict):
-                    media.pop("_media_path", None)
+                # _media_path ставит только сам плагин после распаковки: из чужого конфига его принимать нельзя
+                # ни в одном из алиасов раздела media (иначе конфиг укажет на любой файл устройства)
+                for alias in COMPONENT_ALIASES["media"]:
+                    foreign = data.get(alias)
+                    if isinstance(foreign, dict):
+                        foreign.pop("_media_path", None)
+                media = _container_media_section(data)
+                if media is not None:
                     entry = as_text(media.get("file")).replace("\\", "/")
                     if entry:
-                        if entry.startswith("/") or ".." in entry.split("/"):
+                        if (entry.startswith("/") or "\x00" in entry or entry == "config.json"
+                                or ".." in entry.split("/")):
                             raise ConfigurationError("invalid media path")
                         try:
                             media_info = archive.getinfo(entry)
                         except KeyError:
                             media_info = None
                         if media_info is not None:
-                            if media_info.is_dir() or media_info.flag_bits & 0x1:
-                                raise ConfigurationError("invalid media entry")
-                            if media_info.file_size > MAX_MEDIA_BYTES:
-                                raise ConfigurationError("media is too large")
+                            _check_zip_member(media_info, MAX_MEDIA_BYTES)
                             extracted = os.path.join(temp_dir("imports"), uuid.uuid4().hex + safe_extension(entry))
                             _extract_zip_member(archive, media_info, extracted, MAX_MEDIA_BYTES)
                             media["_media_path"] = extracted
+                done = True
                 return data
         except zipfile.BadZipFile as exc:
             raise ConfigurationError("not a .prefixfy container") from exc
         except (RuntimeError, NotImplementedError, EOFError, zlib.error, zipfile.LargeZipFile) as exc:
             raise ConfigurationError("unreadable .prefixfy container") from exc
+        finally:
+            if not done and extracted:
+                discard_file(extracted)
 
     @staticmethod
     def discard_container_media(data):
-        media = data.get("media") if isinstance(data, dict) else None
-        path = media.get("_media_path") if isinstance(media, dict) else None
-        if path and os.path.isfile(path):
-            delete_file(path)
+        media = _container_media_section(data) if isinstance(data, dict) else None
+        path = media.get("_media_path") if media is not None else None
+        # удаляем только то, что распаковал сам плагин
+        if path and is_import_temp(path) and os.path.isfile(path):
+            discard_file(path)
 
     def _copy_uri_to_temp_file(self, uri) -> str:
         _, activity = self._activity()
@@ -6194,12 +6302,13 @@ class ConfigTransfer:
         fragment = getattr(args, "parent_fragment", None) or get_last_fragment()
         if self._blocked(fragment):
             return
+        data = None
+        handed_over = False
         try:
             data = self.read_container(args.file.getAbsolutePath())
             visible = self.visible_components()
             detected = tuple(c for c in detect_components(data) if c in visible)
             if not detected:
-                self.discard_container_media(data)
                 raise ConfigurationError("configuration has no valid components")
 
             rows = [(self._component_label(c), c in detected, c in detected) for c in visible]
@@ -6222,12 +6331,15 @@ class ConfigTransfer:
                 positive=self._tr("config_found_import"), fragment=fragment,
                 on_cancel=on_dismiss_without_import,
             )
-            if not shown:
-                self.discard_container_media(data)
+            handed_over = bool(shown)
         except Exception as exc:
             self.plugin.log(f"Prefixfy file open failed: {exc}")
             if fragment:
                 self._toast("config_file_open_failed", fragment)
+        finally:
+            # распакованное медиа не должно оставаться на диске, если диалог не показан (на любом пути выхода)
+            if data is not None and not handed_over:
+                self.discard_container_media(data)
 
     def _import_opened_data(self, data, fragment, components, as_new):
         if as_new:
@@ -6325,7 +6437,7 @@ class ConfigTransfer:
             if media is not None:
                 if media.get("enabled", False):
                     path = media.get("_media_path")
-                    if not path or not os.path.isfile(path):
+                    if not path or not is_import_temp(path) or not os.path.isfile(path):
                         raise ConfigurationError("media file is missing from container")
                     self.store_media_file(path, media.get("name") or os.path.basename(media.get("file", "")), media.get("mime"))
                 else:
@@ -6442,7 +6554,7 @@ class ConfigTransfer:
             self.plugin.log(f"Saved Messages export failed: {exc}")
             self._toast("configuration_export_failed", fragment)
 
-    def selected_data(self, components) -> dict:
+    def selected_data(self, components, media_ready: Optional[bool] = None) -> dict:
         s = self.settings
         data = {"format": CONFIG_FORMAT, "version": CONFIG_VERSION}
         if "language" in components:
@@ -6494,7 +6606,7 @@ class ConfigTransfer:
         if "schedule" in components:
             data["schedule"] = self.plugin.export_schedule_section()
         if "media" in components:
-            exists = self.media_exists()
+            exists = self.media_exists() if media_ready is None else bool(media_ready)
             info = self.media_info() if exists else {"name": "", "mime": ""}
             data["media"] = {
                 "enabled": bool(s.get("attached_media_enabled")) and exists,
@@ -6509,16 +6621,20 @@ class ConfigTransfer:
             raise ValueError("no components selected")
         ensure_dir_exists(directory)
         self._prune_old_exports(directory)
-        config = self.selected_data(components)
+        media_ready = "media" in components and self.media_exists()
+        config = self.selected_data(components, media_ready=media_ready)
         path = os.path.join(directory, f"Prefixfy_{time.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:4]}{self.CONFIG_EXTENSION}")
         temp = path + ".tmp"
         try:
             with zipfile.ZipFile(temp, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-                if "media" in components and self.media_exists():
+                if media_ready:
                     entry = "media/attached_media" + safe_extension(config["media"]["name"])
                     config["media"]["file"] = entry
                     archive.write(self.media_path(), entry, compress_type=zipfile.ZIP_STORED)
-                archive.writestr("config.json", json.dumps(config, ensure_ascii=False, indent=2).encode("utf-8"))
+                payload = json.dumps(config, ensure_ascii=False, indent=2).encode("utf-8")
+                if len(payload) > MAX_CONFIG_JSON_BYTES:
+                    raise ValueError("configuration is too large to export")
+                archive.writestr("config.json", payload)
             os.replace(temp, path)
         except BaseException:
             discard_file(temp)
@@ -6527,14 +6643,7 @@ class ConfigTransfer:
 
     @staticmethod
     def _prune_old_exports(directory: str):
-        deadline = time.time() - EXPORT_TEMP_TTL
-        try:
-            for entry in os.listdir(directory):
-                path = os.path.join(directory, entry)
-                if os.path.isfile(path) and os.path.getmtime(path) < deadline:
-                    discard_file(path)
-        except OSError:
-            pass
+        sweep_old_files(directory, EXPORT_TEMP_TTL)
 
     def _write_file_to_uri(self, uri, path):
         _, activity = self._activity()
@@ -6610,10 +6719,15 @@ class ConfigTransfer:
             finally:
                 if temp_path and os.path.isfile(temp_path):
                     delete_file(temp_path)
-            if as_new:
-                self._prompt_import_name(parsed, fragment, components)
-            else:
-                self._finish_import(parsed, components, False, None, fragment)
+            try:
+                if as_new:
+                    self._prompt_import_name(parsed, fragment, components)
+                else:
+                    self._finish_import(parsed, components, False, None, fragment)
+            except Exception as exc:
+                self.discard_container_media(parsed)
+                self.plugin.log(f"Configuration import dialog failed: {exc}")
+                self._toast("configuration_import_failed", fragment)
         return True
 
 
@@ -6695,29 +6809,51 @@ class ConfigurationsManager:
     @staticmethod
     def _atomic_write(path: str, text: str):
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        temp = path + ".tmp"
-        with open(temp, "w", encoding="utf-8") as handle:
-            handle.write(text)
-            handle.flush()
-            try:
-                os.fsync(handle.fileno())
-            except OSError:
-                pass
-        os.replace(temp, path)
+        # у каждой записи свой временный файл: два потока не затирают друг другу общий «.tmp», а при сбое он не остаётся
+        temp = unique_temp(path)
+        try:
+            with open(temp, "w", encoding="utf-8") as handle:
+                handle.write(text)
+                handle.flush()
+                try:
+                    os.fsync(handle.fileno())
+                except OSError:
+                    pass
+            os.replace(temp, path)
+        except BaseException:
+            discard_file(temp)
+            raise
 
     @staticmethod
-    def _json_valid(path: str) -> bool:
+    def _clean_stale_temp(root: str):
+        """При старте никто ещё не пишет: оставшиеся от прошлого сбоя .tmp-файлы можно убрать."""
         try:
+            for folder, _dirs, files in os.walk(root):
+                for entry in files:
+                    if entry.endswith(".tmp"):
+                        discard_file(os.path.join(folder, entry))
+        except OSError:
+            pass
+
+    @staticmethod
+    def _index_text(path: str) -> Optional[str]:
+        """Текст индекса, если файл читается и действительно устроен как индекс (а не просто валидный json)."""
+        try:
+            if os.path.getsize(path) > MAX_STORE_JSON_BYTES:
+                return None
             with open(path, "r", encoding="utf-8") as handle:
-                json.load(handle)
-            return True
+                raw = handle.read()
+            data = json.loads(raw)
+            return raw if isinstance(data, dict) and isinstance(data.get("order"), list) else None
         except Exception:
-            return False
+            return None
 
     def _read_json(self, path: str):
         if not os.path.isfile(path):
             return False, None
         try:
+            if os.path.getsize(path) > MAX_STORE_JSON_BYTES:
+                raise ValueError("file is too large")
             with open(path, "r", encoding="utf-8") as handle:
                 return True, json.load(handle)
         except Exception as exc:
@@ -6733,19 +6869,22 @@ class ConfigurationsManager:
                 return data
         return None
 
-    def _write_index(self):
+    def _write_index(self) -> bool:
         path = os.path.join(self.store_dir, self.INDEX_NAME)
         payload = json.dumps(
             {"version": 1, "active": self.active_id, "order": list(self.configurations)},
             ensure_ascii=False, separators=(",", ":"),
         )
         try:
-            if self._json_valid(path):
-                with open(path, "r", encoding="utf-8") as handle:
-                    self._atomic_write(path + ".bak", handle.read())
+            previous = self._index_text(path)
+            if previous is not None:      # резервная копия — только исправного индекса, иначе она затёрла бы последнюю хорошую
+                self._atomic_write(path + ".bak", previous)
             self._atomic_write(path, payload)
+            return True
         except Exception as exc:
             self.plugin.log(f"Prefixfy store: index write failed: {exc}")
+            self._degraded = True         # пока индекс не записан, лишние файлы не чистим
+            return False
 
     def _read_params(self, config_id: str, role: str, fallback: Optional[dict]) -> Dict[str, Any]:
         result = {}
@@ -6767,9 +6906,10 @@ class ConfigurationsManager:
         origin_ok, origin = self._read_json(self._origin_path(config_id))
         if not origin_ok or origin not in (self.ORIGIN_CREATED, self.ORIGIN_IMPORTED):
             origin = self.ORIGIN_CREATED
-        return {"name": as_text(name) if name_ok else "", "current": current, "baseline": baseline, "origin": origin}
+        return {"name": name if name_ok and isinstance(name, str) else "", "current": current, "baseline": baseline, "origin": origin}
 
     def _load_store(self):
+        self._clean_stale_temp(self.store_dir)
         index = self._read_index()
         ids: List[str] = []
         if index:
@@ -6801,7 +6941,9 @@ class ConfigurationsManager:
         self.active_id = active if active in self.configurations else ""
 
     def _sync_params(self, config_id: str, role: str, new: dict) -> bool:
-        record = self.configurations[config_id]
+        record = self.configurations.get(config_id)
+        if record is None:
+            return False
         old = record.get(role) or {}
         merged = {}
         all_ok = True
@@ -6851,25 +6993,41 @@ class ConfigurationsManager:
                 return config_id
         return None
 
-    def _write_name(self, config_id: str):
+    def _write_name(self, config_id: str) -> bool:
         try:
             self._atomic_write(
                 self._name_path(config_id),
                 json.dumps(self.configurations[config_id]["name"], ensure_ascii=False),
             )
+            return True
         except Exception as exc:
             self.plugin.log(f"Prefixfy store: name write failed ({config_id}): {exc}")
+            return False
 
-    def _store_record(self, config_id: str, record: dict):
+    def _store_record(self, config_id: str, record: dict) -> bool:
+        """True только если записано всё. name.json пишется последним: он же признак целой записи."""
         origin = record.get("origin", self.ORIGIN_CREATED)
         self.configurations[config_id] = {"name": as_text(record["name"]), "current": {}, "baseline": {}, "origin": origin}
-        self._sync_params(config_id, "current", record["current"])
-        self._sync_params(config_id, "baseline", record["baseline"])
+        stored = self._sync_params(config_id, "current", record["current"])
+        stored = self._sync_params(config_id, "baseline", record["baseline"]) and stored
         try:
             self._atomic_write(self._origin_path(config_id), json.dumps(origin))
         except Exception as exc:
+            stored = False
             self.plugin.log(f"Prefixfy store: origin write failed ({config_id}): {exc}")
-        self._write_name(config_id)
+        if not stored:
+            return False
+        return self._write_name(config_id)
+
+    def _discard_record(self, config_id: str):
+        """Откат записи, которая не легла на диск целиком."""
+        record = self.configurations.pop(config_id, None)
+        self._failed_writes = {m for m in self._failed_writes if m[0] != config_id}
+        tomb = self._bury(config_id)
+        if tomb:
+            shutil.rmtree(tomb, ignore_errors=True)
+        if record:
+            self._remove_media_of(record)
 
     def _bury(self, config_id: str) -> Optional[str]:
         path = self._config_dir(config_id)
@@ -6884,18 +7042,48 @@ class ConfigurationsManager:
             shutil.rmtree(path, ignore_errors=True)
             return None
 
+    def _migrated_marks(self) -> set:
+        try:
+            data = json.loads(as_text(self.plugin.get_setting(LANGUAGE_MIGRATED_KEY, "")) or "[]")
+        except (ValueError, TypeError):
+            return set()
+        return {item for item in data if isinstance(item, str)} if isinstance(data, list) else set()
+
+    def _save_migrated_marks(self, marks: set):
+        try:
+            self.plugin.set_setting(LANGUAGE_MIGRATED_KEY, json.dumps(sorted(marks)))
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy language migration marker failed: {exc}")
+
     def _migrate_language_layout(self):
+        """Переводит индекс языка в новую раскладку. Каждый набор помечается сразу после записи, поэтому сбой посередине
+        не приведёт к повторному пересчёту уже переведённых (индексы не идемпотентны)."""
         if not language_layout_pending(self.plugin):
             return
+        marks = self._migrated_marks()
         for config_id, record in list(self.configurations.items()):
             for role in ("current", "baseline"):
                 params = record.get(role) or {}
-                if "language" in params:
-                    self._sync_params(config_id, role, {**params, "language": migrate_language_index(params["language"])})
+                mark = f"{config_id}:{role}"
+                if mark in marks or "language" not in params:
+                    continue
+                if self._sync_params(config_id, role, {**params, "language": migrate_language_index(params["language"])}):
+                    marks.add(mark)
+                    self._save_migrated_marks(marks)
+        for uid in self.accounts.uids():
+            params = self.accounts.get(uid)
+            mark = f"acc:{uid}"
+            if mark in marks or not params or "language" not in params:
+                continue
+            if self.accounts.save(uid, {**params, "language": migrate_language_index(params["language"])}):
+                marks.add(mark)
+                self._save_migrated_marks(marks)
+
+    MAX_LEGACY_RECORDS = 200
 
     def _migrate_legacy_setting(self):
         raw = self.plugin.get_setting(self.LEGACY_SETTING_KEY, "")
-        if not (isinstance(raw, str) and raw):
+        if not (isinstance(raw, str) and raw) or len(raw) > 8 * 1024 * 1024:
             return
         try:
             data = json.loads(raw)
@@ -6906,22 +7094,25 @@ class ConfigurationsManager:
         if not isinstance(data, dict):
             return
         legacy_active = as_text(self.plugin.get_setting(self.LEGACY_ACTIVE_KEY, ""))
-        for old_id, record in data.items():
+        all_stored = True
+        for old_id, record in list(data.items())[:self.MAX_LEGACY_RECORDS]:
             if not isinstance(record, dict):
                 continue
             if "current" not in record or "baseline" not in record:
                 flat = dict(record)
                 name = flat.pop("name", old_id)
                 record = {"name": name, "current": dict(flat), "baseline": dict(flat)}
-            config_id = str(old_id) if self._valid_id(str(old_id)) else self._new_id()
-            self._store_record(config_id, {
+            config_id = str(old_id) if self._valid_id(str(old_id)) and str(old_id) not in self.configurations else self._new_id()
+            stored = self._store_record(config_id, {
                 "name": as_text(record.get("name", old_id)),
                 "current": record.get("current") if isinstance(record.get("current"), dict) else {},
                 "baseline": record.get("baseline") if isinstance(record.get("baseline"), dict) else {},
             })
+            all_stored = all_stored and stored
             if str(old_id) == legacy_active:
                 self.active_id = config_id
-        self._migrated_legacy = bool(self.configurations)
+        # старый ключ очищаем только когда всё перенесено: иначе при сбое записи данные пропали бы насовсем
+        self._migrated_legacy = bool(self.configurations) and all_stored
 
     def _dedupe_names(self):
         seen: List[str] = []
@@ -6933,24 +7124,35 @@ class ConfigurationsManager:
                 self._write_name(config_id)
             seen.append(name)
 
-    def _collect_orphan_media(self):
-        if self._degraded:
-            return
+    def _referenced_media(self) -> set:
         referenced = {os.path.abspath(as_text(self.settings.get("attached_media_path")))}
         for path in self.accounts.media_paths():
             referenced.add(os.path.abspath(path))
         for data in self.configurations.values():
             for snapshot in (data.get("current", {}), data.get("baseline", {})):
                 referenced.add(os.path.abspath(as_text(snapshot.get("attached_media_path"))))
+        return referenced
+
+    def _collect_orphan_media(self):
+        # если что-то из хранилища или профилей не прочиталось, ссылок мы знаем не все: ничего не удаляем
+        if self._degraded or self.accounts.degraded:
+            return
+        referenced = self._referenced_media()
         directories = [self.media_dir]
         transfer = getattr(self.plugin, "transfer", None)
         if transfer is not None:
             directories.append(transfer.media_data_dir)
+        stale = time.time() - STALE_TMP_AGE
         for directory in directories:
             try:
                 for entry in os.listdir(directory):
                     path = os.path.abspath(os.path.join(directory, entry))
-                    if path not in referenced and not entry.endswith(".tmp") and os.path.isfile(path):
+                    if not os.path.isfile(path):
+                        continue
+                    if entry.endswith(".tmp"):
+                        if os.path.getmtime(path) < stale:
+                            delete_file(path)
+                    elif path not in referenced:
                         delete_file(path)
             except OSError as exc:
                 self.plugin.log(f"Configuration media cleanup failed: {exc}")
@@ -6968,23 +7170,32 @@ class ConfigurationsManager:
         return {key: self._coerce(key, self.settings.get(key, SETTING_DEFAULTS[key])) for key in self.CONFIG_KEYS}
 
     def _copy_media(self, source: str, config_id: str, role: str) -> Optional[str]:
-        if not source or not is_media_store_file(source) or not os.path.isfile(source):
+        if (not source or not self._valid_id(config_id) or not is_media_store_file(source)
+                or not os.path.isfile(source)):
             return None
         suffix = "-baseline" if role == "baseline" else ""
         target = os.path.join(self.media_dir, f"{config_id}{suffix}{safe_extension(source) or '.bin'}")
         if os.path.abspath(source) != os.path.abspath(target) and not self._is_fresh_copy(source, target):
+            # копируем во временный файл и подменяем: оборванное копирование не испортит прежнюю копию
+            temp = unique_temp(target)
             try:
-                shutil.copy2(source, target)
-            except OSError:
-                shutil.copyfile(source, target)
+                try:
+                    shutil.copy2(source, temp)
+                except OSError:
+                    shutil.copyfile(source, temp)
+                os.replace(temp, target)
+            except BaseException:
+                discard_file(temp)
+                raise
         return target
 
     @staticmethod
     def _is_fresh_copy(source: str, target: str) -> bool:
         try:
-            return (os.path.isfile(target)
-                    and os.path.getsize(target) == os.path.getsize(source)
-                    and int(os.path.getmtime(target)) == int(os.path.getmtime(source)))
+            if not os.path.isfile(target):
+                return False
+            first, second = os.stat(source), os.stat(target)
+            return first.st_size == second.st_size and abs(first.st_mtime - second.st_mtime) <= 0.002
         except OSError:
             return False
 
@@ -7005,10 +7216,19 @@ class ConfigurationsManager:
         return data
 
     def _remove_media_of(self, record: dict):
+        # файл может ещё использоваться другим набором, аккаунтом или живыми настройками: тогда его не трогаем
+        referenced = self._referenced_media()
         for snapshot in (record.get("current", {}), record.get("baseline", {})):
             path = as_text(snapshot.get("attached_media_path"))
-            if path and is_media_store_file(path) and os.path.isfile(path):
-                delete_file(path)
+            if (path and os.path.abspath(path) not in referenced and is_media_store_file(path)
+                    and os.path.isfile(path)):
+                discard_file(path)
+
+    def _restore_live(self, snapshot):
+        try:
+            self._load_snapshot(snapshot)
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy live settings restore failed: {exc}")
 
     def _current(self, config_id=None) -> dict:
         return self.configurations.get(config_id or self.active_id, {}).get("current", {})
@@ -7081,7 +7301,12 @@ class ConfigurationsManager:
             if manager is not None:
                 manager._autosave_tick()
 
-        run_on_queue(task, PLUGINS_QUEUE, max(1, int(delay_ms)))
+        try:
+            run_on_queue(task, PLUGINS_QUEUE, max(1, int(delay_ms)))
+        except Exception as exc:
+            # без этого флаг «взведено» остался бы навсегда, и автосохранение больше никогда бы не запустилось
+            self._autosave_armed = False
+            self.plugin.log(f"Prefixfy autosave scheduling failed: {exc}")
 
     def _autosave_tick(self):
         with self._lock:
@@ -7111,6 +7336,9 @@ class ConfigurationsManager:
             finally:
                 self._closed = True
                 self._autosave_dirty = False
+        with self._foreign_lock:
+            self._foreign_runtimes.clear()
+        self.accounts.invalidate()
 
     @property
     def selector_key(self) -> str:
@@ -7129,9 +7357,16 @@ class ConfigurationsManager:
 
     def _activate(self, config_id: str):
         with self._lock:
+            previous = self.active_id
             self._autosave_dirty = False
             self.active_id = config_id
-            self._load_snapshot(self._target_snapshot())
+            try:
+                self._load_snapshot(self._target_snapshot())
+            except Exception:
+                # индекс и живые настройки не должны разойтись: возвращаем прежнюю активную конфигурацию
+                self.active_id = previous
+                self._restore_live(self._target_snapshot())
+                raise
             self._write_index()
             self._collect_orphan_media()
         self.plugin.refresh_chat_menu_item()
@@ -7194,7 +7429,9 @@ class ConfigurationsManager:
                 }
             else:
                 record = {"name": name, "current": dict(SETTING_DEFAULTS), "baseline": dict(SETTING_DEFAULTS)}
-            self._store_record(config_id, record)
+            if not self._store_record(config_id, record):
+                self._discard_record(config_id)
+                raise ConfigurationSaveError("configuration could not be stored")
             self._activate(config_id)
 
     def create_from_import(self, data, components, name=None):
@@ -7205,21 +7442,26 @@ class ConfigurationsManager:
             if not name:
                 name = unique_name(self.plugin._tr("imported_configuration"), self.selector_items())
             self._require_saved()
-            previous = dict(self._current())
+            # возвращаем то, что реально было в живых настройках (в режиме аккаунтов это набор аккаунта, а не общий)
+            previous = self._snapshot()
             try:
                 self._load_snapshot(SETTING_DEFAULTS)
                 self.plugin.transfer.apply_components(data, components)
             except Exception:
-                self._load_snapshot(previous)
+                self._restore_live(previous)
                 raise
             config_id = self._new_id()
             baseline = self._snapshot_with_media(config_id, "baseline")
-            self._store_record(config_id, {
+            stored = self._store_record(config_id, {
                 "name": name,
                 "current": self._clone_with_media(baseline, config_id, "current"),
                 "baseline": baseline,
                 "origin": self.ORIGIN_IMPORTED,
             })
+            if not stored:
+                self._discard_record(config_id)
+                self._restore_live(previous)
+                raise ConfigurationSaveError("imported configuration could not be stored")
             self._activate(config_id)
 
     def is_imported(self, config_id: Optional[str] = None) -> bool:
@@ -7236,7 +7478,12 @@ class ConfigurationsManager:
             self.create_from_import(data, components, name=name)
         else:
             with self._lock:
-                self.plugin.transfer.apply_components(data, components)
+                before = self._snapshot()
+                try:
+                    self.plugin.transfer.apply_components(data, components)
+                except Exception:
+                    self._restore_live(before)
+                    raise
                 if not self._save_active_checked():
                     self.plugin.log("Prefixfy import applied but not yet saved: retry scheduled")
         if "schedule" in components:
@@ -7252,7 +7499,9 @@ class ConfigurationsManager:
                 return False
             old_name = as_text(self.configurations[config_id].get("name"))
             self.configurations[config_id]["name"] = self.normalize_name(name)
-            self._write_name(config_id)
+            if not self._write_name(config_id):
+                self.configurations[config_id]["name"] = old_name   # на диске осталось старое имя: не расходимся с ним
+                return False
             self.generation += 1
         self.plugin.rename_in_schedule(old_name, self.configurations[config_id]["name"])
         self._refresh_ui()
@@ -7287,35 +7536,42 @@ class ConfigurationsManager:
         return len(selected)
 
     def reset_active_components(self, components, plugin_defaults: bool = False):
-        self._save_active_checked()
-        config = self.configurations.get(self.active_id)
-        if not config:
-            return
-        baseline = config.get("baseline", {})
-        if plugin_defaults and self.is_imported(self.active_id):
-            baseline = dict(SETTING_DEFAULTS)
-        uid = self.edit_uid
-        current = dict((self.accounts.get(uid) if uid is not None else None) or config.get("current", {}))
-        owner_id = self.active_id if uid is None else f"acc_{uid}"
-        for component in components:
-            for key in COMPONENT_KEYS.get(component, ()):
-                if key in baseline:
-                    current[key] = baseline[key]
-        if "media" in components:
-            baseline_media = as_text(baseline.get("attached_media_path"))
-            if baseline.get("attached_media_enabled", False) and os.path.isfile(baseline_media):
-                current["attached_media_path"] = self._clone_with_media(
-                    {"attached_media_path": baseline_media}, owner_id, "current"
-                ).get("attached_media_path", "")
-            elif not baseline.get("attached_media_enabled", False):
-                current["attached_media_path"] = ""
         with self._lock:
-            if uid is not None:
-                if not self.accounts.save(uid, current):
+            # несохранённые правки не должны пропасть вместе со сбросом: без успешного сохранения ничего не трогаем
+            if not self._save_active_checked():
+                failed = True
+            else:
+                failed = False
+                config = self.configurations.get(self.active_id)
+                if not config:
+                    return
+                baseline = config.get("baseline", {})
+                if plugin_defaults and self.is_imported(self.active_id):
+                    baseline = dict(SETTING_DEFAULTS)
+                uid = self.edit_uid
+                current = dict((self.accounts.get(uid) if uid is not None else None) or config.get("current", {}))
+                owner_id = self.active_id if uid is None else f"acc_{uid}"
+                for component in components:
+                    for key in COMPONENT_KEYS.get(component, ()):
+                        if key in baseline:
+                            current[key] = baseline[key]
+                if "media" in components:
+                    baseline_media = as_text(baseline.get("attached_media_path"))
+                    if baseline.get("attached_media_enabled", False) and os.path.isfile(baseline_media):
+                        current["attached_media_path"] = self._clone_with_media(
+                            {"attached_media_path": baseline_media}, owner_id, "current"
+                        ).get("attached_media_path", "")
+                    elif not baseline.get("attached_media_enabled", False):
+                        current["attached_media_path"] = ""
+                if uid is not None:
+                    if not self.accounts.save(uid, current):
+                        self._retry_later()
+                elif not self._sync_params(self.active_id, "current", current):
                     self._retry_later()
-            elif not self._sync_params(self.active_id, "current", current):
-                self._retry_later()
-            self._load_snapshot(current)
+                self._load_snapshot(current)
+        if failed:
+            self.plugin._toast("configuration_save_failed")
+            return
         self.plugin.refresh_chat_menu_item()
         self._refresh_ui()
         self.plugin._toast("configuration_restored")
@@ -7337,7 +7593,11 @@ class ConfigurationsManager:
             raw = as_text(self.plugin.get_setting(ACCT_LIVE_KEY, "")).strip()
         except Exception:
             return None
-        return int(raw) if raw.isdigit() and 0 < int(raw) <= 2 ** 53 else None
+        # str.isdigit() принимает и «²», а int() на нём падает: строго ASCII-цифры
+        if not _ACCOUNT_ID_RE.fullmatch(raw):
+            return None
+        value = int(raw)
+        return value if 0 < value <= 2 ** 53 else None
 
     def _write_live_marker(self):
         try:
@@ -7357,8 +7617,15 @@ class ConfigurationsManager:
         )
 
     def _switch_live(self, uid: Optional[int]):
+        previous = self.edit_uid
         self.edit_uid = uid
-        self._load_snapshot(self._target_snapshot())
+        try:
+            self._load_snapshot(self._target_snapshot())
+        except Exception:
+            # иначе автосохранение записало бы настройки прежнего набора в профиль нового
+            self.edit_uid = previous
+            self._restore_live(self._target_snapshot())
+            raise
         self._write_live_marker()
 
     def resolve_target(self) -> Optional[int]:
@@ -7369,7 +7636,7 @@ class ConfigurationsManager:
         accounts = plugin._accounts()
         if raw == ACCT_AUTO:
             return accounts.get(plugin._current_account_slot())
-        if raw.isdigit() and int(raw) in accounts.values():
+        if _ACCOUNT_ID_RE.fullmatch(raw) and int(raw) in accounts.values():
             return int(raw)
         return None
 
@@ -7385,17 +7652,18 @@ class ConfigurationsManager:
         return True
 
     def reset_account(self):
+        failed = False
         with self._lock:
             uid = self.edit_uid
             if uid is None:
                 return
             self._autosave_dirty = False
-            if self.accounts.has(uid):
-                self.accounts.delete(uid)
+            if self.accounts.has(uid) and not self.accounts.delete(uid):
+                failed = True
             self._load_snapshot(self._target_snapshot())
         self.plugin.refresh_chat_menu_item()
         self._refresh_ui()
-        self.plugin._toast("acct_reset_done")
+        self.plugin._toast("configuration_save_failed" if failed else "acct_reset_done")
 
     def _import_into(self, uid: Optional[int], data, components):
         self._switch_live(uid)
@@ -7430,7 +7698,10 @@ class ConfigurationsManager:
                 for uid in plan:
                     self._import_into(uid, data, components)
             finally:
-                self._switch_live(origin)
+                try:
+                    self._switch_live(origin)
+                except Exception as exc:    # не затираем исходную ошибку импорта
+                    self.plugin.log(f"Prefixfy live set restore after import failed: {exc}")
         if "schedule" in components:
             section = extract_component(data, "schedule")
             if section is not None:
@@ -7488,7 +7759,10 @@ class ConfigurationsManager:
             if error:
                 editor.setError(self.plugin._tr(error))
                 return False
-            return self.rename(self.active_id, value)
+            if self.rename(self.active_id, value):
+                return True
+            editor.setError(self.plugin._tr("configuration_save_failed"))
+            return False
 
         self.plugin.show_text_dialog(
             self.plugin._tr("rename_configuration"), confirm, text=current_name,
@@ -7870,48 +8144,45 @@ def verify_blacklist(raw: bytes) -> Dict[str, Any]:
     }
 
 
-def device_account_ids(logger=None) -> Optional[frozenset]:
+def _scan_device_accounts(logger=None) -> Optional[Dict[int, int]]:
+    """{слот: user_id} активных аккаунтов. None — список получить не удалось (это не то же самое, что «аккаунтов нет»)."""
     try:
         config_class = find_class("org.telegram.messenger.UserConfig")
         try:
             count = int(config_class.MAX_ACCOUNT_COUNT)
         except Exception:
             count = 16
-        ids = set()
-        for index in range(max(1, min(count, 32))):
-            config = config_class.getInstance(index)
-            if config is None or not bool(config.isClientActivated()):
-                continue
-            user_id = java_int(config.getClientUserId())
-            if user_id and user_id > 0:
-                ids.add(user_id)
-        return frozenset(ids)
     except Exception as exc:
         if logger:
             logger(f"Prefixfy device accounts lookup failed: {exc}")
         return None
-
-
-def device_account_map(logger=None) -> Dict[int, int]:
-    """{индекс_слота: user_id} для активных аккаунтов этого устройства."""
     result: Dict[int, int] = {}
-    try:
-        config_class = find_class("org.telegram.messenger.UserConfig")
+    failed = False
+    for index in range(max(1, min(count, 32))):
         try:
-            count = int(config_class.MAX_ACCOUNT_COUNT)
-        except Exception:
-            count = 16
-        for index in range(max(1, min(count, 32))):
             config = config_class.getInstance(index)
             if config is None or not bool(config.isClientActivated()):
                 continue
             user_id = java_int(config.getClientUserId())
-            if user_id and user_id > 0:
-                result[index] = user_id
-    except Exception as exc:
-        if logger:
-            logger(f"Prefixfy account map lookup failed: {exc}")
-    return result
+        except Exception as exc:
+            failed = True
+            if logger:
+                logger(f"Prefixfy device account slot {index} lookup failed: {exc}")
+            continue
+        if user_id and user_id > 0:
+            result[index] = user_id
+    # неполный список хуже, чем никакого: по нему аккаунт можно ошибочно счесть отсутствующим
+    return None if failed else result
+
+
+def device_account_ids(logger=None) -> Optional[frozenset]:
+    found = _scan_device_accounts(logger)
+    return None if found is None else frozenset(found.values())
+
+
+def device_account_map(logger=None) -> Optional[Dict[int, int]]:
+    """{индекс_слота: user_id} для активных аккаунтов этого устройства; None, если узнать не удалось."""
+    return _scan_device_accounts(logger)
 
 
 class AccountProfiles:
@@ -7929,6 +8200,7 @@ class AccountProfiles:
         self._lock = threading.RLock()
         self._data: Dict[int, Dict[str, Any]] = {}
         self._runtimes: Dict[int, Tuple[int, "Runtime"]] = {}
+        self.degraded = False      # какой-то профиль не прочитался: ссылки на медиа известны не все
         self._load()
 
     def _path(self, uid) -> str:
@@ -7939,22 +8211,35 @@ class AccountProfiles:
         return {key: coerce(key, params.get(key, SETTING_DEFAULTS[key])) for key in ConfigurationsManager.CONFIG_KEYS}
 
     def _load(self):
+        ConfigurationsManager._clean_stale_temp(self.directory)
         try:
             entries = sorted(os.listdir(self.directory))
         except OSError as exc:
             self.manager.plugin.log(f"Prefixfy accounts: listing failed: {exc}")
+            self.degraded = True
             return
         for entry in entries:
             match = _ACCT_FILE_RE.fullmatch(entry)
             if match is None:
                 continue
+            uid = int(match.group(1))
+            if uid <= 0 or str(uid) != match.group(1):     # «0012.json» и «12.json» — один и тот же аккаунт: берём только канонический вид
+                continue
+            if len(self._data) >= MAX_ACCOUNT_PROFILES:
+                self.degraded = True
+                break
+            path = os.path.join(self.directory, entry)
             try:
-                with open(os.path.join(self.directory, entry), "r", encoding="utf-8") as handle:
+                if os.path.getsize(path) > MAX_STORE_JSON_BYTES:
+                    raise ValueError("file is too large")
+                with open(path, "r", encoding="utf-8") as handle:
                     payload = json.load(handle)
                 params = payload.get("params") if isinstance(payload, dict) else None
-                if isinstance(params, dict):
-                    self._data[int(match.group(1))] = self._clean(params)
+                if not isinstance(params, dict):
+                    raise ValueError("no params object")
+                self._data[uid] = self._clean(params)
             except Exception as exc:
+                self.degraded = True
                 self.manager.plugin.log(f"Prefixfy accounts: cannot read {entry}: {exc}")
 
     def invalidate(self):
@@ -7981,10 +8266,14 @@ class AccountProfiles:
 
     def save(self, uid, params) -> bool:
         uid = int(uid)
+        if uid <= 0:
+            return False
         clean = self._clean(params)
         with self._lock:
             if self._data.get(uid) == clean:
                 return True
+            if uid not in self._data and len(self._data) >= MAX_ACCOUNT_PROFILES:
+                return False
             try:
                 ConfigurationsManager._atomic_write(
                     self._path(uid), json.dumps({"version": 1, "params": clean}, ensure_ascii=False, separators=(",", ":"))
@@ -7997,21 +8286,26 @@ class AccountProfiles:
             self.generation += 1
         return True
 
-    def delete(self, uid):
+    def delete(self, uid) -> bool:
         uid = int(uid)
         with self._lock:
+            # сначала файл, потом память — и всё под замком: параллельное save() не потеряет свежий профиль,
+            # а при неудаче удаления профиль не «воскреснет» после перезапуска, пока в памяти его уже нет
+            try:
+                if os.path.isfile(self._path(uid)):
+                    os.remove(self._path(uid))
+            except OSError as exc:
+                self.manager.plugin.log(f"Prefixfy accounts: delete failed ({uid}): {exc}")
+                return False
             params = self._data.pop(uid, None)
             self._runtimes.pop(uid, None)
             self.generation += 1
-        try:
-            if os.path.isfile(self._path(uid)):
-                os.remove(self._path(uid))
-        except OSError as exc:
-            self.manager.plugin.log(f"Prefixfy accounts: delete failed ({uid}): {exc}")
         if params:
             media = as_text(params.get("attached_media_path"))
-            if media and os.path.basename(media).startswith(f"acc_{uid}") and is_media_store_file(media) and os.path.isfile(media):
-                delete_file(media)
+            own = re.fullmatch(rf"acc_{uid}(?:-baseline)?\.[A-Za-z0-9]{{1,8}}", os.path.basename(media)) is not None
+            if media and own and is_media_store_file(media) and os.path.isfile(media):
+                discard_file(media)
+        return True
 
     def media_paths(self) -> List[str]:
         with self._lock:
@@ -8060,7 +8354,8 @@ class WeatherCache:
     def __init__(self, log):
         self._log = log
         self._lock = threading.Lock()
-        self._items: Dict[str, Tuple[float, str]] = {}
+        # ключ -> (когда получено удачно, текст, когда пробовать снова)
+        self._items: Dict[str, Tuple[float, str, float]] = {}
         self._busy: set = set()
         self._closed = False
 
@@ -8074,14 +8369,19 @@ class WeatherCache:
         now = time.monotonic()
         with self._lock:
             entry = self._items.get(key)
-            age = now - entry[0] if entry else float("inf")
-            text = entry[1] if entry and age <= self.STALE else ""
-            fresh = entry is not None and age < (self.TTL if entry[1] else self.RETRY)
-            start = not fresh and not self._closed and key not in self._busy
+            text = entry[1] if entry and entry[1] and now - entry[0] <= self.STALE else ""
+            due = entry is None or now >= entry[2]
+            start = due and not self._closed and key not in self._busy
             if start:
                 self._busy.add(key)
         if start:
-            threading.Thread(target=self._refresh, args=(key,), name="PrefixfyWeather", daemon=True).start()
+            try:
+                threading.Thread(target=self._refresh, args=(key,), name="PrefixfyWeather", daemon=True).start()
+            except Exception as exc:
+                # поток не стартовал: без этого ключ навсегда остался бы «занятым» и погода больше не обновлялась бы
+                with self._lock:
+                    self._busy.discard(key)
+                self._log(f"Prefixfy weather thread failed: {exc}")
         return text
 
     def _refresh(self, key: str):
@@ -8090,11 +8390,19 @@ class WeatherCache:
             text = self._fetch(key)
         except Exception as exc:
             self._log(f"Prefixfy weather lookup failed: {exc}")
+        now = time.monotonic()
         with self._lock:
             self._busy.discard(key)
             if self._closed:
                 return
-            self._items[key] = (time.monotonic(), text)
+            old = self._items.get(key)
+            if text:
+                self._items[key] = (now, text, now + self.TTL)
+            elif old is not None:
+                # сбой не должен стирать последнее удачное значение: оно ещё годится до STALE, повтор — через RETRY
+                self._items[key] = (old[0], old[1], now + self.RETRY)
+            else:
+                self._items[key] = (now, "", now + self.RETRY)
             while len(self._items) > self.MAX_ITEMS:
                 self._items.pop(min(self._items, key=lambda name: self._items[name][0]))
 
@@ -8103,7 +8411,7 @@ class WeatherCache:
         import ssl
         query = urllib.parse.urlencode({"format": "%c%t"})
         request = urllib.request.Request(
-            f"https://{WEATHER_HOST}/{urllib.parse.quote(key)}?{query}",
+            f"https://{WEATHER_HOST}/{urllib.parse.quote(key, safe='')}?{query}",
             headers={"User-Agent": f"Prefixfy/{__build__}", "Accept": "text/plain"},
         )
         opener = urllib.request.build_opener(
@@ -9267,8 +9575,11 @@ class PrefixfyPlugin(BasePlugin):
                 self._edit_seen = {}
 
     def _migrate_language_setting(self):
-        if language_layout_pending(self):
+        # индекс языка переводится один раз: если загрузка упала после этого шага, при повторе он не пересчитывается
+        live_done = clamp_int(self.get_setting(LANGUAGE_LIVE_KEY, 1), 1, 1, LANGUAGE_LAYOUT_VERSION) >= LANGUAGE_LAYOUT_VERSION
+        if language_layout_pending(self) and not live_done:
             self.set_setting("language", migrate_language_index(self.get_setting("language", 0)))
+            self.set_setting(LANGUAGE_LIVE_KEY, LANGUAGE_LAYOUT_VERSION)
 
     def _reset_transient_settings(self):
         for key, default in TRANSIENT_SETTING_DEFAULTS.items():
@@ -9680,9 +9991,13 @@ class PrefixfyPlugin(BasePlugin):
         now = time.monotonic()
         if stamp == 0.0 or now - stamp > DEVICE_RECHECK_INTERVAL:
             try:
-                data = device_account_map(self.log) or {}
+                found = device_account_map(self.log)
             except Exception as exc:
                 self.log(f"Prefixfy account map failed: {exc}")
+                found = None
+            # сбой чтения — не «аккаунтов нет»: иначе режим по аккаунтам молча отключился бы и сообщения ушли бы с чужим набором
+            if found is not None:
+                data = found
             self._acc_cache = (now, data)
         return data
 
@@ -11351,7 +11666,7 @@ class PrefixfyPlugin(BasePlugin):
                 pass
 
     def _dialog_kind(self, account: int, dialog_id) -> Optional[str]:
-        if dialog_id is None:
+        if dialog_id is None or not _is_int(dialog_id):
             return None
         if dialog_id > 0:
             return "private"
@@ -11402,15 +11717,25 @@ class PrefixfyPlugin(BasePlugin):
         return title
 
     def _lookup_chat_title(self, account: int, dialog_id) -> str:
+        title = ""
         try:
             fragment = get_last_fragment()
-            if fragment is not None and self._current_dialog_id() == dialog_id:
-                chat = fragment.getCurrentChat() if dialog_id < 0 else None
-                if chat is not None:
-                    return as_text(chat.title)
-                user = fragment.getCurrentUser() if dialog_id > 0 else None
-                if user is not None:
-                    return as_text(find_class("org.telegram.messenger.UserObject").getUserName(user))
+            # открытый экран относится к выбранному аккаунту: для сообщения с другого аккаунта его данные не берём
+            if (fragment is not None and self._current_dialog_id() == dialog_id
+                    and self._current_account_slot() == int(account)):
+                if dialog_id < 0:
+                    chat = fragment.getCurrentChat()
+                    title = as_text(chat.title) if chat is not None else ""
+                else:
+                    user = fragment.getCurrentUser()
+                    if user is not None:
+                        title = as_text(find_class("org.telegram.messenger.UserObject").getUserName(user))
+        except Exception as exc:
+            self.log(f"Prefixfy chat title (screen) lookup failed: {exc}")
+        if title:
+            return title
+        # ошибка на экране не должна отменять запасной путь через MessagesController
+        try:
             controller = find_class("org.telegram.messenger.MessagesController").getInstance(int(account))
             boxed = find_class("java.lang.Long").valueOf(abs(int(dialog_id)))
             if dialog_id < 0:
@@ -11425,7 +11750,14 @@ class PrefixfyPlugin(BasePlugin):
     def _own_username(self, account) -> str:
         try:
             user = find_class("org.telegram.messenger.UserConfig").getInstance(int(account)).getCurrentUser()
-            return as_text(getattr(user, "username", None)) or as_text(getattr(user, "first_name", None))
+            name = as_text(getattr(user, "username", None))
+            if not name:
+                # у аккаунтов с несколькими именами основное поле username бывает пустым: берём первое активное из списка
+                for item in list(getattr(user, "usernames", None) or []):
+                    if bool(getattr(item, "active", False)) and as_text(getattr(item, "username", None)):
+                        name = as_text(getattr(item, "username", None))
+                        break
+            return name or as_text(getattr(user, "first_name", None))
         except Exception as exc:
             self.log(f"Prefixfy username lookup failed: {exc}")
             return ""
@@ -11466,7 +11798,8 @@ class PrefixfyPlugin(BasePlugin):
             return {}
         if not isinstance(data, dict):
             return {}
-        return {str(key): value for key, value in data.items() if _is_int(value) and 0 <= value <= 10 ** 9}
+        return {str(key): value for key, value in data.items()
+                if len(str(key)) <= 48 and _is_int(value) and 0 <= value <= 10 ** 9}
 
     def _chat_message_number(self, account, dialog_id) -> int:
         if dialog_id is None:
@@ -11488,16 +11821,21 @@ class PrefixfyPlugin(BasePlugin):
                 peer = getattr(owner, field, None)
                 if peer is None:
                     continue
-                user_id = java_int(getattr(peer, "user_id", 0)) or 0
-                if user_id:
-                    user = controller.getUser(boxed.valueOf(abs(int(user_id))))
-                    if user is not None:
-                        return as_text(find_class("org.telegram.messenger.UserObject").getUserName(user))
+                if field == "from_id":
+                    user_id = java_int(getattr(peer, "user_id", 0)) or 0
+                    if user_id:
+                        user = controller.getUser(boxed.valueOf(abs(int(user_id))))
+                        if user is not None:
+                            return as_text(find_class("org.telegram.messenger.UserObject").getUserName(user))
                 chat_id = java_int(getattr(peer, "channel_id", 0)) or java_int(getattr(peer, "chat_id", 0)) or 0
                 if chat_id:
                     chat = controller.getChat(boxed.valueOf(abs(int(chat_id))))
                     if chat is not None:
                         return as_text(chat.title)
+                if field == "from_id":
+                    # отправитель известен, но не загружен: peer_id — это сам чат (или сам собеседник), его имя вместо
+                    # имени отправителя подставлять нельзя
+                    return ""
         except Exception as exc:
             self.log(f"Prefixfy reply name lookup failed: {exc}")
         return ""
@@ -11526,7 +11864,7 @@ class PrefixfyPlugin(BasePlugin):
                 return ""
             level, scale = int(status.getIntExtra("level", -1)), int(status.getIntExtra("scale", -1))
             if level >= 0 and scale > 0:
-                return f"{level * 100 // scale}%"
+                return f"{max(0, min(100, level * 100 // scale))}%"
         except Exception as exc:
             self.log(f"Prefixfy battery lookup failed: {exc}")
         return ""
