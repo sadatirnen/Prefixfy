@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "36.5.0"
-__build__ = "36.5.0_20261108.2_37"
+__version__ = "36.6.0"
+__build__ = "36.6.0_20261108.3_38"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -3578,10 +3578,10 @@ def to_dialog_id(value) -> Optional[int]:
         return None
     direct = java_int(value)
     if direct is not None:
-        return direct
+        return direct or None
     for attr in ("dialog_id", "dialogId", "did"):
         found = java_int(getattr(value, attr, None))
-        if found is not None:
+        if found:
             return found
     user_id = java_int(getattr(value, "user_id", None))
     if user_id:
@@ -4150,13 +4150,22 @@ class RuntimeSettings:
         self.text_style_translit = bool(get("text_style_translit"))
         self.style_only = frozenset(word.casefold() for word in parse_lines(get("style_words"))[:MAX_STYLE_WORDS])
         self.mask_rotation_enabled = bool(get("mask_rotation_enabled")) and FEATURES.on("mask_rotation")
-        self.masks_list = [item.strip() for item in as_text(get("masks_list")).splitlines() if item.strip() and is_valid_mask(item.strip())][:MAX_MASKS_IN_LIST]
+        self.masks_list = tuple([item.strip() for item in as_text(get("masks_list")).splitlines() if item.strip() and is_valid_mask(item.strip())][:MAX_MASKS_IN_LIST])
         if bool(get("mask_rotation_enabled")) and not self.mask_rotation_enabled and self.masks_list and not self.mask.strip():
             self.mask = self.masks_list[0]
         self.mask_rotation_mode = clamp_int(get("mask_rotation_mode"), 0, 0, 1)
-        self.regex_exceptions = compile_regex_exceptions(get("regex_exceptions")) if FEATURES.on("regex_exceptions") else ()
-        self.conditional_rules = parse_conditional_masks(get("conditional_masks"))[0] if FEATURES.on("conditional_masks") else ()
-        self.chat_type_rules = parse_chat_type_rules(get("chat_type_rules")) if FEATURES.on("chat_type_rules") else frozenset(CHAT_KINDS)
+        try:
+            self.regex_exceptions = compile_regex_exceptions(get("regex_exceptions")) if FEATURES.on("regex_exceptions") else ()
+        except Exception:
+            self.regex_exceptions = ()
+        try:
+            self.conditional_rules = tuple(parse_conditional_masks(get("conditional_masks"))[0]) if FEATURES.on("conditional_masks") else ()
+        except Exception:
+            self.conditional_rules = ()
+        try:
+            self.chat_type_rules = parse_chat_type_rules(get("chat_type_rules")) if FEATURES.on("chat_type_rules") else frozenset(CHAT_KINDS)
+        except Exception:
+            self.chat_type_rules = frozenset(CHAT_KINDS)
         self.mask_parts = split_mask(self.mask)
         if self.mask_parts is None and not self.mask.strip():
             self.mask_parts = ("", "")
@@ -4176,15 +4185,16 @@ class RuntimeSettings:
         self.media_mime = as_text(get("attached_media_mime"))
 
     def is_chat_allowed(self, dialog_id: Optional[int]) -> bool:
-        if dialog_id is None:
+        if not dialog_id:
             return self.chat_scope_enabled
         listed = dialog_id in self.disabled_chats
         return not listed if self.chat_scope_enabled else listed
 
     @property
     def mask_is_active(self) -> bool:
-        return self.mask_parts is not None and bool(
-            self.mask_parts[0] or self.mask_parts[1] or self.mask_link or self.text_style_enabled or self.markdown_wrap
+        parts = self.mask_parts
+        return parts is not None and bool(
+            parts[0] or parts[1] or self.mask_link or self.text_style_enabled or self.markdown_wrap
         )
 
 
@@ -5587,10 +5597,13 @@ class RuntimeManager:
                 config_id = configurations.live_config_id() if configurations is not None else "default"
                 self.runtime = Runtime(self.plugin.settings.snapshot(), config_id, self.plugin.log)
             except Exception as exc:
-                self.plugin.log(f"Prefixfy runtime rebuild failed: {exc}")
+                import traceback
+                self.plugin.log(f"Prefixfy runtime rebuild failed: {exc}\n{traceback.format_exc()}")
 
     def on_setting_changed(self):
-        if not self._suspend:
+        with self._lock:
+            suspended = self._suspend > 0
+        if not suspended:
             self.rebuild()
 
     @contextmanager
@@ -5601,7 +5614,7 @@ class RuntimeManager:
             yield
         finally:
             with self._lock:
-                self._suspend -= 1
+                self._suspend = max(0, self._suspend - 1)
                 idle = self._suspend == 0
             if idle:
                 self.rebuild()
@@ -9522,9 +9535,21 @@ class PrefixfyPlugin(BasePlugin):
             self.log(f"_current_dialog_id failed: {exc}")
         return None
 
-    def _dialog_id_from_params(self, params) -> Optional[int]:
-        dialog_id = to_dialog_id(getattr(params, "peer", None))
-        return dialog_id if dialog_id is not None else self._current_dialog_id()
+    def _dialog_id_from_params(self, params, account=None) -> Optional[int]:
+        peer = getattr(params, "peer", None)
+        dialog_id = to_dialog_id(peer)
+        if dialog_id is not None:
+            return dialog_id
+        if peer is not None and self._class_name(peer).endswith("InputPeerSelf"):
+            try:
+                slot = int(account) if account is not None else int(get_selected_account())
+                own = find_class("org.telegram.messenger.UserConfig").getInstance(slot).getClientUserId()
+                found = java_int(own)
+                if found:
+                    return found
+            except Exception as exc:
+                self.log(f"Prefixfy self peer lookup failed: {exc}")
+        return self._current_dialog_id()
 
     def _menu_dialog_id(self, context) -> Optional[int]:
         if isinstance(context, dict):
@@ -9654,7 +9679,10 @@ class PrefixfyPlugin(BasePlugin):
         stamp, data = self._acc_cache
         now = time.monotonic()
         if stamp == 0.0 or now - stamp > DEVICE_RECHECK_INTERVAL:
-            data = device_account_map(self.log)
+            try:
+                data = device_account_map(self.log) or {}
+            except Exception as exc:
+                self.log(f"Prefixfy account map failed: {exc}")
             self._acc_cache = (now, data)
         return data
 
@@ -9684,7 +9712,8 @@ class PrefixfyPlugin(BasePlugin):
     def _acct_label(self, slot, uid, mark: bool = False) -> str:
         name = self._acct_name(slot)
         text = f"{name} • ID {uid}" if name else f"ID {uid}"
-        if mark and self.configurations.accounts.has(uid):
+        configs = getattr(self, "configurations", None)
+        if mark and configs is not None and configs.accounts.has(uid):
             text += " ✱"
         return text
 
@@ -9912,13 +9941,17 @@ class PrefixfyPlugin(BasePlugin):
         if dialog_id is None:
             return
         fragment = context.get("fragment") if isinstance(context, dict) else None
-        pending = self._skip_once
-        if pending is not None and pending[0] == dialog_id and pending[1] > time.monotonic():
-            self._skip_once = None
+        with self._skip_lock:
+            pending = self._skip_once
+            disarm = pending is not None and pending[0] == dialog_id and pending[1] > time.monotonic()
+            if disarm:
+                self._skip_once = None
+            else:
+                armed = (dialog_id, time.monotonic() + SKIP_ONCE_TTL)
+                self._skip_once = armed
+        if disarm:
             self._toast("skip_once_off", fragment)
         else:
-            armed = (dialog_id, time.monotonic() + SKIP_ONCE_TTL)
-            self._skip_once = armed
             self._schedule_skip_expiry(armed)
             self._toast("skip_once_on", fragment)
 
@@ -9927,9 +9960,12 @@ class PrefixfyPlugin(BasePlugin):
 
         def task():
             plugin = ref()
-            if plugin is None or plugin._skip_once is not armed:
+            if plugin is None:
                 return
-            plugin._skip_once = None
+            with plugin._skip_lock:
+                if plugin._skip_once is not armed:
+                    return
+                plugin._skip_once = None
             try:
                 plugin._toast("skip_once_expired")
             except Exception as exc:
@@ -9941,16 +9977,17 @@ class PrefixfyPlugin(BasePlugin):
             self.log(f"Prefixfy skip expiry scheduling failed: {exc}")
 
     def _consume_skip_once(self, dialog_id) -> bool:
-        pending = self._skip_once
-        if pending is None:
-            return False
-        if pending[1] <= time.monotonic():
+        with self._skip_lock:
+            pending = self._skip_once
+            if pending is None:
+                return False
+            if pending[1] <= time.monotonic():
+                self._skip_once = None
+                return False
+            if pending[0] != dialog_id:
+                return False
             self._skip_once = None
-            return False
-        if pending[0] != dialog_id:
-            return False
-        self._skip_once = None
-        return True
+            return True
 
     def _toggle_chat_from_menu(self, context):
         if self._update_blocked(context):
@@ -10999,8 +11036,24 @@ class PrefixfyPlugin(BasePlugin):
     _last_random_style = None
     _rotation_lock = threading.Lock()
     _counter_lock = threading.Lock()
-    _count_used = False
-    _chat_count_key = None
+    _tls = threading.local()
+    _skip_lock = threading.Lock()
+
+    @property
+    def _count_used(self) -> bool:
+        return getattr(self._tls, "count_used", False)
+
+    @_count_used.setter
+    def _count_used(self, value):
+        self._tls.count_used = bool(value)
+
+    @property
+    def _chat_count_key(self):
+        return getattr(self._tls, "chat_count_key", None)
+
+    @_chat_count_key.setter
+    def _chat_count_key(self, value):
+        self._tls.chat_count_key = value
 
     @classmethod
     def _params_have_media(cls, params) -> bool:
@@ -11056,10 +11109,12 @@ class PrefixfyPlugin(BasePlugin):
 
     @staticmethod
     def _pick_media_sender(name: str, mime: str):
-        if mime == "image/gif" or name.lower().endswith(".gif"):
+        name = as_text(name).lower()
+        mime = as_text(mime).lower()
+        if mime == "image/gif" or name.endswith(".gif"):
             return send_document
         if mime.startswith("image/"):
-            return send_photo
+            return send_document if mime in ("image/svg+xml", "image/heic", "image/heif", "image/tiff") else send_photo
         if mime.startswith("video/"):
             return send_video
         return send_document
@@ -11071,6 +11126,10 @@ class PrefixfyPlugin(BasePlugin):
                 return
             except Exception as exc:
                 self.log(f"Prefixfy send with carried-over options failed, retrying without them: {exc}")
+                if "scheduleDate" in options:
+                    # без даты отложенное сообщение ушло бы сразу
+                    sender(dialog_id, path, caption=caption, account=account, scheduleDate=options["scheduleDate"])
+                    return
         sender(dialog_id, path, caption=caption, account=account)
 
     def _send_attached_media(self, dialog_id, media, caption: str, account: int, options: Optional[Dict[str, Any]] = None):
@@ -11093,7 +11152,10 @@ class PrefixfyPlugin(BasePlugin):
         attempts = []
         if options:
             attempts.append({"peer": dialog_id, "message": text, **options})
-        attempts.append({"peer": dialog_id, "message": text})
+        base = {"peer": dialog_id, "message": text}
+        if options and "scheduleDate" in options:
+            base["scheduleDate"] = options["scheduleDate"]
+        attempts.append(base)
         for index, payload in enumerate(attempts):
             try:
                 _send_message(payload, account=account)
@@ -11119,13 +11181,15 @@ class PrefixfyPlugin(BasePlugin):
                 break
         if not markers:
             markers = custom_emoji_markers_from_input()
-        dialog_id = self._dialog_id_from_params(params)
+        dialog_id = self._dialog_id_from_params(params, account)
         if not markers or dialog_id is None or _send_message is None:
             return False
         try:
             self.set_setting("capture_custom_emoji", False)
         except Exception as exc:
+            # без сброса флага отправка маркеров снова попала бы в этот же хук и зациклилась
             self.log(f"Prefixfy capture flag reset failed: {exc}")
+            return False
         text = " ".join(markers)
         options = self._carry_over_options(params)
         run_on_queue(lambda: self._send_plain_fallback(dialog_id, text, account, options), PLUGINS_QUEUE, 350)
@@ -11143,11 +11207,17 @@ class PrefixfyPlugin(BasePlugin):
         return PREMIUM_CAPTION_LIMIT if self._account_is_premium(account, default=False) else CAPTION_LIMIT
 
     @staticmethod
-    def _select_field(settings: RuntimeSettings, message, caption) -> Tuple[Optional[str], str]:
-        if settings.process_message and isinstance(message, str) and message:
+    def _select_field(settings: RuntimeSettings, message, caption, has_media: bool = False) -> Tuple[Optional[str], str]:
+        if has_media:
+            if not settings.process_media:
+                return None, ""
+            if isinstance(caption, str) and caption.strip():
+                return "caption", caption
+            if isinstance(message, str) and message.strip():
+                return "message", message
+            return None, ""
+        if settings.process_message and isinstance(message, str) and message.strip():
             return "message", message
-        if settings.process_media and isinstance(caption, str) and caption:
-            return "caption", caption
         return None, ""
 
     def _try_attach_media(self, runtime: Runtime, dialog_id, params, message, has_media: bool, account: int) -> bool:
@@ -11162,7 +11232,7 @@ class PrefixfyPlugin(BasePlugin):
         if media is None:
             return False
         options = self._carry_over_options(params)
-        if "scheduleDate" in options:
+        if "scheduleDate" in options or self._existing_entity_count(params) > 0:
             return False
         outgoing = runtime.pipeline.transform(message)
         if utf16_length(outgoing) > self._caption_limit(account):
@@ -11190,6 +11260,10 @@ class PrefixfyPlugin(BasePlugin):
         try:
             return len(existing)
         except Exception:
+            pass
+        try:
+            return int(existing.size())
+        except Exception:
             return 0
 
     def _finalize_entities(self, account: int, params, entities, body_offset):
@@ -11211,8 +11285,9 @@ class PrefixfyPlugin(BasePlugin):
 
     def _apply_entities(self, runtime: Runtime, params, text: str, transformed: str, entities, body_offset) -> str:
         existing = getattr(params, "entities", None)
+        snapshot = self._snapshot_entities(existing)
         if not entities:
-            if existing is not None and self._existing_entity_count(params) > 0:
+            if existing is not None and snapshot:
                 try:
                     pipeline = runtime.pipeline
                     shifted = body_offset_in(pipeline.expected_body(text), transformed, pipeline.mask_prefix(text))
@@ -11220,22 +11295,32 @@ class PrefixfyPlugin(BasePlugin):
                                                         self._realign_args(pipeline, text, transformed))
                 except Exception as exc:
                     self.log(f"Prefixfy entity shift failed: {exc}")
+                    self._restore_entities(snapshot, existing)
+                    try:
+                        params.entities = existing
+                    except Exception:
+                        pass
             return transformed
-        snapshot = self._snapshot_entities(existing)
         try:
             params.entities = _make_tg_entities(entities, existing, body_offset, runtime.pipeline.entity_mapper(text),
                                                 self._realign_args(runtime.pipeline, text, transformed))
         except Exception as exc:
             self.log(f"Prefixfy Markdown entities unavailable: {exc}")
             plain = runtime.pipeline.transform(text)
-            self._restore_entities(snapshot)
+            self._restore_entities(snapshot, existing)
+            try:
+                params.entities = existing
+            except Exception:
+                pass
             if existing is not None and snapshot:
                 try:
                     pipeline = runtime.pipeline
                     shifted = body_offset_in(pipeline.expected_body(text), plain, pipeline.mask_prefix(text))
-                    params.entities = _make_tg_entities([], existing, shifted, pipeline.entity_mapper(text))
+                    params.entities = _make_tg_entities([], existing, shifted, pipeline.entity_mapper(text),
+                                                        self._realign_args(pipeline, text, plain))
                 except Exception as shift_exc:
                     self.log(f"Prefixfy entity shift failed: {shift_exc}")
+                    self._restore_entities(snapshot, existing)
             return plain
         return transformed
 
@@ -11249,11 +11334,19 @@ class PrefixfyPlugin(BasePlugin):
             return []
 
     @staticmethod
-    def _restore_entities(snapshot) -> None:
+    def _restore_entities(snapshot, existing=None) -> None:
         for entity, offset, length in snapshot:
             try:
                 entity.offset = offset
                 entity.length = length
+            except Exception:
+                pass
+        if existing is not None and snapshot:
+            # _make_tg_entities правит список на месте: возвращаем исходный состав
+            try:
+                existing.clear()
+                for entity, _, _ in snapshot:
+                    existing.add(entity)
             except Exception:
                 pass
 
@@ -11338,35 +11431,33 @@ class PrefixfyPlugin(BasePlugin):
             return ""
 
     def _message_number(self) -> int:
+        self._count_used = True
         with self._counter_lock:
-            self._count_used = True
             return clamp_int(self.get_setting(COUNTER_KEY, 0), 0, 0, 10 ** 9) + 1
 
     def _commit_message_counter(self):
-        number = None
-        counts = None
+        used, chat_key = self._count_used, self._chat_count_key
+        self._count_used = False
+        self._chat_count_key = None
+        if not used and not chat_key:
+            return
         with self._counter_lock:
-            used, chat_key = self._count_used, self._chat_count_key
-            self._count_used = False
-            self._chat_count_key = None
             if used:
-                number = clamp_int(self.get_setting(COUNTER_KEY, 0), 0, 0, 10 ** 9) + 1
+                try:
+                    number = clamp_int(self.get_setting(COUNTER_KEY, 0), 0, 0, 10 ** 9) + 1
+                    self.set_setting(COUNTER_KEY, number)
+                except Exception as exc:
+                    self.log(f"Prefixfy counter save failed: {exc}")
             if chat_key:
-                counts = self._chat_counts()
-                current = counts.pop(chat_key, 0)
-                counts[chat_key] = min(current + 1, 10 ** 9)
-                while len(counts) > MAX_CHAT_COUNTS:
-                    counts.pop(next(iter(counts)), None)
-        if number is not None:
-            try:
-                self.set_setting(COUNTER_KEY, number)
-            except Exception as exc:
-                self.log(f"Prefixfy counter save failed: {exc}")
-        if counts is not None:
-            try:
-                self.set_setting(CHAT_COUNTS_KEY, json.dumps(counts))
-            except Exception as exc:
-                self.log(f"Prefixfy chat counter save failed: {exc}")
+                try:
+                    counts = self._chat_counts()
+                    current = counts.pop(chat_key, 0)
+                    counts[chat_key] = min(current + 1, 10 ** 9)
+                    while len(counts) > MAX_CHAT_COUNTS:
+                        counts.pop(next(iter(counts)), None)
+                    self.set_setting(CHAT_COUNTS_KEY, json.dumps(counts))
+                except Exception as exc:
+                    self.log(f"Prefixfy chat counter save failed: {exc}")
 
     def _chat_counts(self) -> Dict[str, int]:
         try:
@@ -11381,8 +11472,8 @@ class PrefixfyPlugin(BasePlugin):
         if dialog_id is None:
             return 1
         key = f"{account}:{dialog_id}"
+        self._chat_count_key = key
         with self._counter_lock:
-            self._chat_count_key = key
             return self._chat_counts().get(key, 0) + 1
 
     def _reply_name(self, account, params) -> str:
@@ -11441,7 +11532,11 @@ class PrefixfyPlugin(BasePlugin):
         return ""
 
     def _random_line(self, preview: bool = False) -> str:
-        lines = parse_lines(self.settings.get("tag_lines"))[:MAX_TAG_LINES]
+        try:
+            lines = [line for line in parse_lines(self.settings.get("tag_lines"))[:MAX_TAG_LINES] if line.strip()]
+        except Exception as exc:
+            self.log(f"Prefixfy tag lines failed: {exc}")
+            lines = []
         if not lines:
             return "\u2026" if preview else ""
         return lines[0] if preview else random.choice(lines)
@@ -11610,21 +11705,7 @@ class PrefixfyPlugin(BasePlugin):
     def _process_outgoing(self, account: int, params: Any) -> HookResult:
         if not self.remote.allows():
             return HookResult()
-        if FEATURES.on("premium_emoji") and self.settings.get("capture_custom_emoji", False) and self._capture_custom_emoji(params, account):
-            return HookResult(strategy=HookStrategy.CANCEL)
-
-        runtime = self._base_runtime(account)
-        if runtime is None:
-            return HookResult()
-
-        dialog_id = self._dialog_id_from_params(params)
-        runtime = self._runtime_for_chat(runtime, dialog_id)
-        settings = runtime.settings
-        if not self._chat_type_allowed(account, dialog_id, settings.chat_type_rules):
-            return HookResult()
-        if not settings.is_chat_allowed(dialog_id):
-            return HookResult()
-
+        dialog_id = self._dialog_id_from_params(params, account)
         message = getattr(params, "message", None)
         caption = getattr(params, "caption", None)
         has_media = self._params_have_media(params)
@@ -11632,8 +11713,21 @@ class PrefixfyPlugin(BasePlugin):
         already_styled = caption if has_media else message
         if isinstance(already_styled, str) and already_styled and self._is_internal_send(dialog_id, already_styled):
             return HookResult()
+        if FEATURES.on("premium_emoji") and self.settings.get("capture_custom_emoji", False) and self._capture_custom_emoji(params, account):
+            return HookResult(strategy=HookStrategy.CANCEL)
 
-        field, text = self._select_field(settings, message, caption)
+        runtime = self._base_runtime(account)
+        if runtime is None:
+            return HookResult()
+
+        runtime = self._runtime_for_chat(runtime, dialog_id)
+        settings = runtime.settings
+        if not self._chat_type_allowed(account, dialog_id, settings.chat_type_rules):
+            return HookResult()
+        if not settings.is_chat_allowed(dialog_id):
+            return HookResult()
+
+        field, text = self._select_field(settings, message, caption, has_media)
         if field is None:
             return HookResult()
         resent = self._handle_resend(runtime, account, params, text)
@@ -11660,7 +11754,17 @@ class PrefixfyPlugin(BasePlugin):
         limit = self._caption_limit(account) if is_caption else MESSAGE_LIMIT
         if utf16_length(transformed) > limit:
             return None
+        original_entities = getattr(params, "entities", None)
+        snapshot = self._snapshot_entities(original_entities)
         transformed = self._apply_entities(runtime, params, text, transformed, entities, body_offset)
+        if utf16_length(transformed) > limit:
+            # запасной вариант без Markdown пересобирается заново и мог выйти за лимит
+            self._restore_entities(snapshot, original_entities)
+            try:
+                params.entities = original_entities
+            except Exception:
+                pass
+            return None
         self._advance_rotation(rotation_next)
         return transformed
 
@@ -11683,7 +11787,9 @@ class PrefixfyPlugin(BasePlugin):
         with self._internal_lock:
             seen = {k: expiry for k, expiry in self._edit_seen.items() if expiry > now}
             found = key in seen
-            seen[key] = now + 30
+            seen[key] = now + 10
+            while len(seen) > 256:
+                seen.pop(next(iter(seen)))
             self._edit_seen = seen
         return found
 
@@ -11715,15 +11821,6 @@ class PrefixfyPlugin(BasePlugin):
 
     def _handle_resend(self, runtime: Runtime, account: int, params, text: str) -> Optional[HookResult]:
         """Повторная отправка: маска уже нанесена, второй раз её не добавляем, а Premium Emoji возвращаем."""
-        match = self._resend_mask_match(runtime, text)
-        if match is None:
-            return None
-        part, has_left, has_right, right = match
-        wanted: List[Tuple[str, int, int, str]] = []
-        if has_left:
-            wanted += custom_emoji_spans(part.left, part.table, 0)
-        if has_right:
-            wanted += custom_emoji_spans(part.right, part.table, utf16_length(text) - utf16_length(right))
         existing = getattr(params, "entities", None)
         have = set()
         if existing is not None:
@@ -11739,6 +11836,15 @@ class PrefixfyPlugin(BasePlugin):
             retry = False
         if not retry and not have:
             return None
+        match = self._resend_mask_match(runtime, text)
+        if match is None:
+            return None
+        part, has_left, has_right, right = match
+        wanted: List[Tuple[str, int, int, str]] = []
+        if has_left:
+            wanted += custom_emoji_spans(part.left, part.table, 0)
+        if has_right:
+            wanted += custom_emoji_spans(part.right, part.table, utf16_length(text) - utf16_length(right))
         if not wanted or not FEATURES.on("premium_emoji") or not self._account_is_premium(account):
             return HookResult()
         missing = [item for item in wanted if (item[1], int(item[3])) not in have]
@@ -11778,18 +11884,31 @@ class PrefixfyPlugin(BasePlugin):
                 return True
         return False
 
-    def _find_message_object(self, account, message_id):
+    @staticmethod
+    def _message_in_dialog(message, dialog_id) -> bool:
+        if message is None:
+            return False
+        if dialog_id is None:
+            return True
+        try:
+            found = java_int(message.getDialogId())
+        except Exception:
+            return False
+        return not found or found == dialog_id
+
+    def _find_message_object(self, account, message_id, dialog_id=None):
         try:
             fragment = get_last_fragment()
             view = fragment.getChatActivityEnterView() if fragment is not None else None
             editing = view.getEditingMessageObject() if view is not None else None
-            if editing is not None and java_int(editing.getId()) == message_id:
+            if editing is not None and java_int(editing.getId()) == message_id and self._message_in_dialog(editing, dialog_id):
                 return editing
         except Exception:
-            None
+            pass
         try:
             controller = find_class("org.telegram.messenger.MessagesController").getInstance(int(account))
-            return controller.dialogMessagesByIds.get(message_id)
+            found = controller.dialogMessagesByIds.get(message_id)
+            return found if self._message_in_dialog(found, dialog_id) else None
         except Exception:
             return None
 
@@ -11800,7 +11919,8 @@ class PrefixfyPlugin(BasePlugin):
         except Exception:
             pass
         message_id = java_int(getattr(request, "id", None))
-        message = self._find_message_object(account, message_id) if message_id is not None else None
+        dialog_id = self._dialog_id_from_params(request, account)
+        message = self._find_message_object(account, message_id, dialog_id) if message_id is not None else None
         if message is None:
             return None
         try:
@@ -11820,11 +11940,11 @@ class PrefixfyPlugin(BasePlugin):
             return
         if not text.strip():
             return
-        dialog_id = self._dialog_id_from_params(request)
         try:
             account = int(param.thisObject.currentAccount)
         except Exception:
             account = get_selected_account()
+        dialog_id = self._dialog_id_from_params(request, account)
 
         if not self.remote.allows():
             return
