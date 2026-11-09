@@ -72,12 +72,12 @@ except ImportError:
 __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = (
-    "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации с импортом и экспортом, OTA-обновления (вручную, по мере выхода или по времени), интерфейс на 6 языках."
+    "Prefixfy — стильное оформление исходящих сообщений: разделители между словами, маска-шаблон с гиперссылкой, 35+ тегов, 30 стилей текста (L33T, vaporwave, готика, морзе, пузыри, индекс, подчёркивания и др.), маски для отдельных чатов с ротацией, правилами по содержимому и тегами [date], [time], [hour], [daypart], [week], [monthname], [chattype], [dice], [chat], [username], [count] и др., гибкие и regex-исключения, оформление при редактировании сообщений (отдельно для текста и подписей), цитата в маске, расписание по датам и времени суток и вложение медиа. Premium Emoji в маске и разделителях. Конфигурации (в том числе несколько на каждый аккаунт) с импортом и экспортом, OTA-обновления (вручную, по мере выхода или по времени), интерфейс на 6 языках."
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "36.7.0"
-__build__ = "36.7.0_20261108.4_39"
+__version__ = "37.0.0"
+__build__ = "37.0.0_20261109.1_40"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -144,6 +144,7 @@ LANGUAGE_MIGRATED_KEY = "Prefixfy_language_migrated"        # какие наб�
 LANGUAGE_LIVE_KEY = "Prefixfy_language_live_layout"         # живая настройка языка уже переведена
 MAX_STORE_JSON_BYTES = 2 * 1024 * 1024                      # потолок размера любого служебного json-файла хранилища
 MAX_ACCOUNT_PROFILES = 256
+MAX_ACCOUNT_PRESETS = 32                                     # пресетов (конфигураций) на один аккаунт
 STALE_TMP_AGE = 3600                                         # .tmp-файлы старше часа считаются мусором
 IMPORT_TEMP_TTL = 3600
 MAX_SEPARATOR_COUNT = 99
@@ -1961,7 +1962,7 @@ _ACCOUNT_STRINGS = {
         "acct_reset": "Сбросить к общим настройкам",
         "acct_reset_subtext": "Удалить свои настройки этого аккаунта",
         "acct_reset_title": "Сброс настроек аккаунта",
-        "acct_reset_confirm": "Удалить свои настройки этого аккаунта? Он снова будет использовать общие настройки.",
+        "acct_reset_confirm": "Удалить свои настройки этого аккаунта вместе со всеми его конфигурациями? Он снова будет использовать общие настройки.",
         "acct_reset_btn": "Сбросить",
         "acct_reset_done": "Настройки аккаунта сброшены к общим",
         "acct_import_title": "Куда применить конфигурацию?",
@@ -1984,7 +1985,7 @@ _ACCOUNT_STRINGS = {
         "acct_reset": "Reset to common settings",
         "acct_reset_subtext": "Remove this account's own settings",
         "acct_reset_title": "Reset account settings",
-        "acct_reset_confirm": "Remove this account's own settings? It will use the common settings again.",
+        "acct_reset_confirm": "Remove this account's own settings together with all of its configurations? It will use the common settings again.",
         "acct_reset_btn": "Reset",
         "acct_reset_done": "Account settings reset to common",
         "acct_import_title": "Apply the configuration to",
@@ -2007,7 +2008,7 @@ _ACCOUNT_STRINGS = {
         "acct_reset": "共通の設定に戻す",
         "acct_reset_subtext": "このアカウントの個別設定を削除します",
         "acct_reset_title": "アカウント設定のリセット",
-        "acct_reset_confirm": "このアカウントの個別設定を削除しますか？再び共通の設定が使われます。",
+        "acct_reset_confirm": "このアカウントの個別設定（保存済みの設定すべてを含む）を削除しますか？再び共通の設定が使われます。",
         "acct_reset_btn": "リセット",
         "acct_reset_done": "アカウントの設定を共通に戻しました",
         "acct_import_title": "設定の適用先",
@@ -2030,7 +2031,7 @@ _ACCOUNT_STRINGS = {
         "acct_reset": "공통 설정으로 되돌리기",
         "acct_reset_subtext": "이 계정의 개별 설정을 삭제합니다",
         "acct_reset_title": "계정 설정 초기화",
-        "acct_reset_confirm": "이 계정의 개별 설정을 삭제할까요? 다시 공통 설정을 사용합니다.",
+        "acct_reset_confirm": "이 계정의 개별 설정을 모든 구성과 함께 삭제할까요? 다시 공통 설정을 사용합니다.",
         "acct_reset_btn": "초기화",
         "acct_reset_done": "계정 설정을 공통으로 되돌렸습니다",
         "acct_import_title": "구성을 적용할 대상",
@@ -2053,7 +2054,7 @@ _ACCOUNT_STRINGS = {
         "acct_reset": "Revenir aux réglages communs",
         "acct_reset_subtext": "Supprimer les réglages propres de ce compte",
         "acct_reset_title": "Réinitialiser les réglages du compte",
-        "acct_reset_confirm": "Supprimer les réglages propres de ce compte ? Il utilisera de nouveau les réglages communs.",
+        "acct_reset_confirm": "Supprimer les réglages propres de ce compte, avec toutes ses configurations ? Il utilisera de nouveau les réglages communs.",
         "acct_reset_btn": "Réinitialiser",
         "acct_reset_done": "Réglages du compte ramenés aux réglages communs",
         "acct_import_title": "Appliquer la configuration à",
@@ -2076,7 +2077,7 @@ _ACCOUNT_STRINGS = {
         "acct_reset": "Auf gemeinsame Einstellungen zurücksetzen",
         "acct_reset_subtext": "Eigene Einstellungen dieses Kontos entfernen",
         "acct_reset_title": "Kontoeinstellungen zurücksetzen",
-        "acct_reset_confirm": "Eigene Einstellungen dieses Kontos entfernen? Es nutzt dann wieder die gemeinsamen Einstellungen.",
+        "acct_reset_confirm": "Eigene Einstellungen dieses Kontos samt allen seinen Konfigurationen entfernen? Es nutzt dann wieder die gemeinsamen Einstellungen.",
         "acct_reset_btn": "Zurücksetzen",
         "acct_reset_done": "Kontoeinstellungen auf gemeinsame zurückgesetzt",
         "acct_import_title": "Konfiguration anwenden auf",
@@ -3390,7 +3391,9 @@ ACCT_AUTO = "auto"
 ACCT_COMMON = "common"
 ACCT_ALL = "all"
 ACCT_DIR_NAME = "Prefixfy_accounts"
-_ACCT_FILE_RE = re.compile(r"([0-9]{1,16})\.json")
+_ACCT_FILE_RE = re.compile(r"([0-9]{1,16})\.json")           # профиль аккаунта прежних версий (до 37.0.0)
+_ACCT_DIR_RE = re.compile(r"[0-9]{1,16}")
+_PRESET_ID_RE = re.compile(r"acc([0-9]{1,16})_[0-9a-f]{8}")  # идентификатор пресета аккаунта: acc<uid>_<hex8>
 MAX_SCHEDULE_RULES = 24
 _SCHEDULE_DAYS = {
     "mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6,
@@ -6770,6 +6773,8 @@ class ConfigurationsManager:
         self._load_store()
         if not self.configurations:
             self._migrate_legacy_setting()
+        # пресеты аккаунтов читаются после общего набора: профилям прежних версий нужен его baseline
+        self.accounts.load()
         self._migrate_language_layout()
         if not self.configurations:
             baseline = self._snapshot_with_media("default", "baseline")
@@ -6791,8 +6796,68 @@ class ConfigurationsManager:
     def _valid_id(cls, config_id) -> bool:
         return isinstance(config_id, str) and cls._ID_RE.fullmatch(config_id) is not None
 
+    @staticmethod
+    def _owner_of(config_id) -> Optional[int]:
+        """uid аккаунта, которому принадлежит пресет с таким идентификатором; None — конфигурация общего набора."""
+        match = _PRESET_ID_RE.fullmatch(config_id) if isinstance(config_id, str) else None
+        if match is None:
+            return None
+        uid = int(match.group(1))
+        return uid if str(uid) == match.group(1) and 0 < uid <= 2 ** 53 else None
+
+    @classmethod
+    def _id_belongs(cls, config_id, owner: Optional[int]) -> bool:
+        return cls._valid_id(config_id) and cls._owner_of(config_id) == owner
+
+    def _account_root(self, uid: int) -> str:
+        return os.path.join(self.accounts.directory, str(int(uid)))
+
+    def _root_of(self, config_id: str) -> str:
+        owner = self._owner_of(config_id)
+        return self.store_dir if owner is None else self._account_root(owner)
+
     def _config_dir(self, config_id: str) -> str:
-        return os.path.join(self.store_dir, config_id)
+        return os.path.join(self._root_of(config_id), config_id)
+
+    def _bucket(self, config_id, create: bool = False) -> Dict[str, dict]:
+        """Словарь, в котором лежит (или должна лежать) запись: общий набор или пресеты её аккаунта."""
+        owner = self._owner_of(config_id)
+        if owner is None:
+            return self.configurations
+        return self.accounts.bucket(owner, create)
+
+    def _record(self, config_id) -> Optional[dict]:
+        if not config_id:
+            return None
+        return self._bucket(config_id).get(config_id)
+
+    def _bump(self, config_id: str):
+        """Запись изменилась: кэши рантаймов, собранные по старому содержимому, больше не годятся."""
+        if self._owner_of(config_id) is None:
+            self.generation += 1
+        else:
+            self.accounts.invalidate()
+
+    def _all_records(self) -> List[Tuple[str, dict]]:
+        return list(self.configurations.items()) + self.accounts.all_records()
+
+    def scope_records(self) -> Dict[str, dict]:
+        """Список конфигураций открытой области: общий набор либо пресеты открытого аккаунта."""
+        return self.configurations if self.edit_uid is None else self.accounts.bucket(self.edit_uid)
+
+    def scope_active_id(self) -> Optional[str]:
+        """Активная конфигурация открытой области. У аккаунта без своих пресетов её нет: он идёт за общим набором."""
+        return self.active_id if self.edit_uid is None else self.accounts.active_id(self.edit_uid)
+
+    def _set_active(self, uid: Optional[int], config_id: Optional[str]):
+        if uid is None:
+            self.active_id = config_id or ""
+        elif config_id:
+            self.accounts.set_active(uid, config_id)
+
+    def _shared_baseline(self) -> dict:
+        record = self.configurations.get(self.active_id) or next(iter(self.configurations.values()), None)
+        return dict((record or {}).get("baseline") or SETTING_DEFAULTS)
 
     def _param_path(self, config_id: str, role: str, key: str) -> str:
         return os.path.join(self._config_dir(config_id), role, key + ".json")
@@ -6861,18 +6926,22 @@ class ConfigurationsManager:
             self._degraded = True
             return False, None
 
-    def _read_index(self) -> Optional[dict]:
-        path = os.path.join(self.store_dir, self.INDEX_NAME)
+    def _read_index(self, root: Optional[str] = None) -> Optional[dict]:
+        path = os.path.join(root or self.store_dir, self.INDEX_NAME)
         for candidate in (path, path + ".bak"):
             ok, data = self._read_json(candidate)
             if ok and isinstance(data, dict) and isinstance(data.get("order"), list):
                 return data
         return None
 
-    def _write_index(self) -> bool:
-        path = os.path.join(self.store_dir, self.INDEX_NAME)
+    def _write_index(self, owner: Optional[int] = None) -> bool:
+        if owner is None:
+            root, active, order = self.store_dir, self.active_id, list(self.configurations)
+        else:
+            root, active, order = self._account_root(owner), self.accounts.active_id(owner) or "", self.accounts.ids(owner)
+        path = os.path.join(root, self.INDEX_NAME)
         payload = json.dumps(
-            {"version": 1, "active": self.active_id, "order": list(self.configurations)},
+            {"version": 1, "active": active, "order": order},
             ensure_ascii=False, separators=(",", ":"),
         )
         try:
@@ -6908,40 +6977,46 @@ class ConfigurationsManager:
             origin = self.ORIGIN_CREATED
         return {"name": name if name_ok and isinstance(name, str) else "", "current": current, "baseline": baseline, "origin": origin}
 
-    def _load_store(self):
-        self._clean_stale_temp(self.store_dir)
-        index = self._read_index()
+    def _load_records(self, root: str, owner: Optional[int]) -> Tuple[Dict[str, dict], str]:
+        """Записи из папки хранилища: общего набора (owner=None) или пресетов одного аккаунта. Возвращает (записи, активная)."""
+        index = self._read_index(root)
         ids: List[str] = []
         if index:
             for config_id in index["order"]:
-                if self._valid_id(config_id) and config_id not in ids:
+                if self._id_belongs(config_id, owner) and config_id not in ids:
                     ids.append(config_id)
         try:
-            entries = sorted(os.listdir(self.store_dir))
+            entries = sorted(os.listdir(root))
         except OSError as exc:
             self.plugin.log(f"Prefixfy store: listing failed: {exc}")
             entries = []
         for entry in entries:
-            path = os.path.join(self.store_dir, entry)
+            path = os.path.join(root, entry)
             if not os.path.isdir(path):
                 continue
             if entry.endswith(".deleted"):
                 shutil.rmtree(path, ignore_errors=True)
             elif entry in ids:
                 continue
-            elif self._valid_id(entry) and os.path.isfile(os.path.join(path, "name.json")):
+            elif self._id_belongs(entry, owner) and os.path.isfile(os.path.join(path, "name.json")):
                 ids.append(entry)
             else:
                 shutil.rmtree(path, ignore_errors=True)
+        records: Dict[str, dict] = {}
         for config_id in ids:
             record = self._read_record(config_id)
             if record is not None:
-                self.configurations[config_id] = record
-        active = as_text(index.get("active")) if index else ""
+                records[config_id] = record
+        return records, (as_text(index.get("active")) if index else "")
+
+    def _load_store(self):
+        self._clean_stale_temp(self.store_dir)
+        records, active = self._load_records(self.store_dir, None)
+        self.configurations.update(records)
         self.active_id = active if active in self.configurations else ""
 
     def _sync_params(self, config_id: str, role: str, new: dict) -> bool:
-        record = self.configurations.get(config_id)
+        record = self._record(config_id)
         if record is None:
             return False
         old = record.get(role) or {}
@@ -6963,7 +7038,7 @@ class ConfigurationsManager:
                 self._degraded = True
                 self.plugin.log(f"Prefixfy store: write failed ({config_id}/{role}/{key}): {exc}")
         record[role] = merged
-        self.generation += 1
+        self._bump(config_id)
         return all_ok
 
     def runtime_for(self, config_id: str) -> Optional["Runtime"]:
@@ -6994,11 +7069,11 @@ class ConfigurationsManager:
         return None
 
     def _write_name(self, config_id: str) -> bool:
+        record = self._record(config_id)
+        if record is None:
+            return False
         try:
-            self._atomic_write(
-                self._name_path(config_id),
-                json.dumps(self.configurations[config_id]["name"], ensure_ascii=False),
-            )
+            self._atomic_write(self._name_path(config_id), json.dumps(record["name"], ensure_ascii=False))
             return True
         except Exception as exc:
             self.plugin.log(f"Prefixfy store: name write failed ({config_id}): {exc}")
@@ -7007,7 +7082,8 @@ class ConfigurationsManager:
     def _store_record(self, config_id: str, record: dict) -> bool:
         """True только если записано всё. name.json пишется последним: он же признак целой записи."""
         origin = record.get("origin", self.ORIGIN_CREATED)
-        self.configurations[config_id] = {"name": as_text(record["name"]), "current": {}, "baseline": {}, "origin": origin}
+        with self.accounts._lock:
+            self._bucket(config_id, True)[config_id] = {"name": as_text(record["name"]), "current": {}, "baseline": {}, "origin": origin}
         stored = self._sync_params(config_id, "current", record["current"])
         stored = self._sync_params(config_id, "baseline", record["baseline"]) and stored
         try:
@@ -7021,7 +7097,8 @@ class ConfigurationsManager:
 
     def _discard_record(self, config_id: str):
         """Откат записи, которая не легла на диск целиком."""
-        record = self.configurations.pop(config_id, None)
+        with self.accounts._lock:
+            record = self._bucket(config_id).pop(config_id, None)
         self._failed_writes = {m for m in self._failed_writes if m[0] != config_id}
         tomb = self._bury(config_id)
         if tomb:
@@ -7061,7 +7138,7 @@ class ConfigurationsManager:
         if not language_layout_pending(self.plugin):
             return
         marks = self._migrated_marks()
-        for config_id, record in list(self.configurations.items()):
+        for config_id, record in self._all_records():
             for role in ("current", "baseline"):
                 params = record.get(role) or {}
                 mark = f"{config_id}:{role}"
@@ -7070,14 +7147,6 @@ class ConfigurationsManager:
                 if self._sync_params(config_id, role, {**params, "language": migrate_language_index(params["language"])}):
                     marks.add(mark)
                     self._save_migrated_marks(marks)
-        for uid in self.accounts.uids():
-            params = self.accounts.get(uid)
-            mark = f"acc:{uid}"
-            if mark in marks or not params or "language" not in params:
-                continue
-            if self.accounts.save(uid, {**params, "language": migrate_language_index(params["language"])}):
-                marks.add(mark)
-                self._save_migrated_marks(marks)
 
     MAX_LEGACY_RECORDS = 200
 
@@ -7102,7 +7171,8 @@ class ConfigurationsManager:
                 flat = dict(record)
                 name = flat.pop("name", old_id)
                 record = {"name": name, "current": dict(flat), "baseline": dict(flat)}
-            config_id = str(old_id) if self._valid_id(str(old_id)) and str(old_id) not in self.configurations else self._new_id()
+            config_id = (str(old_id) if self._valid_id(str(old_id)) and self._owner_of(str(old_id)) is None
+                         and str(old_id) not in self.configurations else self._new_id())
             stored = self._store_record(config_id, {
                 "name": as_text(record.get("name", old_id)),
                 "current": record.get("current") if isinstance(record.get("current"), dict) else {},
@@ -7115,8 +7185,13 @@ class ConfigurationsManager:
         self._migrated_legacy = bool(self.configurations) and all_stored
 
     def _dedupe_names(self):
+        self._dedupe_bucket(self.configurations)
+        for uid in self.accounts.uids():
+            self._dedupe_bucket(self.accounts.bucket(uid))
+
+    def _dedupe_bucket(self, bucket: Dict[str, dict]):
         seen: List[str] = []
-        for config_id, record in self.configurations.items():
+        for config_id, record in list(bucket.items()):
             base = self.normalize_name(record.get("name")) or self.plugin._tr("default_configuration_name")
             name = unique_name(base, seen)
             if name != record.get("name"):
@@ -7126,9 +7201,7 @@ class ConfigurationsManager:
 
     def _referenced_media(self) -> set:
         referenced = {os.path.abspath(as_text(self.settings.get("attached_media_path")))}
-        for path in self.accounts.media_paths():
-            referenced.add(os.path.abspath(path))
-        for data in self.configurations.values():
+        for _config_id, data in self._all_records():
             for snapshot in (data.get("current", {}), data.get("baseline", {})):
                 referenced.add(os.path.abspath(as_text(snapshot.get("attached_media_path"))))
         return referenced
@@ -7231,7 +7304,8 @@ class ConfigurationsManager:
             self.plugin.log(f"Prefixfy live settings restore failed: {exc}")
 
     def _current(self, config_id=None) -> dict:
-        return self.configurations.get(config_id or self.active_id, {}).get("current", {})
+        record = self._record(config_id) if config_id else self.configurations.get(self.active_id)
+        return (record or {}).get("current", {})
 
     def _load_snapshot(self, data):
         self._loading = True
@@ -7248,9 +7322,7 @@ class ConfigurationsManager:
             self._autosave_dirty = False
             uid = self.edit_uid
             if uid is not None:
-                if not self.accounts.has(uid) and self._same_as_shared(self._snapshot()):
-                    return True
-                saved = self.accounts.save(uid, self._snapshot_with_media(f"acc_{uid}", "current"))
+                saved = self._save_account(uid)
                 if not saved:
                     self._autosave_dirty = True
                 return saved
@@ -7260,6 +7332,55 @@ class ConfigurationsManager:
             if not saved:
                 self._autosave_dirty = True
             return saved
+
+    def _save_account(self, uid: int) -> bool:
+        """Живые настройки — в активный пресет аккаунта. Пока пресетов нет и настройки совпадают с общими, ничего не пишем."""
+        config_id = self.accounts.active_id(uid)
+        if config_id is None:
+            if self._same_as_shared(self._snapshot()):
+                return True
+            return self._fork_account(uid) is not None
+        return self._sync_params(config_id, "current", self._snapshot_with_media(config_id, "current"))
+
+    def _fork_account(self, uid: int, avoid=()) -> Optional[str]:
+        """Первый собственный пресет аккаунта: копия живых настроек. Baseline — как у активной общей конфигурации,
+        чтобы «сброс» возвращал то, что аккаунт получил от общего набора. avoid — имена, которые нельзя занять."""
+        config_id = self._new_id(uid)
+        record = {
+            "name": unique_name(self.plugin._tr("default_configuration_name"), list(avoid)),
+            "current": self._snapshot_with_media(config_id, "current"),
+            "baseline": self._clone_with_media(self._shared_baseline(), config_id, "baseline"),
+        }
+        if not self._store_record(config_id, record):
+            self._discard_record(config_id)
+            return None
+        self.accounts.set_active(uid, config_id)
+        self._write_index(uid)
+        return config_id
+
+    def _migrate_account_profile(self, uid: int, params: dict) -> bool:
+        """Профиль аккаунта прежних версий (<uid>.json) становится его первым пресетом."""
+        config_id = self._new_id(uid)
+        base_id = self.active_id if self.active_id in self.configurations else next(iter(self.configurations), "")
+        record = {
+            "name": self.plugin._tr("default_configuration_name"),
+            "current": self._clone_with_media(params, config_id, "current"),
+            "baseline": self._clone_with_media(self._shared_baseline(), config_id, "baseline"),
+        }
+        if not self._store_record(config_id, record):
+            self._discard_record(config_id)
+            return False
+        self.accounts.set_active(uid, config_id)
+        self._write_index(uid)
+        if language_layout_pending(self.plugin):
+            # если профиль или общий baseline уже переведены на новую раскладку языков, пресет наследует эту отметку
+            marks = self._migrated_marks()
+            if f"acc:{uid}" in marks:
+                marks.add(f"{config_id}:current")
+            if base_id and f"{base_id}:baseline" in marks:
+                marks.add(f"{config_id}:baseline")
+            self._save_migrated_marks(marks)
+        return True
 
     def _retry_later(self):
         with self._lock:
@@ -7349,33 +7470,35 @@ class ConfigurationsManager:
         self.plugin.reload_settings_ui()
 
     def selector_items(self) -> List[str]:
-        return [as_text(data.get("name", key)) for key, data in self.configurations.items()]
+        return [as_text(data.get("name", key)) for key, data in self.scope_records().items()]
 
     def selector_index(self) -> int:
-        keys = list(self.configurations)
-        return keys.index(self.active_id) if self.active_id in keys else 0
+        keys = list(self.scope_records())
+        active = self.scope_active_id()
+        return keys.index(active) if active in keys else 0
 
     def _activate(self, config_id: str):
         with self._lock:
-            previous = self.active_id
+            uid = self.edit_uid
+            previous = self.scope_active_id()
             self._autosave_dirty = False
-            self.active_id = config_id
+            self._set_active(uid, config_id)
             try:
                 self._load_snapshot(self._target_snapshot())
             except Exception:
                 # индекс и живые настройки не должны разойтись: возвращаем прежнюю активную конфигурацию
-                self.active_id = previous
+                self._set_active(uid, previous)
                 self._restore_live(self._target_snapshot())
                 raise
-            self._write_index()
+            self._write_index(uid)
             self._collect_orphan_media()
         self.plugin.refresh_chat_menu_item()
         self._refresh_ui()
 
     def switch(self, index):
         with self._lock:
-            keys = list(self.configurations)
-            if not _is_int(index) or not 0 <= index < len(keys) or keys[index] == self.active_id:
+            keys = list(self.scope_records())
+            if not _is_int(index) or not 0 <= index < len(keys) or keys[index] == self.scope_active_id():
                 return
             if not self._save_active_checked():
                 self.plugin._toast("configuration_save_failed")
@@ -7383,10 +7506,11 @@ class ConfigurationsManager:
                 return
             self._activate(keys[index])
 
-    def _new_id(self) -> str:
+    def _new_id(self, owner: Optional[int] = None) -> str:
+        prefix = "config_" if owner is None else f"acc{int(owner)}_"
         while True:
-            config_id = "config_" + uuid.uuid4().hex[:8]
-            if config_id not in self.configurations and not os.path.exists(self._config_dir(config_id)):
+            config_id = prefix + uuid.uuid4().hex[:8]
+            if config_id not in self._bucket(config_id) and not os.path.exists(self._config_dir(config_id)):
                 return config_id
 
     @staticmethod
@@ -7394,10 +7518,13 @@ class ConfigurationsManager:
         return " ".join(as_text(name).split())[:MAX_CONFIG_NAME_LENGTH].strip()
 
     def is_name_taken(self, name, ignore_id=None) -> bool:
+        """Имена уникальны в пределах области: общего набора или пресетов одного аккаунта."""
         key = self.normalize_name(name).casefold()
+        owner = self._owner_of(ignore_id) if ignore_id else self.edit_uid
+        records = self.configurations if owner is None else self.accounts.bucket(owner)
         return any(
             as_text(data.get("name", config_id)).strip().casefold() == key
-            for config_id, data in self.configurations.items()
+            for config_id, data in list(records.items())
             if config_id != ignore_id
         )
 
@@ -7411,17 +7538,18 @@ class ConfigurationsManager:
 
     def add(self, name: str, copy_current: bool = False):
         with self._lock:
-            taken = self.selector_items()
+            uid = self.edit_uid
             name = self.normalize_name(name)
-            if name:
-                if self.is_name_taken(name):
-                    raise ConfigurationError("configuration name is already taken")
-            else:
-                name = unique_name(self.plugin._tr("configuration_n", n=len(taken) + 1), taken)
+            if name and self.is_name_taken(name):
+                raise ConfigurationError("configuration name is already taken")
             self._require_saved()
-            config_id = self._new_id()
+            self._ensure_account_preset(uid, avoid=[name] if name else [])
+            taken = self.selector_items()
+            if not name:
+                name = unique_name(self.plugin._tr("configuration_n", n=len(taken) + 1), taken)
+            config_id = self._new_id(uid)
             if copy_current:
-                source = self._current()
+                source = self._current(self.scope_active_id())
                 record = {
                     "name": name,
                     "current": self._clone_with_media(source, config_id, "current"),
@@ -7434,15 +7562,26 @@ class ConfigurationsManager:
                 raise ConfigurationSaveError("configuration could not be stored")
             self._activate(config_id)
 
+    def _ensure_account_preset(self, uid: Optional[int], avoid=()):
+        """Перед добавлением новой конфигурации аккаунту без своих пресетов нужен первый: то, что он использует сейчас."""
+        if uid is None:
+            return
+        if self.accounts.active_id(uid) is None and self._fork_account(uid, avoid) is None:
+            raise ConfigurationSaveError("account configuration could not be stored")
+        if len(self.accounts.ids(uid)) >= MAX_ACCOUNT_PRESETS:
+            raise ConfigurationError("too many configurations for the account")
+
     def create_from_import(self, data, components, name=None):
         with self._lock:
+            uid = self.edit_uid
             name = self.normalize_name(name)
             if name and self.is_name_taken(name):
                 raise ConfigurationError("configuration name is already taken")
+            self._require_saved()
+            self._ensure_account_preset(uid, avoid=[name] if name else [])
             if not name:
                 name = unique_name(self.plugin._tr("imported_configuration"), self.selector_items())
-            self._require_saved()
-            # возвращаем то, что реально было в живых настройках (в режиме аккаунтов это набор аккаунта, а не общий)
+            # возвращаем то, что реально было в живых настройках (в режиме аккаунтов это пресет аккаунта, а не общий набор)
             previous = self._snapshot()
             try:
                 self._load_snapshot(SETTING_DEFAULTS)
@@ -7450,7 +7589,7 @@ class ConfigurationsManager:
             except Exception:
                 self._restore_live(previous)
                 raise
-            config_id = self._new_id()
+            config_id = self._new_id(uid)
             baseline = self._snapshot_with_media(config_id, "baseline")
             stored = self._store_record(config_id, {
                 "name": name,
@@ -7465,7 +7604,7 @@ class ConfigurationsManager:
             self._activate(config_id)
 
     def is_imported(self, config_id: Optional[str] = None) -> bool:
-        record = self.configurations.get(config_id or self.active_id) or {}
+        record = self._record(config_id or self.scope_active_id()) or {}
         return record.get("origin") == self.ORIGIN_IMPORTED
 
     def import_data(self, data, components, as_new=False, name=None):
@@ -7474,6 +7613,8 @@ class ConfigurationsManager:
             raise ConfigurationError("plugin update required")
         if not FEATURES.on("config_import"):
             raise ConfigurationError("configuration import is switched off")
+        # расписание и привязки чатов относятся к общим конфигурациям: пресет аккаунта в них не участвует
+        shared_target = self.edit_uid is None
         if as_new:
             self.create_from_import(data, components, name=name)
         else:
@@ -7486,34 +7627,41 @@ class ConfigurationsManager:
                     raise
                 if not self._save_active_checked():
                     self.plugin.log("Prefixfy import applied but not yet saved: retry scheduled")
-        if "schedule" in components:
+        if "schedule" in components and (shared_target or not as_new):
             section = extract_component(data, "schedule")
             if section is not None:
-                new_name = as_text(self.configurations[self.active_id].get("name")) if as_new else None
+                new_name = as_text((self.configurations.get(self.active_id) or {}).get("name")) if as_new else None
                 self.plugin.import_schedule_section(section, new_name)
 
     def rename(self, config_id, name) -> bool:
         with self._lock:
             config_id = str(config_id)
-            if config_id not in self.configurations or self.name_error(name, ignore_id=config_id):
+            record = self._record(config_id)
+            if record is None or self.name_error(name, ignore_id=config_id):
                 return False
-            old_name = as_text(self.configurations[config_id].get("name"))
-            self.configurations[config_id]["name"] = self.normalize_name(name)
+            old_name = as_text(record.get("name"))
+            record["name"] = self.normalize_name(name)
             if not self._write_name(config_id):
-                self.configurations[config_id]["name"] = old_name   # на диске осталось старое имя: не расходимся с ним
+                record["name"] = old_name   # на диске осталось старое имя: не расходимся с ним
                 return False
-            self.generation += 1
-        self.plugin.rename_in_schedule(old_name, self.configurations[config_id]["name"])
+            self._bump(config_id)
+            new_name = record["name"]
+        if self._owner_of(config_id) is None:
+            self.plugin.rename_in_schedule(old_name, new_name)
         self._refresh_ui()
         return True
 
     def inactive_ids(self) -> List[str]:
-        return [config_id for config_id in self.configurations if config_id != self.active_id]
+        active = self.scope_active_id()
+        return [config_id for config_id in self.scope_records() if config_id != active]
 
     def delete_many(self, config_ids) -> int:
         with self._lock:
+            owner = self.edit_uid
+            records = self.scope_records()
+            active = self.scope_active_id()
             selected = [cid for cid in dict.fromkeys(str(c) for c in config_ids)
-                        if cid in self.configurations and cid != self.active_id]
+                        if cid in records and cid != active]
             if not selected:
                 return 0
             removed = []
@@ -7522,15 +7670,19 @@ class ConfigurationsManager:
                 tomb = self._bury(config_id)
                 if tomb:
                     tombs.append(tomb)
-                removed.append(self.configurations.pop(config_id))
+                with self.accounts._lock:
+                    removed.append(records.pop(config_id))
             self._failed_writes = {m for m in self._failed_writes if m[0] not in selected}
-            self._write_index()
+            self._write_index(owner)
             for tomb in tombs:
                 shutil.rmtree(tomb, ignore_errors=True)
             for record in removed:
                 self._remove_media_of(record)
-        self.generation += 1
-        self.plugin.prune_chat_bindings()
+        if owner is None:
+            self.generation += 1
+            self.plugin.prune_chat_bindings()
+        else:
+            self.accounts.invalidate()
         self._refresh_ui()
         self.plugin._toast("configuration_deleted", n=len(selected))
         return len(selected)
@@ -7538,19 +7690,22 @@ class ConfigurationsManager:
     def reset_active_components(self, components, plugin_defaults: bool = False):
         with self._lock:
             # несохранённые правки не должны пропасть вместе со сбросом: без успешного сохранения ничего не трогаем
-            if not self._save_active_checked():
-                failed = True
-            else:
-                failed = False
-                config = self.configurations.get(self.active_id)
+            failed = not self._save_active_checked()
+            if not failed:
+                uid = self.edit_uid
+                config_id = self.scope_active_id()
+                if uid is not None and config_id is None:
+                    # аккаунт ещё идёт за общим набором: сбрасывать нечего, кроме его собственной копии — заводим её
+                    config_id = self._fork_account(uid)
+                    failed = config_id is None
+            if not failed:
+                config = self._record(config_id)
                 if not config:
                     return
                 baseline = config.get("baseline", {})
-                if plugin_defaults and self.is_imported(self.active_id):
+                if plugin_defaults and self.is_imported(config_id):
                     baseline = dict(SETTING_DEFAULTS)
-                uid = self.edit_uid
-                current = dict((self.accounts.get(uid) if uid is not None else None) or config.get("current", {}))
-                owner_id = self.active_id if uid is None else f"acc_{uid}"
+                current = dict(config.get("current", {}))
                 for component in components:
                     for key in COMPONENT_KEYS.get(component, ()):
                         if key in baseline:
@@ -7559,14 +7714,11 @@ class ConfigurationsManager:
                     baseline_media = as_text(baseline.get("attached_media_path"))
                     if baseline.get("attached_media_enabled", False) and os.path.isfile(baseline_media):
                         current["attached_media_path"] = self._clone_with_media(
-                            {"attached_media_path": baseline_media}, owner_id, "current"
+                            {"attached_media_path": baseline_media}, config_id, "current"
                         ).get("attached_media_path", "")
                     elif not baseline.get("attached_media_enabled", False):
                         current["attached_media_path"] = ""
-                if uid is not None:
-                    if not self.accounts.save(uid, current):
-                        self._retry_later()
-                elif not self._sync_params(self.active_id, "current", current):
+                if not self._sync_params(config_id, "current", current):
                     self._retry_later()
                 self._load_snapshot(current)
         if failed:
@@ -7586,7 +7738,9 @@ class ConfigurationsManager:
         return f"{ACCT_SELECTOR_KEY}_{self._ui_revision}"
 
     def live_config_id(self) -> str:
-        return f"acc_{self.edit_uid}" if self.edit_uid is not None else self.active_id
+        if self.edit_uid is None:
+            return self.active_id
+        return self.accounts.active_id(self.edit_uid) or f"acc_{self.edit_uid}"
 
     def _stored_live_uid(self) -> Optional[int]:
         try:
@@ -7606,8 +7760,12 @@ class ConfigurationsManager:
             self.plugin.log(f"Prefixfy account marker failed: {exc}")
 
     def _target_snapshot(self) -> dict:
-        own = self.accounts.get(self.edit_uid) if self.edit_uid is not None else None
-        return own if own is not None else self._current(self.active_id)
+        """Что должно лежать в живых настройках: активный пресет открытого аккаунта, а без него — активная общая конфигурация."""
+        if self.edit_uid is not None:
+            record = self.accounts.active_record(self.edit_uid)
+            if record is not None:
+                return record.get("current") or {}
+        return self._current(self.active_id)
 
     def _same_as_shared(self, snapshot: dict) -> bool:
         shared = self._current(self.active_id)
@@ -7668,11 +7826,10 @@ class ConfigurationsManager:
     def _import_into(self, uid: Optional[int], data, components):
         self._switch_live(uid)
         self.plugin.transfer.apply_components(data, components)
-        if uid is None:
-            if not self._save_active_checked():
-                self.plugin.log("Prefixfy import applied but not yet saved: retry scheduled")
-        elif not self.accounts.save(uid, self._snapshot_with_media(f"acc_{uid}", "current")):
-            raise ConfigurationSaveError("account configuration could not be saved")
+        if not self._save_active_checked():
+            if uid is not None:
+                raise ConfigurationSaveError("account configuration could not be saved")
+            self.plugin.log("Prefixfy import applied but not yet saved: retry scheduled")
 
     def import_to_accounts(self, data, components, target):
         """target: ACCT_ALL (общий набор + все свои наборы), ACCT_COMMON или user_id аккаунта."""
@@ -7749,17 +7906,20 @@ class ConfigurationsManager:
             self.plugin._toast("operation_failed")
 
     def request_rename(self, view=None):
-        current = self.configurations.get(self.active_id, {})
-        current_name = as_text(current.get("name", self.active_id))
+        config_id = self.scope_active_id()
+        if not config_id:
+            return
+        current = self._record(config_id) or {}
+        current_name = as_text(current.get("name", config_id))
 
         def confirm(value, editor):
             if self.normalize_name(value) == current_name:
                 return True
-            error = self.name_error(value, ignore_id=self.active_id)
+            error = self.name_error(value, ignore_id=config_id)
             if error:
                 editor.setError(self.plugin._tr(error))
                 return False
-            if self.rename(self.active_id, value):
+            if self.rename(config_id, value):
                 return True
             editor.setError(self.plugin._tr("configuration_save_failed"))
             return False
@@ -7776,7 +7936,7 @@ class ConfigurationsManager:
         if len(ids) == 1:
             self._confirm_delete_single(ids[0])
             return
-        rows = [(as_text(self.configurations[cid].get("name", cid)), False, True) for cid in ids]
+        rows = [(as_text((self._record(cid) or {}).get("name", cid)), False, True) for cid in ids]
 
         def confirm(selected, _extra):
             chosen = [ids[index] for index in selected]
@@ -7795,7 +7955,7 @@ class ConfigurationsManager:
         activity = self.plugin._dialog_activity()
         if not activity:
             return
-        name = self.configurations.get(config_id, {}).get("name", config_id)
+        name = (self._record(config_id) or {}).get("name", config_id)
         builder = AlertDialogBuilder(activity)
         builder.set_title(self.plugin._tr("delete_configuration"))
         builder.set_message(self.plugin._tr("delete_configuration_confirm", name=name))
@@ -7810,8 +7970,16 @@ class ConfigurationsManager:
 
     def append_settings(self, settings: list):
         tr = self.plugin._tr
-        settings.append(Header(text=tr("configurations")))
-        has_several = len(self.configurations) >= 2
+        uid = self.edit_uid
+        title = tr("configurations")
+        if uid is not None:
+            # список принадлежит открытому аккаунту: подписываем, чьи это конфигурации
+            slot = next((s for s, u in self.plugin._accounts().items() if u == uid), None)
+            title += " • " + self.plugin._acct_label(slot, uid)
+        settings.append(Header(text=title))
+        count = len(self.scope_records())
+        has_own = uid is None or count >= 1      # у аккаунта без пресетов нечего переименовывать: он идёт за общим набором
+        has_several = count >= 2
         if has_several:
             selector_key, selector_index = self.selector_key, self.selector_index()
             try:
@@ -7832,12 +8000,13 @@ class ConfigurationsManager:
             icon="msg_add",
             on_click=self.request_add,
         ))
-        settings.append(Text(
-            text=tr("rename_configuration"),
-            subtext=tr("rename_configuration_subtext"),
-            icon="msg_edit",
-            on_click=self.request_rename,
-        ))
+        if has_own:
+            settings.append(Text(
+                text=tr("rename_configuration"),
+                subtext=tr("rename_configuration_subtext"),
+                icon="msg_edit",
+                on_click=self.request_rename,
+            ))
         if has_several:
             settings.append(Text(
                 text=tr("delete_configurations"),
@@ -8186,10 +8355,14 @@ def device_account_map(logger=None) -> Optional[Dict[int, int]]:
 
 
 class AccountProfiles:
-    """Собственные наборы настроек отдельных аккаунтов («Настройки по аккаунтам»).
+    """Пресеты настроек отдельных аккаунтов («Настройки по аккаунтам»).
 
-    Файл <uid>.json появляется лениво, при первой правке в редакторе этого аккаунта.
-    Нет файла — аккаунт использует общий набор (то, что было до появления режима).
+    У аккаунта может быть несколько пресетов (конфигураций), один из них активен. Каждый пресет лежит так же, как
+    конфигурация общего набора: папка <uid>/<id пресета>/ с отдельными файлами параметров и индекс <uid>/index.json.
+    Пока у аккаунта нет ни одного пресета, он использует активную общую конфигурацию (то, что было до появления режима);
+    первый пресет появляется лениво — при первой правке настроек этого аккаунта или при добавлении конфигурации.
+    Профили прежних версий (<uid>.json) при запуске превращаются в первый пресет аккаунта.
+    Менять данные должен ConfigurationsManager (под своим замком), здесь — хранение, поиск и рантаймы для отправки.
     """
 
     def __init__(self, manager):
@@ -8198,37 +8371,66 @@ class AccountProfiles:
         ensure_dir_exists(self.directory)
         self.generation = 0
         self._lock = threading.RLock()
-        self._data: Dict[int, Dict[str, Any]] = {}
+        self._presets: Dict[int, Dict[str, dict]] = {}
+        self._active: Dict[int, str] = {}
         self._runtimes: Dict[int, Tuple[int, "Runtime"]] = {}
-        self.degraded = False      # какой-то профиль не прочитался: ссылки на медиа известны не все
-        self._load()
+        self.degraded = False      # что-то не прочиталось или не переведено: ссылки на медиа известны не все
 
     def _path(self, uid) -> str:
         return os.path.join(self.directory, f"{int(uid)}.json")
 
-    def _clean(self, params) -> Dict[str, Any]:
+    @staticmethod
+    def _canonical_uid(text) -> Optional[int]:
+        # «0012» и «12» — один и тот же аккаунт: берём только канонический вид
+        if not isinstance(text, str) or _ACCT_DIR_RE.fullmatch(text) is None or str(int(text)) != text:
+            return None
+        uid = int(text)
+        return uid if 0 < uid <= 2 ** 53 else None
+
+    @staticmethod
+    def _clean(params) -> Dict[str, Any]:
         coerce = ConfigurationsManager._coerce
         return {key: coerce(key, params.get(key, SETTING_DEFAULTS[key])) for key in ConfigurationsManager.CONFIG_KEYS}
 
-    def _load(self):
+    def load(self):
+        manager = self.manager
         ConfigurationsManager._clean_stale_temp(self.directory)
         try:
             entries = sorted(os.listdir(self.directory))
         except OSError as exc:
-            self.manager.plugin.log(f"Prefixfy accounts: listing failed: {exc}")
+            manager.plugin.log(f"Prefixfy accounts: listing failed: {exc}")
             self.degraded = True
             return
+        legacy: Dict[int, str] = {}
         for entry in entries:
-            match = _ACCT_FILE_RE.fullmatch(entry)
-            if match is None:
-                continue
-            uid = int(match.group(1))
-            if uid <= 0 or str(uid) != match.group(1):     # «0012.json» и «12.json» — один и тот же аккаунт: берём только канонический вид
-                continue
-            if len(self._data) >= MAX_ACCOUNT_PROFILES:
-                self.degraded = True
-                break
             path = os.path.join(self.directory, entry)
+            if os.path.isdir(path):
+                if entry.endswith(".deleted"):
+                    shutil.rmtree(path, ignore_errors=True)
+                    continue
+                uid = self._canonical_uid(entry)
+                if uid is None:
+                    continue
+                if len(self._presets) >= MAX_ACCOUNT_PROFILES:
+                    self.degraded = True
+                    continue
+                records, active = manager._load_records(path, uid)
+                if records:
+                    with self._lock:
+                        self._presets[uid] = records
+                        self._active[uid] = active if active in records else next(iter(records))
+                continue
+            match = _ACCT_FILE_RE.fullmatch(entry)
+            uid = self._canonical_uid(match.group(1)) if match else None
+            if uid is not None:
+                legacy[uid] = path
+        for uid, path in legacy.items():
+            if uid in self._presets:
+                discard_file(path)         # уже переведён, а файл остался после сбоя
+                continue
+            if len(self._presets) >= MAX_ACCOUNT_PROFILES:
+                self.degraded = True
+                continue
             try:
                 if os.path.getsize(path) > MAX_STORE_JSON_BYTES:
                     raise ValueError("file is too large")
@@ -8237,10 +8439,13 @@ class AccountProfiles:
                 params = payload.get("params") if isinstance(payload, dict) else None
                 if not isinstance(params, dict):
                     raise ValueError("no params object")
-                self._data[uid] = self._clean(params)
+                if not manager._migrate_account_profile(uid, self._clean(params)):
+                    raise ValueError("conversion to a preset failed")
             except Exception as exc:
                 self.degraded = True
-                self.manager.plugin.log(f"Prefixfy accounts: cannot read {entry}: {exc}")
+                manager.plugin.log(f"Prefixfy accounts: cannot convert {os.path.basename(path)}: {exc}")
+                continue
+            discard_file(path)             # файл удаляем только после того, как пресет лёг на диск целиком
 
     def invalidate(self):
         with self._lock:
@@ -8249,67 +8454,85 @@ class AccountProfiles:
 
     def uids(self) -> List[int]:
         with self._lock:
-            return sorted(self._data)
+            return sorted(uid for uid, bucket in self._presets.items() if bucket)
 
     def has(self, uid) -> bool:
         if uid is None:
             return False
         with self._lock:
-            return int(uid) in self._data
+            return bool(self._presets.get(int(uid)))
 
-    def get(self, uid) -> Optional[Dict[str, Any]]:
+    def bucket(self, uid, create: bool = False) -> Dict[str, dict]:
+        """Пресеты аккаунта (живой словарь). Если их нет и create=False — пустой словарь, который никуда не привязан."""
+        uid = int(uid)
+        with self._lock:
+            found = self._presets.get(uid)
+            if found is None:
+                if not create:
+                    return {}
+                found = self._presets[uid] = {}
+            return found
+
+    def ids(self, uid) -> List[str]:
+        with self._lock:
+            return list(self._presets.get(int(uid), {}))
+
+    def active_id(self, uid) -> Optional[str]:
         if uid is None:
             return None
-        with self._lock:
-            found = self._data.get(int(uid))
-            return dict(found) if found is not None else None
-
-    def save(self, uid, params) -> bool:
         uid = int(uid)
-        if uid <= 0:
-            return False
-        clean = self._clean(params)
         with self._lock:
-            if self._data.get(uid) == clean:
-                return True
-            if uid not in self._data and len(self._data) >= MAX_ACCOUNT_PROFILES:
-                return False
-            try:
-                ConfigurationsManager._atomic_write(
-                    self._path(uid), json.dumps({"version": 1, "params": clean}, ensure_ascii=False, separators=(",", ":"))
-                )
-            except Exception as exc:
-                self.manager.plugin.log(f"Prefixfy accounts: write failed ({uid}): {exc}")
-                return False
-            self._data[uid] = clean
+            bucket = self._presets.get(uid)
+            if not bucket:
+                return None
+            active = self._active.get(uid)
+            return active if active in bucket else next(iter(bucket))
+
+    def set_active(self, uid, config_id: str):
+        uid = int(uid)
+        with self._lock:
+            self._active[uid] = config_id
             self._runtimes.pop(uid, None)
             self.generation += 1
-        return True
+
+    def active_record(self, uid) -> Optional[dict]:
+        config_id = self.active_id(uid)
+        if config_id is None:
+            return None
+        with self._lock:
+            return self._presets.get(int(uid), {}).get(config_id)
+
+    def all_records(self) -> List[Tuple[str, dict]]:
+        with self._lock:
+            return [(config_id, record) for bucket in self._presets.values() for config_id, record in bucket.items()]
 
     def delete(self, uid) -> bool:
+        """Удаляет все пресеты аккаунта: дальше он снова использует общий набор."""
         uid = int(uid)
+        manager = self.manager
+        root = manager._account_root(uid)
+        tomb = root + ".deleted"
         with self._lock:
-            # сначала файл, потом память — и всё под замком: параллельное save() не потеряет свежий профиль,
-            # а при неудаче удаления профиль не «воскреснет» после перезапуска, пока в памяти его уже нет
+            # сначала диск, потом память — и всё под замком: параллельная запись не потеряет свежий пресет,
+            # а при неудаче удаления пресеты не «воскреснут» после перезапуска, пока в памяти их уже нет
             try:
+                if os.path.isdir(root):
+                    shutil.rmtree(tomb, ignore_errors=True)
+                    os.replace(root, tomb)
                 if os.path.isfile(self._path(uid)):
                     os.remove(self._path(uid))
             except OSError as exc:
-                self.manager.plugin.log(f"Prefixfy accounts: delete failed ({uid}): {exc}")
+                manager.plugin.log(f"Prefixfy accounts: delete failed ({uid}): {exc}")
                 return False
-            params = self._data.pop(uid, None)
+            removed = self._presets.pop(uid, None) or {}
+            self._active.pop(uid, None)
             self._runtimes.pop(uid, None)
             self.generation += 1
-        if params:
-            media = as_text(params.get("attached_media_path"))
-            own = re.fullmatch(rf"acc_{uid}(?:-baseline)?\.[A-Za-z0-9]{{1,8}}", os.path.basename(media)) is not None
-            if media and own and is_media_store_file(media) and os.path.isfile(media):
-                discard_file(media)
+        shutil.rmtree(tomb, ignore_errors=True)
+        manager._failed_writes = {m for m in manager._failed_writes if m[0] not in removed}
+        for record in list(removed.values()):
+            manager._remove_media_of(record)
         return True
-
-    def media_paths(self) -> List[str]:
-        with self._lock:
-            return [as_text(item.get("attached_media_path")) for item in self._data.values() if item.get("attached_media_path")]
 
     def runtime_for(self, uid) -> Optional["Runtime"]:
         if uid is None:
@@ -8319,11 +8542,12 @@ class AccountProfiles:
             cached = self._runtimes.get(uid)
             if cached is not None and cached[0] == self.generation:
                 return cached[1]
-            params = self._data.get(uid)
-            if params is None:
+            config_id = self.active_id(uid)
+            record = self._presets.get(uid, {}).get(config_id) if config_id else None
+            if record is None:
                 return None
             try:
-                runtime = Runtime(RuntimeSettings(dict(params)), f"acc_{uid}", self.manager.plugin.log)
+                runtime = Runtime(RuntimeSettings(dict(record.get("current") or {})), config_id, self.manager.plugin.log)
             except Exception as exc:
                 self.manager.plugin.log(f"Prefixfy account runtime failed ({uid}): {exc}")
                 return None
