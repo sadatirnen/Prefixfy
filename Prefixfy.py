@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "38.0.2"
-__build__ = "38.0.2_20261110.3_43"
+__version__ = "39.0.0"
+__build__ = "39.0.0_20261110.4_44"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -129,6 +129,10 @@ REMOTE_MAX_BYTES = 64 * 1024
 OTA_STATE_FILE = ".pfx_ota"            # маркер обновления, список отклонённых сборок
 OTA_PREV_FILE = ".pfx_prev"            # копия предыдущей версии для отката
 OTA_DEFAULT_FILE = "prefixfy.py"       # имя файла в репозитории, если манифест его не указал
+WIPE_MARKER_FILE = ".pfx_wipe"         # метка отложенного удаления данных: выполняется в начале следующего запуска
+DORMANT_FILE = ".pfx_dormant"          # метка «отказа от использования» (привязана к конкретной копии файла плагина)
+WIPE_MARKER_TTL = 3600.0               # метка удаления живёт не дольше часа
+WIPE_COOLDOWN_SEC = 5                  # кулдаун кнопки «Очистить» во втором диалоге
 OTA_FLAGS_MAX_AGE = 120.0              # флаги должны быть проверены не раньше, чем N секунд назад
 OTA_LOAD_TIMEOUT = 45.0                # сколько ждать загрузки новой версии до отката
 OTA_CONFIRM_SEC = 20.0                 # сколько новая версия должна проработать, чтобы считаться рабочей
@@ -2496,6 +2500,170 @@ for _code, _table in LocalizationManager.STRINGS.items():
         _table[_key] = _cute_extra.get(_key, _CUTE_STRINGS["en"].get(_key, _value))
 
 
+_WIPE_STRINGS = {
+    "ru": {
+        "wipe_row": "Удалить данные",
+        "wipe_row_subtext": "Очистка файлов плагина или полный отказ от его использования.",
+        "wipe_title": "Удалить данные Prefixfy?",
+        "wipe_body": "Будут удалены все файлы плагина: конфигурации и пресеты аккаунтов, прикреплённое медиа, импортированные файлы и кэш проверок. Ваши текущие настройки сохранятся, а плагин тут же создаст данные заново — это ручная очистка кэша.\n\nЕсли плагин устарел, сначала будет скачана и установлена последняя версия, и только потом данные удалятся.\n\nОтметьте «Отказаться от использования», чтобы удалить всё, включая настройки, и отключить плагин: в настройках останется только «Возобновить работу». Обновление в этом случае не скачивается, а после переустановки плагин будет вести себя так, будто его никогда не ставили.",
+        "wipe_opt_out": "Отказаться от использования",
+        "wipe_next": "Далее",
+        "wipe_confirm_title": "Подтвердите удаление",
+        "wipe_confirm_clean": "Файлы плагина будут удалены, плагин перезапустится и создаст их заново. Конфигурации и прикреплённое медиа пропадут безвозвратно.",
+        "wipe_confirm_out": "Будут удалены все файлы и настройки плагина, после чего плагин отключится. Это нельзя отменить.",
+        "wipe_confirm_btn": "Очистить",
+        "wipe_wait": "Подождите ещё {n} с",
+        "wipe_started": "Готовлю удаление…",
+        "wipe_updating": "Сначала обновляю плагин до {version}, затем удалю данные…",
+        "wipe_update_failed": "Не удалось обновить плагин: {reason}. Ничего не удалено.",
+        "wipe_restart_manual": "Выключите и снова включите плагин, чтобы завершить удаление.",
+        "wipe_failed": "Не удалось подготовить удаление. Ничего не удалено.",
+        "wipe_done": "Данные очищены и созданы заново",
+        "resume_title": "Возобновить работу",
+        "resume_subtext": "Prefixfy отключён и ничего не хранит. Нажмите, чтобы начать с чистого листа.",
+        "resume_confirm_title": "Возобновить работу?",
+        "resume_confirm_body": "Плагин запустится так, будто установлен впервые: с настройками по умолчанию.",
+        "resume_btn": "Возобновить",
+        "resume_done": "Prefixfy запущен",
+        "resume_failed": "Не удалось запустить плагин. Выключите и снова включите его.",
+    },
+    "en": {
+        "wipe_row": "Delete data",
+        "wipe_row_subtext": "Clear the plugin's files or stop using it completely.",
+        "wipe_title": "Delete Prefixfy data?",
+        "wipe_body": "All plugin files will be deleted: configurations and account presets, attached media, imported files and the verification cache. Your current settings are kept and the plugin immediately recreates its data, so this works as a manual cache cleanup.\n\nIf the plugin is out of date, the latest version is downloaded and installed first, and only then is the data deleted.\n\nTick “Stop using the plugin” to delete everything, settings included, and put the plugin to sleep: only “Resume” stays in the settings. No update is downloaded in that case, and after a reinstall the plugin behaves as if it had never been installed.",
+        "wipe_opt_out": "Stop using the plugin",
+        "wipe_next": "Next",
+        "wipe_confirm_title": "Confirm deletion",
+        "wipe_confirm_clean": "The plugin's files will be deleted, then the plugin restarts and recreates them. Configurations and attached media are lost for good.",
+        "wipe_confirm_out": "All plugin files and settings will be deleted and the plugin will switch itself off. This cannot be undone.",
+        "wipe_confirm_btn": "Clear",
+        "wipe_wait": "Wait {n} s more",
+        "wipe_started": "Preparing deletion…",
+        "wipe_updating": "Updating the plugin to {version} first, then deleting the data…",
+        "wipe_update_failed": "Could not update the plugin: {reason}. Nothing was deleted.",
+        "wipe_restart_manual": "Turn the plugin off and on again to finish the deletion.",
+        "wipe_failed": "Could not prepare the deletion. Nothing was deleted.",
+        "wipe_done": "Data cleared and recreated",
+        "resume_title": "Resume",
+        "resume_subtext": "Prefixfy is switched off and stores nothing. Tap to start from scratch.",
+        "resume_confirm_title": "Resume the plugin?",
+        "resume_confirm_body": "The plugin will start as if it had just been installed, with default settings.",
+        "resume_btn": "Resume",
+        "resume_done": "Prefixfy started",
+        "resume_failed": "Could not start the plugin. Turn it off and on again.",
+    },
+    "ja": {
+        "wipe_row": "データを削除",
+        "wipe_row_subtext": "プラグインのファイルを消去するか、使用を完全にやめます。",
+        "wipe_title": "Prefixfyのデータを削除しますか？",
+        "wipe_body": "プラグインのすべてのファイル（設定プリセット、アカウントごとのプリセット、添付メディア、インポートしたファイル、検証キャッシュ）が削除されます。現在の設定は保持され、プラグインはすぐにデータを再作成します。手動のキャッシュ消去として使えます。\n\nプラグインが古い場合は、先に最新バージョンをダウンロードしてインストールし、その後でデータを削除します。\n\n「使用をやめる」にチェックすると、設定を含むすべてを削除してプラグインを休止状態にします。設定には「再開」だけが残ります。この場合は更新をダウンロードせず、再インストール後は一度も入れていないかのように動作します。",
+        "wipe_opt_out": "使用をやめる",
+        "wipe_next": "次へ",
+        "wipe_confirm_title": "削除の確認",
+        "wipe_confirm_clean": "プラグインのファイルを削除し、プラグインを再起動して作り直します。設定プリセットと添付メディアは完全に失われます。",
+        "wipe_confirm_out": "プラグインのすべてのファイルと設定を削除し、プラグインを停止します。元に戻せません。",
+        "wipe_confirm_btn": "消去",
+        "wipe_wait": "あと{n}秒お待ちください",
+        "wipe_started": "削除の準備中…",
+        "wipe_updating": "先にプラグインを{version}に更新してから、データを削除します…",
+        "wipe_update_failed": "プラグインを更新できませんでした：{reason}。何も削除されていません。",
+        "wipe_restart_manual": "削除を完了するには、プラグインを一度オフにして、もう一度オンにしてください。",
+        "wipe_failed": "削除の準備に失敗しました。何も削除されていません。",
+        "wipe_done": "データを消去して再作成しました",
+        "resume_title": "再開",
+        "resume_subtext": "Prefixfyは停止中で、何も保存していません。タップして最初からやり直します。",
+        "resume_confirm_title": "再開しますか？",
+        "resume_confirm_body": "プラグインは初めてインストールしたかのように、初期設定で起動します。",
+        "resume_btn": "再開",
+        "resume_done": "Prefixfyを起動しました",
+        "resume_failed": "プラグインを起動できませんでした。オフにしてからオンにしてください。",
+    },
+    "ko": {
+        "wipe_row": "데이터 삭제",
+        "wipe_row_subtext": "플러그인 파일을 정리하거나 사용을 완전히 중단합니다.",
+        "wipe_title": "Prefixfy 데이터를 삭제할까요?",
+        "wipe_body": "플러그인의 모든 파일(구성 및 계정별 프리셋, 첨부 미디어, 가져온 파일, 검증 캐시)이 삭제됩니다. 현재 설정은 유지되고 플러그인이 바로 데이터를 다시 만듭니다. 수동 캐시 정리로 쓸 수 있습니다.\n\n플러그인이 오래된 버전이면 먼저 최신 버전을 내려받아 설치한 뒤에 데이터를 삭제합니다.\n\n「사용 중단」을 선택하면 설정을 포함한 모든 것을 삭제하고 플러그인을 휴면 상태로 둡니다. 설정에는 「다시 시작」만 남습니다. 이 경우 업데이트는 내려받지 않으며, 다시 설치하면 플러그인은 처음 설치한 것처럼 동작합니다.",
+        "wipe_opt_out": "사용 중단",
+        "wipe_next": "다음",
+        "wipe_confirm_title": "삭제 확인",
+        "wipe_confirm_clean": "플러그인 파일을 삭제한 뒤 플러그인을 다시 시작해 새로 만듭니다. 구성과 첨부 미디어는 영구적으로 사라집니다.",
+        "wipe_confirm_out": "플러그인의 모든 파일과 설정을 삭제하고 플러그인을 끕니다. 되돌릴 수 없습니다.",
+        "wipe_confirm_btn": "삭제",
+        "wipe_wait": "{n}초 더 기다려 주세요",
+        "wipe_started": "삭제를 준비하는 중…",
+        "wipe_updating": "먼저 플러그인을 {version}(으)로 업데이트한 뒤 데이터를 삭제합니다…",
+        "wipe_update_failed": "플러그인을 업데이트하지 못했습니다: {reason}. 아무것도 삭제되지 않았습니다.",
+        "wipe_restart_manual": "삭제를 마치려면 플러그인을 껐다가 다시 켜세요.",
+        "wipe_failed": "삭제를 준비하지 못했습니다. 아무것도 삭제되지 않았습니다.",
+        "wipe_done": "데이터를 삭제하고 다시 만들었습니다",
+        "resume_title": "다시 시작",
+        "resume_subtext": "Prefixfy가 꺼져 있고 아무것도 저장하지 않습니다. 눌러서 처음부터 시작합니다.",
+        "resume_confirm_title": "다시 시작할까요?",
+        "resume_confirm_body": "플러그인이 방금 설치한 것처럼 기본 설정으로 시작됩니다.",
+        "resume_btn": "다시 시작",
+        "resume_done": "Prefixfy를 시작했습니다",
+        "resume_failed": "플러그인을 시작하지 못했습니다. 껐다가 다시 켜세요.",
+    },
+    "fr": {
+        "wipe_row": "Supprimer les données",
+        "wipe_row_subtext": "Effacer les fichiers du plugin ou cesser complètement de l’utiliser.",
+        "wipe_title": "Supprimer les données de Prefixfy ?",
+        "wipe_body": "Tous les fichiers du plugin seront supprimés : configurations et préréglages de comptes, médias joints, fichiers importés et cache de vérification. Vos réglages actuels sont conservés et le plugin recrée aussitôt ses données : c’est un nettoyage manuel du cache.\n\nSi le plugin n’est pas à jour, la dernière version est d’abord téléchargée et installée, et ce n’est qu’ensuite que les données sont supprimées.\n\nCochez « Cesser d’utiliser le plugin » pour tout supprimer, réglages compris, et mettre le plugin en veille : seul « Reprendre » reste dans les réglages. Aucune mise à jour n’est alors téléchargée, et après une réinstallation le plugin se comporte comme s’il n’avait jamais été installé.",
+        "wipe_opt_out": "Cesser d’utiliser le plugin",
+        "wipe_next": "Suivant",
+        "wipe_confirm_title": "Confirmer la suppression",
+        "wipe_confirm_clean": "Les fichiers du plugin seront supprimés, puis le plugin redémarrera et les recréera. Les configurations et les médias joints seront perdus définitivement.",
+        "wipe_confirm_out": "Tous les fichiers et réglages du plugin seront supprimés, puis le plugin se désactivera. Cette action est irréversible.",
+        "wipe_confirm_btn": "Effacer",
+        "wipe_wait": "Encore {n} s",
+        "wipe_started": "Préparation de la suppression…",
+        "wipe_updating": "Mise à jour du plugin vers {version} d’abord, puis suppression des données…",
+        "wipe_update_failed": "Impossible de mettre à jour le plugin : {reason}. Rien n’a été supprimé.",
+        "wipe_restart_manual": "Désactivez puis réactivez le plugin pour terminer la suppression.",
+        "wipe_failed": "Impossible de préparer la suppression. Rien n’a été supprimé.",
+        "wipe_done": "Données effacées et recréées",
+        "resume_title": "Reprendre",
+        "resume_subtext": "Prefixfy est désactivé et ne conserve rien. Touchez pour repartir de zéro.",
+        "resume_confirm_title": "Reprendre le plugin ?",
+        "resume_confirm_body": "Le plugin démarrera comme s’il venait d’être installé, avec les réglages par défaut.",
+        "resume_btn": "Reprendre",
+        "resume_done": "Prefixfy est démarré",
+        "resume_failed": "Impossible de démarrer le plugin. Désactivez-le puis réactivez-le.",
+    },
+    "de": {
+        "wipe_row": "Daten löschen",
+        "wipe_row_subtext": "Plugin-Dateien bereinigen oder das Plugin ganz aufgeben.",
+        "wipe_title": "Prefixfy-Daten löschen?",
+        "wipe_body": "Alle Plugin-Dateien werden gelöscht: Konfigurationen und Konto-Presets, angehängte Medien, importierte Dateien und der Prüfcache. Deine aktuellen Einstellungen bleiben erhalten, und das Plugin legt seine Daten sofort neu an – das ist eine manuelle Cache-Bereinigung.\n\nIst das Plugin veraltet, wird zuerst die neueste Version heruntergeladen und installiert, erst danach werden die Daten gelöscht.\n\nMit „Nutzung aufgeben“ wird alles gelöscht, auch die Einstellungen, und das Plugin schläft: In den Einstellungen bleibt nur „Fortsetzen“. Dabei wird kein Update geladen, und nach einer Neuinstallation verhält sich das Plugin, als wäre es nie installiert gewesen.",
+        "wipe_opt_out": "Nutzung aufgeben",
+        "wipe_next": "Weiter",
+        "wipe_confirm_title": "Löschen bestätigen",
+        "wipe_confirm_clean": "Die Plugin-Dateien werden gelöscht, danach startet das Plugin neu und legt sie wieder an. Konfigurationen und angehängte Medien gehen unwiderruflich verloren.",
+        "wipe_confirm_out": "Alle Plugin-Dateien und Einstellungen werden gelöscht, danach schaltet sich das Plugin ab. Das lässt sich nicht rückgängig machen.",
+        "wipe_confirm_btn": "Löschen",
+        "wipe_wait": "Noch {n} s warten",
+        "wipe_started": "Löschen wird vorbereitet…",
+        "wipe_updating": "Zuerst wird das Plugin auf {version} aktualisiert, danach werden die Daten gelöscht…",
+        "wipe_update_failed": "Das Plugin konnte nicht aktualisiert werden: {reason}. Es wurde nichts gelöscht.",
+        "wipe_restart_manual": "Schalte das Plugin aus und wieder ein, um das Löschen abzuschließen.",
+        "wipe_failed": "Das Löschen konnte nicht vorbereitet werden. Es wurde nichts gelöscht.",
+        "wipe_done": "Daten gelöscht und neu angelegt",
+        "resume_title": "Fortsetzen",
+        "resume_subtext": "Prefixfy ist ausgeschaltet und speichert nichts. Tippe, um ganz neu zu beginnen.",
+        "resume_confirm_title": "Plugin fortsetzen?",
+        "resume_confirm_body": "Das Plugin startet, als wäre es gerade erst installiert worden, mit den Standardeinstellungen.",
+        "resume_btn": "Fortsetzen",
+        "resume_done": "Prefixfy gestartet",
+        "resume_failed": "Das Plugin konnte nicht gestartet werden. Schalte es aus und wieder ein.",
+    },
+}
+for _code, _table in LocalizationManager.STRINGS.items():
+    _wipe_extra = _WIPE_STRINGS.get(_code, _WIPE_STRINGS["en"])
+    for _key, _value in _WIPE_STRINGS["ru"].items():
+        _table[_key] = _wipe_extra.get(_key, _WIPE_STRINGS["en"].get(_key, _value))
+
+
 _SYNODIC_MONTH = 29.530588853
 
 
@@ -3856,6 +4024,21 @@ class StoreVault:
                 self._strict = True
             except Exception as exc:
                 self._log(f"Prefixfy vault: cannot enable strict mode: {exc}")
+
+    def destroy(self):
+        """Удаляет оба ключа из Keystore и сбрасывает состояние: следующий prepare() создаст всё заново, как при первой установке."""
+        with self._lock:
+            try:
+                store = self._store()
+                for alias in (self.KEY_ALIAS, self.FLAG_ALIAS):
+                    try:
+                        if store.containsAlias(alias):
+                            store.deleteEntry(alias)
+                    except Exception as exc:
+                        self._log(f"Prefixfy vault: cannot delete key {alias}: {exc}")
+            except Exception as exc:
+                self._log(f"Prefixfy vault: keystore is unavailable, keys were not deleted: {exc}")
+            self._usable, self._strict, self._data_key = None, False, None
 
     def seal(self, plain: bytes, aad: bytes) -> bytes:
         if not self._usable or self._data_key is None:
@@ -9113,6 +9296,171 @@ def _self_file_digests() -> Optional[Tuple[str, str, int]]:
     return hashlib.sha256(data).hexdigest(), hashlib.sha512(data).hexdigest(), len(data)
 
 
+# ----------------------------------------------------------------------
+# 39.0.0: «Удалить данные» и режим «отказ от использования»
+#
+# Удаление всегда выполняется В НАЧАЛЕ ЗАПУСКА плагина, пока ничто ещё не открыто и не пишет на диск: кнопка только
+# кладёт метку (WIPE_MARKER_FILE) и перезапускает плагин (а если нужно обновление — после него).
+#   * очистка (без отказа): удаляются конфигурации, медиа, кэши; живые настройки и ключ хранилища остаются, поэтому
+#     плагин сразу создаёт данные заново. Серийные номера проверок, список известных сборок и состояние OTA не трогаются:
+#     это защита от подмены старой подписанной копии, а не пользовательские данные;
+#   * отказ: удаляется всё, включая настройки и ключи Keystore, и плагин «засыпает». Метка сна привязана к конкретной
+#     копии файла (inode, размер, ctime), поэтому после переустановки она не совпадает, стирается, и плагин стартует
+#     так, будто его ставят впервые.
+# ----------------------------------------------------------------------
+_WIPE_STATE_FILES = (
+    "Prefixfy_remote.json", BLACKLIST_CACHE_FILE, FLAGS_CACHE_FILE, FLAGS_CACHE_LEGACY_FILE, AUTO_STATE_FILE,
+    STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, OTA_PREV_FILE,
+)
+_WIPE_KEEP_ON_CLEAN = frozenset({STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, OTA_PREV_FILE})
+_WIPE_DIRS = ("Prefixfy_media", ConfigurationsManager.MEDIA_DIR_NAME, ConfigurationsManager.STORE_DIR_NAME, ACCT_DIR_NAME)
+_WIPE_CACHE_DIRS = ("Prefixfy_tmp", "Prefixfy_imports", "Prefixfy_exports", "Prefixfy")
+_WIPE_TEMP_SUFFIXES = (".tmp", ".ota", ".bak")
+_WIPE_MEDIA_RESET = {
+    "attached_media_path": "", "attached_media_name": "", "attached_media_mime": "", "attached_media_enabled": False,
+}
+# служебные ключи хозяйских настроек, которых нет в SETTING_DEFAULTS, и значения, равные «ключа никогда не было»
+_WIPE_INTERNAL_KEYS = {
+    LANGUAGE_LAYOUT_KEY: 1, LANGUAGE_LIVE_KEY: 1, LANGUAGE_MIGRATED_KEY: "", CHAT_COUNTS_KEY: "", COUNTER_KEY: 0,
+    CHAT_CONFIGS_KEY: "{}", SCHEDULE_KEY: "", ACCT_MODE_KEY: False, ACCT_TARGET_KEY: ACCT_AUTO, ACCT_LIVE_KEY: "",
+    ConfigurationsManager.LEGACY_SETTING_KEY: "", ConfigurationsManager.LEGACY_ACTIVE_KEY: "",
+}
+
+
+def _plugins_path(name: str) -> str:
+    return os.path.join(get_plugins_dir(), name)
+
+
+def _own_fingerprint() -> Optional[List[int]]:
+    """Отпечаток именно этой копии файла плагина. Переустановка даёт новый inode/ctime, поэтому отпечаток меняется."""
+    path = globals().get("__file__")
+    if not path:
+        return None
+    try:
+        info = os.stat(path)
+    except OSError:
+        return None
+    ctime = getattr(info, "st_ctime_ns", None)
+    if ctime is None:
+        ctime = int(info.st_ctime * 1e9)
+    return [int(info.st_ino), int(info.st_size), int(ctime)]
+
+
+def read_wipe_marker() -> Optional[Dict[str, Any]]:
+    path = _plugins_path(WIPE_MARKER_FILE)
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError, RecursionError):
+        discard_file(path)
+        return None
+    stamp = data.get("ts") if isinstance(data, dict) else None
+    valid = (
+        isinstance(data, dict) and isinstance(data.get("opt_out"), bool) and isinstance(data.get("need"), str)
+        and isinstance(stamp, (int, float)) and not isinstance(stamp, bool) and math.isfinite(stamp)
+        and -300.0 <= time.time() - float(stamp) <= WIPE_MARKER_TTL
+    )
+    if not valid:
+        discard_file(path)       # просроченная или чужая метка: молча выбрасываем, ничего не удаляя
+        return None
+    return {"opt_out": data["opt_out"], "need": data["need"]}
+
+
+def write_wipe_marker(opt_out: bool, need: str = "") -> bool:
+    try:
+        _write_file_atomic(
+            _plugins_path(WIPE_MARKER_FILE),
+            json.dumps({"opt_out": bool(opt_out), "need": as_text(need), "ts": time.time()}).encode("utf-8"),
+        )
+        return True
+    except OSError:
+        return False
+
+
+def clear_wipe_marker():
+    discard_file(_plugins_path(WIPE_MARKER_FILE))
+
+
+def write_dormant_marker() -> bool:
+    fingerprint = _own_fingerprint()
+    if fingerprint is None:
+        return False
+    try:
+        _write_file_atomic(_plugins_path(DORMANT_FILE), json.dumps({"fp": fingerprint}).encode("utf-8"))
+        return True
+    except OSError:
+        return False
+
+
+def clear_dormant_marker():
+    discard_file(_plugins_path(DORMANT_FILE))
+
+
+def dormant_active() -> bool:
+    """True, если отказ от использования действует для ЭТОЙ копии файла. Для другой копии (переустановка) метка стирается."""
+    path = _plugins_path(DORMANT_FILE)
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except FileNotFoundError:
+        return False
+    except (OSError, ValueError, RecursionError):
+        data = None
+    fingerprint = _own_fingerprint()
+    if isinstance(data, dict) and fingerprint is not None and data.get("fp") == fingerprint:
+        return True
+    discard_file(path)
+    return False
+
+
+def _wipe_files(opt_out: bool, log):
+    base = get_plugins_dir()
+    own = os.path.basename(as_text(globals().get("__file__")))
+    skip = set() if opt_out else set(_WIPE_KEEP_ON_CLEAN)
+    doomed = [name for name in _WIPE_STATE_FILES if name not in skip]
+    try:
+        entries = os.listdir(base)
+    except OSError:
+        entries = []
+    for entry in entries:
+        # временные хвосты записи (".<hex>.tmp", ".ota", ".bak") известных файлов; сам файл плагина не трогаем никогда
+        if entry != own and entry.endswith(_WIPE_TEMP_SUFFIXES) and any(
+            entry.startswith(name + ".") for name in doomed
+        ):
+            doomed.append(entry)
+    for name in doomed:
+        if name != own:
+            discard_file(os.path.join(base, name))
+    for name in _WIPE_DIRS:
+        shutil.rmtree(os.path.join(base, name), ignore_errors=True)
+    cache_dir = get_cache_dir()
+    for name in _WIPE_CACHE_DIRS:
+        shutil.rmtree(os.path.join(cache_dir, name), ignore_errors=True)
+    log(f"Prefixfy: files removed ({'opt-out' if opt_out else 'clean'})")
+
+
+def _wipe_settings(plugin, opt_out: bool):
+    if not opt_out:
+        values: Dict[str, Any] = dict(_WIPE_MEDIA_RESET)     # файлы медиа удалены: ссылки на них больше не нужны
+    else:
+        values = {**SETTING_DEFAULTS, **TRANSIENT_SETTING_DEFAULTS, **OTA_SETTING_DEFAULTS, **_WIPE_INTERNAL_KEYS}
+    for key, value in values.items():
+        try:
+            plugin.set_setting(key, value)
+        except Exception as exc:
+            plugin.log(f"Prefixfy wipe: setting {key} was not reset: {exc}")
+
+
+def wipe_plugin_data(plugin, opt_out: bool):
+    _wipe_files(opt_out, plugin.log)
+    if opt_out:
+        VAULT.attach(plugin.log)
+        VAULT.destroy()
+    _wipe_settings(plugin, opt_out)
+
+
 class RemoteControl:
 
     def __init__(self, plugin):
@@ -10018,12 +10366,62 @@ class PrefixfyPlugin(BasePlugin):
             except Exception:
                 pass
             raise
+        if self._dormant:
+            return
         try:
             self.remote.ota_loaded()
         except Exception as exc:
             self.log(f"Prefixfy OTA confirm failed: {exc}")
+        if self._wiped_clean:
+            self._wiped_clean = False
+            try:
+                run_on_queue(lambda: self._toast("wipe_done"), PLUGINS_QUEUE, 2500)
+            except Exception as exc:
+                self.log(f"Prefixfy wipe notice failed: {exc}")
+
+    _dormant = False
+    _wiped_clean = False
+    _wipe_running = False
+
+    def _startup_gate(self) -> bool:
+        """Отложенное удаление данных и режим отказа. True — плагин спит и остальное не загружается."""
+        self._dormant = False
+        self._wiped_clean = False
+        marker = read_wipe_marker()
+        if marker is not None:
+            clear_wipe_marker()          # метка одноразовая: гасим до удаления, чтобы сбой не зациклил его
+            need = parse_version(marker["need"]) if marker["need"] else ()
+            if need and parse_version(__build__) < need:
+                self.log(f"Prefixfy: the update to {marker['need']} did not happen, data deletion cancelled")
+            else:
+                clear_dormant_marker()       # старая метка сна не должна пережить удаление; при отказе ниже ставится новая
+                try:
+                    wipe_plugin_data(self, marker["opt_out"])
+                except Exception as exc:
+                    self.log(f"Prefixfy data deletion failed: {exc}")
+                if marker["opt_out"]:
+                    if not write_dormant_marker():
+                        self.log("Prefixfy: could not store the opt-out marker, it holds until the next start only")
+                    self._enter_dormant()
+                    return True
+                self._wiped_clean = True
+                return False
+        if dormant_active():
+            self._enter_dormant()
+            return True
+        return False
+
+    def _enter_dormant(self):
+        # ни Keystore, ни файлов, ни сети, ни хуков: только строка «Возобновить работу» в настройках
+        self._dormant = True
+        self._prefixfy_hooks = []
+        self.settings = PrefixfySettings(self)
+        self.localization = LocalizationManager(self)
+        self.log("Prefixfy is dormant: the plugin does nothing until it is resumed in its settings")
 
     def _on_plugin_load_impl(self):
+        if self._startup_gate():
+            return
         VAULT.attach(self.log)
         VAULT.prepare()
         self.settings = PrefixfySettings(self)
@@ -11692,6 +12090,23 @@ class PrefixfyPlugin(BasePlugin):
         builder.set_title(self._tr("about_title"))
         builder.set_message(self._about_text())
         builder.set_positive_button(self._tr("notice_ok"), lambda bld, which: bld.dismiss())
+
+        def open_wipe(bld, which):
+            bld.dismiss()
+
+            def later():
+                run_on_ui_thread(self._show_wipe_dialog)
+            run_on_queue(later, PLUGINS_QUEUE, 250)      # диалог сведений успевает закрыться
+
+        # слева от «ОК»; если SDK не знает нейтральную кнопку, берём отрицательную
+        for setter in ("set_neutral_button", "set_negative_button"):
+            method = getattr(builder, setter, None)
+            if callable(method):
+                try:
+                    method(self._tr("wipe_row"), open_wipe)
+                    break
+                except Exception as exc:
+                    self.log(f"Prefixfy about dialog: {setter} failed: {exc}")
         self._show_builder(builder)
 
     def _settings_about(self) -> List[Any]:
@@ -11702,6 +12117,189 @@ class PrefixfyPlugin(BasePlugin):
                 icon=self._icon("msg_info"), on_click=self._show_about,
             ),
         ]
+
+    # ------------------------------------------------------------------
+    # «Удалить данные» (два диалога) и «Возобновить работу»
+    # ------------------------------------------------------------------
+    def _show_wipe_dialog(self, *_):
+        """Диалог 1: пояснение и чекбокс «Отказаться от использования» (по умолчанию снят)."""
+        tr = self._tr
+
+        def next_step(selected, opt_out):
+            def later():
+                run_on_ui_thread(lambda: self._show_wipe_confirm(bool(opt_out)))
+            run_on_queue(later, PLUGINS_QUEUE, 250)      # первый диалог успевает закрыться
+
+        self.show_checklist(
+            tr("wipe_title"), [], next_step, message=tr("wipe_body"),
+            extra=(tr("wipe_opt_out"), False, True), positive=tr("wipe_next"),
+        )
+
+    def _show_wipe_confirm(self, opt_out: bool):
+        """Диалог 2: подтверждение. Кнопка «Очистить» 5 секунд неактивна; кулдаун проверяется и в самом обработчике."""
+        activity = self._dialog_activity()
+        if not activity:
+            return
+        tr = self._tr
+        label = tr("wipe_confirm_btn")
+        shown_at = time.monotonic()
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(tr("wipe_confirm_title"))
+        builder.set_message(tr("wipe_confirm_out" if opt_out else "wipe_confirm_clean"))
+
+        def confirm(bld, which):
+            left = WIPE_COOLDOWN_SEC - (time.monotonic() - shown_at)
+            if left > 0:
+                self._toast("wipe_wait", n=int(math.ceil(left)))
+                return
+            bld.dismiss()
+            self._start_wipe(opt_out)
+
+        builder.set_positive_button(f"{label} ({WIPE_COOLDOWN_SEC})", confirm)
+        builder.set_negative_button(tr("cancel"), lambda bld, which: bld.dismiss())
+        if self._show_builder(builder):
+            self._run_wipe_countdown(builder, label, shown_at)
+
+    @staticmethod
+    def _dialog_button(builder):
+        """Кнопка «положительного» действия диалога; зависит от версии SDK, поэтому каждый путь защищён."""
+        which_values = [getattr(AlertDialogBuilder, "BUTTON_POSITIVE", None), -1]
+        for name in ("get_button", "getButton"):
+            getter = getattr(builder, name, None)
+            if callable(getter):
+                for which in which_values:
+                    if which is None:
+                        continue
+                    try:
+                        button = getter(which)
+                        if button is not None:
+                            return button
+                    except Exception:
+                        continue
+        dialog = None
+        for name in ("get_dialog", "getDialog"):
+            getter = getattr(builder, name, None)
+            if callable(getter):
+                try:
+                    dialog = getter()
+                except Exception:
+                    dialog = None
+                if dialog is not None:
+                    break
+        if dialog is None:
+            dialog = getattr(builder, "dialog", None) or getattr(builder, "_dialog", None)
+        getter = getattr(dialog, "getButton", None) if dialog is not None else None
+        if callable(getter):
+            for which in which_values:
+                if which is None:
+                    continue
+                try:
+                    button = getter(which)
+                    if button is not None:
+                        return button
+                except Exception:
+                    continue
+        return None
+
+    @staticmethod
+    def _style_button(button, text: str, enabled: bool):
+        try:
+            button.setText(text)
+            button.setEnabled(bool(enabled))
+            button.setAlpha(1.0 if enabled else 0.4)
+        except Exception:
+            pass
+
+    def _run_wipe_countdown(self, builder, label: str, shown_at: float):
+        def tick():
+            button = None
+            while True:
+                left = WIPE_COOLDOWN_SEC - (time.monotonic() - shown_at)
+                if button is None:
+                    button = self._dialog_button(builder)
+                if button is not None:
+                    text = label if left <= 0 else f"{label} ({int(math.ceil(left))})"
+                    run_on_ui_thread(lambda b=button, t=text, e=left <= 0: self._style_button(b, t, e))
+                if left <= 0:
+                    return
+                time.sleep(0.25)
+
+        threading.Thread(target=tick, name="PrefixfyWipeCountdown", daemon=True).start()
+
+    def _start_wipe(self, opt_out: bool):
+        if self._wipe_running:
+            return
+        self._wipe_running = True
+        self._toast("wipe_started")
+
+        def work():
+            try:
+                remote = getattr(self, "remote", None)
+                state = None
+                if not opt_out and remote is not None:
+                    # сначала последняя версия: если она есть, данные удалит уже она, при своём первом запуске
+                    remote.refresh(force=True)
+                    state = remote.ota_candidate() if FEATURES.enabled("ota") else None
+                need = format_version(state["version"]) if state is not None else ""
+                if not write_wipe_marker(opt_out, need):
+                    self._toast("wipe_failed")
+                    return
+                if state is not None:
+                    self._toast("wipe_updating", version=need)
+                    kind, info = remote.ota_install(state)
+                    if kind != "ota_installed":
+                        clear_wipe_marker()
+                        self._toast("wipe_update_failed", reason=as_text(info.get("reason") or kind)[:80])
+                    return          # плагин перезапускает OTA; удаление выполнит новая сборка в начале запуска
+                if not _host_restart_plugin(self.log):
+                    self._toast("wipe_restart_manual")
+            except Exception as exc:
+                self.log(f"Prefixfy wipe request failed: {exc}")
+                clear_wipe_marker()
+                self._toast("wipe_failed")
+            finally:
+                self._wipe_running = False
+
+        threading.Thread(target=work, name="PrefixfyWipe", daemon=True).start()
+
+    def _settings_dormant(self) -> List[Any]:
+        return [
+            Text(
+                text=self._tr("resume_title"), subtext=self._tr("resume_subtext"),
+                icon=self._icon("msg_retry", "msg_info"), on_click=self._show_resume_dialog,
+            ),
+        ]
+
+    def _show_resume_dialog(self, *_):
+        activity = self._dialog_activity()
+        if not activity:
+            return
+        tr = self._tr
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(tr("resume_confirm_title"))
+        builder.set_message(tr("resume_confirm_body"))
+
+        def confirm(bld, which):
+            bld.dismiss()
+            self._resume_now()
+
+        builder.set_positive_button(tr("resume_btn"), confirm)
+        builder.set_negative_button(tr("cancel"), lambda bld, which: bld.dismiss())
+        self._show_builder(builder)
+
+    def _resume_now(self):
+        """Выход из сна без перезапуска: метка стирается, плагин загружается заново, как при первой установке."""
+        clear_dormant_marker()
+        self._dormant = False
+        try:
+            self._on_plugin_load_impl()
+        except Exception as exc:
+            self.log(f"Prefixfy resume failed: {exc}")
+            self._toast("resume_failed")
+            threading.Thread(target=_host_restart_plugin, args=(self.log,), daemon=True).start()
+            return
+        self._toast("resume_done")
+        self.reload_settings_ui(200)
 
     def _check_items(self) -> List[Any]:
         return [
@@ -11914,6 +12512,8 @@ class PrefixfyPlugin(BasePlugin):
             self.log(f"Prefixfy repo link failed: {exc}")
 
     def create_settings(self) -> List[Any]:
+        if self._dormant:
+            return self._settings_dormant()
         self.localization.refresh()
         self.remote.request_refresh()
         notice = self._remote_notice()
