@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "39.0.0"
-__build__ = "39.0.0_20261110.4_44"
+__version__ = "39.1.0"
+__build__ = "39.1.0_20261110.5_45"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -131,8 +131,9 @@ OTA_PREV_FILE = ".pfx_prev"            # копия предыдущей вер�
 OTA_DEFAULT_FILE = "prefixfy.py"       # имя файла в репозитории, если манифест его не указал
 WIPE_MARKER_FILE = ".pfx_wipe"         # метка отложенного удаления данных: выполняется в начале следующего запуска
 DORMANT_FILE = ".pfx_dormant"          # метка «отказа от использования» (привязана к конкретной копии файла плагина)
+BLACKLIST_GUARD_FILE = ".pfx_bl"        # метка «данные уже стёрты при входе в режим ЧС»; снимается, когда аккаунт из ЧС ушёл
 WIPE_MARKER_TTL = 3600.0               # метка удаления живёт не дольше часа
-WIPE_COOLDOWN_SEC = 5                  # кулдаун кнопки «Очистить» во втором диалоге
+WIPE_COOLDOWN_SEC = 10                 # кулдаун кнопки «Очистить» во втором диалоге
 OTA_FLAGS_MAX_AGE = 120.0              # флаги должны быть проверены не раньше, чем N секунд назад
 OTA_LOAD_TIMEOUT = 45.0                # сколько ждать загрузки новой версии до отката
 OTA_CONFIRM_SEC = 20.0                 # сколько новая версия должна проработать, чтобы считаться рабочей
@@ -2509,7 +2510,7 @@ _WIPE_STRINGS = {
         "wipe_opt_out": "Отказаться от использования",
         "wipe_next": "Далее",
         "wipe_confirm_title": "Подтвердите удаление",
-        "wipe_confirm_clean": "Файлы плагина будут удалены, плагин перезапустится и создаст их заново. Конфигурации и прикреплённое медиа пропадут безвозвратно.",
+        "wipe_confirm_clean": "Файлы плагина будут удалены, плагин перезапустится и создаст их заново. Конфигурации и прикреплённое медиа пропадут безвозвратно. Рекомендуем экспортировать все ваши конфигурации.",
         "wipe_confirm_out": "Будут удалены все файлы и настройки плагина, после чего плагин отключится. Это нельзя отменить.",
         "wipe_confirm_btn": "Очистить",
         "wipe_wait": "Подождите ещё {n} с",
@@ -2535,7 +2536,7 @@ _WIPE_STRINGS = {
         "wipe_opt_out": "Stop using the plugin",
         "wipe_next": "Next",
         "wipe_confirm_title": "Confirm deletion",
-        "wipe_confirm_clean": "The plugin's files will be deleted, then the plugin restarts and recreates them. Configurations and attached media are lost for good.",
+        "wipe_confirm_clean": "The plugin's files will be deleted, then the plugin restarts and recreates them. Configurations and attached media are lost for good. We recommend exporting all your configurations first.",
         "wipe_confirm_out": "All plugin files and settings will be deleted and the plugin will switch itself off. This cannot be undone.",
         "wipe_confirm_btn": "Clear",
         "wipe_wait": "Wait {n} s more",
@@ -2561,7 +2562,7 @@ _WIPE_STRINGS = {
         "wipe_opt_out": "使用をやめる",
         "wipe_next": "次へ",
         "wipe_confirm_title": "削除の確認",
-        "wipe_confirm_clean": "プラグインのファイルを削除し、プラグインを再起動して作り直します。設定プリセットと添付メディアは完全に失われます。",
+        "wipe_confirm_clean": "プラグインのファイルを削除し、プラグインを再起動して作り直します。設定プリセットと添付メディアは完全に失われます。先にすべての設定プリセットをエクスポートしておくことをおすすめします。",
         "wipe_confirm_out": "プラグインのすべてのファイルと設定を削除し、プラグインを停止します。元に戻せません。",
         "wipe_confirm_btn": "消去",
         "wipe_wait": "あと{n}秒お待ちください",
@@ -2587,7 +2588,7 @@ _WIPE_STRINGS = {
         "wipe_opt_out": "사용 중단",
         "wipe_next": "다음",
         "wipe_confirm_title": "삭제 확인",
-        "wipe_confirm_clean": "플러그인 파일을 삭제한 뒤 플러그인을 다시 시작해 새로 만듭니다. 구성과 첨부 미디어는 영구적으로 사라집니다.",
+        "wipe_confirm_clean": "플러그인 파일을 삭제한 뒤 플러그인을 다시 시작해 새로 만듭니다. 구성과 첨부 미디어는 영구적으로 사라집니다. 먼저 모든 구성을 내보내 두기를 권장합니다.",
         "wipe_confirm_out": "플러그인의 모든 파일과 설정을 삭제하고 플러그인을 끕니다. 되돌릴 수 없습니다.",
         "wipe_confirm_btn": "삭제",
         "wipe_wait": "{n}초 더 기다려 주세요",
@@ -2613,7 +2614,7 @@ _WIPE_STRINGS = {
         "wipe_opt_out": "Cesser d’utiliser le plugin",
         "wipe_next": "Suivant",
         "wipe_confirm_title": "Confirmer la suppression",
-        "wipe_confirm_clean": "Les fichiers du plugin seront supprimés, puis le plugin redémarrera et les recréera. Les configurations et les médias joints seront perdus définitivement.",
+        "wipe_confirm_clean": "Les fichiers du plugin seront supprimés, puis le plugin redémarrera et les recréera. Les configurations et les médias joints seront perdus définitivement. Nous vous recommandons d’exporter d’abord toutes vos configurations.",
         "wipe_confirm_out": "Tous les fichiers et réglages du plugin seront supprimés, puis le plugin se désactivera. Cette action est irréversible.",
         "wipe_confirm_btn": "Effacer",
         "wipe_wait": "Encore {n} s",
@@ -2639,7 +2640,7 @@ _WIPE_STRINGS = {
         "wipe_opt_out": "Nutzung aufgeben",
         "wipe_next": "Weiter",
         "wipe_confirm_title": "Löschen bestätigen",
-        "wipe_confirm_clean": "Die Plugin-Dateien werden gelöscht, danach startet das Plugin neu und legt sie wieder an. Konfigurationen und angehängte Medien gehen unwiderruflich verloren.",
+        "wipe_confirm_clean": "Die Plugin-Dateien werden gelöscht, danach startet das Plugin neu und legt sie wieder an. Konfigurationen und angehängte Medien gehen unwiderruflich verloren. Wir empfehlen, vorher alle Konfigurationen zu exportieren.",
         "wipe_confirm_out": "Alle Plugin-Dateien und Einstellungen werden gelöscht, danach schaltet sich das Plugin ab. Das lässt sich nicht rückgängig machen.",
         "wipe_confirm_btn": "Löschen",
         "wipe_wait": "Noch {n} s warten",
@@ -4225,9 +4226,7 @@ FEATURE_FLAGS: Dict[str, bool] = {
     # (нет интерфейса, нет переключения, отправка идёт по общему набору, как в 32.x).
     "account_settings": True,
     "config_import": True,
-    # OTA. Единый флаг: разработчик может выключить удалённо через подписанный flags.json,
-    # если обновления окажутся нестабильными. "ota": False выключает всё (и ручное, и авто).
-    "ota": True,
+    # OTA флагом не управляется: с 39.1.0 это обязательный модуль плагина (имя "ota" в подписанных флагах игнорируется).
     "lang_auto": True,
     "lang_en": True,
     "lang_ja": True,
@@ -4249,7 +4248,6 @@ AUTO = "auto"
 AUTO_PROBABILITY = 0.5
 AUTO_INTERVAL = 6 * 3600.0
 AUTO_STATE_FILE = ".pfx_auto"
-AUTO_EXCLUDED = frozenset({"ota"})   # аварийный выключатель обновлений не может быть случайным
 
 
 class AutoFlags:
@@ -4432,7 +4430,7 @@ class FeatureFlags:
                 continue
             if isinstance(value, bool):
                 base[name] = value
-            elif value == AUTO and name not in AUTO_EXCLUDED:
+            elif value == AUTO:
                 base[name] = AUTO
         cleaned: Dict[int, Dict[str, bool]] = {}
         for account_id, overrides in (accounts or {}).items():
@@ -9310,9 +9308,9 @@ def _self_file_digests() -> Optional[Tuple[str, str, int]]:
 # ----------------------------------------------------------------------
 _WIPE_STATE_FILES = (
     "Prefixfy_remote.json", BLACKLIST_CACHE_FILE, FLAGS_CACHE_FILE, FLAGS_CACHE_LEGACY_FILE, AUTO_STATE_FILE,
-    STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, OTA_PREV_FILE,
+    STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, OTA_PREV_FILE, BLACKLIST_GUARD_FILE,
 )
-_WIPE_KEEP_ON_CLEAN = frozenset({STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, OTA_PREV_FILE})
+_WIPE_KEEP_ON_CLEAN = frozenset({STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, OTA_PREV_FILE, BLACKLIST_GUARD_FILE})
 _WIPE_DIRS = ("Prefixfy_media", ConfigurationsManager.MEDIA_DIR_NAME, ConfigurationsManager.STORE_DIR_NAME, ACCT_DIR_NAME)
 _WIPE_CACHE_DIRS = ("Prefixfy_tmp", "Prefixfy_imports", "Prefixfy_exports", "Prefixfy")
 _WIPE_TEMP_SUFFIXES = (".tmp", ".ota", ".bak")
@@ -9365,14 +9363,14 @@ def read_wipe_marker() -> Optional[Dict[str, Any]]:
     if not valid:
         discard_file(path)       # просроченная или чужая метка: молча выбрасываем, ничего не удаляя
         return None
-    return {"opt_out": data["opt_out"], "need": data["need"]}
+    return {"opt_out": data["opt_out"], "need": data["need"], "bl": data.get("bl") is True}
 
 
-def write_wipe_marker(opt_out: bool, need: str = "") -> bool:
+def write_wipe_marker(opt_out: bool, need: str = "", bl: bool = False) -> bool:
     try:
         _write_file_atomic(
             _plugins_path(WIPE_MARKER_FILE),
-            json.dumps({"opt_out": bool(opt_out), "need": as_text(need), "ts": time.time()}).encode("utf-8"),
+            json.dumps({"opt_out": bool(opt_out), "need": as_text(need), "bl": bool(bl), "ts": time.time()}).encode("utf-8"),
         )
         return True
     except OSError:
@@ -9451,6 +9449,41 @@ def _wipe_settings(plugin, opt_out: bool):
             plugin.set_setting(key, value)
         except Exception as exc:
             plugin.log(f"Prefixfy wipe: setting {key} was not reset: {exc}")
+
+
+def wipe_blacklist_data(plugin):
+    """Вход в режим ЧС: всё стирается как при отказе от использования, но подписанные ЧС и манифест остаются.
+
+    Они лежат запечатанными ключом Keystore, а ключ при отказе уничтожается, поэтому перед удалением их расшифровывают
+    и кладут обратно открытым текстом (время изменения сохраняется: возраст кэша не «молодеет»). При следующем запуске
+    плагин запечатает их уже новым ключом. Плагин остаётся включённым и заблокированным, доступна «Проверить сейчас»."""
+    VAULT.attach(plugin.log)
+    kept: List[Tuple[str, bytes, Tuple[float, float]]] = []
+    for name, limit in (("Prefixfy_remote.json", REMOTE_MAX_BYTES), (BLACKLIST_CACHE_FILE, BLACKLIST_MAX_BYTES)):
+        path = _plugins_path(name)
+        try:
+            stat = os.stat(path)
+            data = vault_read_bytes(path, limit)
+            if len(data) > limit:
+                raise ValueError("file is too large")
+            kept.append((path, data, (stat.st_atime, stat.st_mtime)))
+        except Exception as exc:
+            plugin.log(f"Prefixfy blacklist mode: {name} was not kept: {exc}")
+    wipe_plugin_data(plugin, True)
+    for path, data, times in kept:
+        try:
+            _write_file_atomic(path, data)
+            os.utime(path, times)
+        except OSError as exc:
+            plugin.log(f"Prefixfy blacklist mode: cannot restore {os.path.basename(path)}: {exc}")
+    try:
+        _write_file_atomic(_plugins_path(BLACKLIST_GUARD_FILE), json.dumps({"ts": time.time()}).encode("utf-8"))
+    except OSError as exc:
+        plugin.log(f"Prefixfy blacklist mode: guard not stored: {exc}")
+
+
+def blacklist_guard_exists() -> bool:
+    return os.path.exists(_plugins_path(BLACKLIST_GUARD_FILE))
 
 
 def wipe_plugin_data(plugin, opt_out: bool):
@@ -9760,6 +9793,7 @@ class RemoteControl:
         self._save_cache()
         self._remember_known()
         self._refresh_blacklist(fresh)
+        self.blacklist_guard()
         after = self._snapshot()
         if after[0] != before[0]:
             self._announce()
@@ -9808,6 +9842,21 @@ class RemoteControl:
     def _bl_hit(self, ids) -> bool:
         return bool(ids and self._bl_ids and not ids.isdisjoint(self._bl_ids))
 
+    def blacklist_guard(self):
+        """Вход в режим ЧС запускает стирание данных (один раз); метка снимается, когда аккаунта в ЧС больше нет."""
+        if self._unloaded.is_set():
+            return
+        try:
+            hit = self._bl_hit(self._device_ids)
+            exists = blacklist_guard_exists()
+            if hit and not exists:
+                self.plugin._request_blacklist_wipe()
+            elif exists and not hit and self._bl_known:
+                clear_file = _plugins_path(BLACKLIST_GUARD_FILE)
+                discard_file(clear_file)
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy blacklist guard failed: {exc}")
+
     def blacklisted(self) -> bool:
         self._poll_devices()
         return self._bl_hit(self._device_ids)
@@ -9834,6 +9883,7 @@ class RemoteControl:
             self.plugin._on_features_changed()
         if hit_changed:
             self._announce()
+            self.blacklist_guard()
 
     def _refresh_blacklist(self, fresh: bool = False):
         try:
@@ -10139,8 +10189,6 @@ class RemoteControl:
 
     def ota_install(self, state: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
         version = format_version(state["version"])
-        if not FEATURES.enabled("ota"):
-            return "ota_disabled", {}
         if time.monotonic() - self._flags_ok > OTA_FLAGS_MAX_AGE:
             return "ota_failed", {"reason": "flags not verified"}
         if not self._ota_lock.acquire(blocking=False):
@@ -10202,7 +10250,7 @@ class RemoteControl:
 
     def _ota_next_wait(self) -> Optional[float]:
         auto, mode, when = self._ota_cfg()
-        if not (auto and mode == 1 and when and FEATURES.enabled("ota")):
+        if not (auto and mode == 1 and when):
             return None
         now = datetime.now()
         target = now.replace(hour=when[0], minute=when[1], second=0, microsecond=0)
@@ -10230,8 +10278,6 @@ class RemoteControl:
             return True
         try:
             if not fetched or self._unloaded.is_set() or self.mismatch_reason() not in ("modified", "unreleased"):
-                return False
-            if not FEATURES.enabled("ota"):
                 return False
             state = self.ota_candidate()
             if state is None:
@@ -10264,7 +10310,7 @@ class RemoteControl:
             if self.mismatch_reason() != "outdated":
                 return
             auto, mode, when = self._ota_cfg()
-            if not (auto and fetched and FEATURES.enabled("ota")):
+            if not (auto and fetched):
                 return
             if mode == 1:
                 now = datetime.now()
@@ -10333,7 +10379,7 @@ class RemoteControl:
                 key, kwargs = self.notice()
                 if key == "update_required_subtext":
                     return
-                if key == "modified_required_subtext" and FEATURES.enabled("ota") and self.ota_candidate() is not None:
+                if key == "modified_required_subtext" and self.ota_candidate() is not None:
                     return
                 self.plugin._toast(key, **kwargs)
             except Exception as exc:
@@ -10395,6 +10441,12 @@ class PrefixfyPlugin(BasePlugin):
                 self.log(f"Prefixfy: the update to {marker['need']} did not happen, data deletion cancelled")
             else:
                 clear_dormant_marker()       # старая метка сна не должна пережить удаление; при отказе ниже ставится новая
+                if marker["bl"]:
+                    try:
+                        wipe_blacklist_data(self)
+                    except Exception as exc:
+                        self.log(f"Prefixfy blacklist data deletion failed: {exc}")
+                    return False             # плагин остаётся включённым: заблокированным, но с кнопкой «Проверить сейчас»
                 try:
                     wipe_plugin_data(self, marker["opt_out"])
                 except Exception as exc:
@@ -10410,6 +10462,27 @@ class PrefixfyPlugin(BasePlugin):
             self._enter_dormant()
             return True
         return False
+
+    def _request_blacklist_wipe(self):
+        """Аккаунт устройства в ЧС: кладём метку и перезапускаем плагин, стирание выполнится в начале запуска."""
+        if self._dormant or self._wipe_running or blacklist_guard_exists():
+            return
+        self._wipe_running = True
+
+        def work():
+            try:
+                if not write_wipe_marker(False, "", bl=True):
+                    self.log("Prefixfy: cannot store the blacklist wipe marker")
+                    return
+                self.log("Prefixfy: an account on this device is blacklisted, data is removed on restart")
+                if not _host_restart_plugin(self.log):
+                    self.log("Prefixfy: plugin restart is unavailable, data is removed at the next start")
+            except Exception as exc:
+                self.log(f"Prefixfy blacklist wipe request failed: {exc}")
+            finally:
+                self._wipe_running = False
+
+        threading.Thread(target=work, name="PrefixfyBlacklistWipe", daemon=True).start()
 
     def _enter_dormant(self):
         # ни Keystore, ни файлов, ни сети, ни хуков: только строка «Возобновить работу» в настройках
@@ -10470,6 +10543,7 @@ class PrefixfyPlugin(BasePlugin):
             except Exception as exc:
                 self.log(f"Prefixfy {label} failed: {exc}")
         self.remote.start()
+        self.remote.blacklist_guard()
         self.log(f"Prefixfy {__build__} loaded ({self.localization.language()})")
 
     def on_plugin_unload(self):
@@ -11991,7 +12065,7 @@ class PrefixfyPlugin(BasePlugin):
                              on_click=lambda *_: self._show_notice_dialog("account"))]
             if key == "modified_required_subtext":
                 rows = [Text(text=tr("modified_build"), subtext=subtext, icon=icon)]
-                candidate = remote.ota_candidate() if FEATURES.enabled("ota") else None
+                candidate = remote.ota_candidate()
                 if candidate is not None:
                     rows.append(Text(
                         text=tr("ota_download"),
@@ -12001,7 +12075,7 @@ class PrefixfyPlugin(BasePlugin):
                 return rows
             if key == "update_required_subtext":
                 rows = [Text(text=tr("update_required"), subtext=subtext, icon=icon)]
-                candidate = remote.ota_candidate() if FEATURES.enabled("ota") else None
+                candidate = remote.ota_candidate()
                 if candidate is not None:
                     rows.append(Text(
                         text=tr("ota_download"),
@@ -12099,15 +12173,18 @@ class PrefixfyPlugin(BasePlugin):
             run_on_queue(later, PLUGINS_QUEUE, 250)      # диалог сведений успевает закрыться
 
         # слева от «ОК»; если SDK не знает нейтральную кнопку, берём отрицательную
-        for setter in ("set_neutral_button", "set_negative_button"):
+        wipe_kind = None
+        for setter, kind in (("set_neutral_button", "neutral"), ("set_negative_button", "negative")):
             method = getattr(builder, setter, None)
             if callable(method):
                 try:
                     method(self._tr("wipe_row"), open_wipe)
+                    wipe_kind = kind
                     break
                 except Exception as exc:
                     self.log(f"Prefixfy about dialog: {setter} failed: {exc}")
-        self._show_builder(builder)
+        if self._show_builder(builder) and wipe_kind:
+            self._paint_button_red(builder, wipe_kind)
 
     def _settings_about(self) -> List[Any]:
         return [
@@ -12136,7 +12213,7 @@ class PrefixfyPlugin(BasePlugin):
         )
 
     def _show_wipe_confirm(self, opt_out: bool):
-        """Диалог 2: подтверждение. Кнопка «Очистить» 5 секунд неактивна; кулдаун проверяется и в самом обработчике."""
+        """Диалог 2: подтверждение. Кнопка «Очистить» красная и WIPE_COOLDOWN_SEC секунд неактивна; кулдаун проверяется и в обработчике."""
         activity = self._dialog_activity()
         if not activity:
             return
@@ -12158,12 +12235,17 @@ class PrefixfyPlugin(BasePlugin):
         builder.set_positive_button(f"{label} ({WIPE_COOLDOWN_SEC})", confirm)
         builder.set_negative_button(tr("cancel"), lambda bld, which: bld.dismiss())
         if self._show_builder(builder):
+            self._paint_button_red(builder, "positive")
             self._run_wipe_countdown(builder, label, shown_at)
 
+    _BUTTON_CODES = {"positive": ("BUTTON_POSITIVE", -1), "negative": ("BUTTON_NEGATIVE", -2), "neutral": ("BUTTON_NEUTRAL", -3)}
+    _RED = 0xFFE53935 - (1 << 32)          # знаковое целое для Java
+
     @staticmethod
-    def _dialog_button(builder):
-        """Кнопка «положительного» действия диалога; зависит от версии SDK, поэтому каждый путь защищён."""
-        which_values = [getattr(AlertDialogBuilder, "BUTTON_POSITIVE", None), -1]
+    def _dialog_button(builder, kind: str = "positive"):
+        """Кнопка диалога; зависит от версии SDK, поэтому каждый путь защищён."""
+        const_name, android_code = PrefixfyPlugin._BUTTON_CODES[kind]
+        which_values = [getattr(AlertDialogBuilder, const_name, None), android_code]
         for name in ("get_button", "getButton"):
             getter = getattr(builder, name, None)
             if callable(getter):
@@ -12201,12 +12283,39 @@ class PrefixfyPlugin(BasePlugin):
                     continue
         return None
 
+    def _paint_button_red(self, builder, kind: str):
+        """Красит кнопку диалога в красный: штатным make_button_red, если он есть, и setTextColor как запасным путём."""
+        const_name, android_code = self._BUTTON_CODES[kind]
+
+        def paint():
+            maker = getattr(builder, "make_button_red", None)
+            if callable(maker):
+                for which in (getattr(AlertDialogBuilder, const_name, None), android_code):
+                    if which is None:
+                        continue
+                    try:
+                        maker(which)
+                        break
+                    except Exception:
+                        continue
+            button = self._dialog_button(builder, kind)
+            if button is not None:
+                try:
+                    button.setTextColor(self._RED)
+                except Exception:
+                    pass
+
+        run_on_ui_thread(paint)
+        # кнопки могут появиться чуть позже показа диалога: повторяем один раз
+        run_on_queue(lambda: run_on_ui_thread(paint), PLUGINS_QUEUE, 250)
+
     @staticmethod
     def _style_button(button, text: str, enabled: bool):
         try:
             button.setText(text)
             button.setEnabled(bool(enabled))
             button.setAlpha(1.0 if enabled else 0.4)
+            button.setTextColor(PrefixfyPlugin._RED)
         except Exception:
             pass
 
@@ -12239,7 +12348,7 @@ class PrefixfyPlugin(BasePlugin):
                 if not opt_out and remote is not None:
                     # сначала последняя версия: если она есть, данные удалит уже она, при своём первом запуске
                     remote.refresh(force=True)
-                    state = remote.ota_candidate() if FEATURES.enabled("ota") else None
+                    state = remote.ota_candidate()
                 need = format_version(state["version"]) if state is not None else ""
                 if not write_wipe_marker(opt_out, need):
                     self._toast("wipe_failed")
@@ -12385,7 +12494,7 @@ class PrefixfyPlugin(BasePlugin):
 
     def _show_ota_download_dialog(self, *_):
         remote = getattr(self, "remote", None)
-        state = remote.ota_candidate() if remote is not None and FEATURES.enabled("ota") else None
+        state = remote.ota_candidate() if remote is not None else None
         if state is None:
             return
         activity = self._dialog_activity()
@@ -12415,10 +12524,6 @@ class PrefixfyPlugin(BasePlugin):
         remote = getattr(self, "remote", None)
         icon = self._icon("msg_download", "msg_retry")
         items: List[Any] = []
-        if not FEATURES.enabled("ota"):
-            items.append(Text(text=tr("ota_disabled"), subtext=tr("ota_disabled_subtext"),
-                              icon=self._icon("msg_report", "msg_info"), on_click=lambda *_: None))
-            return items
         items.append(Switch(
             key="ota_auto", text=tr("ota_auto"), default=PrefixfySettings.DEFAULTS["ota_auto"],
             subtext=tr("ota_auto_subtext"), icon=icon, on_change=self._on_ota_auto_change,
@@ -12461,8 +12566,6 @@ class PrefixfyPlugin(BasePlugin):
         self._show_builder(builder)
 
     def _ota_on_check(self) -> bool:
-        if not FEATURES.enabled("ota"):
-            return False
         if not self.settings.get("ota_auto"):
             return False
         return clamp_int(self.settings.get("ota_mode"), 0, 0, 1) == 0
@@ -12482,7 +12585,7 @@ class PrefixfyPlugin(BasePlugin):
                 if install:
                     outcome = remote.ota_manual(refreshed)
                 elif refreshed:
-                    found = remote.ota_candidate() if FEATURES.enabled("ota") else None
+                    found = remote.ota_candidate()
                     if found is not None:
                         outcome = ("check_update_found", {"version": format_version(found["version"])})
                 if outcome is not None:
@@ -12518,6 +12621,8 @@ class PrefixfyPlugin(BasePlugin):
         self.remote.request_refresh()
         notice = self._remote_notice()
         if notice and self.remote.blocked():
+            if self.remote.blacklisted():
+                return notice + [Header(text=self._tr("ota_section"))] + self._check_items()[:1] + self._settings_about()
             return notice + self._settings_ota() + self._settings_about()
         settings: List[Any] = list(notice)
         try:
