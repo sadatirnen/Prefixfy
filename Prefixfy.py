@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "38.0.1"
-__build__ = "38.0.1_20261110.2_42"
+__version__ = "38.0.2"
+__build__ = "38.0.2_20261110.3_43"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -8991,9 +8991,11 @@ def _ota_prev_path() -> str:
     return os.path.join(get_plugins_dir(), OTA_PREV_FILE)
 
 
+# Состояние OTA остаётся открытым: его читает код предыдущей версии и Prefixfy Core (следят за «boots» и откатом)
 def _ota_read() -> Dict[str, Any]:
     try:
-        data = vault_read_json(_ota_state_path(), MAX_STORE_JSON_BYTES)
+        with open(_ota_state_path(), "r", encoding="utf-8") as handle:
+            data = json.load(handle)
         return data if isinstance(data, dict) else {}
     except (OSError, ValueError, RecursionError):
         return {}
@@ -9002,7 +9004,10 @@ def _ota_read() -> Dict[str, Any]:
 def _ota_write(data: Dict[str, Any], log=None):
     path = _ota_state_path()
     try:
-        vault_write_json(path, data)
+        temp = path + ".tmp"
+        with open(temp, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        os.replace(temp, path)
     except OSError as exc:
         if log:
             log(f"Prefixfy OTA state not saved: {exc}")
@@ -10125,7 +10130,7 @@ class PrefixfyPlugin(BasePlugin):
             return
         complete = self.configurations.seal_files()
         state_files = ("Prefixfy_remote.json", BLACKLIST_CACHE_FILE, FLAGS_CACHE_FILE, SERIALS_FILE,
-                       KNOWN_BUILDS_FILE, AUTO_STATE_FILE, OTA_STATE_FILE)
+                       KNOWN_BUILDS_FILE, AUTO_STATE_FILE)
         for name in state_files:
             complete = seal_plain_file(os.path.join(get_plugins_dir(), name), self.log) and complete
         if complete:
