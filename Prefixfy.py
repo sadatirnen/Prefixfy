@@ -3557,7 +3557,8 @@ def rename_schedule_target(raw, old_name: str, new_name: str) -> Tuple[str, bool
     for line in as_text(raw).splitlines():
         head, sep, tail = line.partition("=")
         if sep and tail.strip().casefold() == old:
-            line, changed = f"{head}= {re.sub(r'[\r\n]+', ' ', as_text(new_name))}", True
+            flat_name = re.sub(r"[\r\n]+", " ", as_text(new_name))
+            line, changed = f"{head}= {flat_name}", True
         lines.append(line)
     return "\n".join(lines), changed
 
