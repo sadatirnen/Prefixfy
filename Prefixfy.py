@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "37.0.0"
-__build__ = "37.0.0_20261109.1_40"
+__version__ = "38.0.0"
+__build__ = "38.0.0_20261110.1_41"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -95,6 +95,7 @@ FLAGS_CACHE_FILE = ".pfx_profile"
 FLAGS_CACHE_LEGACY_FILE = "Prefixfy_flags.json"
 SERIALS_FILE = ".pfx_serials"
 KNOWN_BUILDS_FILE = ".pfx_known"
+STORE_KEY_FILE = ".pfx_store_key"
 FLAGS_MAX_COUNT = 128
 FLAGS_MAX_ACCOUNTS = 1024
 FLAGS_MAX_BYTES = 256 * 1024
@@ -3409,6 +3410,10 @@ _SCHEDULE_LEFT_RE = re.compile(
 )
 
 
+_CHAT_ID_RE = re.compile(r"-?[0-9]{1,20}")   # строго ASCII: str.isdigit() принимает «²» и арабские цифры
+_CHAT_BIND_KEY_RE = re.compile(r"(?:[0-9]{1,16}:)?-?[0-9]{1,20}")   # <чат> или <uid аккаунта>:<чат>
+
+
 def parse_chat_configs(raw) -> Dict[str, str]:
     try:
         data = json.loads(as_text(raw).strip() or "{}")
@@ -3416,7 +3421,7 @@ def parse_chat_configs(raw) -> Dict[str, str]:
         return {}
     if not isinstance(data, dict):
         return {}
-    return {str(k): v for k, v in data.items() if str(k).lstrip("-").isdigit() and isinstance(v, str) and v}
+    return {str(k): v for k, v in data.items() if _CHAT_BIND_KEY_RE.fullmatch(str(k)) and isinstance(v, str) and v}
 
 
 def dump_chat_configs(mapping: Dict[str, str]) -> str:
@@ -3452,7 +3457,7 @@ def _parse_schedule_date(token: str):
             year = parts[2] if len(parts) > 2 else None
         _date(2000 if year is None else year, month, day)
         return year, month, day
-    except ValueError:
+    except (ValueError, IndexError, OverflowError):
         return None
 
 
@@ -3552,7 +3557,7 @@ def rename_schedule_target(raw, old_name: str, new_name: str) -> Tuple[str, bool
     for line in as_text(raw).splitlines():
         head, sep, tail = line.partition("=")
         if sep and tail.strip().casefold() == old:
-            line, changed = f"{head}= {new_name}", True
+            line, changed = f"{head}= {re.sub(r'[\r\n]+', ' ', as_text(new_name))}", True
         lines.append(line)
     return "\n".join(lines), changed
 
@@ -3688,6 +3693,299 @@ def unique_temp(path: str) -> str:
     return f"{path}.{uuid.uuid4().hex[:8]}.tmp"
 
 
+class VaultError(ValueError):
+    pass
+
+
+class StoreVault:
+    """Запечатывание файлов хранилища (настройки и конфигурации): AES-GCM с привязкой к пути файла.
+
+    Ключ данных (32 байта) лежит на диске только в обёрнутом виде: его оборачивает ключ из Android Keystore, который
+    нельзя ни прочитать, ни подделать снаружи приложения. Поэтому подложить в хранилище свой файл в обход плагина
+    нельзя: без ключа не получится ни собрать валидный файл, ни переставить чужой — путь файла входит в AAD.
+    Отдельный ключ-флаг в Keystore означает «всё уже запечатано»: с него обычные (нешифрованные) файлы отвергаются,
+    а удалить запись Keystore снаружи приложения нельзя, так что откатить режим подменой файлов тоже не выйдет.
+    """
+
+    MAGIC = b"PFXS\x01"
+    KEY_ALIAS = "Prefixfy.store.kek.v1"
+    FLAG_ALIAS = "Prefixfy.store.sealed.v2"
+    IV_LEN = 12
+    TAG_BITS = 128
+    KEY_AAD = b"Prefixfy-datakey"
+
+    def __init__(self):
+        self._log = lambda message: None
+        self._lock = threading.Lock()
+        self._keystore = None
+        self._usable: Optional[bool] = None
+        self._strict = False
+        self._data_key: Optional[bytes] = None
+
+    def attach(self, log):
+        self._log = log
+
+    @property
+    def usable(self) -> bool:
+        return bool(self._usable)
+
+    @property
+    def strict(self) -> bool:
+        return bool(self._usable and self._strict)
+
+    @staticmethod
+    def _jbytes(data: bytes):
+        from java import jarray, jbyte
+        return jarray(jbyte)([b - 256 if b > 127 else b for b in data])
+
+    @staticmethod
+    def _pybytes(array) -> bytes:
+        return bytes(x & 0xFF for x in array)
+
+    def _store(self):
+        if self._keystore is None:
+            from java import jclass
+            keystore = jclass("java.security.KeyStore").getInstance("AndroidKeyStore")
+            keystore.load(None)
+            self._keystore = keystore
+        return self._keystore
+
+    def _has(self, alias: str) -> bool:
+        return bool(self._store().containsAlias(alias))
+
+    def _create(self, alias: str):
+        from java import jclass
+        builder = jclass("android.security.keystore.KeyGenParameterSpec$Builder")(alias, 3)
+        spec = builder.setBlockModes("GCM").setEncryptionPaddings("NoPadding").setKeySize(256).build()
+        generator = jclass("javax.crypto.KeyGenerator").getInstance("AES", "AndroidKeyStore")
+        generator.init(spec)
+        generator.generateKey()
+
+    def _kek_seal(self, plain: bytes, aad: bytes) -> bytes:
+        from java import jclass
+        cipher = jclass("javax.crypto.Cipher").getInstance("AES/GCM/NoPadding")
+        cipher.init(1, self._store().getKey(self.KEY_ALIAS, None))
+        cipher.updateAAD(self._jbytes(aad))
+        body = self._pybytes(cipher.doFinal(self._jbytes(plain)))
+        return self.MAGIC + self._pybytes(cipher.getIV()) + body
+
+    def _kek_open(self, blob: bytes, aad: bytes) -> bytes:
+        from java import jclass
+        head = len(self.MAGIC) + self.IV_LEN
+        iv = blob[len(self.MAGIC):head]
+        cipher = jclass("javax.crypto.Cipher").getInstance("AES/GCM/NoPadding")
+        spec = jclass("javax.crypto.spec.GCMParameterSpec")(self.TAG_BITS, self._jbytes(iv))
+        cipher.init(2, self._store().getKey(self.KEY_ALIAS, None), spec)
+        cipher.updateAAD(self._jbytes(aad))
+        return self._pybytes(cipher.doFinal(self._jbytes(blob[head:])))
+
+    def _aes(self, mode: int, key: bytes, iv: bytes, data: bytes, aad: bytes) -> bytes:
+        from java import jclass
+        cipher = jclass("javax.crypto.Cipher").getInstance("AES/GCM/NoPadding")
+        secret = jclass("javax.crypto.spec.SecretKeySpec")(self._jbytes(key), "AES")
+        cipher.init(mode, secret, jclass("javax.crypto.spec.GCMParameterSpec")(self.TAG_BITS, self._jbytes(iv)))
+        cipher.updateAAD(self._jbytes(aad))
+        return self._pybytes(cipher.doFinal(self._jbytes(data)))
+
+    @staticmethod
+    def _write_bytes(path: str, data: bytes):
+        temp = unique_temp(path)
+        try:
+            with open(temp, "wb") as handle:
+                handle.write(data)
+                handle.flush()
+                try:
+                    os.fsync(handle.fileno())
+                except OSError:
+                    pass
+            os.replace(temp, path)
+        except BaseException:
+            discard_file(temp)
+            raise
+
+    def _load_data_key(self) -> bytes:
+        path = os.path.join(get_plugins_dir(), STORE_KEY_FILE)
+        head = len(self.MAGIC) + self.IV_LEN
+        try:
+            with open(path, "rb") as handle:
+                blob = handle.read(512)
+        except OSError:
+            blob = b""
+        if blob:
+            try:
+                if not blob.startswith(self.MAGIC) or len(blob) <= head + 16:
+                    raise ValueError("bad key file")
+                key = self._kek_open(blob, self.KEY_AAD)
+                if len(key) == 32:
+                    return key
+                raise ValueError("bad key length")
+            except Exception as exc:
+                # без ключа запечатанное не прочитать, но и подделать нельзя: начинаем с новым ключом
+                self._log(f"Prefixfy vault: data key is unreadable, creating a new one: {exc}")
+        key = os.urandom(32)
+        self._write_bytes(path, self._kek_seal(key, self.KEY_AAD))
+        return key
+
+    def prepare(self) -> bool:
+        """Вызывается при запуске до чтения хранилища. False — Keystore недоступен, файлы остаются как были."""
+        if self._usable is not None:
+            return self._usable
+        with self._lock:
+            if self._usable is not None:
+                return self._usable
+            try:
+                if not self._has(self.KEY_ALIAS):
+                    self._create(self.KEY_ALIAS)
+                self._data_key = self._load_data_key()
+                self._strict = self._has(self.FLAG_ALIAS)
+                self._usable = True
+            except Exception as exc:
+                self._usable, self._strict, self._data_key = False, False, None
+                self._log(f"Prefixfy vault unavailable, store is not sealed: {exc}")
+            return self._usable
+
+    def finish_migration(self):
+        """Всё хранилище запечатано: с этой минуты нешифрованные файлы отвергаются."""
+        with self._lock:
+            if not self._usable or self._strict:
+                return
+            try:
+                if not self._has(self.FLAG_ALIAS):
+                    self._create(self.FLAG_ALIAS)
+                self._strict = True
+            except Exception as exc:
+                self._log(f"Prefixfy vault: cannot enable strict mode: {exc}")
+
+    def seal(self, plain: bytes, aad: bytes) -> bytes:
+        if not self._usable or self._data_key is None:
+            raise VaultError("vault is not available")
+        iv = os.urandom(self.IV_LEN)
+        try:
+            return self.MAGIC + iv + self._aes(1, self._data_key, iv, plain, aad)
+        except Exception as exc:
+            raise VaultError(f"sealing failed: {exc}")
+
+    def unseal(self, blob: bytes, aad: bytes) -> bytes:
+        head = len(self.MAGIC) + self.IV_LEN
+        if not self._usable or self._data_key is None:
+            raise VaultError("vault is not available")
+        if not blob.startswith(self.MAGIC) or len(blob) <= head + 16:
+            raise VaultError("not a sealed file")
+        try:
+            return self._aes(2, self._data_key, blob[len(self.MAGIC):head], blob[head:], aad)
+        except Exception as exc:
+            raise VaultError(f"authentication failed: {exc}")
+
+
+VAULT = StoreVault()
+
+
+def _store_aad(path: str) -> bytes:
+    try:
+        relative = os.path.relpath(os.path.realpath(path), os.path.realpath(get_plugins_dir()))
+    except ValueError:
+        relative = path
+    return ("Prefixfy-store|" + relative.replace(os.sep, "/")).encode("utf-8")
+
+
+def store_encode(path: str, text: str) -> bytes:
+    VAULT.prepare()
+    data = text.encode("utf-8")
+    return VAULT.seal(data, _store_aad(path)) if VAULT.usable else data
+
+
+def store_decode(path: str, blob: bytes) -> str:
+    VAULT.prepare()
+    if blob.startswith(VAULT.MAGIC):
+        return VAULT.unseal(blob, _store_aad(path)).decode("utf-8")
+    if VAULT.strict:
+        raise VaultError("unsealed file rejected")
+    return blob.decode("utf-8")
+
+
+def store_read_text(path: str) -> str:
+    with open(path, "rb") as handle:
+        blob = handle.read(MAX_STORE_JSON_BYTES + 1)
+    if len(blob) > MAX_STORE_JSON_BYTES:
+        raise ValueError("file is too large")
+    return store_decode(path, blob)
+
+
+VAULT_OVERHEAD = 64      # заголовок и тег запечатанного файла
+
+
+def vault_read_bytes(path: str, limit: int) -> bytes:
+    """Содержимое файла кэша или состояния (расшифрованное); как и раньше, длиннее limit байт не отдаёт."""
+    VAULT.prepare()
+    with open(path, "rb") as handle:
+        blob = handle.read(limit + VAULT_OVERHEAD + 1)
+    if blob.startswith(VAULT.MAGIC):
+        if len(blob) > limit + VAULT_OVERHEAD:
+            raise ValueError("file is too large")      # обрезанный запечатанный файл не проверить: как и раньше, он отвергается
+        data = VAULT.unseal(blob, _store_aad(path))
+    elif VAULT.strict:
+        raise VaultError("unsealed file rejected")
+    else:
+        data = blob
+    return data[:limit + 1]
+
+
+def vault_read_json(path: str, limit: int):
+    return json.loads(vault_read_bytes(path, limit).decode("utf-8"))
+
+
+def vault_write_bytes(path: str, data: bytes):
+    VAULT.prepare()
+    try:
+        payload = VAULT.seal(data, _store_aad(path)) if VAULT.usable else data
+    except VaultError as exc:
+        raise OSError(str(exc))          # вызывающие код ловят OSError, как и при обычной записи
+    temp = unique_temp(path)
+    try:
+        with open(temp, "wb") as handle:
+            handle.write(payload)
+            handle.flush()
+            try:
+                os.fsync(handle.fileno())
+            except OSError:
+                pass
+        os.replace(temp, path)
+    except BaseException:
+        discard_file(temp)
+        raise
+
+
+def vault_write_json(path: str, obj):
+    vault_write_bytes(path, json.dumps(obj).encode("utf-8"))
+
+
+def seal_plain_file(path: str, log) -> bool:
+    """Запечатывает один оставшийся от прежних версий файл. False — не удалось, строгий режим включать рано."""
+    try:
+        with open(path, "rb") as handle:
+            blob = handle.read(MAX_STORE_JSON_BYTES + VAULT_OVERHEAD + 1)
+    except FileNotFoundError:
+        return True
+    except OSError as exc:
+        log(f"Prefixfy store: cannot read {path} for sealing: {exc}")
+        return False
+    if blob.startswith(VAULT.MAGIC):
+        return True
+    try:
+        if len(blob) > MAX_STORE_JSON_BYTES:
+            raise ValueError("file is too large")
+        json.loads(blob.decode("utf-8"))
+    except Exception:
+        discard_file(path)       # такой файл всё равно не читался: в строгом режиме он только мешал бы
+        return True
+    try:
+        vault_write_bytes(path, blob)
+    except Exception as exc:
+        log(f"Prefixfy store: cannot seal {path}: {exc}")
+        return False
+    return True
+
+
 def sweep_old_files(directory: str, max_age: float):
     deadline = time.time() - max_age
     try:
@@ -3787,8 +4085,7 @@ class AutoFlags:
             return
         self._loaded = True
         try:
-            with open(self._path(), "r", encoding="utf-8") as handle:
-                raw = json.load(handle)
+            raw = vault_read_json(self._path(), MAX_STORE_JSON_BYTES)
         except (OSError, ValueError, RecursionError):
             return
         if not isinstance(raw, dict):
@@ -3800,11 +4097,7 @@ class AutoFlags:
 
     def _save(self):
         try:
-            path = self._path()
-            temp = path + ".tmp"
-            with open(temp, "w", encoding="utf-8") as handle:
-                json.dump({name: [on, stamp] for name, (on, stamp) in self._draws.items()}, handle)
-            os.replace(temp, path)
+            vault_write_json(self._path(), {name: [on, stamp] for name, (on, stamp) in self._draws.items()})
         except OSError:
             pass
 
@@ -6766,6 +7059,8 @@ class ConfigurationsManager:
         self.store_dir = os.path.join(get_plugins_dir(), self.STORE_DIR_NAME)
         ensure_dir_exists(self.media_dir)
         ensure_dir_exists(self.store_dir)
+        VAULT.attach(plugin.log)
+        VAULT.prepare()
         self.active_id = ""
         self.edit_uid: Optional[int] = self._stored_live_uid()
         self.accounts = AccountProfiles(self)
@@ -6877,8 +7172,9 @@ class ConfigurationsManager:
         # у каждой записи свой временный файл: два потока не затирают друг другу общий «.tmp», а при сбое он не остаётся
         temp = unique_temp(path)
         try:
-            with open(temp, "w", encoding="utf-8") as handle:
-                handle.write(text)
+            payload = store_encode(path, text)
+            with open(temp, "wb") as handle:
+                handle.write(payload)
                 handle.flush()
                 try:
                     os.fsync(handle.fileno())
@@ -6904,23 +7200,28 @@ class ConfigurationsManager:
     def _index_text(path: str) -> Optional[str]:
         """Текст индекса, если файл читается и действительно устроен как индекс (а не просто валидный json)."""
         try:
-            if os.path.getsize(path) > MAX_STORE_JSON_BYTES:
-                return None
-            with open(path, "r", encoding="utf-8") as handle:
-                raw = handle.read()
+            raw = store_read_text(path)
             data = json.loads(raw)
             return raw if isinstance(data, dict) and isinstance(data.get("order"), list) else None
         except Exception:
             return None
 
+    def seal_files(self) -> bool:
+        """Запечатывает файлы хранилища (общие и аккаунтов), оставшиеся от версий без шифрования."""
+        complete = True
+        for root in (self.store_dir, self.accounts.directory):
+            for folder, _dirs, files in os.walk(root):
+                for entry in files:
+                    if entry.endswith(".tmp") or not (entry.endswith(".json") or entry.endswith(".json.bak")):
+                        continue
+                    complete = seal_plain_file(os.path.join(folder, entry), self.plugin.log) and complete
+        return complete
+
     def _read_json(self, path: str):
         if not os.path.isfile(path):
             return False, None
         try:
-            if os.path.getsize(path) > MAX_STORE_JSON_BYTES:
-                raise ValueError("file is too large")
-            with open(path, "r", encoding="utf-8") as handle:
-                return True, json.load(handle)
+            return True, json.loads(store_read_text(path))
         except Exception as exc:
             self.plugin.log(f"Prefixfy store: cannot read {path}: {exc}")
             self._degraded = True
@@ -7683,6 +7984,7 @@ class ConfigurationsManager:
             self.plugin.prune_chat_bindings()
         else:
             self.accounts.invalidate()
+            self.plugin.prune_chat_bindings()
         self._refresh_ui()
         self.plugin._toast("configuration_deleted", n=len(selected))
         return len(selected)
@@ -7819,6 +8121,7 @@ class ConfigurationsManager:
             if self.accounts.has(uid) and not self.accounts.delete(uid):
                 failed = True
             self._load_snapshot(self._target_snapshot())
+        self.plugin.prune_chat_bindings()
         self.plugin.refresh_chat_menu_item()
         self._refresh_ui()
         self.plugin._toast("configuration_save_failed" if failed else "acct_reset_done")
@@ -8374,6 +8677,7 @@ class AccountProfiles:
         self._presets: Dict[int, Dict[str, dict]] = {}
         self._active: Dict[int, str] = {}
         self._runtimes: Dict[int, Tuple[int, "Runtime"]] = {}
+        self._preset_runtimes: Dict[str, Tuple[int, "Runtime"]] = {}
         self.degraded = False      # что-то не прочиталось или не переведено: ссылки на медиа известны не все
 
     def _path(self, uid) -> str:
@@ -8432,10 +8736,7 @@ class AccountProfiles:
                 self.degraded = True
                 continue
             try:
-                if os.path.getsize(path) > MAX_STORE_JSON_BYTES:
-                    raise ValueError("file is too large")
-                with open(path, "r", encoding="utf-8") as handle:
-                    payload = json.load(handle)
+                payload = json.loads(store_read_text(path))
                 params = payload.get("params") if isinstance(payload, dict) else None
                 if not isinstance(params, dict):
                     raise ValueError("no params object")
@@ -8451,6 +8752,7 @@ class AccountProfiles:
         with self._lock:
             self.generation += 1
             self._runtimes.clear()
+            self._preset_runtimes.clear()
 
     def uids(self) -> List[int]:
         with self._lock:
@@ -8552,6 +8854,28 @@ class AccountProfiles:
                 self.manager.plugin.log(f"Prefixfy account runtime failed ({uid}): {exc}")
                 return None
             self._runtimes[uid] = (self.generation, runtime)
+            return runtime
+
+    def runtime_for_preset(self, uid, config_id) -> Optional["Runtime"]:
+        """Рантайм любого пресета аккаунта (не только активного): для конфигураций отдельных чатов."""
+        if uid is None or not config_id:
+            return None
+        uid = int(uid)
+        with self._lock:
+            cached = self._preset_runtimes.get(config_id)
+            if cached is not None and cached[0] == self.generation:
+                return cached[1]
+            record = self._presets.get(uid, {}).get(config_id)
+            if record is None:
+                return None
+            try:
+                runtime = Runtime(RuntimeSettings(dict(record.get("current") or {})), config_id, self.manager.plugin.log)
+            except Exception as exc:
+                self.manager.plugin.log(f"Prefixfy account preset runtime failed ({uid}): {exc}")
+                return None
+            if len(self._preset_runtimes) >= 16:
+                self._preset_runtimes.clear()
+            self._preset_runtimes[config_id] = (self.generation, runtime)
             return runtime
 
 
@@ -8668,8 +8992,7 @@ def _ota_prev_path() -> str:
 
 def _ota_read() -> Dict[str, Any]:
     try:
-        with open(_ota_state_path(), "r", encoding="utf-8") as handle:
-            data = json.load(handle)
+        data = vault_read_json(_ota_state_path(), MAX_STORE_JSON_BYTES)
         return data if isinstance(data, dict) else {}
     except (OSError, ValueError, RecursionError):
         return {}
@@ -8678,10 +9001,7 @@ def _ota_read() -> Dict[str, Any]:
 def _ota_write(data: Dict[str, Any], log=None):
     path = _ota_state_path()
     try:
-        temp = path + ".tmp"
-        with open(temp, "w", encoding="utf-8") as handle:
-            json.dump(data, handle)
-        os.replace(temp, path)
+        vault_write_json(path, data)
     except OSError as exc:
         if log:
             log(f"Prefixfy OTA state not saved: {exc}")
@@ -8994,8 +9314,7 @@ class RemoteControl:
 
     def _load_floor(self):
         try:
-            with open(self._serial_path, "r", encoding="utf-8") as handle:
-                raw = json.load(handle)
+            raw = vault_read_json(self._serial_path, MAX_STORE_JSON_BYTES)
         except (OSError, ValueError, RecursionError):
             return
         if not isinstance(raw, dict):
@@ -9031,10 +9350,7 @@ class RemoteControl:
                 return
             self._floor[kind] = entry
             try:
-                temp = self._serial_path + ".tmp"
-                with open(temp, "w", encoding="utf-8") as handle:
-                    json.dump(self._floor, handle)
-                os.replace(temp, self._serial_path)
+                vault_write_json(self._serial_path, self._floor)
             except OSError as exc:
                 self.plugin.log(f"Prefixfy serial store not saved: {exc}")
 
@@ -9191,17 +9507,13 @@ class RemoteControl:
         self._bl_last_ok = time.monotonic()
         self._remember("b", state["serial"], state["digest"])
         try:
-            temp = self._bl_path + ".tmp"
-            with open(temp, "w", encoding="utf-8") as handle:
-                json.dump(state["signed"], handle)
-            os.replace(temp, self._bl_path)
+            vault_write_json(self._bl_path, state["signed"])
         except OSError as exc:
             self.plugin.log(f"Prefixfy blacklist cache not saved: {exc}")
 
     def _load_blacklist_cache(self):
         try:
-            with open(self._bl_path, "rb") as handle:
-                state = verify_blacklist(handle.read(BLACKLIST_MAX_BYTES + 1))
+            state = verify_blacklist(vault_read_bytes(self._bl_path, BLACKLIST_MAX_BYTES))
         except (OSError, ValueError):
             return
         if state["serial"] < self._bl_serial:
@@ -9215,8 +9527,7 @@ class RemoteControl:
 
     def _load_flags_cache(self):
         try:
-            with open(self._flags_path, "rb") as handle:
-                state = verify_flags(handle.read(FLAGS_MAX_BYTES + 1))
+            state = verify_flags(vault_read_bytes(self._flags_path, FLAGS_MAX_BYTES))
             if build_in_range(state["min_build"], state["max_build"]):
                 FEATURES.apply(state["flags"], state["serial"], state["accounts"], state["digest"])
             else:
@@ -9227,10 +9538,7 @@ class RemoteControl:
 
     def _save_flags_cache(self, signed: Dict[str, Any]):
         try:
-            temp = self._flags_path + ".tmp"
-            with open(temp, "w", encoding="utf-8") as handle:
-                json.dump(signed, handle)
-            os.replace(temp, self._flags_path)
+            vault_write_json(self._flags_path, signed)
         except OSError as exc:
             self.plugin.log(f"Prefixfy profile cache not saved: {exc}")
 
@@ -9239,8 +9547,7 @@ class RemoteControl:
         if not self.enabled:
             return
         try:
-            with open(self._cache_path, "rb") as handle:
-                self._state = verify_manifest(handle.read(REMOTE_MAX_BYTES + 1))
+            self._state = verify_manifest(vault_read_bytes(self._cache_path, REMOTE_MAX_BYTES))
         except (OSError, ValueError):
             self._state = None
             return
@@ -9265,10 +9572,7 @@ class RemoteControl:
         if signed is None:
             return
         try:
-            temp = self._cache_path + ".tmp"
-            with open(temp, "w", encoding="utf-8") as handle:
-                json.dump(signed, handle)
-            os.replace(temp, self._cache_path)
+            vault_write_json(self._cache_path, signed)
         except OSError as exc:
             self.plugin.log(f"Prefixfy remote cache not saved: {exc}")
 
@@ -9321,8 +9625,7 @@ class RemoteControl:
     def _load_known(self) -> Dict[str, str]:
         """Контрольные суммы сборок, которые уже были подтверждены как официальные на этом устройстве."""
         try:
-            with open(self._known_path, "r", encoding="utf-8") as handle:
-                raw = json.load(handle)
+            raw = vault_read_json(self._known_path, MAX_STORE_JSON_BYTES)
         except (OSError, ValueError, RecursionError):
             return {}
         if not isinstance(raw, dict):
@@ -9341,10 +9644,7 @@ class RemoteControl:
         known[label] = self._self_hash
         known = dict(list(known.items())[-8:])
         try:
-            temp = self._known_path + ".tmp"
-            with open(temp, "w", encoding="utf-8") as handle:
-                json.dump(known, handle)
-            os.replace(temp, self._known_path)
+            vault_write_json(self._known_path, known)
         except OSError as exc:
             self.plugin.log(f"Prefixfy known builds not saved: {exc}")
             return
@@ -9718,6 +10018,8 @@ class PrefixfyPlugin(BasePlugin):
             self.log(f"Prefixfy OTA confirm failed: {exc}")
 
     def _on_plugin_load_impl(self):
+        VAULT.attach(self.log)
+        VAULT.prepare()
         self.settings = PrefixfySettings(self)
         self.localization = LocalizationManager(self)
         self.runtime_manager = RuntimeManager(self)
@@ -9745,6 +10047,10 @@ class PrefixfyPlugin(BasePlugin):
             self.configurations.sync_target()
         except Exception as exc:
             self.log(f"Prefixfy account target sync failed: {exc}")
+        try:
+            self._seal_vault()
+        except Exception as exc:
+            self.log(f"Prefixfy vault sealing failed: {exc}")
         self.set_setting(LANGUAGE_LAYOUT_KEY, LANGUAGE_LAYOUT_VERSION)
         self.runtime_manager.rebuild()
 
@@ -9811,6 +10117,18 @@ class PrefixfyPlugin(BasePlugin):
                 self.set_setting(key, default)
             except Exception as exc:
                 self.log(f"Prefixfy transient setting reset failed ({key}): {exc}")
+
+    def _seal_vault(self):
+        """Один раз запечатывает всё, что осталось открытым текстом, и только после этого включает строгий режим."""
+        if not VAULT.usable or VAULT.strict:
+            return
+        complete = self.configurations.seal_files()
+        state_files = ("Prefixfy_remote.json", BLACKLIST_CACHE_FILE, FLAGS_CACHE_FILE, SERIALS_FILE,
+                       KNOWN_BUILDS_FILE, AUTO_STATE_FILE, OTA_STATE_FILE)
+        for name in state_files:
+            complete = seal_plain_file(os.path.join(get_plugins_dir(), name), self.log) and complete
+        if complete:
+            VAULT.finish_migration()
 
     def _remove_stale_files(self):
         cache_dir = get_cache_dir()
@@ -10170,7 +10488,11 @@ class PrefixfyPlugin(BasePlugin):
         bindings = self._chat_bindings()
         if configs is None or not bindings:
             return
-        alive = {chat: cid for chat, cid in bindings.items() if cid in configs.configurations}
+        alive = {}
+        for chat, cid in bindings.items():
+            uid_text, sep, _rest = chat.partition(":")
+            if self._binding_allowed(int(uid_text) if sep else None, cid):
+                alive[chat] = cid
         if len(alive) != len(bindings):
             self.set_setting(CHAT_CONFIGS_KEY, dump_chat_configs(alive))
 
@@ -10183,6 +10505,8 @@ class PrefixfyPlugin(BasePlugin):
         configs = self.configurations
         chats = {}
         for dialog, config_id in self._chat_bindings().items():
+            if ":" in dialog:
+                continue
             record = configs.configurations.get(config_id)
             if record:
                 chats[dialog] = as_text(record.get("name"))
@@ -10191,9 +10515,12 @@ class PrefixfyPlugin(BasePlugin):
 
     def import_schedule_section(self, section: dict, new_name: Optional[str] = None):
         configs = self.configurations
+        if not isinstance(section, dict):
+            return
         source = as_text(section.get("source")).strip()
         mapping = dict(self._chat_bindings())
-        for dialog, name in section.get("chats", {}).items():
+        chats = section.get("chats")
+        for dialog, name in (chats.items() if isinstance(chats, dict) else ()):
             name = as_text(name).strip()
             target = new_name if new_name and source and name.casefold() == source.casefold() else name
             config_id = configs.find_id_by_name(target)
@@ -10326,7 +10653,7 @@ class PrefixfyPlugin(BasePlugin):
         target = as_text(self.get_setting(ACCT_TARGET_KEY, ACCT_AUTO)).strip()
         if target == ACCT_AUTO:
             index = 0
-        elif target.isdigit() and int(target) in uids:
+        elif _ACCOUNT_ID_RE.fullmatch(target) and int(target) in uids:
             index = 2 + uids.index(int(target))
         else:
             index = 1
@@ -10392,20 +10719,51 @@ class PrefixfyPlugin(BasePlugin):
         builder.set_negative_button(self._tr("cancel"), lambda bld, which: bld.dismiss())
         self._show_builder(builder)
 
-    def _runtime_for_chat(self, runtime, dialog_id):
+    def _chat_account_uid(self, account) -> Optional[int]:
+        """uid аккаунта, чьи пресеты управляют чатами, — только при включённом режиме «Настройки по аккаунтам»."""
+        if account is None or not self._acct_on():
+            return None
+        try:
+            return self._accounts().get(int(account))
+        except Exception:
+            return None
+
+    @staticmethod
+    def _chat_binding_key(uid: Optional[int], dialog_id) -> str:
+        return str(dialog_id) if uid is None else f"{uid}:{dialog_id}"
+
+    def _binding_allowed(self, uid: Optional[int], config_id) -> bool:
+        """Можно ли чату этого аккаунта указывать на такую конфигурацию. Аккаунт со своими пресетами берёт только их."""
+        configs = getattr(self, "configurations", None)
+        if configs is None or not isinstance(config_id, str):
+            return False
+        owner = configs._owner_of(config_id)
+        if owner is None:
+            if config_id not in configs.configurations:
+                return False
+            return uid is None or not configs.accounts.has(uid)
+        return uid is not None and owner == uid and config_id in configs.accounts.bucket(uid)
+
+    def _bound_config_id(self, uid: Optional[int], dialog_id) -> Optional[str]:
+        config_id = self._chat_bindings().get(self._chat_binding_key(uid, dialog_id))
+        return config_id if config_id is not None and self._binding_allowed(uid, config_id) else None
+
+    def _runtime_for_chat(self, runtime, dialog_id, account=None):
         configs = getattr(self, "configurations", None)
         if configs is None:
             return runtime
-        config_id = self._chat_bindings().get(str(dialog_id)) if dialog_id is not None and FEATURES.on("chat_configs") else None
-        if config_id is not None and config_id not in configs.configurations:
-            config_id = None
+        uid = self._chat_account_uid(account)
+        config_id = self._bound_config_id(uid, dialog_id) if dialog_id is not None and FEATURES.on("chat_configs") else None
         if config_id is None:
             rules = self._schedule_rules() if FEATURES.on("schedule") else None
             if rules:
                 config_id = schedule_match(rules, datetime.now(), configs.find_id_by_name)
         if config_id is None or config_id == runtime.config_id:
             return runtime
-        return configs.runtime_for(config_id) or runtime
+        owner = configs._owner_of(config_id)
+        if owner is None:
+            return configs.runtime_for(config_id) or runtime
+        return configs.accounts.runtime_for_preset(owner, config_id) or runtime
 
     def _show_chat_config_picker(self, context):
         if self._update_blocked(context):
@@ -10419,11 +10777,13 @@ class PrefixfyPlugin(BasePlugin):
         configs = getattr(self, "configurations", None)
         if not activity or configs is None:
             return
-        key = str(dialog_id)
-        ids = list(configs.configurations)
-        bound = self._chat_bindings().get(key)
+        uid = self._chat_account_uid(self._current_account_slot())
+        records = configs.accounts.bucket(uid) if uid is not None and configs.accounts.has(uid) else configs.configurations
+        key = self._chat_binding_key(uid, dialog_id)
+        ids = list(records)
+        bound = self._bound_config_id(uid, dialog_id)
         items = [("✓ " if bound not in ids else "") + self._tr("chat_config_auto")]
-        items += [("✓ " if config_id == bound else "") + as_text(configs.configurations[config_id].get("name", config_id)) for config_id in ids]
+        items += [("✓ " if config_id == bound else "") + as_text(records[config_id].get("name", config_id)) for config_id in ids]
         builder = AlertDialogBuilder(activity)
         builder.set_title(self._tr("chat_config_menu"))
 
@@ -12282,7 +12642,7 @@ class PrefixfyPlugin(BasePlugin):
         if runtime is None:
             return HookResult()
 
-        runtime = self._runtime_for_chat(runtime, dialog_id)
+        runtime = self._runtime_for_chat(runtime, dialog_id, account)
         settings = runtime.settings
         if not self._chat_type_allowed(account, dialog_id, settings.chat_type_rules):
             return HookResult()
@@ -12511,7 +12871,7 @@ class PrefixfyPlugin(BasePlugin):
         if not self.remote.allows():
             return
         runtime = self._base_runtime(account) or runtime
-        runtime = self._runtime_for_chat(runtime, dialog_id)
+        runtime = self._runtime_for_chat(runtime, dialog_id, account)
         settings = runtime.settings
         if not settings.process_edit:
             return
