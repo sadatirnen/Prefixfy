@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "39.1.0"
-__build__ = "39.1.0_20261110.5_45"
+__version__ = "39.2.0"
+__build__ = "39.2.0_20261110.6_46"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -133,7 +133,7 @@ WIPE_MARKER_FILE = ".pfx_wipe"         # метка отложенного уд�
 DORMANT_FILE = ".pfx_dormant"          # метка «отказа от использования» (привязана к конкретной копии файла плагина)
 BLACKLIST_GUARD_FILE = ".pfx_bl"        # метка «данные уже стёрты при входе в режим ЧС»; снимается, когда аккаунт из ЧС ушёл
 WIPE_MARKER_TTL = 3600.0               # метка удаления живёт не дольше часа
-WIPE_COOLDOWN_SEC = 10                 # кулдаун кнопки «Очистить» во втором диалоге
+WIPE_COOLDOWN_SEC = 10                 # кулдаун кнопки «Далее» в первом диалоге и «Очистить» во втором
 OTA_FLAGS_MAX_AGE = 120.0              # флаги должны быть проверены не раньше, чем N секунд назад
 OTA_LOAD_TIMEOUT = 45.0                # сколько ждать загрузки новой версии до отката
 OTA_CONFIRM_SEC = 20.0                 # сколько новая версия должна проработать, чтобы считаться рабочей
@@ -2503,6 +2503,7 @@ for _code, _table in LocalizationManager.STRINGS.items():
 
 _WIPE_STRINGS = {
     "ru": {
+        "block_bypass_note": "Обратите внимание: эта функция не поможет вам обойти блокировку.",
         "wipe_row": "Удалить данные",
         "wipe_row_subtext": "Очистка файлов плагина или полный отказ от его использования.",
         "wipe_title": "Удалить данные Prefixfy?",
@@ -2513,7 +2514,6 @@ _WIPE_STRINGS = {
         "wipe_confirm_clean": "Файлы плагина будут удалены, плагин перезапустится и создаст их заново. Конфигурации и прикреплённое медиа пропадут безвозвратно. Рекомендуем экспортировать все ваши конфигурации.",
         "wipe_confirm_out": "Будут удалены все файлы и настройки плагина, после чего плагин отключится. Это нельзя отменить.",
         "wipe_confirm_btn": "Очистить",
-        "wipe_wait": "Подождите ещё {n} с",
         "wipe_started": "Готовлю удаление…",
         "wipe_updating": "Сначала обновляю плагин до {version}, затем удалю данные…",
         "wipe_update_failed": "Не удалось обновить плагин: {reason}. Ничего не удалено.",
@@ -2529,6 +2529,7 @@ _WIPE_STRINGS = {
         "resume_failed": "Не удалось запустить плагин. Выключите и снова включите его.",
     },
     "en": {
+        "block_bypass_note": "Please note: this function will not help you bypass the block.",
         "wipe_row": "Delete data",
         "wipe_row_subtext": "Clear the plugin's files or stop using it completely.",
         "wipe_title": "Delete Prefixfy data?",
@@ -2539,7 +2540,6 @@ _WIPE_STRINGS = {
         "wipe_confirm_clean": "The plugin's files will be deleted, then the plugin restarts and recreates them. Configurations and attached media are lost for good. We recommend exporting all your configurations first.",
         "wipe_confirm_out": "All plugin files and settings will be deleted and the plugin will switch itself off. This cannot be undone.",
         "wipe_confirm_btn": "Clear",
-        "wipe_wait": "Wait {n} s more",
         "wipe_started": "Preparing deletion…",
         "wipe_updating": "Updating the plugin to {version} first, then deleting the data…",
         "wipe_update_failed": "Could not update the plugin: {reason}. Nothing was deleted.",
@@ -2555,6 +2555,7 @@ _WIPE_STRINGS = {
         "resume_failed": "Could not start the plugin. Turn it off and on again.",
     },
     "ja": {
+        "block_bypass_note": "ご注意ください：この機能ではブロックを回避できません。",
         "wipe_row": "データを削除",
         "wipe_row_subtext": "プラグインのファイルを消去するか、使用を完全にやめます。",
         "wipe_title": "Prefixfyのデータを削除しますか？",
@@ -2565,7 +2566,6 @@ _WIPE_STRINGS = {
         "wipe_confirm_clean": "プラグインのファイルを削除し、プラグインを再起動して作り直します。設定プリセットと添付メディアは完全に失われます。先にすべての設定プリセットをエクスポートしておくことをおすすめします。",
         "wipe_confirm_out": "プラグインのすべてのファイルと設定を削除し、プラグインを停止します。元に戻せません。",
         "wipe_confirm_btn": "消去",
-        "wipe_wait": "あと{n}秒お待ちください",
         "wipe_started": "削除の準備中…",
         "wipe_updating": "先にプラグインを{version}に更新してから、データを削除します…",
         "wipe_update_failed": "プラグインを更新できませんでした：{reason}。何も削除されていません。",
@@ -2581,6 +2581,7 @@ _WIPE_STRINGS = {
         "resume_failed": "プラグインを起動できませんでした。オフにしてからオンにしてください。",
     },
     "ko": {
+        "block_bypass_note": "참고: 이 기능으로는 차단을 우회할 수 없습니다.",
         "wipe_row": "데이터 삭제",
         "wipe_row_subtext": "플러그인 파일을 정리하거나 사용을 완전히 중단합니다.",
         "wipe_title": "Prefixfy 데이터를 삭제할까요?",
@@ -2591,7 +2592,6 @@ _WIPE_STRINGS = {
         "wipe_confirm_clean": "플러그인 파일을 삭제한 뒤 플러그인을 다시 시작해 새로 만듭니다. 구성과 첨부 미디어는 영구적으로 사라집니다. 먼저 모든 구성을 내보내 두기를 권장합니다.",
         "wipe_confirm_out": "플러그인의 모든 파일과 설정을 삭제하고 플러그인을 끕니다. 되돌릴 수 없습니다.",
         "wipe_confirm_btn": "삭제",
-        "wipe_wait": "{n}초 더 기다려 주세요",
         "wipe_started": "삭제를 준비하는 중…",
         "wipe_updating": "먼저 플러그인을 {version}(으)로 업데이트한 뒤 데이터를 삭제합니다…",
         "wipe_update_failed": "플러그인을 업데이트하지 못했습니다: {reason}. 아무것도 삭제되지 않았습니다.",
@@ -2607,6 +2607,7 @@ _WIPE_STRINGS = {
         "resume_failed": "플러그인을 시작하지 못했습니다. 껐다가 다시 켜세요.",
     },
     "fr": {
+        "block_bypass_note": "À noter : cette fonction ne vous permettra pas de contourner le blocage.",
         "wipe_row": "Supprimer les données",
         "wipe_row_subtext": "Effacer les fichiers du plugin ou cesser complètement de l’utiliser.",
         "wipe_title": "Supprimer les données de Prefixfy ?",
@@ -2617,7 +2618,6 @@ _WIPE_STRINGS = {
         "wipe_confirm_clean": "Les fichiers du plugin seront supprimés, puis le plugin redémarrera et les recréera. Les configurations et les médias joints seront perdus définitivement. Nous vous recommandons d’exporter d’abord toutes vos configurations.",
         "wipe_confirm_out": "Tous les fichiers et réglages du plugin seront supprimés, puis le plugin se désactivera. Cette action est irréversible.",
         "wipe_confirm_btn": "Effacer",
-        "wipe_wait": "Encore {n} s",
         "wipe_started": "Préparation de la suppression…",
         "wipe_updating": "Mise à jour du plugin vers {version} d’abord, puis suppression des données…",
         "wipe_update_failed": "Impossible de mettre à jour le plugin : {reason}. Rien n’a été supprimé.",
@@ -2633,6 +2633,7 @@ _WIPE_STRINGS = {
         "resume_failed": "Impossible de démarrer le plugin. Désactivez-le puis réactivez-le.",
     },
     "de": {
+        "block_bypass_note": "Bitte beachte: Diese Funktion hilft dir nicht, die Sperre zu umgehen.",
         "wipe_row": "Daten löschen",
         "wipe_row_subtext": "Plugin-Dateien bereinigen oder das Plugin ganz aufgeben.",
         "wipe_title": "Prefixfy-Daten löschen?",
@@ -2643,7 +2644,6 @@ _WIPE_STRINGS = {
         "wipe_confirm_clean": "Die Plugin-Dateien werden gelöscht, danach startet das Plugin neu und legt sie wieder an. Konfigurationen und angehängte Medien gehen unwiderruflich verloren. Wir empfehlen, vorher alle Konfigurationen zu exportieren.",
         "wipe_confirm_out": "Alle Plugin-Dateien und Einstellungen werden gelöscht, danach schaltet sich das Plugin ab. Das lässt sich nicht rückgängig machen.",
         "wipe_confirm_btn": "Löschen",
-        "wipe_wait": "Noch {n} s warten",
         "wipe_started": "Löschen wird vorbereitet…",
         "wipe_updating": "Zuerst wird das Plugin auf {version} aktualisiert, danach werden die Daten gelöscht…",
         "wipe_update_failed": "Das Plugin konnte nicht aktualisiert werden: {reason}. Es wurde nichts gelöscht.",
@@ -10804,7 +10804,7 @@ class PrefixfyPlugin(BasePlugin):
         return self._show_builder(builder)
 
     def show_checklist(self, title, rows, on_confirm, *, message=None, extra=None, positive=None,
-                       fragment=None, on_cancel=None) -> bool:
+                       fragment=None, on_cancel=None, cooldown: int = 0, red: bool = False) -> bool:
         activity = self._dialog_activity(fragment)
         if not activity:
             return False
@@ -10833,7 +10833,12 @@ class PrefixfyPlugin(BasePlugin):
             builder.set_message(message)
         builder.set_view(layout)
 
+        label = positive or self._tr("save")
+        shown_at = time.monotonic()
+
         def ok(bld, which):
+            if cooldown and cooldown - (time.monotonic() - shown_at) > 0:
+                return
             selected = [i for i, box in enumerate(boxes) if box.isChecked() and rows[i][2]]
             extra_checked = bool(extra_box and extra_box.isEnabled() and extra_box.isChecked())
             if on_confirm(selected, extra_checked) is not False:
@@ -10844,9 +10849,14 @@ class PrefixfyPlugin(BasePlugin):
             if on_cancel:
                 on_cancel()
 
-        builder.set_positive_button(positive or self._tr("save"), ok)
+        builder.set_positive_button(f"{label} ({cooldown})" if cooldown else label, ok)
         builder.set_negative_button(self._tr("cancel"), cancel)
-        return self._show_builder(builder)
+        shown = self._show_builder(builder)
+        if shown and red:
+            self._paint_button_red(builder, "positive")
+        if shown and cooldown:
+            self._run_wipe_countdown(builder, label, shown_at)
+        return shown
 
     def _current_dialog_id(self) -> Optional[int]:
         try:
@@ -12198,8 +12208,18 @@ class PrefixfyPlugin(BasePlugin):
     # ------------------------------------------------------------------
     # «Удалить данные» (два диалога) и «Возобновить работу»
     # ------------------------------------------------------------------
+    def _bypass_note(self) -> str:
+        """Пояснение про блокировку: только если плагин остановлен из-за аккаунта в чёрном списке."""
+        remote = getattr(self, "remote", None)
+        try:
+            if remote is not None and remote.enabled and remote.blacklisted():
+                return "\n\n" + self._tr("block_bypass_note")
+        except Exception as exc:
+            self.log(f"Prefixfy bypass note failed: {exc}")
+        return ""
+
     def _show_wipe_dialog(self, *_):
-        """Диалог 1: пояснение и чекбокс «Отказаться от использования» (по умолчанию снят)."""
+        """Диалог 1: пояснение и чекбокс «Отказаться от использования» (по умолчанию снят). Кнопка «Далее» красная и WIPE_COOLDOWN_SEC секунд неактивна."""
         tr = self._tr
 
         def next_step(selected, opt_out):
@@ -12210,6 +12230,7 @@ class PrefixfyPlugin(BasePlugin):
         self.show_checklist(
             tr("wipe_title"), [], next_step, message=tr("wipe_body"),
             extra=(tr("wipe_opt_out"), False, True), positive=tr("wipe_next"),
+            cooldown=WIPE_COOLDOWN_SEC, red=True,
         )
 
     def _show_wipe_confirm(self, opt_out: bool):
@@ -12222,12 +12243,10 @@ class PrefixfyPlugin(BasePlugin):
         shown_at = time.monotonic()
         builder = AlertDialogBuilder(activity)
         builder.set_title(tr("wipe_confirm_title"))
-        builder.set_message(tr("wipe_confirm_out" if opt_out else "wipe_confirm_clean"))
+        builder.set_message(tr("wipe_confirm_out" if opt_out else "wipe_confirm_clean") + self._bypass_note())
 
         def confirm(bld, which):
-            left = WIPE_COOLDOWN_SEC - (time.monotonic() - shown_at)
-            if left > 0:
-                self._toast("wipe_wait", n=int(math.ceil(left)))
+            if WIPE_COOLDOWN_SEC - (time.monotonic() - shown_at) > 0:
                 return
             bld.dismiss()
             self._start_wipe(opt_out)
@@ -12555,7 +12574,7 @@ class PrefixfyPlugin(BasePlugin):
         tr = self._tr
         builder = AlertDialogBuilder(activity)
         builder.set_title(tr("check_confirm_title"))
-        builder.set_message(tr("check_confirm_body"))
+        builder.set_message(tr("check_confirm_body") + self._bypass_note())
 
         def start(bld, which):
             bld.dismiss()
