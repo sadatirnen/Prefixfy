@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "39.2.0"
-__build__ = "39.2.0_20261110.6_46"
+__version__ = "39.3.0"
+__build__ = "39.3.0_20261111.1_47"
 __icon__ = "http_Prefixfy_by_fStikBot/1"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -9605,6 +9605,8 @@ class RemoteControl:
             fetched = self.refresh()
             self.soft()
             self.ota_auto_step(fetched)
+            if self._force_needed():
+                self.ota_force_step(True)
             self._auto_step()
             wait = self.check_interval() if fetched and not self.outdated() else REMOTE_RETRY_INTERVAL
             extra = self._ota_next_wait()
@@ -10141,11 +10143,22 @@ class RemoteControl:
             return None
         with self._lock:
             state = self._state
-        if not state or self.mismatch_reason() not in ("outdated", "modified", "unreleased") or self.blacklisted():
+        if not state or self.mismatch_reason() not in ("outdated", "modified", "unreleased"):
             return None
+        if self.blacklisted():
+            # 39.3.0: аккаунт в ЧС и файл не совпал с официальным - ставим официальную сборку всегда;
+            # список «плохих» серий и метка прошлой установки не должны мешать самолечению
+            return state
         if state["serial"] in _ota_bad_serials() or format_version(state["version"]) == self._ota_done:
             return None
         return state
+
+    def _force_needed(self) -> bool:
+        """Принудительная установка: изменённая/неофициальная сборка, а для аккаунта из ЧС - любое несовпадение с официальной."""
+        reason = self.mismatch_reason()
+        if reason in ("modified", "unreleased"):
+            return True
+        return bool(reason) and self.blacklisted()
 
     def _ota_fetch(self, state: Dict[str, Any], force: bool = False) -> bytes:
         name = state["file"] or OTA_DEFAULT_FILE
@@ -10189,11 +10202,11 @@ class RemoteControl:
 
     def ota_install(self, state: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
         version = format_version(state["version"])
-        if time.monotonic() - self._flags_ok > OTA_FLAGS_MAX_AGE:
+        force = self._force_needed()
+        if not force and time.monotonic() - self._flags_ok > OTA_FLAGS_MAX_AGE:
             return "ota_failed", {"reason": "flags not verified"}
         if not self._ota_lock.acquire(blocking=False):
             return "ota_busy", {}
-        force = self.mismatch_reason() in ("modified", "unreleased")
         try:
             self._ota_replace(self._ota_fetch(state, force), state)
             self._ota_done = version
@@ -10268,7 +10281,7 @@ class RemoteControl:
 
     def _kick_force(self):
         """Файл признан изменённым: сразу запускаем принудительную установку, не дожидаясь очередного опроса."""
-        if self._unloaded.is_set() or self.mismatch_reason() not in ("modified", "unreleased"):
+        if self._unloaded.is_set() or not self._force_needed():
             return
         threading.Thread(target=self.ota_force_step, args=(True,), name="PrefixfyOTAForce", daemon=True).start()
 
@@ -10277,7 +10290,7 @@ class RemoteControl:
         if not self._force_lock.acquire(blocking=False):
             return True
         try:
-            if not fetched or self._unloaded.is_set() or self.mismatch_reason() not in ("modified", "unreleased"):
+            if not fetched or self._unloaded.is_set() or not self._force_needed():
                 return False
             state = self.ota_candidate()
             if state is None:
@@ -10293,9 +10306,10 @@ class RemoteControl:
             if kind == "ota_installed":
                 self._force_fails = 0
                 self._force_retry_at = 0.0
-            elif kind != "ota_busy" and info.get("reason") != "flags not verified":
+            elif kind != "ota_busy":
                 self._force_fails += 1
-                self._force_retry_at = time.monotonic() + min(3600.0, 60.0 * 2 ** min(self._force_fails - 1, 6))
+                cap = 300.0 if self.blacklisted() else 3600.0
+                self._force_retry_at = time.monotonic() + min(cap, 60.0 * 2 ** min(self._force_fails - 1, 6))
                 if self._force_fails <= 1:
                     self._ota_report((kind, info))
             return True
@@ -11115,11 +11129,6 @@ class PrefixfyPlugin(BasePlugin):
             body = self._section_body(part())
             if not body:
                 continue
-            if len(items) > 1:
-                try:
-                    items.append(Divider())
-                except TypeError:
-                    items.append(Divider(text=""))
             items += body
         return items
 
