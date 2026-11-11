@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "40.1.1"
-__build__ = "40.1.1_20261111.4_50"
+__version__ = "40.1.2"
+__build__ = "40.1.2_20261111.5_51"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -10993,6 +10993,7 @@ class PrefixfyPlugin(BasePlugin):
             ("chat menu", self.refresh_chat_menu_item),
             ("activity result hook", self._install_activity_result_hook),
             ("edit message hook", self._install_edit_message_hook),
+            ("request debug hook", self._install_request_debug_hook),
         ):
             try:
                 step()
@@ -11146,6 +11147,42 @@ class PrefixfyPlugin(BasePlugin):
             self.log(f"Prefixfy edit: hooking sendRequest failed: {exc}")
             return
         self._prefixfy_hooks.extend(hooks)
+
+    def _install_request_debug_hook(self):
+        """40.1.1: отладка. Логирует классы исходящих запросов (send/rich/article/page...), чтобы найти настоящий путь отправки статьи."""
+        if not ARTICLE_DEBUG:
+            return
+        plugin = self
+        words = ("send", "rich", "article", "page", "draft", "media")
+        counter = {"n": 0}
+
+        class RequestDebugHook(MethodHook):
+            def before_hooked_method(self, param):
+                try:
+                    if not len(param.args) or param.args[0] is None or counter["n"] >= 60:
+                        return
+                    request = param.args[0]
+                    name = _dbg_cls(request)
+                    short = name.split("$")[-1].lower()
+                    if "edit" in short or not any(w in short for w in words):
+                        return
+                    counter["n"] += 1
+                    plugin.log(f"Prefixfy[dbg] request #{counter['n']}: {name}")
+                    for line in debug_dump(request, depth=2, only_hints=True, budget=[60]):
+                        plugin.log("Prefixfy[dbg]   req." + line)
+                except Exception as exc:
+                    plugin.log(f"Prefixfy[dbg] request dump failed: {exc}")
+
+        manager_class = self._hookable_class("org.telegram.tgnet.ConnectionsManager")
+        if manager_class is None:
+            self.log("Prefixfy[dbg] ConnectionsManager not found")
+            return
+        try:
+            hooks = self.hook_all_methods(manager_class, "sendRequest", RequestDebugHook())
+            self._prefixfy_hooks.extend(list(hooks) if hooks else [])
+            self.log("Prefixfy[dbg] request sniffer installed")
+        except Exception as exc:
+            self.log(f"Prefixfy[dbg] request sniffer failed: {exc}")
 
     def handle_setting_changed(self, key):
         if key in TRANSIENT_SETTING_DEFAULTS or key in OTA_SETTING_DEFAULTS:
@@ -13265,6 +13302,14 @@ class PrefixfyPlugin(BasePlugin):
         self._forget_internal_send(dialog_id, text)
 
     def on_send_message_hook(self, account: int, params: Any) -> HookResult:
+        if ARTICLE_DEBUG:
+            try:
+                n = getattr(self, "_dbg_hook_calls", 0) + 1
+                self._dbg_hook_calls = n
+                if n <= 40:
+                    self.log(f"Prefixfy[dbg] send hook called #{n}: params={_dbg_cls(params)} account={account}")
+            except Exception:
+                pass
         try:
             return self._process_outgoing(account, params)
         except Exception as exc:
@@ -13827,6 +13872,15 @@ class PrefixfyPlugin(BasePlugin):
 
     def _process_outgoing(self, account: int, params: Any) -> HookResult:
         if not self.remote.allows():
+            if ARTICLE_DEBUG and getattr(self, "_dbg_blocked_logged", 0) < 5:
+                self._dbg_blocked_logged = getattr(self, "_dbg_blocked_logged", 0) + 1
+                try:
+                    reason = self.remote.mismatch_reason()
+                except Exception:
+                    reason = "?"
+                self._dbg(f"STOPPED: remote.allows()=False (build {__build__}, blocked={self.remote.blocked()}, "
+                          f"verified={self.remote.verified()}, mismatch_reason={reason}). "
+                          f"Unsigned/modified build is blocked by the plugin's own check.")
             return HookResult()
         dialog_id = self._dialog_id_from_params(params, account)
         message = getattr(params, "message", None)
@@ -13835,19 +13889,23 @@ class PrefixfyPlugin(BasePlugin):
 
         already_styled = caption if has_media else message
         if isinstance(already_styled, str) and already_styled and self._is_internal_send(dialog_id, already_styled):
+            self._dbg("STOPPED: internal send")
             return HookResult()
         if FEATURES.on("premium_emoji") and self.settings.get("capture_custom_emoji", False) and self._capture_custom_emoji(params, account):
             return HookResult(strategy=HookStrategy.CANCEL)
 
         runtime = self._base_runtime(account)
         if runtime is None:
+            self._dbg("STOPPED: no runtime for account")
             return HookResult()
 
         runtime = self._runtime_for_chat(runtime, dialog_id, account)
         settings = runtime.settings
         if not self._chat_type_allowed(account, dialog_id, settings.chat_type_rules):
+            self._dbg(f"STOPPED: chat type not allowed (dialog={dialog_id})")
             return HookResult()
         if not settings.is_chat_allowed(dialog_id):
+            self._dbg(f"STOPPED: chat not allowed (dialog={dialog_id})")
             return HookResult()
 
         self._debug_params(params, account, dialog_id, runtime)
