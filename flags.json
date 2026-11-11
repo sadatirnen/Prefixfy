@@ -1,6 +1,6 @@
 {
-  "flags": {
     "account_settings": true,
+    "articles": true,
     "attached_media": true,
     "chat_configs": true,
     "chat_type_rules": true,
@@ -25,6 +25,7 @@
     "premium_emoji": true,
     "regex_exceptions": true,
     "schedule": true,
+    "separator_spaces": true,
     "style_alternating": true,
     "style_bold": true,
     "style_bold_fraktur": true,
@@ -94,9 +95,4 @@
     "tag_year_short": true,
     "tag_yearday": true,
     "text_styles": true
-  },
-  "format": 1,
-  "issued_at": 1794316611,
-  "serial": 1794316611,
-  "signature": "KUq/GxG49zCy8F/YHdR0PVqrIv07iVqhpJ46iyb3W0r0fCti6Dh9EwbFHNjO78SOfvm5ER+B1MjG4M/rg3usKcWT2Gz11R2XDP/X1X0TWovvv7zI9WKx/S9P6ERYdiinoLIXKFd/TEAEiOTJs0gcMf5Gt2ZqCO2wV67fIMQTuWfhpp02U7XMRbhXAwd1oXreRJq5UsoYzalqK19pK/lMDpkvPQzdlht5pda9bEEEs182TqGsnoHDIesra9MxxzqXyuDAu63+XCeME1+QdEqR0k/7NDJEU/xqWkqqJIC1WsQv9LSmqcfuULubSOer1MTNxlNs2gBLQj1Kp1NFwojCKPUj5240B+GByQGKZt9mIGOcmMeJ5Tsk9bahTB0PHSoV5wXTR/njcbRlyCZuN3NMyAI++UKpgXZPvm7kWHNjjqRn5tKa55NnPYdVfN0kg1daLUyErVkEVQcDhbOqaY/ShcJZPF7DsRRAWTE6CNFZOWumW73FiVg6U8vmCjDr/MnG"
 }
