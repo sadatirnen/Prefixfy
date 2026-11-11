@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "40.1.2"
-__build__ = "40.1.2_20261111.5_51"
+__version__ = "40.1.3"
+__build__ = "40.1.3_20261111.6_52"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -10724,6 +10724,29 @@ def article_text_leaf(block):
     return None
 
 
+_FILELOG = [None, False]
+
+
+def emit_to_app_log(message) -> None:
+    """40.1.2: BasePlugin.log не попадает в лог приложения (logs.zip), поэтому дублируем строки через FileLog
+    (там же видны строки "D/tmessages") и, если не вышло, через android.util.Log."""
+    text = as_text(message)
+    try:
+        if not _FILELOG[1]:
+            _FILELOG[0] = find_class("org.telegram.messenger.FileLog")
+            _FILELOG[1] = True
+        if _FILELOG[0] is not None:
+            _FILELOG[0].d(text)
+            return
+    except Exception:
+        pass
+    try:
+        from android.util import Log
+        Log.d("tmessages", text)
+    except Exception:
+        pass
+
+
 def article_holder_supports_entities(holder) -> bool:
     """40.1.0: у узла текста есть поле entities (как у TL_textWithEntities): в него можно положить Premium Emoji и Markdown."""
     try:
@@ -10836,6 +10859,13 @@ def article_structure_dump(params, limit: int = 40) -> str:
 
 
 class PrefixfyPlugin(BasePlugin):
+    def log(self, message):
+        try:
+            super().log(message)
+        except Exception:
+            pass
+        emit_to_app_log(message)
+
     def on_plugin_load(self):
         try:
             self._on_plugin_load_impl()
@@ -11002,6 +11032,7 @@ class PrefixfyPlugin(BasePlugin):
         self.remote.start()
         self.remote.blacklist_guard()
         self.log(f"Prefixfy {__build__} loaded ({self.localization.language()})")
+        self._dbg(f"debug is ON, build {__build__}; if you see this line, plugin logs reach the app log")
 
     def on_plugin_unload(self):
         remote = getattr(self, "remote", None)
