@@ -76,9 +76,9 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "39.3.0"
-__build__ = "39.3.0_20261111.1_47"
-__icon__ = "http_Prefixfy_by_fStikBot/1"
+__version__ = "40.0.0"
+__build__ = "40.0.0_20261111.2_48"
+__icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
 
@@ -266,6 +266,8 @@ SETTING_DEFAULTS = {
     "separator_enabled": False,
     "custom_emojis": DEFAULT_SEPARATORS,
     "emoji_count": 1,
+    "separator_spaces": True,           # 40.0.0: пробелы вокруг разделителя (выкл. - вплотную к словам)
+    "separator_space_mode": 0,         # 0 - с обеих сторон (как раньше), 1 - слева, 2 - справа
     "separator_frequency": 4,          # индекс в FREQUENCY_STEPS: 4 = 100% (как в 34.x)
     "exceptions": "",
     "ignore_special": True,
@@ -2665,6 +2667,68 @@ for _code, _table in LocalizationManager.STRINGS.items():
         _table[_key] = _wipe_extra.get(_key, _WIPE_STRINGS["en"].get(_key, _value))
 
 
+_SEPARATOR_SPACE_STRINGS = {
+    "ru": {
+        "separator_spaces": "Включить пробелы",
+        "separator_spaces_subtext": "Если выключено, разделитель ставится вплотную к словам: приветякакядела.",
+        "separator_space_mode": "Где ставить пробелы",
+        "separator_space_both": "С обеих сторон: привет я как я дела",
+        "separator_space_left": "Слева: приветя какя дела",
+        "separator_space_right": "Справа: привет якак ядела",
+        "auto_reset_done": "Данные Prefixfy были повреждены, плагин автоматически сброшен",
+    },
+    "en": {
+        "separator_spaces": "Enable spaces",
+        "separator_spaces_subtext": "When off, the separator sits right against the words: hixtherexyou.",
+        "separator_space_mode": "Where to put spaces",
+        "separator_space_both": "Both sides: hi x there x you",
+        "separator_space_left": "Left: hix therex you",
+        "separator_space_right": "Right: hi xthere xyou",
+        "auto_reset_done": "Prefixfy data was damaged, the plugin was reset automatically",
+    },
+    "ja": {
+        "separator_spaces": "スペースを有効にする",
+        "separator_spaces_subtext": "オフの場合、区切り文字は単語にくっつきます：приветякакядела。",
+        "separator_space_mode": "スペースの位置",
+        "separator_space_both": "両側: привет я как я дела",
+        "separator_space_left": "左: приветя какя дела",
+        "separator_space_right": "右: привет якак ядела",
+        "auto_reset_done": "Prefixfyのデータが破損していたため、プラグインを自動的にリセットしました",
+    },
+    "ko": {
+        "separator_spaces": "공백 사용",
+        "separator_spaces_subtext": "끄면 구분자가 단어에 붙어서 들어갑니다: приветякакядела.",
+        "separator_space_mode": "공백 위치",
+        "separator_space_both": "양쪽: привет я как я дела",
+        "separator_space_left": "왼쪽: приветя какя дела",
+        "separator_space_right": "오른쪽: привет якак ядела",
+        "auto_reset_done": "Prefixfy 데이터가 손상되어 플러그인을 자동으로 초기화했습니다",
+    },
+    "fr": {
+        "separator_spaces": "Activer les espaces",
+        "separator_spaces_subtext": "Désactivé, le séparateur colle aux mots : приветякакядела.",
+        "separator_space_mode": "Emplacement des espaces",
+        "separator_space_both": "Des deux côtés : привет я как я дела",
+        "separator_space_left": "Gauche : приветя какя дела",
+        "separator_space_right": "Droite : привет якак ядела",
+        "auto_reset_done": "Les données de Prefixfy étaient endommagées, le plugin a été réinitialisé automatiquement",
+    },
+    "de": {
+        "separator_spaces": "Leerzeichen aktivieren",
+        "separator_spaces_subtext": "Ausgeschaltet sitzt das Trennzeichen direkt an den Wörtern: приветякакядела.",
+        "separator_space_mode": "Wo Leerzeichen stehen",
+        "separator_space_both": "Beidseitig: привет я как я дела",
+        "separator_space_left": "Links: приветя какя дела",
+        "separator_space_right": "Rechts: привет якак ядела",
+        "auto_reset_done": "Die Prefixfy-Daten waren beschädigt, das Plugin wurde automatisch zurückgesetzt",
+    },
+}
+for _code, _table in LocalizationManager.STRINGS.items():
+    _sp_extra = _SEPARATOR_SPACE_STRINGS.get(_code, _SEPARATOR_SPACE_STRINGS["en"])
+    for _key, _value in _SEPARATOR_SPACE_STRINGS["ru"].items():
+        _table[_key] = _sp_extra.get(_key, _SEPARATOR_SPACE_STRINGS["en"].get(_key, _value))
+
+
 _SYNODIC_MONTH = 29.530588853
 
 
@@ -4210,10 +4274,6 @@ def unique_name(base: str, taken, ignore: str = "") -> str:
 
 
 FEATURE_FLAGS: Dict[str, bool] = {
-    "markdown": True,
-    "text_styles": True,
-    "mask_rotation": True,
-    "conditional_masks": True,
     "regex_exceptions": True,
     "chat_type_rules": True,
     "edit_processing": True,
@@ -4222,6 +4282,7 @@ FEATURE_FLAGS: Dict[str, bool] = {
     "schedule": True,
     "chat_configs": True,
     "cute_effects": True,
+    "articles": True,          # 40.0.0: оформление текстовых блоков статей (Rich Messages)
     # Единый флаг режима «Настройки по аккаунтам». False — функция полностью выключена
     # (нет интерфейса, нет переключения, отправка идёт по общему набору, как в 32.x).
     "account_settings": True,
@@ -4234,10 +4295,25 @@ FEATURE_FLAGS: Dict[str, bool] = {
     "lang_fr": True,
     "lang_de": True,
 }
-FEATURE_FLAGS.update({"style_" + _key: True for _key in STYLE_KEYS})
 MASK_TAG_NAMES = ("date", "time", "datetime", "time12", "chat", "id", "weekday", "weekday_short", "year", "year_short", "month", "monthname", "day", "week", "yearday", "hour", "minute", "second", "ampm", "daypart", "timestamp", "tz", "chattype", "username", "count", "dice", "random_emoji", "emoji", "reply", "chatcount", "battery", "moon", "line", "since", "until", "quote", "countdown", "weather")
-FEATURE_FLAGS.update({"tag_" + _tag: True for _tag in MASK_TAG_NAMES})
-FEATURE_FLAGS.update({"md_bold": True, "md_italic": True, "md_strike": True, "md_spoiler": True, "md_mono": True, "md_quote": True})
+# 40.0.0: все флаги блока «Оформление» собраны в одном месте, по подразделам. Имена не менялись (их знают подписанные
+# флаги сервера), поэтому ничего не переименовано, только сгруппировано. Новый: separator_spaces.
+APPEARANCE_FLAGS: Dict[str, bool] = {
+    # маска
+    "mask_rotation": True,
+    "conditional_masks": True,
+    # Markdown маски
+    "markdown": True,
+    **{"md_" + _kind: True for _kind in ("bold", "italic", "strike", "spoiler", "mono", "quote")},
+    # теги маски
+    **{"tag_" + _tag: True for _tag in MASK_TAG_NAMES},
+    # стиль текста
+    "text_styles": True,
+    **{"style_" + _key: True for _key in STYLE_KEYS},
+    # разделители
+    "separator_spaces": True,
+}
+FEATURE_FLAGS.update(APPEARANCE_FLAGS)
 _FLAG_NAME_RE = re.compile(r"[a-z][a-z0-9_]{0,31}")
 
 # 36.1.0: третье значение флага, "auto" (на манер A/B-теста). Плагин сам и совершенно случайно решает, показывать ли
@@ -4653,7 +4729,7 @@ class RuntimeSettings:
         "process_edit_message", "process_edit_media", "skip_once_on_edit",
         "mask", "mask_parts", "mask_link", "markdown_enabled", "markdown_style", "markdown_wrap", "text_style_enabled", "text_style",
         "text_style_random", "text_style_translit", "style_only", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "regex_exceptions", "conditional_rules", "chat_type_rules",
-        "separator_enabled", "separators", "separator_count", "separator_chance", "cute",
+        "separator_enabled", "separators", "separator_count", "separator_chance", "separator_spaces", "separator_space_mode", "cute",
         "exceptions", "ignore_special", "ignore_emoji_only", "disabled_chats",
         "media_enabled", "media_path", "media_name", "media_mime", "raw",
     )
@@ -4709,6 +4785,9 @@ class RuntimeSettings:
         self.separators = parse_separators(get("custom_emojis"))
         self.separator_count = clamp_int(get("emoji_count"), 1, 1, MAX_SEPARATOR_COUNT)
         self.separator_chance = frequency_step(get("separator_frequency"), SEPARATOR_FREQUENCY_DEFAULT)
+        spaces_on = FEATURES.on("separator_spaces")      # флаг выключен: как до 40.0.0, пробелы с обеих сторон
+        self.separator_spaces = bool(get("separator_spaces")) if spaces_on else True
+        self.separator_space_mode = clamp_int(get("separator_space_mode"), 0, 0, 2) if spaces_on else 0
         self.cute = CuteOptions(get, LANGUAGE_MODES[self.language])
         self.exceptions = parse_lines(get("exceptions"))
         self.ignore_special = bool(get("ignore_special"))
@@ -4889,6 +4968,8 @@ class SeparatorTransformation(Transformation):
         self.separators = tuple(item for item in prepared if item) or tuple(DEFAULT_SEPARATORS.split(", "))
         self.count = settings.separator_count
         self.chance = settings.separator_chance
+        self.spaces = settings.separator_spaces
+        self.space_mode = settings.separator_space_mode
         self._gap = self._WORD_GAP if settings.text_style_enabled and settings.text_style == STYLE_VAPORWAVE else self._WHITESPACE
 
     @staticmethod
@@ -4930,7 +5011,15 @@ class SeparatorTransformation(Transformation):
                 for _ in range(self.count):
                     chosen.append(pool[position % len(pool)])
                     position += 1
-                parts.append(gap + " ".join(chosen) + gap)
+                joined = ("" if not self.spaces else " ").join(chosen)
+                if not self.spaces:
+                    parts.append(joined)                  # приветякакядела
+                elif self.space_mode == 1:
+                    parts.append(joined + gap)            # приветя какя дела
+                elif self.space_mode == 2:
+                    parts.append(gap + joined)            # привет якак ядела
+                else:
+                    parts.append(gap + joined + gap)      # привет я как я дела
                 parts.append(word)
             lines.append(leading + "".join(parts) + trailing)
         return "\n".join(lines)
@@ -6179,7 +6268,7 @@ COMPONENT_ALIASES = {
 COMPONENT_KEYS = {
     "language": ("language",),
     "mask": ("mask", "markdown_enabled", "markdown_style", "text_style_enabled", "text_style", "text_style_random", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "conditional_masks", "text_style_translit", "style_words", "tag_lines"),
-    "separator": ("separator_enabled", "custom_emojis", "emoji_count", "separator_frequency"),
+    "separator": ("separator_enabled", "custom_emojis", "emoji_count", "separator_frequency", "separator_spaces", "separator_space_mode"),
     "cute": CUTE_KEYS,
     "exceptions": ("exceptions", "ignore_special", "ignore_emoji_only", "disabled_chats", "chat_scope_enabled", "regex_exceptions", "chat_type_rules"),
     "media": ("attached_media_enabled", "attached_media_path", "attached_media_name", "attached_media_mime"),
@@ -6316,6 +6405,8 @@ def validate_component(component: str, section: dict) -> bool:
             and _is_int(count) and 1 <= count <= MAX_SEPARATOR_COUNT
             and isinstance(enabled, bool)
             and _is_int(frequency) and 0 <= frequency < len(FREQUENCY_STEPS)
+            and isinstance(section.get("spaces", True), bool)
+            and _is_int(section.get("space_mode", 0)) and 0 <= section.get("space_mode", 0) <= 2
         )
     if component == "cute":
         for key in CUTE_KEYS:
@@ -6931,6 +7022,8 @@ class ConfigTransfer:
                     self.settings.set("custom_emojis", section.get("values", DEFAULT_SEPARATORS))
                     self.settings.set("emoji_count", section.get("count", 1))
                     self.settings.set("separator_frequency", section.get("frequency", SEPARATOR_FREQUENCY_DEFAULT))
+                    self.settings.set("separator_spaces", section.get("spaces", True))
+                    self.settings.set("separator_space_mode", section.get("space_mode", 0))
                 elif component == "cute":
                     for key in CUTE_KEYS:
                         self.settings.set(key, section.get(key, SETTING_DEFAULTS[key]))
@@ -7062,6 +7155,8 @@ class ConfigTransfer:
                 "values": as_text(s.get("custom_emojis")),
                 "count": s.separator_count(),
                 "frequency": clamp_int(s.get("separator_frequency"), SEPARATOR_FREQUENCY_DEFAULT, 0, len(FREQUENCY_STEPS) - 1),
+                "spaces": bool(s.get("separator_spaces")),
+                "space_mode": clamp_int(s.get("separator_space_mode"), 0, 0, 2),
             }
         if "cute" in components:
             data["cute"] = {
@@ -9494,6 +9589,133 @@ def wipe_plugin_data(plugin, opt_out: bool):
     _wipe_settings(plugin, opt_out)
 
 
+# ---- 40.0.0: автоматический полный сброс при повреждении данных ----
+# Проверка идёт в начале запуска, до открытия хранилища. Срабатывает только на ЯВНУЮ порчу (нечитаемый json,
+# не прошедшая проверку подлинности запечатанная запись, неверный тип значения), но не на ошибки ввода-вывода
+# и не при недоступном Keystore: сбой чтения не повод стирать пользователю данные.
+AUTO_RESET_MARKER_FILE = ".pfx_autoreset"
+AUTO_RESET_COOLDOWN = 600.0     # не чаще одного сброса за 10 минут: защита от петли, если порча не уходит
+
+
+def _plain_json_bad(path: str) -> bool:
+    try:
+        with open(path, "rb") as handle:
+            blob = handle.read(MAX_STORE_JSON_BYTES + 1)
+    except OSError:
+        return False
+    if len(blob) > MAX_STORE_JSON_BYTES:
+        return True
+    try:
+        return not isinstance(json.loads(blob.decode("utf-8")), dict)
+    except (ValueError, RecursionError):
+        return True
+
+
+def integrity_scan(plugin) -> Tuple[List[str], bool]:
+    """(список повреждённого, нужно ли пересоздавать ключ хранилища)."""
+    problems: List[str] = []
+    key_bad = False
+    base = get_plugins_dir()
+    # ключ проверяем ДО VAULT.prepare(): иначе нечитаемый ключ молча заменится новым и порчу уже не заметить
+    try:
+        with open(os.path.join(base, STORE_KEY_FILE), "rb") as handle:
+            blob = handle.read(512)
+    except OSError:
+        blob = b""
+    if blob and (not blob.startswith(VAULT.MAGIC) or len(blob) <= len(VAULT.MAGIC) + VAULT.IV_LEN + 16):
+        problems.append(STORE_KEY_FILE)
+        key_bad = True
+    if _plain_json_bad(os.path.join(base, OTA_STATE_FILE)):
+        problems.append(OTA_STATE_FILE)
+    if not key_bad:
+        VAULT.attach(plugin.log)
+        VAULT.prepare()
+        if VAULT.usable:
+            for name in (SERIALS_FILE, KNOWN_BUILDS_FILE, AUTO_STATE_FILE):
+                path = os.path.join(base, name)
+                if not os.path.isfile(path):
+                    continue
+                try:
+                    if not isinstance(vault_read_json(path, MAX_STORE_JSON_BYTES), dict):
+                        problems.append(name)
+                except OSError:
+                    continue
+                except Exception:
+                    problems.append(name)
+            for root_name in (ConfigurationsManager.STORE_DIR_NAME, ACCT_DIR_NAME):
+                for folder, dirs, files in os.walk(os.path.join(base, root_name)):
+                    dirs[:] = [item for item in dirs if not item.endswith(".deleted")]
+                    for name in files:
+                        if not name.endswith(".json"):
+                            continue
+                        path = os.path.join(folder, name)
+                        try:
+                            json.loads(store_read_text(path))
+                        except OSError:
+                            continue
+                        except Exception:
+                            if name == ConfigurationsManager.INDEX_NAME:
+                                try:
+                                    json.loads(store_read_text(path + ".bak"))
+                                    continue          # индекс битый, но резервная копия цела: плагин восстановит сам
+                                except Exception:
+                                    pass
+                            problems.append(os.path.relpath(path, base))
+    # значения живых настроек
+    try:
+        raw = {}
+        for key, default in SETTING_DEFAULTS.items():
+            value = plugin.get_setting(key, default)
+            if isinstance(default, str) and not isinstance(value, str):
+                problems.append(f"setting:{key}")
+            elif isinstance(default, (bool, int)) and isinstance(value, (list, dict)):
+                problems.append(f"setting:{key}")
+            raw[key] = value
+        RuntimeSettings(raw)
+    except Exception:
+        problems.append("settings")
+    return problems, key_bad
+
+
+def _auto_reset_recent() -> bool:
+    try:
+        with open(_plugins_path(AUTO_RESET_MARKER_FILE), "r", encoding="utf-8") as handle:
+            stamp = float(json.load(handle).get("ts", 0))
+        return 0.0 <= time.time() - stamp < AUTO_RESET_COOLDOWN
+    except (OSError, ValueError, AttributeError, TypeError, RecursionError):
+        return False
+
+
+def auto_reset_plugin(plugin, problems: List[str], key_bad: bool):
+    """Полный сброс: данные пользователя, кэши, конфигурации, настройки. Подписанные служебные файлы защиты
+    (серийные номера, известные сборки, состояние OTA, охранная метка ЧС) остаются, пока сами не повреждены."""
+    guard_path = _plugins_path(BLACKLIST_GUARD_FILE)
+    try:
+        with open(guard_path, "rb") as handle:
+            guard = handle.read()
+    except OSError:
+        guard = None
+    full = key_bad or any(item in (SERIALS_FILE, KNOWN_BUILDS_FILE, AUTO_STATE_FILE) for item in problems)
+    _wipe_files(full, plugin.log)
+    if full:
+        VAULT.attach(plugin.log)
+        VAULT.destroy()
+    else:
+        for name in problems:
+            if name in _WIPE_STATE_FILES:
+                discard_file(_plugins_path(name))
+    if guard is not None:
+        try:
+            _write_file_atomic(guard_path, guard)
+        except OSError as exc:
+            plugin.log(f"Prefixfy auto reset: guard not restored: {exc}")
+    _wipe_settings(plugin, True)
+    try:
+        _write_file_atomic(_plugins_path(AUTO_RESET_MARKER_FILE), json.dumps({"ts": time.time()}).encode("utf-8"))
+    except OSError:
+        pass
+
+
 class RemoteControl:
 
     def __init__(self, plugin):
@@ -10414,6 +10636,108 @@ class RemoteControl:
             self.plugin.log(f"Prefixfy remote notice failed: {exc}")
 
 
+# ---- 40.0.0: статьи (Rich Messages) ----
+# Статья - это список блоков (RichBlock). Текст внутри блоков бывает только в "текстовых" типах;
+# фото, видео, таблицы, код, формулы и т.п. не трогаем. Имена полей клиента заранее неизвестны,
+# поэтому всё читается через getattr по списку кандидатов, а при неизвестной форме статья уходит как есть.
+_ARTICLE_FIELDS = ("rich_message", "richMessage", "rich_blocks", "richBlocks", "blocks", "article", "page")
+_ARTICLE_TEXT_KINDS = frozenset((
+    "paragraph", "sectionheading", "title", "subtitle", "header", "subheader", "heading",
+    "blockquotation", "blockquote", "pullquotation", "pullquote", "footer", "listitem",
+))
+_ARTICLE_CONTAINER_FIELDS = ("blocks", "items", "children", "content")
+_ARTICLE_KIND_STRIP_RE = re.compile(r"^(inputrichblock|richblock|tl_?pageblock|pageblock)_?")
+_ARTICLE_MAX_DEPTH = 6
+_ARTICLE_MAX_BLOCKS = 300
+
+
+def _article_items(value) -> list:
+    """Java List / Python list / tuple -> list, иначе []."""
+    if value is None or isinstance(value, (str, bytes, int, float, bool)):
+        return []
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    try:
+        size = int(value.size())
+        return [value.get(i) for i in range(size)]
+    except Exception:
+        return []
+
+
+def article_block_kind(block) -> str:
+    name = type(block).__name__.split("$")[-1].lower().replace("_", "")
+    name = _ARTICLE_KIND_STRIP_RE.sub("", name)
+    return name
+
+
+def article_blocks(params) -> list:
+    """Список верхнеуровневых блоков статьи из параметров отправки или []."""
+    for field in _ARTICLE_FIELDS:
+        value = getattr(params, field, None)
+        if value is None:
+            continue
+        inner = None
+        for sub in ("blocks", "rich_blocks", "richBlocks"):
+            inner = getattr(value, sub, None)
+            if inner is not None:
+                break
+        items = _article_items(inner if inner is not None else value)
+        if items and all("block" in type(item).__name__.lower() for item in items[:3]):
+            return items
+    return []
+
+
+def article_text_blocks(blocks, depth: int = 0, seen=None) -> list:
+    """Находит все текстовые блоки, спускаясь в списки/раскрывающиеся блоки. Порядок - как в статье."""
+    if seen is None:
+        seen = set()
+    found = []
+    if depth > _ARTICLE_MAX_DEPTH:
+        return found
+    for block in blocks:
+        if block is None or id(block) in seen or len(seen) >= _ARTICLE_MAX_BLOCKS:
+            continue
+        seen.add(id(block))
+        if article_block_kind(block) in _ARTICLE_TEXT_KINDS:
+            found.append(block)
+        for field in _ARTICLE_CONTAINER_FIELDS:
+            children = _article_items(getattr(block, field, None))
+            if children and all("block" in type(c).__name__.lower() or hasattr(c, "text") for c in children[:3]):
+                found.extend(article_text_blocks(children, depth + 1, seen))
+    return found
+
+
+def article_text_leaf(block):
+    """(holder, field, text) для блока с ОДНИМ простым текстом, иначе None.
+    Блоки со смешанным форматированием (несколько кусков) пропускаем: их разметку не ломаем."""
+    node, holder, field = block, None, None
+    for _ in range(_ARTICLE_MAX_DEPTH):
+        value = getattr(node, "text", None)
+        if isinstance(value, str):
+            return node, "text", value
+        if value is None:
+            return None
+        parts = _article_items(getattr(value, "texts", None))
+        if parts:
+            return None
+        node = value
+    return None
+
+
+def article_structure_dump(params, limit: int = 40) -> str:
+    """Для отладки: тип параметров, поля и классы блоков найденной статьи."""
+    lines = [f"params={type(params).__name__}"]
+    for field in _ARTICLE_FIELDS:
+        value = getattr(params, field, None)
+        if value is not None:
+            lines.append(f"  {field}: {type(value).__name__}")
+    for block in article_text_blocks(article_blocks(params))[:limit]:
+        leaf = article_text_leaf(block)
+        lines.append(f"  block {type(block).__name__} leaf={'yes' if leaf else 'no'}")
+    return "\n".join(lines)
+
+
+
 class PrefixfyPlugin(BasePlugin):
     def on_plugin_load(self):
         try:
@@ -10432,10 +10756,12 @@ class PrefixfyPlugin(BasePlugin):
             self.remote.ota_loaded()
         except Exception as exc:
             self.log(f"Prefixfy OTA confirm failed: {exc}")
-        if self._wiped_clean:
+        if self._wiped_clean or self._auto_reset_done:
+            notice = "auto_reset_done" if self._auto_reset_done else "wipe_done"
             self._wiped_clean = False
+            self._auto_reset_done = False
             try:
-                run_on_queue(lambda: self._toast("wipe_done"), PLUGINS_QUEUE, 2500)
+                run_on_queue(lambda: self._toast(notice), PLUGINS_QUEUE, 2500)
             except Exception as exc:
                 self.log(f"Prefixfy wipe notice failed: {exc}")
 
@@ -10475,7 +10801,26 @@ class PrefixfyPlugin(BasePlugin):
         if dormant_active():
             self._enter_dormant()
             return True
+        self._auto_reset_check()
         return False
+
+    _auto_reset_done = False
+
+    def _auto_reset_check(self):
+        """40.0.0: повреждённые данные или служебные файлы -> автоматический полный сброс."""
+        try:
+            problems, key_bad = integrity_scan(self)
+            if not problems:
+                return
+            self.log(f"Prefixfy: damaged data found: {', '.join(problems[:12])}")
+            if _auto_reset_recent():
+                self.log("Prefixfy: automatic reset already ran recently, skipped")
+                return
+            auto_reset_plugin(self, problems, key_bad)
+            self._auto_reset_done = True
+            self.log("Prefixfy: automatic full reset done")
+        except Exception as exc:
+            self.log(f"Prefixfy automatic reset failed: {exc}")
 
     def _request_blacklist_wipe(self):
         """Аккаунт устройства в ЧС: кладём метку и перезапускаем плагин, стирание выполнится в начале запуска."""
@@ -11701,14 +12046,24 @@ class PrefixfyPlugin(BasePlugin):
         words = self._tr("separator_preview_words").split()
         if len(words) < 2:
             words = ["Hello", "world"]
-        parts, index = [], 0
-        for position, word in enumerate(words):
-            parts.append(word)
-            if position < len(words) - 1:
-                for _ in range(count):
-                    parts.append(separators[index % len(separators)])
-                    index += 1
-        return " ".join(parts)
+        snapshot = self.settings.snapshot()
+        spaces, mode = snapshot.separator_spaces, snapshot.separator_space_mode
+        out, index = words[0], 0
+        for word in words[1:]:
+            chosen = []
+            for _ in range(count):
+                chosen.append(separators[index % len(separators)])
+                index += 1
+            joined = (" " if spaces else "").join(chosen)
+            if not spaces:
+                out += joined + word
+            elif mode == 1:
+                out += joined + " " + word
+            elif mode == 2:
+                out += " " + joined + word
+            else:
+                out += " " + joined + " " + word
+        return out
 
     def _exceptions_subtext(self) -> str:
         values = len(parse_lines(self.settings.get("exceptions")))
@@ -11958,6 +12313,16 @@ class PrefixfyPlugin(BasePlugin):
                 self._frequency_selector("separator_frequency", tr("separator_frequency"), SEPARATOR_FREQUENCY_DEFAULT),
                 Divider(text=tr("separator_frequency_subtext")),
             ]
+            if FEATURES.on("separator_spaces"):
+                items.insert(3, self._switch("separator_spaces", tr("separator_spaces"), tr("separator_spaces_subtext"), "msg_edit", True))
+            if FEATURES.on("separator_spaces") and self.settings.get("separator_spaces"):
+                items.insert(4, Selector(
+                    key="separator_space_mode", text=tr("separator_space_mode"),
+                    default=clamp_int(self.settings.get("separator_space_mode"), 0, 0, 2),
+                    items=[tr("separator_space_both"), tr("separator_space_left"), tr("separator_space_right")],
+                    icon="msg_edit",
+                    on_change=lambda index: self.settings.set("separator_space_mode", clamp_int(index, 0, 0, 2)),
+                ))
         return items
 
     def _settings_exceptions(self) -> List[Any]:
@@ -13388,6 +13753,10 @@ class PrefixfyPlugin(BasePlugin):
         if not settings.is_chat_allowed(dialog_id):
             return HookResult()
 
+        article = self._decorate_article(runtime, params)
+        if article is not None:
+            return article
+
         field, text = self._select_field(settings, message, caption, has_media)
         if field is None:
             return HookResult()
@@ -13405,6 +13774,38 @@ class PrefixfyPlugin(BasePlugin):
         if transformed is None:
             return HookResult()
         setattr(params, field, transformed)
+        return HookResult(strategy=HookStrategy.MODIFY, params=params)
+
+    def _decorate_article(self, runtime: Runtime, params) -> Optional[HookResult]:
+        """40.0.0: оформление текстовых блоков статьи. None - это не статья (обычный путь)."""
+        if not FEATURES.on("articles"):
+            return None
+        blocks = article_blocks(params)
+        if not blocks:
+            return None
+        pipeline = runtime.pipeline
+        changed = 0
+        try:
+            targets = article_text_blocks(blocks)
+            if not getattr(self, "_article_dumped", False):
+                self._article_dumped = True
+                self.log("Prefixfy article structure:\n" + article_structure_dump(params))
+            for block in targets:
+                leaf = article_text_leaf(block)
+                if leaf is None:
+                    continue
+                holder, field, text = leaf
+                if not text.strip() or pipeline.ignores(text):
+                    continue
+                transformed = pipeline.transform(text)
+                if transformed != text:
+                    setattr(holder, field, transformed)
+                    changed += 1
+        except Exception as exc:
+            self.log(f"Prefixfy article decorate failed: {exc}")
+            return HookResult()
+        if not changed:
+            return HookResult()
         return HookResult(strategy=HookStrategy.MODIFY, params=params)
 
     def _decorate_text(self, runtime: Runtime, account: int, params, text: str, is_caption: bool, rotation_next) -> Optional[str]:
