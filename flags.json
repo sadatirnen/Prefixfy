@@ -1,12 +1,7 @@
 {
-  "accounts": {
-    "727461793": {
-      "articles": true
-    }
-  },
   "flags": {
     "account_settings": true,
-    "articles": false,
+    "articles": true,
     "attached_media": true,
     "chat_configs": true,
     "chat_type_rules": true,
@@ -103,7 +98,7 @@
     "text_styles": true
   },
   "format": 1,
-  "issued_at": 1794381813,
-  "serial": 1794381813,
-  "signature": "RDAr+RpFJT0F3cfKRNBnOGEoyM8AQlni0P1TutmVxf2ba+XJtbj/NFCcliK4GG1s3fG3cwbRsDogPzLqKrOQy2jMf79lI0c/JrKZrd+bIGG3FLipzVAW/0KdxUsCfU/8KHw5wh4VOgeiBH9sOAMhR7jovGODtup6nHi6bxSbkDsqwIO7MqnDbsyWYVuj9LXBd4TgWBpCnJMRH1tksHYw+pdbUkS53Wq5MNSHcbqV5fdtdPn1dhMwWvdKcQHIji/Q7GSJ8BxZzG4hL/4zv1MdwvAY/b8BJAcJJuLcfsxNkLMlZVKpcD5ouZSuV4Zcrqrh2hVWOJX62p5ci1/6BUnBYMmkulZx2HZ/nJgbiPTpOEUytM/+x3BWYHwydjXLdgSUZxgEQAftGcl+Dcc/rg+dAD4+t0/Lec9NVFlFHT/39UaChgZuVUee4zvg9n4ckgNHJV+G3QH7+y26j+hfy4woAtPOWfl9KpfZ2K2n3Z0LLq2nI9M29PaQjVL0/lFdXpI9"
+  "issued_at": 1794383449,
+  "serial": 1794383449,
+  "signature": "JvkZIVFU+7Y394K6ttceHfsHQj2DNN7Nfxy7Iqnl1hngpv3hM+SAZOPZWYM4ktOJokGU+LjoEY7awrTpNdMFjp/E/BuZu5OAVRXCtLCRXGBB7xx393QmiSTMnU0a6arsnH7yNNNo4vQVXAoozeAUFW0natW8CuoVxhZqTtndAM4//EA/dv1s88jFWm6TE3WJJx1HK301DT29b6FeXr6JP2ZWJEsHFxnWWMoMKF9OxPcvv9lmD6H5ATPwWMluwqX3B5GFfl5mSY6PM90MUq42wFkGUpohAazGKLb3QKT9kG3FS9WteTM171idQzmssH8PIsKpiST3RuFVyI2CdPuxPFiUF9tkZHpGBNLAjByHO/yMlE/+65qLKOdGa2FplGFM/orT121n2tLq6N6m02cbIIONkIZ0zW1jN+T96nf1Fkm/BoD7jg6d2gJHTdi2TaCcemO1TF35P4dAas9t5xTWkLx0SqEXZJp00M5dvhgS21K35A1klmgnMhVqa6vNa9F2"
 }
