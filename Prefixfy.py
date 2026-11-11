@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "40.0.0"
-__build__ = "40.0.0_20261111.2_48"
+__version__ = "40.1.0"
+__build__ = "40.1.0_20261111.3_49"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -10724,6 +10724,23 @@ def article_text_leaf(block):
     return None
 
 
+def article_holder_supports_entities(holder) -> bool:
+    """40.1.0: у узла текста есть поле entities (как у TL_textWithEntities): в него можно положить Premium Emoji и Markdown."""
+    try:
+        return hasattr(holder, "entities")
+    except Exception:
+        return False
+
+
+def article_holder_dump(holder) -> str:
+    """Для отладки: класс узла текста и его поля, имена которых намекают на сущности или эмодзи."""
+    try:
+        names = [n for n in dir(holder) if not n.startswith("_") and any(k in n.lower() for k in ("entit", "emoji", "document"))]
+    except Exception:
+        names = []
+    return f"{type(holder).__name__} fields={names}"
+
+
 def article_structure_dump(params, limit: int = 40) -> str:
     """Для отладки: тип параметров, поля и классы блоков найденной статьи."""
     lines = [f"params={type(params).__name__}"]
@@ -13753,7 +13770,7 @@ class PrefixfyPlugin(BasePlugin):
         if not settings.is_chat_allowed(dialog_id):
             return HookResult()
 
-        article = self._decorate_article(runtime, params)
+        article = self._decorate_article(runtime, params, account)
         if article is not None:
             return article
 
@@ -13776,8 +13793,11 @@ class PrefixfyPlugin(BasePlugin):
         setattr(params, field, transformed)
         return HookResult(strategy=HookStrategy.MODIFY, params=params)
 
-    def _decorate_article(self, runtime: Runtime, params) -> Optional[HookResult]:
-        """40.0.0: оформление текстовых блоков статьи. None - это не статья (обычный путь)."""
+    def _decorate_article(self, runtime: Runtime, params, account: int = 0) -> Optional[HookResult]:
+        """40.0.0: оформление текстовых блоков статьи. None - это не статья (обычный путь).
+        40.1.0: если у узла текста есть поле entities, маска ставится так же, как в обычном сообщении:
+        Premium Emoji (и Markdown маски) уходят сущностями. Иначе остаётся прежний путь: обычный текст,
+        а Premium Emoji заменяются своими обычными эмодзи."""
         if not FEATURES.on("articles"):
             return None
         blocks = article_blocks(params)
@@ -13797,9 +13817,7 @@ class PrefixfyPlugin(BasePlugin):
                 holder, field, text = leaf
                 if not text.strip() or pipeline.ignores(text):
                     continue
-                transformed = pipeline.transform(text)
-                if transformed != text:
-                    setattr(holder, field, transformed)
+                if self._decorate_article_leaf(runtime, account, holder, field, text):
                     changed += 1
         except Exception as exc:
             self.log(f"Prefixfy article decorate failed: {exc}")
@@ -13807,6 +13825,37 @@ class PrefixfyPlugin(BasePlugin):
         if not changed:
             return HookResult()
         return HookResult(strategy=HookStrategy.MODIFY, params=params)
+
+    def _decorate_article_leaf(self, runtime: Runtime, account: int, holder, field: str, text: str) -> bool:
+        pipeline = runtime.pipeline
+        wants_entities = bool(runtime.settings.markdown_enabled or pipeline.markdown_table)
+        if wants_entities and article_holder_supports_entities(holder):
+            existing = getattr(holder, "entities", None)
+            snapshot = self._snapshot_entities(existing)
+            try:
+                transformed, entities, body_offset = self._transform_text(runtime, text)
+                entities = self._finalize_entities(account, holder, entities, body_offset)
+                if transformed == text and not entities:
+                    return False
+                transformed = self._apply_entities(runtime, holder, text, transformed, entities, body_offset)
+                setattr(holder, field, transformed)
+                return True
+            except Exception as exc:
+                self.log(f"Prefixfy article entities failed, using plain text: {exc}")
+                self._restore_entities(snapshot, existing)
+                try:
+                    holder.entities = existing
+                except Exception:
+                    pass
+        elif wants_entities and not getattr(self, "_article_holder_dumped", False):
+            # узел текста не принимает сущности: Premium Emoji в статье станут обычными эмодзи
+            self._article_holder_dumped = True
+            self.log("Prefixfy article text node has no entities: " + article_holder_dump(holder))
+        transformed = pipeline.transform(text)
+        if transformed == text:
+            return False
+        setattr(holder, field, transformed)
+        return True
 
     def _decorate_text(self, runtime: Runtime, account: int, params, text: str, is_caption: bool, rotation_next) -> Optional[str]:
         transformed, entities, body_offset = self._transform_text(runtime, text)
