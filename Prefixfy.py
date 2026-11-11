@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "40.2.1"
-__build__ = "40.2.1_20261111.8_54"
+__version__ = "41.0.0"
+__build__ = "41.0.0_20261112.1_55"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -127,7 +127,13 @@ REMOTE_TIMEOUT = 10
 REMOTE_TOTAL_TIMEOUT = 20
 REMOTE_MAX_BYTES = 64 * 1024
 OTA_STATE_FILE = ".pfx_ota"            # маркер обновления, список отклонённых сборок
-OTA_PREV_FILE = ".pfx_prev"            # копия предыдущей версии для отката
+OTA_LEGACY_PREV_FILE = ".pfx_prev"     # до 41.0.0: копия предыдущей версии; теперь её роль у неактивного раздела
+OTA_SLOT_DIR = ".pfx_slot"             # 41.0.0: неактивный раздел (A/B). Активный раздел - основной файл плагина
+OTA_SLOT_FILE = "plugin.py"            # файл внутри неактивного раздела
+OTA_SLOT_META = "slot.json"            # описание содержимого раздела: роль, версия, контрольная сумма
+OTA_SLOT_OLD = "plugin.old"            # временная копия активного файла на время смены разделов
+SLOT_STAGED = "staged"                 # в разделе скачанная и проверенная новая версия, ждущая переключения
+SLOT_PREVIOUS = "previous"             # в разделе прошлая версия: цель автоматического отката
 OTA_DEFAULT_FILE = "prefixfy.py"       # имя файла в репозитории, если манифест его не указал
 WIPE_MARKER_FILE = ".pfx_wipe"         # метка отложенного удаления данных: выполняется в начале следующего запуска
 DORMANT_FILE = ".pfx_dormant"          # метка «отказа от использования» (привязана к конкретной копии файла плагина)
@@ -9263,8 +9269,8 @@ def _ota_state_path() -> str:
     return os.path.join(get_plugins_dir(), OTA_STATE_FILE)
 
 
-def _ota_prev_path() -> str:
-    return os.path.join(get_plugins_dir(), OTA_PREV_FILE)
+def _ota_legacy_prev_path() -> str:
+    return os.path.join(get_plugins_dir(), OTA_LEGACY_PREV_FILE)
 
 
 # Состояние OTA остаётся открытым: его читает код предыдущей версии и Prefixfy Core (следят за «boots» и откатом)
@@ -9323,23 +9329,182 @@ def _ota_own_path(data: Dict[str, Any]) -> str:
     return real if real.startswith(base + os.sep) and real.endswith(".py") else ""
 
 
+# ----------------------------------------------------------------------
+# 41.0.0: A/B-разделы
+#
+# Активный раздел - основной файл плагина (тот, что загружает клиент). Неактивный раздел - папка OTA_SLOT_DIR.
+# После установки 41.0.0 неактивный раздел пуст: он появляется при первом обновлении, вышедшем после 41.0.0.
+#   * скачивание кладёт проверенную новую версию в неактивный раздел (роль "staged"), активный файл не меняется;
+#   * смена активного раздела - отдельная команда (кнопка «Перезагрузить» или автообновление): файлы меняются
+#     местами, прошлая версия остаётся в неактивном разделе (роль "previous"), после чего плагин перезапускается.
+#     Обычное выключение и включение плагина разделы НЕ переключает;
+#   * откат полностью автоматический: если новая версия не загрузилась или не подтвердила работоспособность, прошлая
+#     версия возвращается в активный раздел сама, а неудачная сборка выбрасывается;
+#   * самолечение и удаление данных очищают неактивный раздел.
+# ----------------------------------------------------------------------
+def _slot_dir() -> str:
+    return os.path.join(get_plugins_dir(), OTA_SLOT_DIR)
+
+
+def _slot_file() -> str:
+    return os.path.join(_slot_dir(), OTA_SLOT_FILE)
+
+
+def _slot_meta_path() -> str:
+    return os.path.join(_slot_dir(), OTA_SLOT_META)
+
+
+def _slot_meta_read() -> Dict[str, Any]:
+    try:
+        with open(_slot_meta_path(), "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError, RecursionError):
+        return {}
+    if not isinstance(data, dict) or data.get("role") not in (SLOT_STAGED, SLOT_PREVIOUS):
+        return {}
+    return data
+
+
+def _slot_exists() -> bool:
+    return os.path.exists(_slot_dir())
+
+
+def _slot_clear(log=None):
+    """Очистить неактивный раздел целиком (и остаток прежней схемы с одним файлом .pfx_prev)."""
+    shutil.rmtree(_slot_dir(), ignore_errors=True)
+    try:
+        os.remove(_ota_legacy_prev_path())
+    except OSError:
+        pass
+    if log is not None and _slot_exists():
+        log("Prefixfy: the inactive slot could not be fully cleared")
+
+
+def _slot_store(data: bytes, meta: Dict[str, Any]):
+    """Записать содержимое неактивного раздела. Описание пишется последним: пока его нет, раздел считается пустым."""
+    os.makedirs(_slot_dir(), exist_ok=True)
+    try:
+        os.remove(_slot_meta_path())
+    except OSError:
+        pass
+    _write_file_atomic(_slot_file(), data)
+    _write_file_atomic(_slot_meta_path(), json.dumps(meta).encode("utf-8"))
+
+
+def _slot_verified_bytes(meta: Dict[str, Any], role: str) -> bytes:
+    """Содержимое неактивного раздела, если оно цело и является плагином с нужным id."""
+    if meta.get("role") != role:
+        raise ValueError(f"inactive slot is not {role}")
+    with open(_slot_file(), "rb") as handle:
+        blob = handle.read(MANIFEST_MAX_FILE_SIZE + 1)
+    if len(blob) > MANIFEST_MAX_FILE_SIZE:
+        raise ValueError("slot file is too large")
+    if not hmac.compare_digest(hashlib.sha256(blob).hexdigest(), as_text(meta.get("sha256"))):
+        raise ValueError("slot file is damaged")
+    source = blob.decode("utf-8")
+    if re.search(r'^__id__\s*=\s*"' + re.escape(__id__) + r'"\s*$', source, re.MULTILINE) is None:
+        raise ValueError("slot holds another plugin")
+    compile(source, "prefixfy_slot.py", "exec")
+    return blob
+
+
+def _slot_swap(log, heal: bool = False) -> Dict[str, Any]:
+    """Сменить активный раздел: новая версия из неактивного раздела становится основным файлом,
+    а прежний основной файл остаётся в неактивном разделе как «прошлая версия»."""
+    data0 = _ota_read()
+    path = _ota_own_path(data0)
+    if not path:
+        raise OSError("plugin path is unknown")
+    if not os.access(os.path.dirname(path), os.W_OK):
+        raise OSError("plugin folder is read-only")
+    meta = _slot_meta_read()
+    incoming = _slot_verified_bytes(meta, SLOT_STAGED)
+    with open(path, "rb") as handle:
+        current = handle.read()
+    if current == incoming:
+        raise ValueError("this version is already installed")
+    old = os.path.join(_slot_dir(), OTA_SLOT_OLD)
+    _write_file_atomic(old, current)                      # шаг 1: прежний файл сохранён
+    _ota_write({
+        "state": "pending", "to": as_text(meta.get("version")), "serial": meta.get("serial"),
+        "prev": __build__, "path": path, "boots": 0, "bad": _ota_bad_serials(), "heal": bool(heal),
+    }, log)
+    _write_file_atomic(path, incoming)                    # шаг 2: новая версия стала активной
+    try:                                                  # шаг 3: прошлая версия записана в неактивный раздел
+        _slot_store(current, {
+            "role": SLOT_PREVIOUS, "version": __build__, "sha256": hashlib.sha256(current).hexdigest(),
+            "size": len(current), "serial": data0.get("serial"),
+        })
+        os.remove(old)
+    except OSError as exc:
+        log(f"Prefixfy slot swap: finishing step failed, it is completed at the next start: {exc}")
+    return meta
+
+
+def _slot_housekeeping(log):
+    """Начало запуска: достроить прерванную смену разделов и убрать повреждённое содержимое неактивного раздела."""
+    if not _slot_exists():
+        return            # раздел пуст; старый .pfx_prev (если есть) нужен для отката только до подтверждения сборки
+    try:
+        meta = _slot_meta_read()
+        old = os.path.join(_slot_dir(), OTA_SLOT_OLD)
+        if os.path.isfile(old):
+            main = _ota_own_path(_ota_read())
+            done = False
+            if main and meta.get("role") == SLOT_STAGED:
+                with open(main, "rb") as handle:
+                    done = hashlib.sha256(handle.read()).hexdigest() == meta.get("sha256")
+            if done:                                      # основной файл уже новый, а раздел не дописан
+                with open(old, "rb") as handle:
+                    previous = handle.read()
+                _slot_store(previous, {
+                    "role": SLOT_PREVIOUS, "version": as_text(_ota_read().get("prev")),
+                    "sha256": hashlib.sha256(previous).hexdigest(), "size": len(previous), "serial": None,
+                })
+                log("Prefixfy: an interrupted slot swap was completed")
+            discard_file(old)
+            meta = _slot_meta_read()
+        if not meta:
+            _slot_clear(log)
+            return
+        try:
+            _slot_verified_bytes(meta, meta["role"])
+        except Exception as exc:
+            log(f"Prefixfy: the inactive slot is damaged and was cleared: {exc}")
+            _slot_clear(log)
+            return
+        if meta["role"] == SLOT_STAGED:
+            version = parse_version(meta.get("version"))
+            if not version or (version <= parse_version(__build__) and not meta.get("heal")):
+                _slot_clear(log)                          # такая версия уже установлена или старше текущей
+    except Exception as exc:
+        log(f"Prefixfy slot check failed: {exc}")
+
+
 def _ota_rollback(reason: str, log) -> bool:
-    """Вернуть предыдущую версию файла и запомнить, что новая сборка не заработала."""
+    """Автоматический откат: прошлая версия из неактивного раздела возвращается в активный,
+    неудачная сборка выбрасывается, её серия запоминается как «плохая»."""
     data = _ota_read()
     path = _ota_own_path(data)
     if not path:
         return False
     try:
-        with open(_ota_prev_path(), "rb") as handle:
-            previous = handle.read()
-        expected = as_text(data.get("prev_sha256"))
-        if expected and not hmac.compare_digest(hashlib.sha256(previous).hexdigest(), expected):
-            raise ValueError("saved previous version is damaged")
-        compile(previous, "prefixfy_prev.py", "exec")
+        meta = _slot_meta_read()
+        if meta.get("role") == SLOT_PREVIOUS:
+            previous = _slot_verified_bytes(meta, SLOT_PREVIOUS)
+        else:
+            # переход с версий до 41.0.0: прошлая версия лежит в старом файле .pfx_prev
+            with open(_ota_legacy_prev_path(), "rb") as handle:
+                previous = handle.read()
+            expected = as_text(data.get("prev_sha256"))
+            if expected and not hmac.compare_digest(hashlib.sha256(previous).hexdigest(), expected):
+                raise ValueError("saved previous version is damaged")
+            compile(previous, "prefixfy_prev.py", "exec")
         _write_file_atomic(path, previous)
     except Exception as exc:
         log(f"Prefixfy OTA rollback failed: {exc}")
         return False
+    _slot_clear(log)
     bad = _ota_bad_serials()
     serial = data.get("serial")
     if isinstance(serial, int) and not isinstance(serial, bool) and serial not in bad:
@@ -9403,9 +9568,9 @@ def _self_file_digests() -> Optional[Tuple[str, str, int]]:
 # ----------------------------------------------------------------------
 _WIPE_STATE_FILES = (
     "Prefixfy_remote.json", BLACKLIST_CACHE_FILE, FLAGS_CACHE_FILE, FLAGS_CACHE_LEGACY_FILE, AUTO_STATE_FILE,
-    STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, OTA_PREV_FILE, BLACKLIST_GUARD_FILE,
+    STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, OTA_LEGACY_PREV_FILE, BLACKLIST_GUARD_FILE,
 )
-_WIPE_KEEP_ON_CLEAN = frozenset({STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, OTA_PREV_FILE, BLACKLIST_GUARD_FILE})
+_WIPE_KEEP_ON_CLEAN = frozenset({STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, BLACKLIST_GUARD_FILE})
 _WIPE_DIRS = ("Prefixfy_media", ConfigurationsManager.MEDIA_DIR_NAME, ConfigurationsManager.STORE_DIR_NAME, ACCT_DIR_NAME)
 _WIPE_CACHE_DIRS = ("Prefixfy_tmp", "Prefixfy_imports", "Prefixfy_exports", "Prefixfy")
 _WIPE_TEMP_SUFFIXES = (".tmp", ".ota", ".bak")
@@ -9528,6 +9693,7 @@ def _wipe_files(opt_out: bool, log):
             discard_file(os.path.join(base, name))
     for name in _WIPE_DIRS:
         shutil.rmtree(os.path.join(base, name), ignore_errors=True)
+    _slot_clear(log)             # неактивный раздел очищается при любом удалении данных и самолечении
     cache_dir = get_cache_dir()
     for name in _WIPE_CACHE_DIRS:
         shutil.rmtree(os.path.join(cache_dir, name), ignore_errors=True)
@@ -10403,7 +10569,8 @@ class RemoteControl:
         compile(source, name, "exec")
         return data
 
-    def _ota_replace(self, data: bytes, state: Dict[str, Any]):
+    def _ota_stage(self, data: bytes, state: Dict[str, Any], heal: bool):
+        """Скачанная и проверенная версия кладётся в неактивный раздел. Активный раздел не меняется."""
         path = globals().get("__file__")
         if not path:
             raise OSError("plugin path is unknown")
@@ -10411,29 +10578,75 @@ class RemoteControl:
         if not os.access(os.path.dirname(path), os.W_OK):
             raise OSError("plugin folder is read-only")
         with open(path, "rb") as handle:
-            current = handle.read()
-        if current == data:
-            raise ValueError("this version is already installed")
-        _write_file_atomic(_ota_prev_path(), current)
-        _ota_write({
-            "state": "pending", "to": format_version(state["version"]), "serial": state["serial"],
-            "prev": __build__, "path": path, "boots": 0, "bad": _ota_bad_serials(),
-            "prev_sha256": hashlib.sha256(current).hexdigest(),
-        }, self.plugin.log)
-        _write_file_atomic(path, data)
+            if handle.read() == data:
+                raise ValueError("this version is already installed")
+        _slot_store(data, {
+            "role": SLOT_STAGED, "version": format_version(state["version"]), "serial": state["serial"],
+            "sha256": hashlib.sha256(data).hexdigest(), "size": len(data), "heal": bool(heal),
+        })
 
-    def ota_install(self, state: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+    def staged_ready(self) -> Optional[Dict[str, Any]]:
+        """Описание версии, которая уже скачана в неактивный раздел и ждёт только смены разделов. Иначе None."""
+        meta = _slot_meta_read()
+        if meta.get("role") != SLOT_STAGED:
+            return None
+        version = parse_version(meta.get("version"))
+        if not version or (version <= parse_version(__build__) and not meta.get("heal")):
+            return None
+        try:
+            _slot_verified_bytes(meta, SLOT_STAGED)
+        except Exception:
+            return None
+        with self._lock:
+            state = self._state
+        if state is not None and not self._cache_stale and state.get("sha256") != meta.get("sha256"):
+            return None           # вышла более новая сборка: скачанная устарела
+        return meta
+
+    def _ota_switch(self) -> str:
+        """Смена активного раздела. Вызывается только под _ota_lock и только по команде, но не при включении плагина."""
+        meta = self.staged_ready()
+        if meta is None:
+            raise ValueError("no downloaded update")
+        _slot_swap(self.plugin.log, bool(meta.get("heal")))
+        version = as_text(meta.get("version"))
+        self._ota_done = version
+        return version
+
+    def ota_install(self, state: Dict[str, Any], apply: bool = True) -> Tuple[str, Dict[str, Any]]:
+        """Скачать и проверить версию в неактивный раздел. apply=True - сразу сменить раздел и перезапустить плагин
+        (автообновление, самолечение, удаление данных); apply=False - остановиться на «почти готово»."""
         version = format_version(state["version"])
         force = self._force_needed()
-        if not force and time.monotonic() - self._flags_ok > OTA_FLAGS_MAX_AGE:
+        staged = self.staged_ready()
+        reuse = staged is not None and staged.get("sha256") == state["sha256"]
+        if not reuse and not force and time.monotonic() - self._flags_ok > OTA_FLAGS_MAX_AGE:
             return "ota_failed", {"reason": "flags not verified"}
         if not self._ota_lock.acquire(blocking=False):
             return "ota_busy", {}
         try:
-            self._ota_replace(self._ota_fetch(state, force), state)
-            self._ota_done = version
+            if not reuse:
+                self._ota_stage(self._ota_fetch(state, force), state, force)
+            if apply:
+                version = self._ota_switch()
         except Exception as exc:
             self.plugin.log(f"Prefixfy OTA failed: {exc}")
+            return "ota_failed", {"reason": as_text(exc)[:80]}
+        finally:
+            self._ota_lock.release()
+        if not apply:
+            return "ota_staged", {"version": version}
+        threading.Thread(target=self._ota_apply, name="PrefixfyOTAApply", daemon=True).start()
+        return "ota_installed", {"version": version}
+
+    def ota_reload(self) -> Tuple[str, Dict[str, Any]]:
+        """Кнопка «Перезагрузить»: без вопросов сменить активный раздел и перезапустить плагин."""
+        if not self._ota_lock.acquire(blocking=False):
+            return "ota_busy", {}
+        try:
+            version = self._ota_switch()
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy slot switch failed: {exc}")
             return "ota_failed", {"reason": as_text(exc)[:80]}
         finally:
             self._ota_lock.release()
@@ -10441,7 +10654,7 @@ class RemoteControl:
         return "ota_installed", {"version": version}
 
     def _ota_apply(self):
-        """Перезапуск плагина и наблюдение: если новая версия не загрузилась, вернуть прежнюю."""
+        """Перезапуск плагина и наблюдение: если новая версия не загрузилась, прошлая возвращается автоматически."""
         log = self.plugin.log
         if not _host_restart_plugin(log):
             self._ota_report(("ota_restart_manual", {"version": self._ota_done}))
@@ -10468,6 +10681,10 @@ class RemoteControl:
                 threading.Thread(target=_host_restart_plugin, args=(self.plugin.log,), daemon=True).start()
             return
         data["boots"] = boots
+        if data.get("heal") is True:
+            # самолечение закончено: сборка загрузилась, неактивный раздел (там изменённая версия) очищается сразу же
+            data["heal"] = False
+            _slot_clear(self.plugin.log)
         _ota_write(data, self.plugin.log)
         timer = threading.Timer(OTA_CONFIRM_SEC, self._ota_confirm)
         timer.daemon = True
@@ -10481,6 +10698,10 @@ class RemoteControl:
         if data.get("state") == "pending" and data.get("to") == __build__:
             data["state"] = "ok"
             _ota_write(data, self.plugin.log)
+            try:
+                os.remove(_ota_legacy_prev_path())       # остаток схемы до 41.0.0: после подтверждения откат не нужен
+            except OSError:
+                pass
             self.plugin.log(f"Prefixfy OTA: {__build__} confirmed")
 
     def _ota_next_wait(self) -> Optional[float]:
@@ -10524,7 +10745,7 @@ class RemoteControl:
                 self._force_notified = True
                 self.plugin.log(f"Prefixfy: build {__build__} was modified, installing the official {version}")
                 self._ota_report(("ota_modified_found", {"version": version}))
-            kind, info = self.ota_install(state)
+            kind, info = self.ota_install(state, True)
             if kind == "ota_installed":
                 self._force_fails = 0
                 self._force_retry_at = 0.0
@@ -10558,7 +10779,7 @@ class RemoteControl:
             state = self.ota_candidate()
             if state is None:
                 return
-            result = self.ota_install(state)
+            result = self.ota_install(state, True)
             self._ota_backoff(result)
             transient = result[0] == "ota_busy" or result[1].get("reason") == "flags not verified"
             if not transient and self._ota_fails <= 1:
@@ -10569,7 +10790,7 @@ class RemoteControl:
     def _ota_backoff(self, result: Tuple[str, Dict[str, Any]]):
         """Неудачная установка не повторяется каждую минуту: 5 минут, затем вдвое дольше, не больше 6 часов."""
         kind, info = result
-        if kind == "ota_installed":
+        if kind in ("ota_installed", "ota_staged"):
             self._ota_fails = 0
             self._ota_retry_at = 0.0
             return
@@ -10590,14 +10811,14 @@ class RemoteControl:
                 self.plugin.log(f"Prefixfy OTA kick failed: {exc}")
         threading.Thread(target=work, name="PrefixfyOTAKick", daemon=True).start()
 
-    def ota_manual(self, refreshed: bool) -> Optional[Tuple[str, Dict[str, Any]]]:
+    def ota_manual(self, refreshed: bool, apply: bool = False) -> Optional[Tuple[str, Dict[str, Any]]]:
         """Кнопка «Скачать и установить». None, если ставить нечего. В режиме автообновления «по мере выхода» сюда попадает и «Проверить сейчас»."""
         state = self.ota_candidate()
         if state is None:
             return None
         if not refreshed:
             return "ota_failed", {"reason": "check failed"}
-        return self.ota_install(state)
+        return self.ota_install(state, apply)
 
     def _ota_report(self, result: Tuple[str, Dict[str, Any]]):
         try:
@@ -10939,6 +11160,7 @@ class PrefixfyPlugin(BasePlugin):
     def _on_plugin_load_impl(self):
         if self._startup_gate():
             return
+        _slot_housekeeping(self.log)      # достроить прерванную смену разделов, убрать повреждённое
         VAULT.attach(self.log)
         VAULT.prepare()
         self.settings = PrefixfySettings(self)
@@ -12543,6 +12765,17 @@ class PrefixfyPlugin(BasePlugin):
                     ))
                 return rows
             if key == "update_required_subtext":
+                staged = remote.staged_ready()
+                if staged is not None:
+                    # новая версия уже в неактивном разделе: остаётся только сменить активный раздел
+                    return [Text(
+                        text=tr("ota_almost_ready"),
+                        subtext=tr("ota_almost_ready_subtext", version=as_text(staged.get("version"))),
+                        icon=icon,
+                    ), Text(
+                        text=tr("ota_reload"), subtext=tr("ota_reload_subtext"),
+                        icon=self._icon("msg_retry", "msg_download"), on_click=self._ota_reload_now,
+                    )]
                 rows = [Text(text=tr("update_required"), subtext=subtext, icon=icon)]
                 candidate = remote.ota_candidate()
                 if candidate is not None:
@@ -12833,7 +13066,7 @@ class PrefixfyPlugin(BasePlugin):
                     return
                 if state is not None:
                     self._toast("wipe_updating", version=need)
-                    kind, info = remote.ota_install(state)
+                    kind, info = remote.ota_install(state, True)
                     if kind != "ota_installed":
                         clear_wipe_marker()
                         self._toast("wipe_update_failed", reason=as_text(info.get("reason") or kind)[:80])
@@ -12994,6 +13227,29 @@ class PrefixfyPlugin(BasePlugin):
     def _ota_update_now(self, *_):
         self._run_check(install=True)
 
+    _reload_running = False
+
+    def _ota_reload_now(self, *_):
+        """«Перезагрузить»: без диалога сменить активный раздел и перезапустить плагин."""
+        remote = getattr(self, "remote", None)
+        if remote is None or self._reload_running:
+            return
+        self._reload_running = True
+
+        def work():
+            try:
+                kind, info = remote.ota_reload()
+                self._toast(kind, **info)
+                if kind == "ota_failed":
+                    self.reload_settings_ui()
+            except Exception as exc:
+                self.log(f"Prefixfy slot reload failed: {exc}")
+                self._toast("ota_failed", reason=as_text(exc)[:80])
+            finally:
+                self._reload_running = False
+
+        threading.Thread(target=work, name="PrefixfyOTAReload", daemon=True).start()
+
     def _settings_ota(self) -> List[Any]:
         return [Header(text=self._tr("ota_section"))] + self._ota_auto_items() + self._check_items()
 
@@ -13052,7 +13308,8 @@ class PrefixfyPlugin(BasePlugin):
         remote = getattr(self, "remote", None)
         if remote is None or getattr(self, "_check_running", False):
             return
-        install = install or self._ota_on_check()
+        auto = self._ota_on_check()       # перезапускает плагин сам только включённое автообновление
+        install = install or auto
         self._check_running = True
         self._toast("check_started")
 
@@ -13061,10 +13318,13 @@ class PrefixfyPlugin(BasePlugin):
                 refreshed = remote.refresh(force=True)
                 outcome = None
                 if install:
-                    outcome = remote.ota_manual(refreshed)
+                    outcome = remote.ota_manual(refreshed, apply=auto)
                 elif refreshed:
                     found = remote.ota_candidate()
-                    if found is not None:
+                    staged = remote.staged_ready()
+                    if staged is not None:
+                        outcome = ("ota_staged", {"version": as_text(staged.get("version"))})
+                    elif found is not None:
                         outcome = ("check_update_found", {"version": format_version(found["version"])})
                 if outcome is not None:
                     self._toast(outcome[0], **outcome[1])
