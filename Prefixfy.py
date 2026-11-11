@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "40.1.3"
-__build__ = "40.1.3_20261111.6_52"
+__version__ = "40.2.0"
+__build__ = "40.2.0_20261111.7_53"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -10708,43 +10708,21 @@ def article_text_blocks(blocks, depth: int = 0, seen=None) -> list:
 
 
 def article_text_leaf(block):
-    """(holder, field, text) для блока с ОДНИМ простым текстом, иначе None.
+    """(holder, field, text, parent) для блока с ОДНИМ простым текстом, иначе None.
+    parent - объект, в чьём поле text лежит holder (None, если текст лежит прямо в блоке).
     Блоки со смешанным форматированием (несколько кусков) пропускаем: их разметку не ломаем."""
-    node, holder, field = block, None, None
+    node, parent = block, None
     for _ in range(_ARTICLE_MAX_DEPTH):
         value = getattr(node, "text", None)
         if isinstance(value, str):
-            return node, "text", value
+            return node, "text", value, parent
         if value is None:
             return None
         parts = _article_items(getattr(value, "texts", None))
         if parts:
             return None
-        node = value
+        parent, node = node, value
     return None
-
-
-_FILELOG = [None, False]
-
-
-def emit_to_app_log(message) -> None:
-    """40.1.2: BasePlugin.log не попадает в лог приложения (logs.zip), поэтому дублируем строки через FileLog
-    (там же видны строки "D/tmessages") и, если не вышло, через android.util.Log."""
-    text = as_text(message)
-    try:
-        if not _FILELOG[1]:
-            _FILELOG[0] = find_class("org.telegram.messenger.FileLog")
-            _FILELOG[1] = True
-        if _FILELOG[0] is not None:
-            _FILELOG[0].d(text)
-            return
-    except Exception:
-        pass
-    try:
-        from android.util import Log
-        Log.d("tmessages", text)
-    except Exception:
-        pass
 
 
 def article_holder_supports_entities(holder) -> bool:
@@ -10755,117 +10733,97 @@ def article_holder_supports_entities(holder) -> bool:
         return False
 
 
-def article_holder_dump(holder) -> str:
-    """Для отладки: класс узла текста и его поля, имена которых намекают на сущности или эмодзи."""
+_IV_PACKAGE = "org.telegram.tgnet.tl.TL_iv$"
+_ARTICLE_EMOJI = {"state": None, "warned": False}
+_ARTICLE_EMOJI_IMAGE_SIZE = 20
+
+
+def _iv_new(name: str):
+    """Новый экземпляр узла TL_iv$<name> (textPlain, textConcat, textImage...)."""
+    full = _IV_PACKAGE + name
     try:
-        names = [n for n in dir(holder) if not n.startswith("_") and any(k in n.lower() for k in ("entit", "emoji", "document"))]
+        from java import jclass
+        return jclass(full)()
     except Exception:
-        names = []
-    return f"{type(holder).__name__} fields={names}"
+        cls = find_class(full)
+        if cls is None:
+            raise RuntimeError(f"{full} unavailable")
+        try:
+            return cls.newInstance()
+        except Exception:
+            return cls()
 
 
-ARTICLE_DEBUG = True          # 40.1.1: подробный лог устройства статей (префикс "Prefixfy[dbg]"); после отладки поставьте False
-_DBG_NAME_HINTS = ("rich", "article", "block", "page", "entit", "emoji", "text", "caption", "message")
-
-
-def _dbg_value(value) -> str:
+def _article_emoji_kinds() -> list:
+    """Имена узлов TL_iv, которыми статья может нести Premium Emoji: сначала «эмодзи», затем textImage."""
+    names: list = []
     try:
-        if value is None:
-            return "None"
-        if isinstance(value, (bool, int, float)):
-            return str(value)
-        if isinstance(value, str):
-            return repr(value if len(value) <= 60 else value[:57] + "...")
-        items = _article_items(value)
-        if items:
-            return f"{_dbg_cls(value)}[{len(items)}]"
-        return _dbg_cls(value)
-    except Exception as exc:
-        return f"<{exc}>"
-
-
-def _dbg_cls(value) -> str:
-    try:
-        return str(value.getClass().getName())
-    except Exception:
-        return type(value).__name__
-
-
-def _dbg_field_names(obj) -> list:
-    names = []
-    try:
-        for field in obj.getClass().getFields():
-            names.append(str(field.getName()))
+        from java import jclass
+        for cls in jclass("org.telegram.tgnet.tl.TL_iv").getClass().getDeclaredClasses():
+            short = str(cls.getName()).split("$")[-1]
+            if "emoji" in short.lower() and short not in names:
+                names.append(short)
     except Exception:
         pass
-    if not names:
-        try:
-            names = [n for n in dir(obj) if not n.startswith("_")]
-        except Exception:
-            names = []
+    for short in ("textCustomEmoji", "textEmoji", "textImage"):
+        if short not in names:
+            names.append(short)
     return names
 
 
-def debug_dump(obj, depth: int = 3, indent: str = "", only_hints: bool = False, seen=None, budget=None) -> List[str]:
-    """Дерево полей объекта: имя, класс, короткое значение. Для Java-объектов поля берутся через getFields()."""
-    if seen is None:
-        seen = set()
-    if budget is None:
-        budget = [120]
-    lines: List[str] = []
-    if obj is None or budget[0] <= 0:
-        return lines
-    key = id(obj)
-    if key in seen:
-        return lines
-    seen.add(key)
-    for name in _dbg_field_names(obj):
-        if budget[0] <= 0:
-            lines.append(indent + "...")
-            break
-        if only_hints and not any(h in name.lower() for h in _DBG_NAME_HINTS):
-            continue
+def article_emoji_kind() -> Optional[str]:
+    """Имя подходящего узла (есть поле document_id) или None. Результат запоминается."""
+    state = _ARTICLE_EMOJI
+    if state["state"] is not None:
+        return state["state"] or None
+    for short in _article_emoji_kinds():
         try:
-            value = getattr(obj, name)
+            probe = _iv_new(short)
+            probe.document_id = 1
+            if int(probe.document_id) == 1:
+                state["state"] = short
+                return short
         except Exception:
             continue
-        if callable(value) and not _article_items(value):
-            continue
-        budget[0] -= 1
-        lines.append(f"{indent}{name}: {_dbg_value(value)}")
-        if depth > 0 and value is not None and not isinstance(value, (str, bool, int, float)):
-            children = _article_items(value)
-            if children:
-                for number, child in enumerate(children[:6]):
-                    lines.append(f"{indent}  [{number}] {_dbg_value(child)}")
-                    lines.extend(debug_dump(child, depth - 1, indent + "    ", False, seen, budget))
-            else:
-                lines.extend(debug_dump(value, depth - 1, indent + "  ", False, seen, budget))
-    return lines
+    state["state"] = ""
+    return None
 
 
-def article_structure_dump(params, limit: int = 40) -> str:
-    """Для отладки: тип параметров, поля и классы блоков найденной статьи."""
-    lines = [f"params={type(params).__name__}"]
-    for field in _ARTICLE_FIELDS:
-        value = getattr(params, field, None)
-        if value is not None:
-            lines.append(f"  {field}: {type(value).__name__}")
-    for block in article_text_blocks(article_blocks(params))[:limit]:
-        leaf = article_text_leaf(block)
-        lines.append(f"  block {type(block).__name__} leaf={'yes' if leaf else 'no'}")
-    return "\n".join(lines)
+def article_emoji_node(kind: str, document_id: int, fallback: str):
+    node = _iv_new(kind)
+    node.document_id = int(document_id)
+    if kind.lower().endswith("image"):
+        node.w = _ARTICLE_EMOJI_IMAGE_SIZE
+        node.h = _ARTICLE_EMOJI_IMAGE_SIZE
+    elif fallback:
+        try:
+            node.text = fallback
+        except Exception:
+            pass
+    return node
 
+
+def article_plain_node(text: str):
+    node = _iv_new("textPlain")
+    node.text = text
+    return node
+
+
+def article_concat_node(children: list):
+    from java.util import ArrayList
+    node = _iv_new("textConcat")
+    texts = ArrayList()
+    for child in children:
+        texts.add(child)
+        try:
+            child.parentRichText = node
+        except Exception:
+            pass
+    node.texts = texts
+    return node
 
 
 class PrefixfyPlugin(BasePlugin):
-    def log(self, message):
-        try:
-            super().log(message)
-        except Exception:
-            pass
-        emit_to_app_log(message)
-
     def on_plugin_load(self):
         try:
             self._on_plugin_load_impl()
@@ -11023,7 +10981,6 @@ class PrefixfyPlugin(BasePlugin):
             ("chat menu", self.refresh_chat_menu_item),
             ("activity result hook", self._install_activity_result_hook),
             ("edit message hook", self._install_edit_message_hook),
-            ("request debug hook", self._install_request_debug_hook),
         ):
             try:
                 step()
@@ -11032,7 +10989,6 @@ class PrefixfyPlugin(BasePlugin):
         self.remote.start()
         self.remote.blacklist_guard()
         self.log(f"Prefixfy {__build__} loaded ({self.localization.language()})")
-        self._dbg(f"debug is ON, build {__build__}; if you see this line, plugin logs reach the app log")
 
     def on_plugin_unload(self):
         remote = getattr(self, "remote", None)
@@ -11178,42 +11134,6 @@ class PrefixfyPlugin(BasePlugin):
             self.log(f"Prefixfy edit: hooking sendRequest failed: {exc}")
             return
         self._prefixfy_hooks.extend(hooks)
-
-    def _install_request_debug_hook(self):
-        """40.1.1: отладка. Логирует классы исходящих запросов (send/rich/article/page...), чтобы найти настоящий путь отправки статьи."""
-        if not ARTICLE_DEBUG:
-            return
-        plugin = self
-        words = ("send", "rich", "article", "page", "draft", "media")
-        counter = {"n": 0}
-
-        class RequestDebugHook(MethodHook):
-            def before_hooked_method(self, param):
-                try:
-                    if not len(param.args) or param.args[0] is None or counter["n"] >= 60:
-                        return
-                    request = param.args[0]
-                    name = _dbg_cls(request)
-                    short = name.split("$")[-1].lower()
-                    if "edit" in short or not any(w in short for w in words):
-                        return
-                    counter["n"] += 1
-                    plugin.log(f"Prefixfy[dbg] request #{counter['n']}: {name}")
-                    for line in debug_dump(request, depth=2, only_hints=True, budget=[60]):
-                        plugin.log("Prefixfy[dbg]   req." + line)
-                except Exception as exc:
-                    plugin.log(f"Prefixfy[dbg] request dump failed: {exc}")
-
-        manager_class = self._hookable_class("org.telegram.tgnet.ConnectionsManager")
-        if manager_class is None:
-            self.log("Prefixfy[dbg] ConnectionsManager not found")
-            return
-        try:
-            hooks = self.hook_all_methods(manager_class, "sendRequest", RequestDebugHook())
-            self._prefixfy_hooks.extend(list(hooks) if hooks else [])
-            self.log("Prefixfy[dbg] request sniffer installed")
-        except Exception as exc:
-            self.log(f"Prefixfy[dbg] request sniffer failed: {exc}")
 
     def handle_setting_changed(self, key):
         if key in TRANSIENT_SETTING_DEFAULTS or key in OTA_SETTING_DEFAULTS:
@@ -13333,14 +13253,6 @@ class PrefixfyPlugin(BasePlugin):
         self._forget_internal_send(dialog_id, text)
 
     def on_send_message_hook(self, account: int, params: Any) -> HookResult:
-        if ARTICLE_DEBUG:
-            try:
-                n = getattr(self, "_dbg_hook_calls", 0) + 1
-                self._dbg_hook_calls = n
-                if n <= 40:
-                    self.log(f"Prefixfy[dbg] send hook called #{n}: params={_dbg_cls(params)} account={account}")
-            except Exception:
-                pass
         try:
             return self._process_outgoing(account, params)
         except Exception as exc:
@@ -13903,15 +13815,6 @@ class PrefixfyPlugin(BasePlugin):
 
     def _process_outgoing(self, account: int, params: Any) -> HookResult:
         if not self.remote.allows():
-            if ARTICLE_DEBUG and getattr(self, "_dbg_blocked_logged", 0) < 5:
-                self._dbg_blocked_logged = getattr(self, "_dbg_blocked_logged", 0) + 1
-                try:
-                    reason = self.remote.mismatch_reason()
-                except Exception:
-                    reason = "?"
-                self._dbg(f"STOPPED: remote.allows()=False (build {__build__}, blocked={self.remote.blocked()}, "
-                          f"verified={self.remote.verified()}, mismatch_reason={reason}). "
-                          f"Unsigned/modified build is blocked by the plugin's own check.")
             return HookResult()
         dialog_id = self._dialog_id_from_params(params, account)
         message = getattr(params, "message", None)
@@ -13920,26 +13823,21 @@ class PrefixfyPlugin(BasePlugin):
 
         already_styled = caption if has_media else message
         if isinstance(already_styled, str) and already_styled and self._is_internal_send(dialog_id, already_styled):
-            self._dbg("STOPPED: internal send")
             return HookResult()
         if FEATURES.on("premium_emoji") and self.settings.get("capture_custom_emoji", False) and self._capture_custom_emoji(params, account):
             return HookResult(strategy=HookStrategy.CANCEL)
 
         runtime = self._base_runtime(account)
         if runtime is None:
-            self._dbg("STOPPED: no runtime for account")
             return HookResult()
 
         runtime = self._runtime_for_chat(runtime, dialog_id, account)
         settings = runtime.settings
         if not self._chat_type_allowed(account, dialog_id, settings.chat_type_rules):
-            self._dbg(f"STOPPED: chat type not allowed (dialog={dialog_id})")
             return HookResult()
         if not settings.is_chat_allowed(dialog_id):
-            self._dbg(f"STOPPED: chat not allowed (dialog={dialog_id})")
             return HookResult()
 
-        self._debug_params(params, account, dialog_id, runtime)
         article = self._decorate_article(runtime, params, account)
         if article is not None:
             return article
@@ -13963,32 +13861,6 @@ class PrefixfyPlugin(BasePlugin):
         setattr(params, field, transformed)
         return HookResult(strategy=HookStrategy.MODIFY, params=params)
 
-    def _dbg(self, text: str):
-        if ARTICLE_DEBUG:
-            self.log("Prefixfy[dbg] " + text)
-
-    def _debug_params(self, params, account, dialog_id, runtime):
-        """40.1.1: что вообще пришло в хук отправки: класс, поля с подсказками (rich/article/block/entities...), найдены ли блоки статьи."""
-        if not ARTICLE_DEBUG:
-            return
-        try:
-            count = getattr(self, "_dbg_sends", 0) + 1
-            self._dbg_sends = count
-            if count > 40:
-                return
-            blocks = article_blocks(params)
-            self._dbg(f"send #{count}: params={_dbg_cls(params)} account={account} dialog={dialog_id} "
-                      f"articles_flag={FEATURES.on('articles')} premium_flag={FEATURES.on('premium_emoji')} "
-                      f"premium_account={self._account_is_premium(account)} blocks_found={len(blocks)}")
-            self._dbg(f"mask={runtime.settings.mask!r} md_table={runtime.pipeline.markdown_table}")
-            for line in debug_dump(params, depth=0, only_hints=True):
-                self._dbg("  params." + line)
-            if blocks:
-                for line in debug_dump(params, depth=4, only_hints=True, budget=[160]):
-                    self._dbg("  tree " + line)
-        except Exception as exc:
-            self.log(f"Prefixfy[dbg] dump failed: {exc}")
-
     def _decorate_article(self, runtime: Runtime, params, account: int = 0) -> Optional[HookResult]:
         """40.0.0: оформление текстовых блоков статьи. None - это не статья (обычный путь).
         40.1.0: если у узла текста есть поле entities, маска ставится так же, как в обычном сообщении:
@@ -14003,17 +13875,14 @@ class PrefixfyPlugin(BasePlugin):
         changed = 0
         try:
             targets = article_text_blocks(blocks)
-            if not getattr(self, "_article_dumped", False):
-                self._article_dumped = True
-                self.log("Prefixfy article structure:\n" + article_structure_dump(params))
             for block in targets:
                 leaf = article_text_leaf(block)
                 if leaf is None:
                     continue
-                holder, field, text = leaf
+                holder, field, text, parent = leaf
                 if not text.strip() or pipeline.ignores(text):
                     continue
-                if self._decorate_article_leaf(runtime, account, holder, field, text):
+                if self._decorate_article_leaf(runtime, account, holder, field, text, parent):
                     changed += 1
         except Exception as exc:
             self.log(f"Prefixfy article decorate failed: {exc}")
@@ -14022,14 +13891,9 @@ class PrefixfyPlugin(BasePlugin):
             return HookResult()
         return HookResult(strategy=HookStrategy.MODIFY, params=params)
 
-    def _decorate_article_leaf(self, runtime: Runtime, account: int, holder, field: str, text: str) -> bool:
+    def _decorate_article_leaf(self, runtime: Runtime, account: int, holder, field: str, text: str, parent=None) -> bool:
         pipeline = runtime.pipeline
         wants_entities = bool(runtime.settings.markdown_enabled or pipeline.markdown_table)
-        self._dbg(f"leaf {_dbg_cls(holder)}.{field}={text[:40]!r} wants_entities={wants_entities} "
-                  f"has_entities_field={article_holder_supports_entities(holder)} "
-                  f"existing={_dbg_value(getattr(holder, 'entities', None))}")
-        for line in debug_dump(holder, depth=1)[:30]:
-            self._dbg("    holder." + line)
         if wants_entities and article_holder_supports_entities(holder):
             existing = getattr(holder, "entities", None)
             snapshot = self._snapshot_entities(existing)
@@ -14040,8 +13904,6 @@ class PrefixfyPlugin(BasePlugin):
                     return False
                 transformed = self._apply_entities(runtime, holder, text, transformed, entities, body_offset)
                 setattr(holder, field, transformed)
-                self._dbg(f"leaf result: text={transformed[:40]!r} entities_planned={[(e[0], e[1], e[2]) for e in entities]} "
-                          f"entities_on_node={_dbg_value(getattr(holder, 'entities', None))}")
                 return True
             except Exception as exc:
                 import traceback
@@ -14051,15 +13913,53 @@ class PrefixfyPlugin(BasePlugin):
                     holder.entities = existing
                 except Exception:
                     pass
-        elif wants_entities and not getattr(self, "_article_holder_dumped", False):
-            # узел текста не принимает сущности: Premium Emoji в статье станут обычными эмодзи
-            self._article_holder_dumped = True
-            self.log("Prefixfy article text node has no entities: " + article_holder_dump(holder))
+        elif wants_entities and parent is not None and FEATURES.on("premium_emoji"):
+            # 40.2.0: у TL_iv$textPlain нет поля entities, поэтому Premium Emoji уходят отдельными узлами статьи
+            if self._decorate_article_emoji(runtime, account, parent, text):
+                return True
         transformed = pipeline.transform(text)
         if transformed == text:
             return False
         setattr(holder, field, transformed)
         return True
+
+    def _decorate_article_emoji(self, runtime: Runtime, account: int, parent, text: str) -> bool:
+        """Заменяет parent.text на textConcat: обычный текст + узлы Premium Emoji. False - обычный путь."""
+        try:
+            transformed, entities, body_offset = self._transform_text(runtime, text)
+            entities = self._finalize_entities(account, parent, entities, body_offset)
+            spans = sorted((item for item in entities if item[0] == "CustomEmoji"), key=lambda item: item[1])
+            if not spans:
+                return False
+            kind = article_emoji_kind()
+            if kind is None:
+                if not _ARTICLE_EMOJI["warned"]:
+                    _ARTICLE_EMOJI["warned"] = True
+                    self.log("Prefixfy articles: no Premium Emoji node in TL_iv " + ", ".join(_article_emoji_kinds()))
+                return False
+            children = []
+            emoji_nodes = 0
+            pos = 0
+            for _, offset, length, document_id in spans:
+                start = _utf16_index(transformed, offset)
+                end = _utf16_index(transformed, offset + length)
+                if start < pos or end <= start:
+                    continue
+                if start > pos:
+                    children.append(article_plain_node(transformed[pos:start]))
+                children.append(article_emoji_node(kind, int(document_id), transformed[start:end]))
+                emoji_nodes += 1
+                pos = end
+            if not emoji_nodes:
+                return False
+            if pos < len(transformed):
+                children.append(article_plain_node(transformed[pos:]))
+            parent.text = article_concat_node(children)
+            return True
+        except Exception as exc:
+            import traceback
+            self.log(f"Prefixfy article Premium Emoji failed, using plain text: {exc}\n{traceback.format_exc()}")
+            return False
 
     def _decorate_text(self, runtime: Runtime, account: int, params, text: str, is_caption: bool, rotation_next) -> Optional[str]:
         transformed, entities, body_offset = self._transform_text(runtime, text)
