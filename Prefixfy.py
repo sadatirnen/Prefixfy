@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "40.2.0"
-__build__ = "40.2.0_20261111.7_53"
+__version__ = "40.2.1"
+__build__ = "40.2.1_20261111.8_54"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -267,7 +267,7 @@ SETTING_DEFAULTS = {
     "custom_emojis": DEFAULT_SEPARATORS,
     "emoji_count": 1,
     "separator_spaces": True,           # 40.0.0: пробелы вокруг разделителя (выкл. - вплотную к словам)
-    "separator_space_mode": 0,         # 0 - с обеих сторон (как раньше), 1 - слева, 2 - справа
+    "separator_space_mode": 0,         # 0 - с обеих сторон (как раньше), 1 - пробел слева от разделителя, 2 - пробел справа
     "separator_frequency": 4,          # индекс в FREQUENCY_STEPS: 4 = 100% (как в 34.x)
     "exceptions": "",
     "ignore_special": True,
@@ -2672,54 +2672,54 @@ _SEPARATOR_SPACE_STRINGS = {
         "separator_spaces": "Включить пробелы",
         "separator_spaces_subtext": "Если выключено, разделитель ставится вплотную к словам: приветякакядела.",
         "separator_space_mode": "Где ставить пробелы",
-        "separator_space_both": "С обеих сторон: привет я как я дела",
-        "separator_space_left": "Слева: приветя какя дела",
-        "separator_space_right": "Справа: привет якак ядела",
+        "separator_space_both": "С обеих сторон",
+        "separator_space_left": "Слева",
+        "separator_space_right": "Справа",
         "auto_reset_done": "Данные Prefixfy были повреждены, плагин автоматически сброшен",
     },
     "en": {
         "separator_spaces": "Enable spaces",
         "separator_spaces_subtext": "When off, the separator sits right against the words: hixtherexyou.",
         "separator_space_mode": "Where to put spaces",
-        "separator_space_both": "Both sides: hi x there x you",
-        "separator_space_left": "Left: hix therex you",
-        "separator_space_right": "Right: hi xthere xyou",
+        "separator_space_both": "Both sides",
+        "separator_space_left": "Left",
+        "separator_space_right": "Right",
         "auto_reset_done": "Prefixfy data was damaged, the plugin was reset automatically",
     },
     "ja": {
         "separator_spaces": "スペースを有効にする",
         "separator_spaces_subtext": "オフの場合、区切り文字は単語にくっつきます：приветякакядела。",
         "separator_space_mode": "スペースの位置",
-        "separator_space_both": "両側: привет я как я дела",
-        "separator_space_left": "左: приветя какя дела",
-        "separator_space_right": "右: привет якак ядела",
+        "separator_space_both": "両側",
+        "separator_space_left": "左",
+        "separator_space_right": "右",
         "auto_reset_done": "Prefixfyのデータが破損していたため、プラグインを自動的にリセットしました",
     },
     "ko": {
         "separator_spaces": "공백 사용",
         "separator_spaces_subtext": "끄면 구분자가 단어에 붙어서 들어갑니다: приветякакядела.",
         "separator_space_mode": "공백 위치",
-        "separator_space_both": "양쪽: привет я как я дела",
-        "separator_space_left": "왼쪽: приветя какя дела",
-        "separator_space_right": "오른쪽: привет якак ядела",
+        "separator_space_both": "양쪽",
+        "separator_space_left": "왼쪽",
+        "separator_space_right": "오른쪽",
         "auto_reset_done": "Prefixfy 데이터가 손상되어 플러그인을 자동으로 초기화했습니다",
     },
     "fr": {
         "separator_spaces": "Activer les espaces",
         "separator_spaces_subtext": "Désactivé, le séparateur colle aux mots : приветякакядела.",
         "separator_space_mode": "Emplacement des espaces",
-        "separator_space_both": "Des deux côtés : привет я как я дела",
-        "separator_space_left": "Gauche : приветя какя дела",
-        "separator_space_right": "Droite : привет якак ядела",
+        "separator_space_both": "Des deux côtés",
+        "separator_space_left": "Gauche",
+        "separator_space_right": "Droite",
         "auto_reset_done": "Les données de Prefixfy étaient endommagées, le plugin a été réinitialisé automatiquement",
     },
     "de": {
         "separator_spaces": "Leerzeichen aktivieren",
         "separator_spaces_subtext": "Ausgeschaltet sitzt das Trennzeichen direkt an den Wörtern: приветякакядела.",
         "separator_space_mode": "Wo Leerzeichen stehen",
-        "separator_space_both": "Beidseitig: привет я как я дела",
-        "separator_space_left": "Links: приветя какя дела",
-        "separator_space_right": "Rechts: привет якак ядела",
+        "separator_space_both": "Beidseitig",
+        "separator_space_left": "Links",
+        "separator_space_right": "Rechts",
         "auto_reset_done": "Die Prefixfy-Daten waren beschädigt, das Plugin wurde automatisch zurückgesetzt",
     },
 }
@@ -5015,9 +5015,9 @@ class SeparatorTransformation(Transformation):
                 if not self.spaces:
                     parts.append(joined)                  # приветякакядела
                 elif self.space_mode == 1:
-                    parts.append(joined + gap)            # приветя какя дела
+                    parts.append(gap + joined)            # слева: пробел слева от разделителя
                 elif self.space_mode == 2:
-                    parts.append(gap + joined)            # привет якак ядела
+                    parts.append(joined + gap)            # справа: пробел справа от разделителя
                 else:
                     parts.append(gap + joined + gap)      # привет я как я дела
                 parts.append(word)
@@ -12143,9 +12143,9 @@ class PrefixfyPlugin(BasePlugin):
             if not spaces:
                 out += joined + word
             elif mode == 1:
-                out += joined + " " + word
-            elif mode == 2:
                 out += " " + joined + word
+            elif mode == 2:
+                out += joined + " " + word
             else:
                 out += " " + joined + " " + word
         return out
