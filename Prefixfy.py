@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "40.1.0"
-__build__ = "40.1.0_20261111.3_49"
+__version__ = "40.1.1"
+__build__ = "40.1.1_20261111.4_50"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -10741,6 +10741,86 @@ def article_holder_dump(holder) -> str:
     return f"{type(holder).__name__} fields={names}"
 
 
+ARTICLE_DEBUG = True          # 40.1.1: подробный лог устройства статей (префикс "Prefixfy[dbg]"); после отладки поставьте False
+_DBG_NAME_HINTS = ("rich", "article", "block", "page", "entit", "emoji", "text", "caption", "message")
+
+
+def _dbg_value(value) -> str:
+    try:
+        if value is None:
+            return "None"
+        if isinstance(value, (bool, int, float)):
+            return str(value)
+        if isinstance(value, str):
+            return repr(value if len(value) <= 60 else value[:57] + "...")
+        items = _article_items(value)
+        if items:
+            return f"{_dbg_cls(value)}[{len(items)}]"
+        return _dbg_cls(value)
+    except Exception as exc:
+        return f"<{exc}>"
+
+
+def _dbg_cls(value) -> str:
+    try:
+        return str(value.getClass().getName())
+    except Exception:
+        return type(value).__name__
+
+
+def _dbg_field_names(obj) -> list:
+    names = []
+    try:
+        for field in obj.getClass().getFields():
+            names.append(str(field.getName()))
+    except Exception:
+        pass
+    if not names:
+        try:
+            names = [n for n in dir(obj) if not n.startswith("_")]
+        except Exception:
+            names = []
+    return names
+
+
+def debug_dump(obj, depth: int = 3, indent: str = "", only_hints: bool = False, seen=None, budget=None) -> List[str]:
+    """Дерево полей объекта: имя, класс, короткое значение. Для Java-объектов поля берутся через getFields()."""
+    if seen is None:
+        seen = set()
+    if budget is None:
+        budget = [120]
+    lines: List[str] = []
+    if obj is None or budget[0] <= 0:
+        return lines
+    key = id(obj)
+    if key in seen:
+        return lines
+    seen.add(key)
+    for name in _dbg_field_names(obj):
+        if budget[0] <= 0:
+            lines.append(indent + "...")
+            break
+        if only_hints and not any(h in name.lower() for h in _DBG_NAME_HINTS):
+            continue
+        try:
+            value = getattr(obj, name)
+        except Exception:
+            continue
+        if callable(value) and not _article_items(value):
+            continue
+        budget[0] -= 1
+        lines.append(f"{indent}{name}: {_dbg_value(value)}")
+        if depth > 0 and value is not None and not isinstance(value, (str, bool, int, float)):
+            children = _article_items(value)
+            if children:
+                for number, child in enumerate(children[:6]):
+                    lines.append(f"{indent}  [{number}] {_dbg_value(child)}")
+                    lines.extend(debug_dump(child, depth - 1, indent + "    ", False, seen, budget))
+            else:
+                lines.extend(debug_dump(value, depth - 1, indent + "  ", False, seen, budget))
+    return lines
+
+
 def article_structure_dump(params, limit: int = 40) -> str:
     """Для отладки: тип параметров, поля и классы блоков найденной статьи."""
     lines = [f"params={type(params).__name__}"]
@@ -13770,6 +13850,7 @@ class PrefixfyPlugin(BasePlugin):
         if not settings.is_chat_allowed(dialog_id):
             return HookResult()
 
+        self._debug_params(params, account, dialog_id, runtime)
         article = self._decorate_article(runtime, params, account)
         if article is not None:
             return article
@@ -13792,6 +13873,32 @@ class PrefixfyPlugin(BasePlugin):
             return HookResult()
         setattr(params, field, transformed)
         return HookResult(strategy=HookStrategy.MODIFY, params=params)
+
+    def _dbg(self, text: str):
+        if ARTICLE_DEBUG:
+            self.log("Prefixfy[dbg] " + text)
+
+    def _debug_params(self, params, account, dialog_id, runtime):
+        """40.1.1: что вообще пришло в хук отправки: класс, поля с подсказками (rich/article/block/entities...), найдены ли блоки статьи."""
+        if not ARTICLE_DEBUG:
+            return
+        try:
+            count = getattr(self, "_dbg_sends", 0) + 1
+            self._dbg_sends = count
+            if count > 40:
+                return
+            blocks = article_blocks(params)
+            self._dbg(f"send #{count}: params={_dbg_cls(params)} account={account} dialog={dialog_id} "
+                      f"articles_flag={FEATURES.on('articles')} premium_flag={FEATURES.on('premium_emoji')} "
+                      f"premium_account={self._account_is_premium(account)} blocks_found={len(blocks)}")
+            self._dbg(f"mask={runtime.settings.mask!r} md_table={runtime.pipeline.markdown_table}")
+            for line in debug_dump(params, depth=0, only_hints=True):
+                self._dbg("  params." + line)
+            if blocks:
+                for line in debug_dump(params, depth=4, only_hints=True, budget=[160]):
+                    self._dbg("  tree " + line)
+        except Exception as exc:
+            self.log(f"Prefixfy[dbg] dump failed: {exc}")
 
     def _decorate_article(self, runtime: Runtime, params, account: int = 0) -> Optional[HookResult]:
         """40.0.0: оформление текстовых блоков статьи. None - это не статья (обычный путь).
@@ -13829,6 +13936,11 @@ class PrefixfyPlugin(BasePlugin):
     def _decorate_article_leaf(self, runtime: Runtime, account: int, holder, field: str, text: str) -> bool:
         pipeline = runtime.pipeline
         wants_entities = bool(runtime.settings.markdown_enabled or pipeline.markdown_table)
+        self._dbg(f"leaf {_dbg_cls(holder)}.{field}={text[:40]!r} wants_entities={wants_entities} "
+                  f"has_entities_field={article_holder_supports_entities(holder)} "
+                  f"existing={_dbg_value(getattr(holder, 'entities', None))}")
+        for line in debug_dump(holder, depth=1)[:30]:
+            self._dbg("    holder." + line)
         if wants_entities and article_holder_supports_entities(holder):
             existing = getattr(holder, "entities", None)
             snapshot = self._snapshot_entities(existing)
@@ -13839,9 +13951,12 @@ class PrefixfyPlugin(BasePlugin):
                     return False
                 transformed = self._apply_entities(runtime, holder, text, transformed, entities, body_offset)
                 setattr(holder, field, transformed)
+                self._dbg(f"leaf result: text={transformed[:40]!r} entities_planned={[(e[0], e[1], e[2]) for e in entities]} "
+                          f"entities_on_node={_dbg_value(getattr(holder, 'entities', None))}")
                 return True
             except Exception as exc:
-                self.log(f"Prefixfy article entities failed, using plain text: {exc}")
+                import traceback
+                self.log(f"Prefixfy article entities failed, using plain text: {exc}\n{traceback.format_exc()}")
                 self._restore_entities(snapshot, existing)
                 try:
                     holder.entities = existing
