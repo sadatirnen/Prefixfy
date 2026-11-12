@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "42.0.0"
-__build__ = "42.0.0_20261112.5_59"
+__version__ = "42.1.0"
+__build__ = "42.1.0_20261112.6_60"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -437,7 +437,7 @@ class LocalizationManager:
             "separator_count_subtext": "Нажмите, чтобы изменить.",
             "exceptions": "Исключения",
             "ignore_emoji_only": "Игнорировать сообщения только из эмодзи",
-            "ignore_emoji_only_subtext": "Не изменять сообщения, состоящие только из одного или нескольких эмодзи.",
+            "ignore_emoji_only_subtext": "Не изменять обычные сообщения, состоящие только из одного или нескольких эмодзи. Подписи к медиа оформляются всегда.",
             "exceptions_hint": "Сообщения, которые начинаются или заканчиваются указанным значением, не изменяются. Каждое значение — с новой строки.",
             "ignore_special": "Не трогать код, команды, упоминания и ссылки",
             "ignore_special_subtext": "Команды, @упоминания, ссылки и код остаются как есть. В таких сообщениях Markdown маски не применяется.",
@@ -638,7 +638,7 @@ class LocalizationManager:
             "separator_count_subtext": "Tap to change.",
             "exceptions": "Exceptions",
             "ignore_emoji_only": "Ignore emoji-only messages",
-            "ignore_emoji_only_subtext": "Do not modify messages consisting only of one or more emojis.",
+            "ignore_emoji_only_subtext": "Do not modify regular messages consisting only of one or more emojis. Media captions are always styled.",
             "exceptions_hint": "Messages that start or end with the specified value are not changed. Enter each value on a new line.",
             "ignore_special": "Skip code, commands, mentions and links",
             "ignore_special_subtext": "Commands, @mentions, links and code stay as they are. Mask Markdown is not applied to such messages.",
@@ -840,7 +840,7 @@ class LocalizationManager:
             "separator_count_subtext": "タップして変更します。",
             "exceptions": "例外",
             "ignore_emoji_only": "絵文字だけのメッセージを無視",
-            "ignore_emoji_only_subtext": "1つ以上の絵文字だけで構成されたメッセージを変更しません。",
+            "ignore_emoji_only_subtext": "1つ以上の絵文字だけで構成された通常のメッセージを変更しません。メディアのキャプションは常に装飾されます。",
             "exceptions_hint": "指定した値で始まる、または終わるメッセージは変更しません。値は1行ずつ入力します。",
             "ignore_special": "コード・コマンド・メンション・リンクを除外",
             "ignore_special_subtext": "コマンド、@メンション、リンク、コードはそのまま残します。このようなメッセージではマスクのMarkdownは適用されません。",
@@ -1042,7 +1042,7 @@ class LocalizationManager:
             "separator_count_subtext": "눌러서 변경하세요.",
             "exceptions": "예외",
             "ignore_emoji_only": "이모지만 있는 메시지 무시",
-            "ignore_emoji_only_subtext": "하나 이상의 이모지로만 이루어진 메시지는 변경하지 않습니다.",
+            "ignore_emoji_only_subtext": "하나 이상의 이모지로만 이루어진 일반 메시지는 변경하지 않습니다. 미디어 캡션은 항상 꾸밉니다.",
             "exceptions_hint": "지정한 값으로 시작하거나 끝나는 메시지는 변경되지 않습니다. 값은 한 줄에 하나씩 입력하세요.",
             "ignore_special": "코드, 명령어, 멘션, 링크 제외",
             "ignore_special_subtext": "명령어, @멘션, 링크, 코드는 그대로 유지합니다. 이런 메시지에는 마스크의 Markdown이 적용되지 않습니다.",
@@ -1244,7 +1244,7 @@ class LocalizationManager:
             "separator_count_subtext": "Appuyez pour modifier.",
             "exceptions": "Exceptions",
             "ignore_emoji_only": "Ignorer les messages composés uniquement d’émojis",
-            "ignore_emoji_only_subtext": "Ne pas modifier les messages composés uniquement d’un ou plusieurs émojis.",
+            "ignore_emoji_only_subtext": "Ne pas modifier les messages ordinaires composés uniquement d’un ou plusieurs émojis. Les légendes de médias sont toujours mises en forme.",
             "exceptions_hint": "Les messages commençant ou se terminant par la valeur indiquée ne sont pas modifiés. Une valeur par ligne.",
             "ignore_special": "Ignorer code, commandes, mentions et liens",
             "ignore_special_subtext": "Commandes, @mentions, liens et code restent intacts. Le Markdown du masque n'est pas appliqué à ces messages.",
@@ -1446,7 +1446,7 @@ class LocalizationManager:
             "separator_count_subtext": "Zum Ändern tippen.",
             "exceptions": "Ausnahmen",
             "ignore_emoji_only": "Nachrichten nur aus Emojis ignorieren",
-            "ignore_emoji_only_subtext": "Nachrichten, die nur aus einem oder mehreren Emojis bestehen, nicht ändern.",
+            "ignore_emoji_only_subtext": "Normale Nachrichten, die nur aus einem oder mehreren Emojis bestehen, nicht ändern. Medienbeschriftungen werden immer gestaltet.",
             "exceptions_hint": "Nachrichten, die mit dem angegebenen Wert beginnen oder enden, werden nicht geändert. Ein Wert pro Zeile.",
             "ignore_special": "Code, Befehle, Erwähnungen und Links auslassen",
             "ignore_special_subtext": "Befehle, @Erwähnungen, Links und Code bleiben unverändert. Das Markdown der Maske wird auf solche Nachrichten nicht angewendet.",
@@ -6252,6 +6252,24 @@ class Runtime:
         self.pipeline = TransformationPipeline(settings, logger)
         self._message_runtimes: "OrderedDict[Tuple[str, int], Runtime]" = OrderedDict()
         self._message_lock = threading.Lock()
+        self._caption_runtime: Optional["Runtime"] = None
+
+    def for_caption(self) -> "Runtime":
+        """42.1.0: игнор сообщений только из эмодзи действует в обычных сообщениях, но не в подписях к медиа.
+        Для подписи берётся такой же рантайм с выключенным «только эмодзи»; он строится один раз и переиспользуется."""
+        if not self.settings.ignore_emoji_only:
+            return self
+        with self._message_lock:
+            found = self._caption_runtime
+        if found is not None:
+            return found
+        raw = dict(self.settings.raw)
+        raw["ignore_emoji_only"] = False
+        built = Runtime(RuntimeSettings(raw), self.config_id, self.logger)
+        with self._message_lock:
+            if self._caption_runtime is None:
+                self._caption_runtime = built
+            return self._caption_runtime
 
     def derived(self, mask: str, style: int, cache: bool = True) -> "Runtime":
         key = (mask, style)
@@ -14337,6 +14355,10 @@ class PrefixfyPlugin(BasePlugin):
         field, text = self._select_field(settings, message, caption, has_media)
         if field is None:
             return HookResult()
+        if has_media:
+            # 42.1.0: текст при медиа - это подпись: игнор «только эмодзи» на неё не распространяется
+            runtime = runtime.for_caption()
+            settings = runtime.settings
         resent = self._handle_resend(runtime, account, params, text)
         if resent is not None:
             return resent
@@ -14694,6 +14716,9 @@ class PrefixfyPlugin(BasePlugin):
             return
         if not self._chat_type_allowed(account, dialog_id, settings.chat_type_rules) or not settings.is_chat_allowed(dialog_id):
             return
+        if caption:
+            runtime = runtime.for_caption()    # 42.1.0: подпись к медиа не попадает под игнор «только эмодзи»
+            settings = runtime.settings
         if runtime.pipeline.ignores(text) or self._edit_is_decorated(runtime, text):
             return
         if settings.skip_once_on_edit and self._skip_once is not None and self._consume_skip_once(dialog_id):
