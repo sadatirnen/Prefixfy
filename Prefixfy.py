@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "41.2.0"
-__build__ = "41.2.0_20261112.4_58"
+__version__ = "42.0.0"
+__build__ = "42.0.0_20261112.5_59"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -118,11 +118,15 @@ UPDATE_ALLOWED_HOSTS = ("raw.githubusercontent.com",)
 UPDATE_PUBLIC_KEYS: Tuple[str, ...] = (
     "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAnCpVgdegnDqZoaOi5H5EOpHiwY8jhprNdIT3jGVauC0Nijz2L/iauWaVxnEOwDT2tqp1tJQ6CrdQxOS/PKV/7QLtGtAseKdpo/4tZjHgx2N9TAPMVb+zK3oWYk+0+OcLFIUoczCa1aZuwaScBqQchmgTj4sQwIbhWDhquE2EtyiF1+6S6GCgV5KyJrqylt2pAcif5z3ixUV27MPzaPbQmuyU+3amsIXDxGcdTFwlHMg/ThFVz77bwV5fkfaNdJrZGDp3+FKSIfjN68v2scL6O9oYHhkDg4AEPUYQkJmNTMnqc0ABFSW9MGuGsMTa0MKNDMaBY5iP2aQmfzLddorBP4ovfOZRzZguFVltFGd44xVOE1w5ceL1WVH+pW+4HX0Ck5FWnHbttaQiLoxXuiIK+F927LLM0yCmKLZC9tcIfMdBXgcaHp1ZaKGOIVvRs8SRaVnQ2z51v3NtjHbakGKwcXit2JlgyKvrHPG2AQj8ci7tApB6BWYffsNkFM4bCBIlAgMBAAE=",
 )
-REMOTE_CHECK_CHOICES = (15, 30, 45, 60, 120, 180)   # минуты: до часа шаг 15 минут, дальше шаг 1 час
-REMOTE_CHECK_DEFAULT_INDEX = 0                       # 15 минут
-REMOTE_MAX_AGE_FACTOR = 2                            # макс. возраст кэша = интервал проверки * 2
-REMOTE_RETRY_INTERVAL = 60
+# 42.0.0: настройки интервала проверки больше нет. Обращения к серверу идут по событиям (запуск плагина, сообщение,
+# открытие настроек, «Проверить сейчас», запланированное OTA), а не по таймеру.
+REMOTE_FRESH_TTL = 3600.0               # данные моложе часа считаются свежими: событие не ходит на сервер
+REMOTE_MAX_AGE = 12 * 3600.0            # сколько живёт проверенное состояние (раньше: интервал проверки * 2)
+REMOTE_RETRY_MIN = 60.0                 # пауза после неудачной проверки: 1 минута, затем вдвое дольше
+REMOTE_RETRY_MAX = 30 * 60.0            # ... но не больше 30 минут
+REMOTE_IDLE_WAIT = 24 * 3600.0          # нет запланированных событий: поток просто спит
 REMOTE_MANUAL_COOLDOWN = 10.0
+OTA_SLOT_TTL = 120.0                    # 42.0.0: неактивный раздел с прошлой версией удаляется через 2 минуты после успешной загрузки
 REMOTE_TIMEOUT = 10
 REMOTE_TOTAL_TIMEOUT = 20
 REMOTE_MAX_BYTES = 64 * 1024
@@ -324,8 +328,8 @@ TRANSIENT_SETTING_DEFAULTS = {
 OTA_SETTING_DEFAULTS = {
     "ota_auto": True,         # автообновление включено по умолчанию: чистая установка, сброс и обновление с версий до 34.0.0
     "ota_mode": 0,            # 0 - по мере выхода, 1 - в выбранное время
+    "ota_action": 1,          # 42.0.0: для режима «по мере выхода»: 0 - только загрузка, 1 - загрузка и установка
     "ota_time": "04:00",      # системное время устройства, ЧЧ:ММ
-    "check_interval": REMOTE_CHECK_DEFAULT_INDEX,   # индекс в REMOTE_CHECK_CHOICES
 }
 
 MEDIA_EXTENSIONS = frozenset({
@@ -2139,6 +2143,9 @@ _OTA_STRINGS = {
         "ota_mode": "Режим автообновления",
         "ota_mode_available": "По мере выхода",
         "ota_mode_time": "В выбранное время",
+        "ota_action": "Действие при автообновлении",
+        "ota_action_download": "Только загрузка",
+        "ota_action_install": "Загрузка и установка",
         "ota_time": "Время обновления",
         "ota_time_subtext": "Системное время устройства, формат ЧЧ:ММ (например 04:00).",
         "ota_time_invalid": "Введите время в формате ЧЧ:ММ, например 04:00",
@@ -2163,6 +2170,9 @@ _OTA_STRINGS = {
         "ota_mode": "Auto-update mode",
         "ota_mode_available": "As soon as available",
         "ota_mode_time": "At a chosen time",
+        "ota_action": "Auto-update action",
+        "ota_action_download": "Download only",
+        "ota_action_install": "Download and install",
         "ota_time": "Update time",
         "ota_time_subtext": "Device system time, HH:MM format (for example 04:00).",
         "ota_time_invalid": "Enter the time as HH:MM, for example 04:00",
@@ -2187,6 +2197,9 @@ _OTA_STRINGS = {
         "ota_mode": "自動アップデートのモード",
         "ota_mode_available": "公開され次第",
         "ota_mode_time": "指定した時刻",
+        "ota_action": "自動アップデートの動作",
+        "ota_action_download": "ダウンロードのみ",
+        "ota_action_install": "ダウンロードとインストール",
         "ota_time": "アップデート時刻",
         "ota_time_subtext": "端末のシステム時刻、HH:MM 形式（例: 04:00）。",
         "ota_time_invalid": "時刻を HH:MM 形式で入力してください（例: 04:00）",
@@ -2211,6 +2224,9 @@ _OTA_STRINGS = {
         "ota_mode": "자동 업데이트 모드",
         "ota_mode_available": "배포되는 즉시",
         "ota_mode_time": "지정한 시간",
+        "ota_action": "자동 업데이트 동작",
+        "ota_action_download": "다운로드만",
+        "ota_action_install": "다운로드 및 설치",
         "ota_time": "업데이트 시간",
         "ota_time_subtext": "기기 시스템 시간, HH:MM 형식 (예: 04:00).",
         "ota_time_invalid": "시간을 HH:MM 형식으로 입력하세요 (예: 04:00)",
@@ -2235,6 +2251,9 @@ _OTA_STRINGS = {
         "ota_mode": "Mode de mise à jour automatique",
         "ota_mode_available": "Dès que disponible",
         "ota_mode_time": "À une heure choisie",
+        "ota_action": "Action de mise à jour automatique",
+        "ota_action_download": "Téléchargement seul",
+        "ota_action_install": "Téléchargement et installation",
         "ota_time": "Heure de mise à jour",
         "ota_time_subtext": "Heure système de l’appareil, format HH:MM (par exemple 04:00).",
         "ota_time_invalid": "Saisissez l’heure au format HH:MM, par exemple 04:00",
@@ -2259,6 +2278,9 @@ _OTA_STRINGS = {
         "ota_mode": "Modus der automatischen Updates",
         "ota_mode_available": "Sobald verfügbar",
         "ota_mode_time": "Zu einer gewählten Uhrzeit",
+        "ota_action": "Aktion bei automatischen Updates",
+        "ota_action_download": "Nur herunterladen",
+        "ota_action_install": "Herunterladen und installieren",
         "ota_time": "Update-Zeit",
         "ota_time_subtext": "Systemzeit des Geräts, Format HH:MM (zum Beispiel 04:00).",
         "ota_time_invalid": "Zeit im Format HH:MM eingeben, zum Beispiel 04:00",
@@ -2284,18 +2306,6 @@ for _code, _table in LocalizationManager.STRINGS.items():
     if _table.get("check_confirm_body"):
         _table["check_confirm_body"] = _table["check_confirm_body"] + "\n\n" + _table["ota_check_note"]
 
-_INTERVAL_STRINGS = {
-    "ru": {"check_interval": "Интервал проверки репозитория", "interval_minutes": "{n} мин", "interval_hours": "{n} ч"},
-    "en": {"check_interval": "Repository check interval", "interval_minutes": "{n} min", "interval_hours": "{n} h"},
-    "ja": {"check_interval": "リポジトリの確認間隔", "interval_minutes": "{n}分", "interval_hours": "{n}時間"},
-    "ko": {"check_interval": "저장소 확인 간격", "interval_minutes": "{n}분", "interval_hours": "{n}시간"},
-    "fr": {"check_interval": "Intervalle de vérification du dépôt", "interval_minutes": "{n} min", "interval_hours": "{n} h"},
-    "de": {"check_interval": "Prüfintervall des Repositorys", "interval_minutes": "{n} Min.", "interval_hours": "{n} Std."},
-}
-for _code, _table in LocalizationManager.STRINGS.items():
-    _int_extra = _INTERVAL_STRINGS.get(_code, _INTERVAL_STRINGS["en"])
-    for _key, _value in _INTERVAL_STRINGS["ru"].items():
-        _table[_key] = _int_extra.get(_key, _INTERVAL_STRINGS["en"].get(_key, _value))
 
 _OTA_DL_STRINGS = {
     "ru": {
@@ -9940,6 +9950,10 @@ def auto_reset_plugin(plugin, problems: List[str], key_bad: bool):
         pass
 
 
+class _NotModified(Exception):
+    """Сервер ответил 304: сохранённая копия файла актуальна, тело не передавалось."""
+
+
 class RemoteControl:
 
     def __init__(self, plugin):
@@ -9956,6 +9970,11 @@ class RemoteControl:
         self._soft_notified = False
         self._cache_stale = False
         self._stale_grace_until = 0.0
+        self._etags: Dict[str, str] = {}              # 42.0.0: ETag последних проверенных файлов (в памяти)
+        self._fail_count = 0
+        self._next_try = float("-inf")                # не раньше этого момента (monotonic) идти на сервер после ошибки
+        self._bust_next = False                       # следующая проверка без кэша CDN (после несовпадения хэша OTA)
+        self._slot_timer = None
         self._cache_path = os.path.join(get_plugins_dir(), "Prefixfy_remote.json")
         digests = _self_file_digests()
         if digests is None:
@@ -10005,30 +10024,33 @@ class RemoteControl:
         self._force_notified = False
         self._poll_devices(notify=False, force=True)
 
-    def check_interval(self) -> float:
-        """Интервал опроса репозитория в секундах (настройка под кнопкой «Проверить сейчас»)."""
-        index = clamp_int(
-            self.plugin.settings.get("check_interval"),
-            REMOTE_CHECK_DEFAULT_INDEX, 0, len(REMOTE_CHECK_CHOICES) - 1,
-        )
-        return REMOTE_CHECK_CHOICES[index] * 60.0
-
     def max_age(self) -> float:
-        """Сколько живёт кэш подписанного манифеста: выбранный интервал, умноженный на 2."""
-        return self.check_interval() * REMOTE_MAX_AGE_FACTOR
+        """Сколько живёт проверенное состояние. С 42.0.0 это константа, а не настройка."""
+        return REMOTE_MAX_AGE
 
-    def reschedule(self):
-        """После смены интервала: перезапустить опрос, не дёргая сеть без нужды."""
-        if not self.enabled or self._unloaded.is_set():
-            return
-        delay = 0.0
-        if self.verified():
-            delay = max(0.0, self.check_interval() - (time.monotonic() - self._last_ok))
-        self._stop.set()
-        self._stop = stop = threading.Event()
-        threading.Thread(target=self._run, args=(stop, delay), name="PrefixfyRemote", daemon=True).start()
+    def _needs_data(self) -> bool:
+        """Данных нет или они старше REMOTE_FRESH_TTL (паузу после ошибки не учитывает)."""
+        with self._lock:
+            has_state = self._state is not None
+        if not has_state or not self._bl_known:
+            return True
+        return time.monotonic() - min(self._last_ok, self._bl_last_ok) >= REMOTE_FRESH_TTL
+
+    def due(self) -> bool:
+        """Нужно ли сейчас идти на сервер: данные устарели и пауза после прошлой ошибки закончилась."""
+        return time.monotonic() >= self._next_try and self._needs_data()
+
+    def _note_failure(self):
+        self._fail_count += 1
+        delay = min(REMOTE_RETRY_MAX, REMOTE_RETRY_MIN * 2 ** min(self._fail_count - 1, 5))
+        self._next_try = time.monotonic() + delay
+
+    def _note_success(self):
+        self._fail_count = 0
+        self._next_try = float("-inf")
 
     def start(self):
+        """Запускает поток запланированных событий. Периодического опроса в нём нет."""
         if not self.enabled:
             self.plugin.log("Prefixfy is blocked: no update public key in this build")
             return
@@ -10039,29 +10061,64 @@ class RemoteControl:
     def stop(self):
         self._unloaded.set()
         self._stop.set()
-        timer = getattr(self, "_ota_timer", None)
-        if timer is not None:
-            timer.cancel()
-            self._ota_timer = None
+        for name in ("_ota_timer", "_slot_timer"):
+            timer = getattr(self, name, None)
+            if timer is not None:
+                timer.cancel()
+                setattr(self, name, None)
 
-    def _run(self, stop, delay: float = 0.0):
-        if delay > 0 and stop.wait(delay):
-            return
+    def _schedule(self) -> List[Tuple[float, bool]]:
+        """Ближайшие запланированные события: (через сколько секунд, нужна ли сеть). Только будущее, без «прямо сейчас»."""
+        now = time.monotonic()
+        items: List[Tuple[float, bool]] = []
+        if self._fail_count and self._needs_data():
+            items.append((self._next_try - now, True))            # повтор после ошибки (с нарастающей паузой)
+        auto, mode, _when = self._ota_cfg()
+        extra = self._ota_next_wait()
+        if extra is not None and extra > 0:
+            items.append((extra, True))                           # обновление «в выбранное время»
+        if auto and mode == 0 and self._ota_retry_at > now and self.mismatch_reason() == "outdated":
+            items.append((self._ota_retry_at - now, True))        # повтор неудачной установки
+        if self._force_retry_at > now and self._force_needed():
+            items.append((self._force_retry_at - now, True))
+        auto_wait = FEATURES.auto_wait()
+        if auto_wait is not None:
+            items.append((auto_wait, False))                      # бросок auto-флагов: локальное действие, сеть не нужна
+        return items
+
+    def _cycle(self, fetched: bool):
+        """Всё, что нужно сделать после проверки: мягкая блокировка, OTA, принудительная установка, auto-флаги."""
+        self.soft()
+        self.ota_auto_step(fetched)
+        if self._force_needed():
+            self.ota_force_step(True)
+        self._auto_step()
+
+    def _sync(self) -> bool:
+        fetched = self.refresh()
+        self._cycle(fetched)
+        return fetched
+
+    def _event_sync(self):
+        """Проверка по событию (сообщение, открытие настроек): после неё расписание событий пересчитывается."""
+        try:
+            self._sync()
+        finally:
+            if self.enabled and not self._unloaded.is_set():
+                self.start()
+
+    def _run(self, stop):
+        if self.due():
+            self._sync()
         while not stop.is_set():
-            fetched = self.refresh()
-            self.soft()
-            self.ota_auto_step(fetched)
-            if self._force_needed():
-                self.ota_force_step(True)
-            self._auto_step()
-            wait = self.check_interval() if fetched and not self.outdated() else REMOTE_RETRY_INTERVAL
-            extra = self._ota_next_wait()
-            if extra is not None:
-                wait = max(30.0, min(wait, extra))
-            auto_wait = FEATURES.auto_wait()
-            if auto_wait is not None:
-                wait = max(30.0, min(wait, auto_wait))
-            stop.wait(wait)
+            items = self._schedule()
+            delay, network = min(items, key=lambda item: item[0]) if items else (REMOTE_IDLE_WAIT, False)
+            if stop.wait(max(30.0, delay)):
+                return
+            if network:
+                self._sync()
+            else:
+                self._auto_step()
 
     def _auto_step(self):
         """Режим auto: перебросить монетки, у кого срок вышел, и молча обновить функции."""
@@ -10081,19 +10138,27 @@ class RemoteControl:
         if now - self._last_request < REMOTE_MANUAL_COOLDOWN:
             return
         self._last_request = now
-        threading.Thread(target=self.refresh, name="PrefixfyRemoteNow", daemon=True).start()
+        threading.Thread(target=self._event_sync, name="PrefixfyRemoteNow", daemon=True).start()
 
     def ensure_fresh(self):
-        if time.monotonic() - self._last_ok >= self.check_interval():
+        """Событие (сообщение, настройки): на сервер только если данные устарели."""
+        if self.due():
             self.request_refresh()
 
     @staticmethod
-    def _download(name: str, limit: int = REMOTE_MAX_BYTES) -> bytes:
+    def _download(name: str, limit: int = REMOTE_MAX_BYTES, etag: str = "", bust: bool = True,
+                  meta: Optional[Dict[str, str]] = None) -> bytes:
+        """bust=True - как раньше: адрес с меткой и запрет кэша (принудительная проверка, файлы OTA).
+        bust=False - обычный адрес с If-None-Match: если файл не менялся, сервер отвечает 304 без тела (_NotModified)."""
         import ssl
-        request = urllib.request.Request(
-            f"{UPDATE_BASE_URL}{name}?t={int(time.time())}&n={uuid.uuid4().hex[:8]}",
-            headers={"User-Agent": f"Prefixfy/{__build__}", "Cache-Control": "no-cache, no-store", "Pragma": "no-cache"},
-        )
+        url = f"{UPDATE_BASE_URL}{name}"
+        headers = {"User-Agent": f"Prefixfy/{__build__}"}
+        if bust:
+            url += f"?t={int(time.time())}&n={uuid.uuid4().hex[:8]}"
+            headers.update({"Cache-Control": "no-cache, no-store", "Pragma": "no-cache"})
+        elif etag:
+            headers["If-None-Match"] = etag
+        request = urllib.request.Request(url, headers=headers)
         opener = urllib.request.build_opener(
             urllib.request.HTTPSHandler(context=ssl.create_default_context()),
             _SameHostRedirect(),
@@ -10101,21 +10166,35 @@ class RemoteControl:
         deadline = time.monotonic() + REMOTE_TOTAL_TIMEOUT
         chunks: List[bytes] = []
         total = 0
-        with opener.open(request, timeout=REMOTE_TIMEOUT) as response:
-            final = urllib.parse.urlsplit(response.geturl())
-            if final.scheme != "https" or (final.hostname or "").lower() not in UPDATE_ALLOWED_HOSTS:
-                raise ValueError("unexpected final host")
-            while True:
-                if time.monotonic() > deadline:
-                    raise TimeoutError(f"{name} download took too long")
-                chunk = response.read(8192)
-                if not chunk:
-                    break
-                total += len(chunk)
-                if total > limit:
-                    raise ValueError(f"{name} is too large")
-                chunks.append(chunk)
+        try:
+            with opener.open(request, timeout=REMOTE_TIMEOUT) as response:
+                final = urllib.parse.urlsplit(response.geturl())
+                if final.scheme != "https" or (final.hostname or "").lower() not in UPDATE_ALLOWED_HOSTS:
+                    raise ValueError("unexpected final host")
+                if meta is not None:
+                    meta["etag"] = as_text(response.headers.get("ETag") or "")[:200]
+                while True:
+                    if time.monotonic() > deadline:
+                        raise TimeoutError(f"{name} download took too long")
+                    chunk = response.read(8192)
+                    if not chunk:
+                        break
+                    total += len(chunk)
+                    if total > limit:
+                        raise ValueError(f"{name} is too large")
+                    chunks.append(chunk)
+        except urllib.error.HTTPError as exc:
+            if exc.code == 304 and etag and not bust:
+                raise _NotModified() from None
+            raise
         return b"".join(chunks)
+
+    def _touch(self, path: str):
+        """Файл кэша подтверждён сервером (304): обновляем время, от него считается свежесть после перезапуска."""
+        try:
+            os.utime(path, None)
+        except OSError:
+            pass
 
     @staticmethod
     def _anchor(path: str) -> float:
@@ -10209,27 +10288,45 @@ class RemoteControl:
         self._bl_known = False
         self._bl_last_ok = float("-inf")
         self._dev_checked = float("-inf")
+        self._etags.clear()
+        self._note_success()
         self.plugin.log("Prefixfy: cached remote state cleared, serial numbers kept, checking again")
 
     def _snapshot(self) -> Tuple[bool, str]:
         return self.blocked(), self.latest_version()
 
     def _refresh(self, fresh: bool = False) -> bool:
+        bust = fresh or self._bust_next
+        self._bust_next = False
+        if bust:
+            self._etags.clear()
+        meta: Dict[str, str] = {}
+        raw: Optional[bytes] = None
         try:
-            state = verify_manifest(self._download(MANIFEST_FILE))
-            with self._lock:
-                known = self._state or self._manifest_floor()
-            if known is not None:
-                if state["serial"] < known["serial"]:
-                    raise ValueError(f"manifest rollback rejected ({state['serial']} < {known['serial']})")
-                if state["serial"] == known["serial"] and state["digest"] != known["digest"]:
-                    raise ValueError(f"manifest serial {state['serial']} reused with different content")
-                if state["serial"] > known["serial"] and state["version"][:3] < known["version"][:3]:
-                    raise ValueError(
-                        f"manifest version went backwards ({format_version(state['version'])} < {format_version(known['version'])})"
-                    )
+            try:
+                raw = self._download(MANIFEST_FILE, etag=self._etags.get("m", ""), bust=bust, meta=meta)
+            except _NotModified:
+                with self._lock:
+                    state = self._state
+                if state is None or self._cache_stale:
+                    self._etags.pop("m", None)
+                    raw = self._download(MANIFEST_FILE, bust=bust, meta=meta)
+            if raw is not None:
+                state = verify_manifest(raw)
+                with self._lock:
+                    known = self._state or self._manifest_floor()
+                if known is not None:
+                    if state["serial"] < known["serial"]:
+                        raise ValueError(f"manifest rollback rejected ({state['serial']} < {known['serial']})")
+                    if state["serial"] == known["serial"] and state["digest"] != known["digest"]:
+                        raise ValueError(f"manifest serial {state['serial']} reused with different content")
+                    if state["serial"] > known["serial"] and state["version"][:3] < known["version"][:3]:
+                        raise ValueError(
+                            f"manifest version went backwards ({format_version(state['version'])} < {format_version(known['version'])})"
+                        )
         except Exception as exc:
             self.plugin.log(f"Prefixfy remote check failed: {exc}")
+            self._note_failure()
             self._announce()
             return False
         before = self._snapshot()
@@ -10237,10 +10334,17 @@ class RemoteControl:
             self._state = state
         self._cache_stale = False
         self._last_ok = time.monotonic()
-        self._remember("m", state["serial"], state["digest"], state["version"])
-        self._save_cache()
+        if raw is not None:
+            if meta.get("etag"):
+                self._etags["m"] = meta["etag"]
+            else:
+                self._etags.pop("m", None)
+            self._remember("m", state["serial"], state["digest"], state["version"])
+            self._save_cache()
+        else:
+            self._touch(self._cache_path)           # 304: манифест тот же, свежесть продлена без перезаписи файла
         self._remember_known()
-        self._refresh_blacklist(fresh)
+        blacklist_ok = self._refresh_blacklist(fresh, bust)
         self.blacklist_guard()
         after = self._snapshot()
         if after[0] != before[0]:
@@ -10251,13 +10355,23 @@ class RemoteControl:
             except Exception as exc:
                 self.plugin.log(f"Prefixfy settings refresh failed: {exc}")
         self.soft(after[0])
-        self._refresh_flags(fresh)
+        self._refresh_flags(fresh, bust)
+        if blacklist_ok:
+            self._note_success()
+        else:
+            self._note_failure()
         self._kick_force()
         return True
 
-    def _refresh_flags(self, fresh: bool = False):
+    def _refresh_flags(self, fresh: bool = False, bust: bool = False):
+        meta: Dict[str, str] = {}
         try:
-            state = verify_flags(self._download(FLAGS_FILE, FLAGS_MAX_BYTES))
+            try:
+                raw = self._download(FLAGS_FILE, FLAGS_MAX_BYTES, etag=self._etags.get("f", ""), bust=bust, meta=meta)
+            except _NotModified:
+                self._flags_ok = time.monotonic()
+                return
+            state = verify_flags(raw)
             if build_in_range(state["min_build"], state["max_build"]):
                 values, accounts = state["flags"], state["accounts"]
             else:
@@ -10267,6 +10381,7 @@ class RemoteControl:
             if exc.code != 404:
                 self.plugin.log(f"Prefixfy profile check failed: HTTP {exc.code}")
                 return
+            self._etags.pop("f", None)
             self._flags_ok = time.monotonic()
             if fresh:
                 try:
@@ -10279,6 +10394,10 @@ class RemoteControl:
         except Exception as exc:
             self.plugin.log(f"Prefixfy profile check failed: {exc}")
             return
+        if meta.get("etag"):
+            self._etags["f"] = meta["etag"]
+        else:
+            self._etags.pop("f", None)
         self._remember("f", state["serial"], state["digest"])
         self._flags_ok = time.monotonic()
         self._save_flags_cache(state["signed"])
@@ -10333,35 +10452,49 @@ class RemoteControl:
             self._announce()
             self.blacklist_guard()
 
-    def _refresh_blacklist(self, fresh: bool = False):
+    def _refresh_blacklist(self, fresh: bool = False, bust: bool = False) -> bool:
+        meta: Dict[str, str] = {}
+        etag = self._etags.get("b", "") if self._bl_known else ""
         try:
-            state = verify_blacklist(self._download(BLACKLIST_FILE, BLACKLIST_MAX_BYTES))
+            try:
+                raw = self._download(BLACKLIST_FILE, BLACKLIST_MAX_BYTES, etag=etag, bust=bust, meta=meta)
+            except _NotModified:
+                self._bl_last_ok = time.monotonic()
+                self._touch(self._bl_path)
+                return True
+            state = verify_blacklist(raw)
             if state["serial"] < self._bl_serial:
                 raise ValueError(f"blacklist rollback rejected ({state['serial']} < {self._bl_serial})")
             if state["serial"] == self._bl_serial and self._bl_digest and state["digest"] != self._bl_digest:
                 raise ValueError(f"blacklist serial {state['serial']} reused with different content")
         except urllib.error.HTTPError as exc:
             if exc.code == 404:
+                self._etags.pop("b", None)
                 if fresh:
                     self._bl_ids = frozenset()
                 self._bl_known = True
                 self._bl_last_ok = time.monotonic()
-            else:
-                self.plugin.log(f"Prefixfy blacklist check failed: HTTP {exc.code}")
-            return
+                return True
+            self.plugin.log(f"Prefixfy blacklist check failed: HTTP {exc.code}")
+            return False
         except Exception as exc:
             self.plugin.log(f"Prefixfy blacklist check failed: {exc}")
-            return
+            return False
         self._bl_ids = state["ids"]
         self._bl_serial = state["serial"]
         self._bl_digest = state["digest"]
         self._bl_known = True
         self._bl_last_ok = time.monotonic()
+        if meta.get("etag"):
+            self._etags["b"] = meta["etag"]
+        else:
+            self._etags.pop("b", None)
         self._remember("b", state["serial"], state["digest"])
         try:
             vault_write_json(self._bl_path, state["signed"])
         except OSError as exc:
             self.plugin.log(f"Prefixfy blacklist cache not saved: {exc}")
+        return True
 
     def _load_blacklist_cache(self):
         try:
@@ -10583,6 +10716,10 @@ class RemoteControl:
             parse_ota_time(settings.get("ota_time")),
         )
 
+    def _ota_apply_wanted(self) -> bool:
+        """42.0.0: в режиме «по мере выхода» выбрано «загрузка и установка» (по умолчанию) или только «загрузка»."""
+        return clamp_int(self.plugin.settings.get("ota_action"), 1, 0, 1) == 1
+
     def ota_candidate(self) -> Optional[Dict[str, Any]]:
         """Подписанный манифест новой версии, если её можно поставить по воздуху."""
         if not self.enabled or self._cache_stale:
@@ -10689,6 +10826,8 @@ class RemoteControl:
                 version = self._ota_switch()
         except Exception as exc:
             self.plugin.log(f"Prefixfy OTA failed: {exc}")
+            if "mismatch" in as_text(exc):
+                self._bust_next = True          # манифест из кэша CDN мог отстать от файла: следующая проверка без кэша
             return "ota_failed", {"reason": as_text(exc)[:80]}
         finally:
             self._ota_lock.release()
@@ -10730,6 +10869,7 @@ class RemoteControl:
 
     def ota_loaded(self):
         """Вызывается новой сборкой после успешной загрузки: считает запуски и подтверждает рабочую версию."""
+        self._slot_cleanup_arm()
         data = _ota_read()
         if data.get("state") != "pending" or data.get("to") != __build__:
             return
@@ -10748,6 +10888,38 @@ class RemoteControl:
         timer.daemon = True
         self._ota_timer = timer
         timer.start()
+
+    def _slot_cleanup_arm(self, delay: float = OTA_SLOT_TTL, attempt: int = 0):
+        """42.0.0: через OTA_SLOT_TTL секунд после успешной загрузки неактивный раздел с прошлой версией удаляется."""
+        if self._unloaded.is_set():
+            return
+        old = self._slot_timer
+        if old is not None:
+            old.cancel()
+        timer = threading.Timer(delay, self._slot_cleanup, args=(attempt,))
+        timer.daemon = True
+        self._slot_timer = timer
+        timer.start()
+
+    def _slot_cleanup(self, attempt: int = 0):
+        if self._unloaded.is_set():
+            return
+        try:
+            # откат ещё может понадобиться, пока новая сборка не подтверждена, а смена разделов не должна пересекаться с очисткой
+            busy = _ota_read().get("state") == "pending" or not self._ota_lock.acquire(blocking=False)
+            if busy:
+                if attempt < 10:
+                    self._slot_cleanup_arm(30.0, attempt + 1)
+                return
+            try:
+                # ждущая переключения скачанная версия (staged) не трогается: удаляется только «прошлая» (previous)
+                if _slot_meta_read().get("role") == SLOT_PREVIOUS:
+                    _slot_clear(self.plugin.log)
+                    self.plugin.log("Prefixfy: the inactive slot was cleared after a successful start")
+            finally:
+                self._ota_lock.release()
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy slot cleanup failed: {exc}")
 
     def _ota_confirm(self):
         if self._unloaded.is_set():
@@ -10822,8 +10994,6 @@ class RemoteControl:
 
     def ota_auto_step(self, fetched: bool):
         try:
-            if self.mismatch_reason() != "outdated":
-                return
             auto, mode, when = self._ota_cfg()
             if not (auto and fetched):
                 return
@@ -10831,13 +11001,22 @@ class RemoteControl:
                 now = datetime.now()
                 if when is None or self._ota_day == now.date() or (now.hour, now.minute) < when:
                     return
+                # 42.0.0: сегодняшняя проверка «в выбранное время» выполнена, даже если обновления нет.
+                # Раньше день отмечался только при установке, и расписание после выбранного времени крутилось каждые 30 секунд.
                 self._ota_day = now.date()
+            if self.mismatch_reason() != "outdated":
+                return
             if time.monotonic() < self._ota_retry_at:
                 return
             state = self.ota_candidate()
             if state is None:
                 return
-            result = self.ota_install(state, True)
+            apply = mode == 1 or self._ota_apply_wanted()
+            if not apply:
+                staged = self.staged_ready()
+                if staged is not None and staged.get("sha256") == state["sha256"]:
+                    return              # «только загрузка»: версия уже скачана и ждёт кнопки «Перезагрузить»
+            result = self.ota_install(state, apply)
             self._ota_backoff(result)
             transient = result[0] == "ota_busy" or result[1].get("reason") == "flags not verified"
             if not transient and self._ota_fails <= 1:
@@ -13192,30 +13371,7 @@ class PrefixfyPlugin(BasePlugin):
                 text=self._tr("check_now"), subtext=self._tr("check_now_subtext"),
                 icon=self._icon("msg_retry"), on_click=self._check_now,
             ),
-            Selector(
-                key="check_interval", text=self._tr("check_interval"),
-                default=self._check_interval_index(),
-                items=[self._interval_label(minutes) for minutes in REMOTE_CHECK_CHOICES],
-                icon=self._icon("msg_timer", "msg_recent"), on_change=self._on_check_interval_change,
-            ),
         ]
-
-    def _check_interval_index(self) -> int:
-        return clamp_int(
-            self.settings.get("check_interval"), REMOTE_CHECK_DEFAULT_INDEX, 0, len(REMOTE_CHECK_CHOICES) - 1,
-        )
-
-    def _interval_label(self, minutes: int) -> str:
-        if minutes % 60 == 0:
-            return self._tr("interval_hours", n=minutes // 60)
-        return self._tr("interval_minutes", n=minutes)
-
-    def _on_check_interval_change(self, index):
-        index = clamp_int(index, REMOTE_CHECK_DEFAULT_INDEX, 0, len(REMOTE_CHECK_CHOICES) - 1)
-        self.settings.set("check_interval", index)
-        remote = getattr(self, "remote", None)
-        if remote is not None:
-            remote.reschedule()
 
     def _on_ota_auto_change(self, enabled):
         enabled = bool(enabled)
@@ -13223,6 +13379,9 @@ class PrefixfyPlugin(BasePlugin):
         self.remote.ota_reschedule()
         if enabled:
             self.remote.ota_kick()
+
+    def _on_ota_action_change(self, index):
+        self.settings.set("ota_action", clamp_int(index, 1, 0, 1), reload_settings=True)
 
     def _on_ota_mode_change(self, index):
         self.settings.set("ota_mode", clamp_int(index, 0, 0, 1), reload_settings=True)
@@ -13335,6 +13494,13 @@ class PrefixfyPlugin(BasePlugin):
             items=[tr("ota_mode_available"), tr("ota_mode_time")], icon=icon,
             on_change=self._on_ota_mode_change,
         ))
+        if mode == 0:
+            action = clamp_int(self.settings.get("ota_action"), 1, 0, 1)
+            items.append(Selector(
+                key="ota_action", text=tr("ota_action"), default=action,
+                items=[tr("ota_action_download"), tr("ota_action_install")], icon=icon,
+                on_change=self._on_ota_action_change,
+            ))
         if mode == 1:
             when = parse_ota_time(self.settings.get("ota_time")) or parse_ota_time(OTA_SETTING_DEFAULTS["ota_time"])
             items.append(Input(
@@ -13375,6 +13541,7 @@ class PrefixfyPlugin(BasePlugin):
             return
         auto = self._ota_on_check()       # перезапускает плагин сам только включённое автообновление
         install = install or auto
+        apply = auto and clamp_int(self.settings.get("ota_action"), 1, 0, 1) == 1     # 42.0.0: «только загрузка» не перезапускает
         self._check_running = True
         self._toast("check_started")
 
@@ -13383,7 +13550,7 @@ class PrefixfyPlugin(BasePlugin):
                 refreshed = remote.refresh(force=True)
                 outcome = None
                 if install:
-                    outcome = remote.ota_manual(refreshed, apply=auto)
+                    outcome = remote.ota_manual(refreshed, apply=apply)
                 elif refreshed:
                     found = remote.ota_candidate()
                     staged = remote.staged_ready()
@@ -13421,7 +13588,7 @@ class PrefixfyPlugin(BasePlugin):
         if self._dormant:
             return self._settings_dormant()
         self.localization.refresh()
-        self.remote.request_refresh()
+        self.remote.ensure_fresh()
         notice = self._remote_notice()
         if notice and self.remote.blocked():
             if self.remote.blacklisted():
