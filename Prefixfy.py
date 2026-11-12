@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "41.1.1"
-__build__ = "41.1.1_20261112.3_57"
+__version__ = "41.2.0"
+__build__ = "41.2.0_20261112.4_58"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -267,7 +267,6 @@ SETTING_DEFAULTS = {
     "process_edit_message": True,
     "process_edit_media": True,
     "process_edit_article": True,      # 41.1.0: оформлять статьи при редактировании
-    "articles_exceptions": True,       # 41.1.0: исключения (слова, regex, только эмодзи) действуют и в статьях
     "skip_once_on_edit": True,
     "mask": MASK_PLACEHOLDER,
     "markdown_enabled": True,
@@ -536,8 +535,6 @@ class LocalizationManager:
             "article_subtext": "Оформлять текстовые блоки статей при отправке.",
             "edit_article_toggle": "Правка статей",
             "edit_article_toggle_subtext": "Оформлять статьи при редактировании.",
-            "articles_exceptions": "Исключения в статьях",
-            "articles_exceptions_subtext": "Применять исключения (слова, regex, только эмодзи) к каждому текстовому блоку статьи.",
             "skip_once_on_edit": "«Пропустить один раз» при правке",
             "skip_once_on_edit_subtext": "Если пропуск включён, следующая правка в этом чате останется без оформления.",
             "conditional_masks": "Маски по содержимому",
@@ -739,8 +736,6 @@ class LocalizationManager:
             "article_subtext": "Style text blocks of articles when sending.",
             "edit_article_toggle": "Edit articles",
             "edit_article_toggle_subtext": "Style articles when you edit them.",
-            "articles_exceptions": "Exceptions in articles",
-            "articles_exceptions_subtext": "Apply exceptions (words, regex, emoji-only) to every text block of an article.",
             "skip_once_on_edit": "“Skip once” when editing",
             "skip_once_on_edit_subtext": "If a skip is armed, the next edit in this chat stays unstyled.",
             "conditional_masks": "Content-based masks",
@@ -943,8 +938,6 @@ class LocalizationManager:
             "article_subtext": "送信時に記事のテキストブロックを装飾します。",
             "edit_article_toggle": "記事の編集",
             "edit_article_toggle_subtext": "記事の編集時に装飾します。",
-            "articles_exceptions": "記事での例外",
-            "articles_exceptions_subtext": "例外（単語・正規表現・絵文字のみ）を記事の各テキストブロックに適用します。",
             "skip_once_on_edit": "編集時も「今回だけ装飾しない」",
             "skip_once_on_edit_subtext": "スキップが有効なら、このチャットの次の編集は装飾されません。",
             "conditional_masks": "内容別マスク",
@@ -1147,8 +1140,6 @@ class LocalizationManager:
             "article_subtext": "전송할 때 아티클의 텍스트 블록을 꾸밉니다.",
             "edit_article_toggle": "아티클 수정",
             "edit_article_toggle_subtext": "아티클을 수정할 때 꾸밉니다.",
-            "articles_exceptions": "아티클 예외",
-            "articles_exceptions_subtext": "예외(단어, 정규식, 이모지만)를 아티클의 각 텍스트 블록에 적용합니다.",
             "skip_once_on_edit": "수정 시에도 ‘한 번만 건너뛰기’",
             "skip_once_on_edit_subtext": "건너뛰기가 켜져 있으면 이 채팅의 다음 수정은 꾸미지 않습니다.",
             "conditional_masks": "내용별 마스크",
@@ -1351,8 +1342,6 @@ class LocalizationManager:
             "article_subtext": "Appliquer le style aux blocs de texte des articles à l’envoi.",
             "edit_article_toggle": "Modification des articles",
             "edit_article_toggle_subtext": "Appliquer le style aux articles lors de leur modification.",
-            "articles_exceptions": "Exceptions dans les articles",
-            "articles_exceptions_subtext": "Appliquer les exceptions (mots, regex, émojis seuls) à chaque bloc de texte d’un article.",
             "skip_once_on_edit": "« Ignorer une fois » à la modification",
             "skip_once_on_edit_subtext": "Si l’ignorance est armée, la prochaine modification dans ce chat reste sans style.",
             "conditional_masks": "Masques selon le contenu",
@@ -1555,8 +1544,6 @@ class LocalizationManager:
             "article_subtext": "Textblöcke von Artikeln beim Senden gestalten.",
             "edit_article_toggle": "Artikel bearbeiten",
             "edit_article_toggle_subtext": "Artikel beim Bearbeiten gestalten.",
-            "articles_exceptions": "Ausnahmen in Artikeln",
-            "articles_exceptions_subtext": "Ausnahmen (Wörter, Regex, nur Emojis) auf jeden Textblock eines Artikels anwenden.",
             "skip_once_on_edit": "„Einmal überspringen“ beim Bearbeiten",
             "skip_once_on_edit_subtext": "Ist das Überspringen aktiv, bleibt die nächste Bearbeitung in diesem Chat unformatiert.",
             "conditional_masks": "Masken nach Inhalt",
@@ -4801,7 +4788,7 @@ class CuteOptions:
 class RuntimeSettings:
     __slots__ = (
         "language", "chat_scope_enabled", "process_message", "process_media", "process_article", "process_edit",
-        "process_edit_message", "process_edit_media", "process_edit_article", "articles_exceptions", "skip_once_on_edit",
+        "process_edit_message", "process_edit_media", "process_edit_article", "skip_once_on_edit",
         "mask", "mask_parts", "mask_link", "markdown_enabled", "markdown_style", "markdown_wrap", "text_style_enabled", "text_style",
         "text_style_random", "text_style_translit", "style_only", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "regex_exceptions", "conditional_rules", "chat_type_rules",
         "separator_enabled", "separators", "separator_count", "separator_chance", "separator_spaces", "separator_space_mode", "cute",
@@ -4824,7 +4811,6 @@ class RuntimeSettings:
         self.process_edit_message = bool(get("process_edit_message"))
         self.process_edit_media = bool(get("process_edit_media"))
         self.process_edit_article = bool(get("process_edit_article")) and FEATURES.on("articles")
-        self.articles_exceptions = bool(get("articles_exceptions"))
         self.skip_once_on_edit = bool(get("skip_once_on_edit"))
         style = clamp_int(get("markdown_style"), 0, 0, MARKDOWN_STYLE_COUNT - 1)
         self.markdown_enabled = bool(get("markdown_enabled")) and style != 1 and FEATURES.on("markdown")
@@ -4975,30 +4961,6 @@ class TextFilter:
             except re.error:
                 return False
         return False
-
-
-class _NoExceptionsFilter:
-    """41.1.0: фильтр для статей при выключенном «Исключения в статьях»: пропускает только пустой текст."""
-
-    @staticmethod
-    def skips(text: str) -> bool:
-        return not text.strip()
-
-
-@contextmanager
-def article_filter(pipeline, use_exceptions: bool):
-    """Пока идёт оформление статьи, подменяет фильтр исключений конвейера (если исключения для статей выключены)."""
-    if use_exceptions:
-        yield
-        return
-    previous = pipeline.filter
-    pipeline.filter = _NoExceptionsFilter()
-    pipeline._prepared_memo = None
-    try:
-        yield
-    finally:
-        pipeline.filter = previous
-        pipeline._prepared_memo = None
 
 
 class Transformation:
@@ -6372,7 +6334,7 @@ COMPONENT_KEYS = {
     "mask": ("mask", "markdown_enabled", "markdown_style", "text_style_enabled", "text_style", "text_style_random", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "conditional_masks", "text_style_translit", "style_words", "tag_lines"),
     "separator": ("separator_enabled", "custom_emojis", "emoji_count", "separator_frequency", "separator_spaces", "separator_space_mode"),
     "cute": CUTE_KEYS,
-    "exceptions": ("exceptions", "ignore_special", "ignore_emoji_only", "disabled_chats", "chat_scope_enabled", "regex_exceptions", "chat_type_rules", "articles_exceptions"),
+    "exceptions": ("exceptions", "ignore_special", "ignore_emoji_only", "disabled_chats", "chat_scope_enabled", "regex_exceptions", "chat_type_rules"),
     "media": ("attached_media_enabled", "attached_media_path", "attached_media_name", "attached_media_mime"),
     "schedule": (),
 }
@@ -12747,8 +12709,6 @@ class PrefixfyPlugin(BasePlugin):
             self._switch("ignore_special", tr("ignore_special"), tr("ignore_special_subtext"), "msg_info"),
             self._switch("ignore_emoji_only", tr("ignore_emoji_only"), tr("ignore_emoji_only_subtext"), "msg_info"),
         ]
-        if FEATURES.on("articles"):
-            items.append(self._switch("articles_exceptions", tr("articles_exceptions"), tr("articles_exceptions_subtext"), "msg_info"))
         return items
 
     def _settings_media(self) -> List[Any]:
@@ -14243,18 +14203,17 @@ class PrefixfyPlugin(BasePlugin):
         changed = 0
         try:
             targets = article_text_blocks(blocks)
-            # 41.1.0: исключения привязаны к статьям: каждый текстовый блок проверяется теми же правилами,
-            # что и сообщение (слова, regex, только эмодзи); переключатель «Исключения в статьях» их отключает
-            with article_filter(pipeline, settings.articles_exceptions):
-                for block in targets:
-                    leaf = article_text_leaf(block)
-                    if leaf is None:
-                        continue
-                    holder, field, text, parent = leaf
-                    if not text.strip() or pipeline.ignores(text):
-                        continue
-                    if self._decorate_article_leaf(runtime, account, holder, field, text, parent):
-                        changed += 1
+            # 41.2.0: исключения статей - это общий блок исключений (слова, regex, только эмодзи, код и ссылки):
+            # каждый текстовый блок статьи проверяется теми же правилами, что и обычное сообщение
+            for block in targets:
+                leaf = article_text_leaf(block)
+                if leaf is None:
+                    continue
+                holder, field, text, parent = leaf
+                if not text.strip() or pipeline.ignores(text):
+                    continue
+                if self._decorate_article_leaf(runtime, account, holder, field, text, parent):
+                    changed += 1
         except Exception as exc:
             self.log(f"Prefixfy article decorate failed: {exc}")
             return HookResult()
