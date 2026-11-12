@@ -76,8 +76,8 @@ __description__ = (
     " Милые эффекты: каомодзи, UwU, действия, милая пунктуация, заикание; частота вставки разделителей; готовые наборы рамок и эмодзи."
 )
 __author__ = "@Prefixfy"
-__version__ = "41.1.0"
-__build__ = "41.1.0_20261112.2_56"
+__version__ = "41.1.1"
+__build__ = "41.1.1_20261112.3_57"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -2163,6 +2163,11 @@ _OTA_STRINGS = {
         "ota_failed": "Не удалось обновить: {reason}",
         "ota_busy": "Обновление уже выполняется",
         "ota_check_note": "Если найдена новая официальная версия, эта проверка её не установит: появится уведомление, а поставить обновление можно кнопкой «Скачать» под «Требуется обновление».",
+        "ota_almost_ready": "Почти готово",
+        "ota_almost_ready_subtext": "Версия {version} уже скачана. Осталось перезагрузить плагин.",
+        "ota_reload": "Перезагрузить",
+        "ota_reload_subtext": "Применить обновление и перезапустить плагин.",
+        "ota_staged": "Prefixfy {version} скачан. Нажмите «Перезагрузить», чтобы применить.",
     },
     "en": {
         "ota_section": "Updates & verification",
@@ -2182,6 +2187,11 @@ _OTA_STRINGS = {
         "ota_failed": "Update failed: {reason}",
         "ota_busy": "An update is already in progress",
         "ota_check_note": "If a new official version is found, this check will not install it: you will get a notice, and you can install the update with the “Download” button under “Update required”.",
+        "ota_almost_ready": "Almost ready",
+        "ota_almost_ready_subtext": "Version {version} is already downloaded. Only a plugin reload is left.",
+        "ota_reload": "Reload",
+        "ota_reload_subtext": "Apply the update and restart the plugin.",
+        "ota_staged": "Prefixfy {version} downloaded. Tap “Reload” to apply it.",
     },
     "ja": {
         "ota_section": "アップデートと検証",
@@ -2201,6 +2211,11 @@ _OTA_STRINGS = {
         "ota_failed": "更新に失敗しました: {reason}",
         "ota_busy": "更新はすでに実行中です",
         "ota_check_note": "新しい公式バージョンが見つかっても、この確認ではインストールされません。通知が表示されるので、「アップデートが必要です」の下の「ダウンロード」からインストールしてください。",
+        "ota_almost_ready": "もうすぐ完了",
+        "ota_almost_ready_subtext": "バージョン {version} はダウンロード済みです。プラグインの再読み込みだけ残っています。",
+        "ota_reload": "再読み込み",
+        "ota_reload_subtext": "アップデートを適用してプラグインを再起動します。",
+        "ota_staged": "Prefixfy {version} をダウンロードしました。「再読み込み」で適用します。",
     },
     "ko": {
         "ota_section": "업데이트 및 확인",
@@ -2220,6 +2235,11 @@ _OTA_STRINGS = {
         "ota_failed": "업데이트 실패: {reason}",
         "ota_busy": "이미 업데이트가 진행 중입니다",
         "ota_check_note": "새 공식 버전이 발견되어도 이 확인으로는 설치되지 않습니다. 알림이 표시되며, '업데이트 필요' 아래의 '다운로드'로 설치할 수 있습니다.",
+        "ota_almost_ready": "거의 완료",
+        "ota_almost_ready_subtext": "버전 {version}을(를) 이미 내려받았습니다. 플러그인 다시 불러오기만 남았습니다.",
+        "ota_reload": "다시 불러오기",
+        "ota_reload_subtext": "업데이트를 적용하고 플러그인을 다시 시작합니다.",
+        "ota_staged": "Prefixfy {version} 다운로드 완료. '다시 불러오기'를 눌러 적용하세요.",
     },
     "fr": {
         "ota_section": "Mises à jour et vérification",
@@ -2239,6 +2259,11 @@ _OTA_STRINGS = {
         "ota_failed": "Échec de la mise à jour : {reason}",
         "ota_busy": "Une mise à jour est déjà en cours",
         "ota_check_note": "Si une nouvelle version officielle est trouvée, cette vérification ne l’installera pas : une notification s’affichera et vous pourrez installer la mise à jour avec « Télécharger » sous « Mise à jour requise ».",
+        "ota_almost_ready": "Presque prêt",
+        "ota_almost_ready_subtext": "La version {version} est déjà téléchargée. Il ne reste qu’à recharger le plugin.",
+        "ota_reload": "Recharger",
+        "ota_reload_subtext": "Appliquer la mise à jour et redémarrer le plugin.",
+        "ota_staged": "Prefixfy {version} téléchargé. Appuyez sur « Recharger » pour l’appliquer.",
     },
     "de": {
         "ota_section": "Updates und Prüfung",
@@ -2258,6 +2283,11 @@ _OTA_STRINGS = {
         "ota_failed": "Update fehlgeschlagen: {reason}",
         "ota_busy": "Ein Update läuft bereits",
         "ota_check_note": "Wird eine neue offizielle Version gefunden, installiert diese Prüfung sie nicht: Du erhältst einen Hinweis und kannst das Update über „Herunterladen“ unter „Update erforderlich“ installieren.",
+        "ota_almost_ready": "Fast fertig",
+        "ota_almost_ready_subtext": "Version {version} ist bereits heruntergeladen. Es fehlt nur noch das Neuladen des Plugins.",
+        "ota_reload": "Neu laden",
+        "ota_reload_subtext": "Update anwenden und das Plugin neu starten.",
+        "ota_staged": "Prefixfy {version} heruntergeladen. Tippe auf „Neu laden“, um es anzuwenden.",
     },
 }
 for _code, _table in LocalizationManager.STRINGS.items():
