@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "42.2.0"
-__build__ = "42.2.0_20261113.1_61"
+__version__ = "43.0.0"
+__build__ = "43.0.0_20261113.2_62"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -153,6 +153,9 @@ LANGUAGE_LAYOUT_KEY = "Prefixfy_language_layout"
 LANGUAGE_LAYOUT_VERSION = 2
 LANGUAGE_MIGRATED_KEY = "Prefixfy_language_migrated"
 LANGUAGE_LIVE_KEY = "Prefixfy_language_live_layout"
+SETUP_STAGE_KEY = "Prefixfy_setup_stage"
+SETUP_STAGE_COUNT = 3
+SETUP_DONE = SETUP_STAGE_COUNT + 1
 MAX_STORE_JSON_BYTES = 2 * 1024 * 1024
 MAX_ACCOUNT_PROFILES = 256
 MAX_ACCOUNT_PRESETS = 32
@@ -2792,6 +2795,98 @@ for _code, _table in LocalizationManager.STRINGS.items():
     _sp_extra = _SEPARATOR_SPACE_STRINGS.get(_code, _SEPARATOR_SPACE_STRINGS["en"])
     for _key, _value in _SEPARATOR_SPACE_STRINGS["ru"].items():
         _table[_key] = _sp_extra.get(_key, _SEPARATOR_SPACE_STRINGS["en"].get(_key, _value))
+
+
+_SETUP_STRINGS = {
+    "ru": {
+        "setup_header_1": "Этап 1/3: выберите язык",
+        "setup_header_2": "Этап 2/3: настройте оформление",
+        "setup_header_3": "Этап 3/3: настройте обновление",
+        "setup_next": "Далее",
+        "setup_next_subtext": "Перейти к этапу {step} из 3",
+        "setup_back": "Назад",
+        "setup_back_subtext": "Вернуться к этапу {step} из 3",
+        "setup_finish": "Завершить настройку",
+        "setup_finish_subtext": "Проверит обновления и установит их, если они есть, затем откроет все настройки.",
+        "setup_checking": "Проверка аккаунта…",
+        "setup_checking_subtext": "Запрашиваю у сервера список блокировок. Это займёт несколько секунд.",
+        "setup_done": "Начальная настройка завершена",
+    },
+    "en": {
+        "setup_header_1": "Step 1/3: choose a language",
+        "setup_header_2": "Step 2/3: set up the appearance",
+        "setup_header_3": "Step 3/3: set up updates",
+        "setup_next": "Next",
+        "setup_next_subtext": "Go to step {step} of 3",
+        "setup_back": "Back",
+        "setup_back_subtext": "Back to step {step} of 3",
+        "setup_finish": "Finish setup",
+        "setup_finish_subtext": "Checks for updates and installs them if found, then opens all settings.",
+        "setup_checking": "Checking account…",
+        "setup_checking_subtext": "Requesting the block list from the server. This takes a few seconds.",
+        "setup_done": "Initial setup complete",
+    },
+    "ja": {
+        "setup_header_1": "ステップ 1/3: 言語を選択",
+        "setup_header_2": "ステップ 2/3: 外観を設定",
+        "setup_header_3": "ステップ 3/3: アップデートを設定",
+        "setup_next": "次へ",
+        "setup_next_subtext": "ステップ {step}/3 へ進みます",
+        "setup_back": "戻る",
+        "setup_back_subtext": "ステップ {step}/3 に戻ります",
+        "setup_finish": "設定を完了",
+        "setup_finish_subtext": "アップデートを確認し、新しい版があればインストールしてから、すべての設定を開きます。",
+        "setup_checking": "アカウントを確認中…",
+        "setup_checking_subtext": "サーバーからブロックリストを取得しています。数秒かかります。",
+        "setup_done": "初期設定が完了しました",
+    },
+    "ko": {
+        "setup_header_1": "단계 1/3: 언어 선택",
+        "setup_header_2": "단계 2/3: 꾸미기 설정",
+        "setup_header_3": "단계 3/3: 업데이트 설정",
+        "setup_next": "다음",
+        "setup_next_subtext": "{step}/3단계로 이동합니다",
+        "setup_back": "이전",
+        "setup_back_subtext": "{step}/3단계로 돌아갑니다",
+        "setup_finish": "설정 완료",
+        "setup_finish_subtext": "업데이트를 확인하고 새 버전이 있으면 설치한 뒤 전체 설정을 엽니다.",
+        "setup_checking": "계정 확인 중…",
+        "setup_checking_subtext": "서버에서 차단 목록을 가져오는 중입니다. 몇 초 걸립니다.",
+        "setup_done": "초기 설정이 완료되었습니다",
+    },
+    "fr": {
+        "setup_header_1": "Étape 1/3 : choisissez la langue",
+        "setup_header_2": "Étape 2/3 : réglez la mise en forme",
+        "setup_header_3": "Étape 3/3 : réglez les mises à jour",
+        "setup_next": "Suivant",
+        "setup_next_subtext": "Passer à l’étape {step}/3",
+        "setup_back": "Retour",
+        "setup_back_subtext": "Revenir à l’étape {step}/3",
+        "setup_finish": "Terminer la configuration",
+        "setup_finish_subtext": "Vérifie les mises à jour, les installe s’il y en a, puis ouvre tous les réglages.",
+        "setup_checking": "Vérification du compte…",
+        "setup_checking_subtext": "Demande de la liste de blocage au serveur. Quelques secondes.",
+        "setup_done": "Configuration initiale terminée",
+    },
+    "de": {
+        "setup_header_1": "Schritt 1/3: Sprache wählen",
+        "setup_header_2": "Schritt 2/3: Darstellung einstellen",
+        "setup_header_3": "Schritt 3/3: Updates einstellen",
+        "setup_next": "Weiter",
+        "setup_next_subtext": "Weiter zu Schritt {step}/3",
+        "setup_back": "Zurück",
+        "setup_back_subtext": "Zurück zu Schritt {step}/3",
+        "setup_finish": "Einrichtung abschließen",
+        "setup_finish_subtext": "Sucht nach Updates, installiert sie bei Bedarf und öffnet dann alle Einstellungen.",
+        "setup_checking": "Konto wird geprüft…",
+        "setup_checking_subtext": "Sperrliste wird vom Server abgerufen. Das dauert einige Sekunden.",
+        "setup_done": "Einrichtung abgeschlossen",
+    },
+}
+for _code, _table in LocalizationManager.STRINGS.items():
+    _setup_extra = _SETUP_STRINGS.get(_code, _SETUP_STRINGS["en"])
+    for _key, _value in _SETUP_STRINGS["ru"].items():
+        _table[_key] = _setup_extra.get(_key, _SETUP_STRINGS["en"].get(_key, _value))
 
 
 _SYNODIC_MONTH = 29.530588853
@@ -7025,8 +7120,23 @@ class ConfigTransfer:
         return bool(plugin._show_builder(builder))
 
     def _finish_import(self, data, components, as_new, name, fragment, target=None):
-        if target is None and not as_new and self.plugin._acct_on() and self._ask_import_target(data, components, fragment):
-            return
+        if target is None and not as_new:
+            if self.plugin._acct_on():
+                try:
+                    asked = self._ask_import_target(data, components, fragment)
+                except Exception as exc:
+                    self.plugin.log(f"Prefixfy import target dialog failed: {exc}")
+                    asked = False
+                if asked:
+                    return
+                self.plugin.log("Prefixfy import cancelled: the account picker could not be shown")
+                self.discard_container_media(data)
+                self._toast("configuration_import_failed", fragment)
+                return
+            self.plugin.log(
+                f"Prefixfy import: account picker skipped (account mode is off or fewer than 2 accounts: "
+                f"{len(self.plugin._accounts())} found)"
+            )
         try:
             if target is None:
                 self.plugin.configurations.import_data(data, components, as_new=as_new, name=name)
@@ -9570,6 +9680,7 @@ _WIPE_MEDIA_RESET = {
 }
 _WIPE_INTERNAL_KEYS = {
     LANGUAGE_LAYOUT_KEY: 1, LANGUAGE_LIVE_KEY: 1, LANGUAGE_MIGRATED_KEY: "", CHAT_COUNTS_KEY: "", COUNTER_KEY: 0,
+    SETUP_STAGE_KEY: 1,
     CHAT_CONFIGS_KEY: "{}", SCHEDULE_KEY: "", ACCT_MODE_KEY: False, ACCT_TARGET_KEY: ACCT_AUTO, ACCT_LIVE_KEY: "",
     ConfigurationsManager.LEGACY_SETTING_KEY: "", ConfigurationsManager.LEGACY_ACTIVE_KEY: "",
 }
@@ -11295,6 +11406,7 @@ class PrefixfyPlugin(BasePlugin):
     def _on_plugin_load_impl(self):
         if self._startup_gate():
             return
+        self._setup_init()
         _slot_housekeeping(self.log)
         VAULT.attach(self.log)
         VAULT.prepare()
@@ -11535,8 +11647,14 @@ class PrefixfyPlugin(BasePlugin):
             self.log(f"Settings reload failed: {exc}")
 
     def _dialog_activity(self, fragment=None):
-        fragment = fragment or get_last_fragment()
-        return fragment.getParentActivity() if fragment else None
+        for candidate in (fragment, get_last_fragment()):
+            try:
+                activity = candidate.getParentActivity() if candidate else None
+            except Exception:
+                activity = None
+            if activity:
+                return activity
+        return None
 
     def _show_builder(self, builder) -> bool:
         try:
@@ -13467,6 +13585,145 @@ class PrefixfyPlugin(BasePlugin):
         except Exception as exc:
             self.log(f"Prefixfy repo link failed: {exc}")
 
+    _setup_busy = False
+    _setup_gate_state = ""
+
+    def _setup_init(self):
+        try:
+            if self.get_setting(SETUP_STAGE_KEY, None) is not None:
+                return
+            existing = self.get_setting(LANGUAGE_LAYOUT_KEY, None) is not None
+            self.set_setting(SETUP_STAGE_KEY, SETUP_DONE if existing else 1)
+        except Exception as exc:
+            self.log(f"Prefixfy setup state init failed: {exc}")
+
+    def _setup_stage(self) -> int:
+        return clamp_int(self.get_setting(SETUP_STAGE_KEY, SETUP_DONE), SETUP_DONE, 1, SETUP_DONE)
+
+    def _setup_set_stage(self, stage: int, reload_settings: bool = True):
+        stage = clamp_int(stage, SETUP_DONE, 1, SETUP_DONE)
+        self.set_setting(SETUP_STAGE_KEY, stage, reload_settings=reload_settings)
+
+    def _setup_gate_start(self):
+        if self._setup_gate_state in ("checking", "done"):
+            return
+        remote = getattr(self, "remote", None)
+        if remote is None or not remote.enabled:
+            self._setup_gate_state = "done"
+            return
+        self._setup_gate_state = "checking"
+
+        def work():
+            try:
+                remote.refresh(force=True)
+            except Exception as exc:
+                self.log(f"Prefixfy setup account check failed: {exc}")
+            finally:
+                self._setup_gate_state = "done"
+                try:
+                    self.reload_settings_ui()
+                except Exception as exc:
+                    self.log(f"Prefixfy setup settings refresh failed: {exc}")
+
+        threading.Thread(target=work, name="PrefixfySetupGate", daemon=True).start()
+
+    def _setup_button(self, text, subtext, icon, on_click, accent=False):
+        if accent:
+            try:
+                return Text(text=text, subtext=subtext, icon=icon, on_click=on_click, accent=True)
+            except TypeError:
+                pass
+        return Text(text=text, subtext=subtext, icon=icon, on_click=on_click)
+
+    def _setup_go(self, stage: int):
+        if self._setup_busy:
+            return
+        try:
+            self._setup_set_stage(stage)
+        except Exception as exc:
+            self.log(f"Prefixfy setup stage change failed: {exc}")
+
+    def _setup_finish(self, *_):
+        remote = getattr(self, "remote", None)
+        if remote is None or self._setup_busy or getattr(self, "_check_running", False):
+            return
+        self._setup_busy = True
+        self._toast("check_started")
+
+        def work():
+            try:
+                refreshed = remote.refresh(force=True)
+                if remote.blacklisted():
+                    self.reload_settings_ui()
+                    return
+                self._setup_set_stage(SETUP_DONE, reload_settings=False)
+                outcome = remote.ota_manual(refreshed, apply=True)
+                if outcome is not None:
+                    self._toast(outcome[0], **outcome[1])
+                elif remote.blocked():
+                    key, kwargs = remote.notice()
+                    self._toast(key, **kwargs)
+                elif remote.soft():
+                    self._toast("check_failed")
+                else:
+                    self._toast("setup_done")
+                self.reload_settings_ui()
+            except Exception as exc:
+                self.log(f"Prefixfy setup finish failed: {exc}")
+                try:
+                    self.reload_settings_ui()
+                except Exception:
+                    pass
+            finally:
+                self._setup_busy = False
+
+        threading.Thread(target=work, name="PrefixfySetupFinish", daemon=True).start()
+
+    def _settings_setup(self, stage: int) -> List[Any]:
+        tr = self._tr
+        if self._setup_gate_state != "done":
+            self._setup_gate_start()
+            if self._setup_gate_state == "checking":
+                return [Text(
+                    text=tr("setup_checking"), subtext=tr("setup_checking_subtext"),
+                    icon=self._icon("msg_retry"), on_click=lambda *_: None,
+                )]
+        language_choice = has_language_choice()
+        if stage <= 1 and not language_choice:
+            stage = 2
+            try:
+                self._setup_set_stage(2, reload_settings=False)
+            except Exception as exc:
+                self.log(f"Prefixfy setup stage change failed: {exc}")
+        stage = max(1, min(SETUP_STAGE_COUNT, stage))
+        if stage == 1:
+            body = self._section_body(self._settings_language())
+        elif stage == 2:
+            body = self._section_body(self._settings_appearance())
+        else:
+            body = self._ota_auto_items()
+        items: List[Any] = [Header(text=tr(f"setup_header_{stage}"))] + list(body) + [Divider()]
+        forward = self._icon("msg_arrowright", self._icon("msg_forward", "msg_retry"))
+        backward = self._icon("msg_back", self._icon("msg_go_up", "msg_retry"))
+        if stage < SETUP_STAGE_COUNT:
+            target = stage + 1
+            items.append(self._setup_button(
+                tr("setup_next"), tr("setup_next_subtext", step=target), forward,
+                lambda *_: self._setup_go(target), accent=True,
+            ))
+        else:
+            items.append(self._setup_button(
+                tr("setup_finish"), tr("setup_finish_subtext"), self._icon("msg_check", self._icon("msg_retry")),
+                self._setup_finish, accent=True,
+            ))
+        if stage > 1 and not (stage == 2 and not language_choice):
+            target = stage - 1
+            items.append(self._setup_button(
+                tr("setup_back"), tr("setup_back_subtext", step=target), backward,
+                lambda *_: self._setup_go(target),
+            ))
+        return items
+
     def create_settings(self) -> List[Any]:
         if self._dormant:
             return self._settings_dormant()
@@ -13477,6 +13734,10 @@ class PrefixfyPlugin(BasePlugin):
             if self.remote.blacklisted():
                 return notice + [Header(text=self._tr("ota_section"))] + self._check_items()[:1] + self._settings_about()
             return notice + self._settings_ota() + self._settings_about()
+        if self._setup_stage() < SETUP_DONE:
+            wizard = self._settings_setup(self._setup_stage())
+            if wizard:
+                return wizard
         settings: List[Any] = list(notice)
         try:
             self.configurations.sync_target()
