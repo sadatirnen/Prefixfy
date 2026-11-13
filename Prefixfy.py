@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "43.0.1"
-__build__ = "43.0.1_20261113.3_63"
+__version__ = "43.0.2"
+__build__ = "43.0.2_20261113.4_64"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -13598,7 +13598,21 @@ class PrefixfyPlugin(BasePlugin):
             self.log(f"Prefixfy setup state init failed: {exc}")
 
     def _setup_stage(self) -> int:
-        return clamp_int(self.get_setting(SETUP_STAGE_KEY, SETUP_DONE), SETUP_DONE, 1, SETUP_DONE)
+        """Этап мастера. Отсутствующее или битое значение (системный сброс настроек хоста стирает ключи) — это этап 1,
+        а не «завершено»: иначе кнопка сброса в шапке настроек позволяет обойти мастер и проверку аккаунта."""
+        try:
+            raw = self.get_setting(SETUP_STAGE_KEY, None)
+        except Exception as exc:
+            self.log(f"Prefixfy setup stage read failed: {exc}")
+            raw = None
+        if isinstance(raw, bool) or not isinstance(raw, int) or not 1 <= raw <= SETUP_DONE:
+            self._setup_gate_state = ""
+            try:
+                self.set_setting(SETUP_STAGE_KEY, 1, reload_settings=False)
+            except Exception as exc:
+                self.log(f"Prefixfy setup stage restore failed: {exc}")
+            return 1
+        return raw
 
     def _setup_set_stage(self, stage: int, reload_settings: bool = True):
         stage = clamp_int(stage, SETUP_DONE, 1, SETUP_DONE)
