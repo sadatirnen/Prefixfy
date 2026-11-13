@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "43.0.0"
-__build__ = "43.0.0_20261113.2_62"
+__version__ = "43.0.1"
+__build__ = "43.0.1_20261113.3_63"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -9802,7 +9802,7 @@ def _wipe_files(opt_out: bool, log):
 
 def _wipe_settings(plugin, opt_out: bool):
     if not opt_out:
-        values: Dict[str, Any] = dict(_WIPE_MEDIA_RESET)
+        values: Dict[str, Any] = {**_WIPE_MEDIA_RESET, SETUP_STAGE_KEY: 1}
     else:
         values = {**SETTING_DEFAULTS, **TRANSIENT_SETTING_DEFAULTS, **OTA_SETTING_DEFAULTS, **_WIPE_INTERNAL_KEYS}
     for key, value in values.items():
@@ -13644,19 +13644,30 @@ class PrefixfyPlugin(BasePlugin):
             self.log(f"Prefixfy setup stage change failed: {exc}")
 
     def _setup_finish(self, *_):
+        if self._setup_busy:
+            return
         remote = getattr(self, "remote", None)
-        if remote is None or self._setup_busy or getattr(self, "_check_running", False):
+        if remote is None:
+            self._setup_go(SETUP_DONE)
             return
         self._setup_busy = True
         self._toast("check_started")
 
         def work():
             try:
-                refreshed = remote.refresh(force=True)
+                try:
+                    refreshed = remote.refresh(force=True)
+                except Exception as exc:
+                    self.log(f"Prefixfy setup refresh failed: {exc}")
+                    refreshed = None
                 if remote.blacklisted():
                     self.reload_settings_ui()
                     return
                 self._setup_set_stage(SETUP_DONE, reload_settings=False)
+                if getattr(self, "_check_running", False):
+                    self._toast("setup_done")
+                    self.reload_settings_ui()
+                    return
                 outcome = remote.ota_manual(refreshed, apply=True)
                 if outcome is not None:
                     self._toast(outcome[0], **outcome[1])
@@ -13670,6 +13681,10 @@ class PrefixfyPlugin(BasePlugin):
                 self.reload_settings_ui()
             except Exception as exc:
                 self.log(f"Prefixfy setup finish failed: {exc}")
+                try:
+                    self._setup_set_stage(SETUP_DONE, reload_settings=False)
+                except Exception:
+                    pass
                 try:
                     self.reload_settings_ui()
                 except Exception:
@@ -13706,10 +13721,10 @@ class PrefixfyPlugin(BasePlugin):
         forward = self._icon("msg_arrowright", self._icon("msg_forward", "msg_retry"))
         backward = self._icon("msg_back", self._icon("msg_go_up", "msg_retry"))
         if stage < SETUP_STAGE_COUNT:
-            target = stage + 1
+            next_stage = stage + 1
             items.append(self._setup_button(
-                tr("setup_next"), tr("setup_next_subtext", step=target), forward,
-                lambda *_: self._setup_go(target), accent=True,
+                tr("setup_next"), tr("setup_next_subtext", step=next_stage), forward,
+                lambda *_, _to=next_stage: self._setup_go(_to), accent=True,
             ))
         else:
             items.append(self._setup_button(
@@ -13717,10 +13732,11 @@ class PrefixfyPlugin(BasePlugin):
                 self._setup_finish, accent=True,
             ))
         if stage > 1 and not (stage == 2 and not language_choice):
-            target = stage - 1
+            back_stage = stage - 1
+            items.append(Divider())
             items.append(self._setup_button(
-                tr("setup_back"), tr("setup_back_subtext", step=target), backward,
-                lambda *_: self._setup_go(target),
+                tr("setup_back"), tr("setup_back_subtext", step=back_stage), backward,
+                lambda *_, _to=back_stage: self._setup_go(_to),
             ))
         return items
 
