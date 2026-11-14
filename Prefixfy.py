@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "45.1.0"
-__build__ = "45.1.0_20261115.3_69"
+__version__ = "45.1.1"
+__build__ = "45.1.1_20261115.4_70"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -7546,6 +7546,7 @@ class ConfigurationsManager:
         self._failed_writes = set()
         self._degraded = False
         self._migrated_legacy = False
+        self._acct_reset_visible: Optional[bool] = None
         self.media_dir = os.path.join(get_plugins_dir(), self.MEDIA_DIR_NAME)
         self.store_dir = os.path.join(get_plugins_dir(), self.STORE_DIR_NAME)
         ensure_dir_exists(self.media_dir)
@@ -8214,6 +8215,7 @@ class ConfigurationsManager:
             self.plugin.log(f"Prefixfy autosave scheduling failed: {exc}")
 
     def _autosave_tick(self):
+        refresh = False
         with self._lock:
             self._autosave_armed = False
             if self._closed or not self._autosave_dirty:
@@ -8230,6 +8232,16 @@ class ConfigurationsManager:
             if not saved:
                 self._autosave_dirty = True
                 self._arm_autosave(self.AUTOSAVE_RETRY_MS)
+            elif self.edit_uid is not None and self._acct_reset_visible is not None:
+                try:
+                    refresh = self.account_differs(self.edit_uid) != self._acct_reset_visible
+                except Exception as exc:
+                    self.plugin.log(f"Prefixfy account reset visibility check failed: {exc}")
+        if refresh:
+            try:
+                self.plugin.reload_settings_ui()
+            except Exception as exc:
+                self.plugin.log(f"Prefixfy settings refresh failed: {exc}")
 
     def shutdown(self):
         with self._lock:
@@ -8540,6 +8552,52 @@ class ConfigurationsManager:
             if record is not None:
                 return record.get("current") or {}
         return self._current(self.active_id)
+
+    def _params_signature(self, params) -> tuple:
+        """Параметры конфигурации для сравнения. Путь к медиа у каждой конфигурации свой (копия файла), поэтому
+        сравнивается только наличие вложения, а не путь."""
+        params = params if isinstance(params, dict) else {}
+        signature = []
+        for key in self.CONFIG_KEYS:
+            value = self._coerce(key, params.get(key, SETTING_DEFAULTS[key]))
+            signature.append(bool(value) if key == "attached_media_path" else value)
+        return tuple(signature)
+
+    def account_differs(self, uid) -> bool:
+        """True, если у аккаунта есть свои конфигурации и они отличаются от общего набора: числом, порядком, именами,
+        параметрами или выбранной активной конфигурацией. Без своих конфигураций аккаунт идёт за общим набором: False."""
+        if uid is None:
+            return False
+        with self._lock:
+            own_ids = self.accounts.ids(uid)
+            if not own_ids:
+                return False
+            shared_ids = list(self.configurations)
+            if len(own_ids) != len(shared_ids):
+                return True
+            own = self.accounts.bucket(uid)
+            own_active = self.accounts.active_id(uid)
+            live = self._snapshot() if uid == self.edit_uid else None
+            for own_id, shared_id in zip(own_ids, shared_ids):
+                own_record = own.get(own_id) or {}
+                shared_record = self.configurations.get(shared_id) or {}
+                if as_text(own_record.get("name")) != as_text(shared_record.get("name")):
+                    return True
+                own_params = live if (live is not None and own_id == own_active) else own_record.get("current")
+                if self._params_signature(own_params) != self._params_signature(shared_record.get("current")):
+                    return True
+            shared_active = self.active_id if self.active_id in self.configurations else shared_ids[0]
+            return own_ids.index(own_active) != shared_ids.index(shared_active)
+
+    def account_reset_available(self, uid) -> bool:
+        """Показывать ли пункт «Сбросить к общим настройкам». При сбое сравнения пункт показывается: сброс безопасен."""
+        try:
+            available = self.account_differs(uid)
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy account comparison failed: {exc}")
+            available = self.accounts.has(uid)
+        self._acct_reset_visible = available
+        return available
 
     def _same_as_shared(self, snapshot: dict) -> bool:
         shared = self._current(self.active_id)
@@ -12187,7 +12245,9 @@ class PrefixfyPlugin(BasePlugin):
         if target == ACCT_AUTO or shown is None:
             items.append(Text(text=tr("acct_auto_now" if target == ACCT_AUTO else "acct_editing"), subtext=subtext,
                               icon=icon, on_click=lambda *_: None))
-        if shown is not None:
+        if shown is None:
+            configs._acct_reset_visible = None
+        elif configs.account_reset_available(shown):
             items.append(Text(text=tr("acct_reset"), subtext=tr("acct_reset_subtext"), icon=self._icon("msg_retry"),
                               on_click=self._confirm_reset_account))
         return items
