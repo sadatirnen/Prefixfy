@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "45.0.1"
-__build__ = "45.0.1_20261115.2_68"
+__version__ = "45.1.0"
+__build__ = "45.1.0_20261115.3_69"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -154,6 +154,7 @@ LANGUAGE_LAYOUT_VERSION = 2
 LANGUAGE_MIGRATED_KEY = "Prefixfy_language_migrated"
 LANGUAGE_LIVE_KEY = "Prefixfy_language_live_layout"
 SETUP_STAGE_KEY = "Prefixfy_setup_stage"
+SETUP_SEEN_KEY = "Prefixfy_setup_seen"
 WELCOME_UNTIL_KEY = "Prefixfy_welcome_until"
 WELCOME_SECONDS = 4 * 3600
 SETUP_STAGE_COUNT = 3
@@ -9784,7 +9785,7 @@ _WIPE_MEDIA_RESET = {
 }
 _WIPE_INTERNAL_KEYS = {
     LANGUAGE_LAYOUT_KEY: 1, LANGUAGE_LIVE_KEY: 1, LANGUAGE_MIGRATED_KEY: "", CHAT_COUNTS_KEY: "", COUNTER_KEY: 0,
-    SETUP_STAGE_KEY: 1, WELCOME_UNTIL_KEY: 0,
+    SETUP_STAGE_KEY: 1, SETUP_SEEN_KEY: 1, WELCOME_UNTIL_KEY: 0,
     "Prefixfy_markdown_style_pick": 0, "Prefixfy_text_style_pick": 0,
     CHAT_CONFIGS_KEY: "{}", SCHEDULE_KEY: "", ACCT_MODE_KEY: False, ACCT_TARGET_KEY: ACCT_AUTO, ACCT_LIVE_KEY: "",
     ConfigurationsManager.LEGACY_SETTING_KEY: "", ConfigurationsManager.LEGACY_ACTIVE_KEY: "",
@@ -9914,6 +9915,14 @@ def _wipe_settings(plugin, opt_out: bool):
             plugin.set_setting(key, value)
         except Exception as exc:
             plugin.log(f"Prefixfy wipe: setting {key} was not reset: {exc}")
+    # Мастер обязан начаться заново: если запись этапа не прошла, повторяем и проверяем результат.
+    for _attempt in range(3):
+        try:
+            if plugin.get_setting(SETUP_STAGE_KEY, None) == 1:
+                break
+            plugin.set_setting(SETUP_STAGE_KEY, 1)
+        except Exception as exc:
+            plugin.log(f"Prefixfy wipe: setup stage was not restored: {exc}")
 
 
 def wipe_blacklist_data(plugin):
@@ -13695,12 +13704,26 @@ class PrefixfyPlugin(BasePlugin):
     _setup_busy = False
     _setup_gate_state = ""
 
+    @staticmethod
+    def _setup_valid_stage(raw) -> bool:
+        return not isinstance(raw, bool) and isinstance(raw, int) and 1 <= raw <= SETUP_DONE
+
     def _setup_init(self):
+        """Первичное состояние мастера.
+
+        «Старой установкой» (мастера ещё не было, сразу «завершено») считается только та, у которой нет метки
+        SETUP_SEEN_KEY: LANGUAGE_LAYOUT_KEY переписывается при каждой загрузке и сам по себе ничего не доказывает.
+        Если этап потерян (сброс настроек хоста, порча), а метка есть, это не старая установка: мастер начинается заново."""
         try:
-            if self.get_setting(SETUP_STAGE_KEY, None) is not None:
+            raw = self.get_setting(SETUP_STAGE_KEY, None)
+            seen = self.get_setting(SETUP_SEEN_KEY, None) is not None
+            if self._setup_valid_stage(raw):
+                if not seen:
+                    self.set_setting(SETUP_SEEN_KEY, 1, reload_settings=False)
                 return
-            existing = self.get_setting(LANGUAGE_LAYOUT_KEY, None) is not None
-            self.set_setting(SETUP_STAGE_KEY, SETUP_DONE if existing else 1)
+            legacy = not seen and self.get_setting(LANGUAGE_LAYOUT_KEY, None) is not None
+            self.set_setting(SETUP_STAGE_KEY, SETUP_DONE if legacy else 1, reload_settings=False)
+            self.set_setting(SETUP_SEEN_KEY, 1, reload_settings=False)
         except Exception as exc:
             self.log(f"Prefixfy setup state init failed: {exc}")
 
@@ -13712,7 +13735,7 @@ class PrefixfyPlugin(BasePlugin):
         except Exception as exc:
             self.log(f"Prefixfy setup stage read failed: {exc}")
             raw = None
-        if isinstance(raw, bool) or not isinstance(raw, int) or not 1 <= raw <= SETUP_DONE:
+        if not self._setup_valid_stage(raw):
             self._setup_gate_state = ""
             try:
                 self.set_setting(SETUP_STAGE_KEY, 1, reload_settings=False)
@@ -13722,8 +13745,12 @@ class PrefixfyPlugin(BasePlugin):
         return raw
 
     def _setup_set_stage(self, stage: int, reload_settings: bool = True):
-        stage = clamp_int(stage, SETUP_DONE, 1, SETUP_DONE)
+        """Этапы 1..SETUP_STAGE_COUNT. «Завершено» пишет только _setup_complete после проверки аккаунта."""
+        stage = clamp_int(stage, 1, 1, SETUP_STAGE_COUNT)
         self.set_setting(SETUP_STAGE_KEY, stage, reload_settings=reload_settings)
+
+    def _setup_complete(self):
+        self.set_setting(SETUP_STAGE_KEY, SETUP_DONE, reload_settings=False)
 
     def _setup_gate_start(self):
         if self._setup_gate_state in ("checking", "done"):
@@ -13804,6 +13831,12 @@ class PrefixfyPlugin(BasePlugin):
         if self._setup_busy:
             return
         try:
+            current = self._setup_stage()
+            if current >= SETUP_DONE:
+                return
+            stage = clamp_int(stage, 1, 1, SETUP_STAGE_COUNT)
+            if stage > current + 1:
+                return
             self._setup_set_stage(stage)
         except Exception as exc:
             self.log(f"Prefixfy setup stage change failed: {exc}")
@@ -13811,9 +13844,11 @@ class PrefixfyPlugin(BasePlugin):
     def _setup_finish(self, *_):
         if self._setup_busy:
             return
+        if self._setup_stage() != SETUP_STAGE_COUNT:
+            return
         remote = getattr(self, "remote", None)
         if remote is None:
-            self._setup_go(SETUP_DONE)
+            self._toast("check_failed")
             return
         self._setup_busy = True
         self._toast("check_started")
@@ -13828,7 +13863,12 @@ class PrefixfyPlugin(BasePlugin):
                 if remote.blacklisted():
                     self.reload_settings_ui()
                     return
-                self._setup_set_stage(SETUP_DONE, reload_settings=False)
+                if remote.enabled and not getattr(remote, "_bl_known", False):
+                    # Список блокировок не получен: аккаунт не проверен, мастер не завершается.
+                    self._toast("check_failed")
+                    self.reload_settings_ui()
+                    return
+                self._setup_complete()
                 if not remote.blocked() and not remote.soft():
                     self._welcome_start()
                 if getattr(self, "_check_running", False):
@@ -13847,11 +13887,8 @@ class PrefixfyPlugin(BasePlugin):
                     self._toast("setup_done")
                 self.reload_settings_ui()
             except Exception as exc:
+                # Ошибка не завершает мастер: этап остаётся прежним, если он ещё не записан.
                 self.log(f"Prefixfy setup finish failed: {exc}")
-                try:
-                    self._setup_set_stage(SETUP_DONE, reload_settings=False)
-                except Exception:
-                    pass
                 try:
                     self.reload_settings_ui()
                 except Exception:
