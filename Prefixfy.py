@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "45.1.1"
-__build__ = "45.1.1_20261115.4_70"
+__version__ = "45.2.0"
+__build__ = "45.2.0_20261115.5_71"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -12237,14 +12237,6 @@ class PrefixfyPlugin(BasePlugin):
         items.append(Selector(key=key, text=tr("acct_target"), default=index, items=names, icon=icon,
                               on_change=self._on_acct_target))
         shown = configs.edit_uid
-        if shown is None:
-            subtext = tr("acct_none") if target == ACCT_AUTO else tr("acct_common_hint")
-        else:
-            slot = next((s for s, u in accounts.items() if u == shown), None)
-            subtext = self._acct_label(slot, shown) + " • " + tr("acct_own" if configs.accounts.has(shown) else "acct_shared")
-        if target == ACCT_AUTO or shown is None:
-            items.append(Text(text=tr("acct_auto_now" if target == ACCT_AUTO else "acct_editing"), subtext=subtext,
-                              icon=icon, on_click=lambda *_: None))
         if shown is None:
             configs._acct_reset_visible = None
         elif configs.account_reset_available(shown):
