@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "44.0.0"
-__build__ = "44.0.0_20261114.1_65"
+__version__ = "44.1.0"
+__build__ = "44.1.0_20261114.2_66"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -154,6 +154,8 @@ LANGUAGE_LAYOUT_VERSION = 2
 LANGUAGE_MIGRATED_KEY = "Prefixfy_language_migrated"
 LANGUAGE_LIVE_KEY = "Prefixfy_language_live_layout"
 SETUP_STAGE_KEY = "Prefixfy_setup_stage"
+WELCOME_UNTIL_KEY = "Prefixfy_welcome_until"
+WELCOME_SECONDS = 60
 SETUP_STAGE_COUNT = 3
 SETUP_DONE = SETUP_STAGE_COUNT + 1
 MAX_STORE_JSON_BYTES = 2 * 1024 * 1024
@@ -2799,6 +2801,11 @@ _SETUP_STRINGS = {
         "setup_checking": "Проверка аккаунта…",
         "setup_checking_subtext": "Запрашиваю у сервера список блокировок. Это займёт несколько секунд.",
         "setup_done": "Начальная настройка завершена",
+        "welcome_banner": "Спасибо за установку Prefixfy!",
+        "welcome_banner_subtext": "Нажмите, чтобы узнать, что умеет плагин и как начать.",
+        "welcome_title": "Добро пожаловать в Prefixfy",
+        "welcome_body": "Спасибо, что установили Prefixfy! Плагин добавляет к вашим сообщениям маску: текст до или после, оформление и украшения.\n\nЧто умеет:\n• маска с Markdown, стилями текста и разделителями\n• милые эффекты: каомодзи, UwU, украшения\n• прикреплённое медиа\n• исключения: чаты, где плагин не работает, или только они\n• конфигурации: несколько наборов настроек, импорт, экспорт и расписание\n• отдельные настройки для каждого аккаунта\n\nКак начать:\n1. В разделе «Оформление текста» задайте маску.\n2. В разделе «Где работает» выберите, что оформлять.\n3. Чтобы добавить чат в исключения или убрать из них, используйте пункт меню в самом чате.\n\nГотово — просто пишите сообщения.",
+        "welcome_ok": "Понятно",
     },
     "en": {
         "setup_header_1": "Step 1/3: choose a language",
@@ -2813,6 +2820,11 @@ _SETUP_STRINGS = {
         "setup_checking": "Checking account…",
         "setup_checking_subtext": "Requesting the block list from the server. This takes a few seconds.",
         "setup_done": "Initial setup complete",
+        "welcome_banner": "Thanks for installing Prefixfy!",
+        "welcome_banner_subtext": "Tap to see what the plugin does and how to get started.",
+        "welcome_title": "Welcome to Prefixfy",
+        "welcome_body": "Thanks for installing Prefixfy! The plugin adds a mask to your messages: text before or after, styling and decorations.\n\nWhat it does:\n• a mask with Markdown, text styles and separators\n• cute effects: kaomoji, UwU, decorations\n• attached media\n• exceptions: chats where the plugin is off, or only those\n• configurations: several sets of settings, import, export and a schedule\n• separate settings for each account\n\nGetting started:\n1. Set your mask in “Text appearance”.\n2. Choose what to style in “Where it works”.\n3. To add a chat to the exceptions or remove it, use the menu item inside the chat.\n\nThat’s it — just send messages.",
+        "welcome_ok": "Got it",
     },
     "ja": {
         "setup_header_1": "ステップ 1/3: 言語を選択",
@@ -2827,6 +2839,11 @@ _SETUP_STRINGS = {
         "setup_checking": "アカウントを確認中…",
         "setup_checking_subtext": "サーバーからブロックリストを取得しています。数秒かかります。",
         "setup_done": "初期設定が完了しました",
+        "welcome_banner": "Prefixfyをインストールいただきありがとうございます！",
+        "welcome_banner_subtext": "タップして、機能と使い始め方を確認できます。",
+        "welcome_title": "Prefixfyへようこそ",
+        "welcome_body": "Prefixfyをインストールいただきありがとうございます！このプラグインは、メッセージの前後に文字を付けたり、装飾を加えたりします。\n\n主な機能:\n• Markdown、文字スタイル、区切りに対応したマスク\n• かわいい効果: 顔文字、UwU、装飾\n• 添付メディア\n• 例外設定: プラグインを使わないチャット、またはそのチャットだけで使う設定\n• 構成: 複数の設定セット、インポート、エクスポート、スケジュール\n• アカウントごとの個別設定\n\n使い始めるには:\n1. 「テキストの装飾」でマスクを設定します。\n2. 「適用範囲」で装飾する対象を選びます。\n3. チャットを例外に追加・削除するには、チャット内のメニュー項目を使います。\n\n準備は完了です。あとはメッセージを送るだけ。",
+        "welcome_ok": "了解",
     },
     "ko": {
         "setup_header_1": "단계 1/3: 언어 선택",
@@ -2841,6 +2858,11 @@ _SETUP_STRINGS = {
         "setup_checking": "계정 확인 중…",
         "setup_checking_subtext": "서버에서 차단 목록을 가져오는 중입니다. 몇 초 걸립니다.",
         "setup_done": "초기 설정이 완료되었습니다",
+        "welcome_banner": "Prefixfy를 설치해 주셔서 감사합니다!",
+        "welcome_banner_subtext": "눌러서 기능과 시작 방법을 확인하세요.",
+        "welcome_title": "Prefixfy에 오신 것을 환영합니다",
+        "welcome_body": "Prefixfy를 설치해 주셔서 감사합니다! 이 플러그인은 메시지 앞뒤에 문구를 붙이고 꾸밈을 더해 줍니다.\n\n주요 기능:\n• Markdown, 글자 스타일, 구분자를 지원하는 마스크\n• 귀여운 효과: 이모티콘, UwU, 장식\n• 첨부 미디어\n• 예외: 플러그인을 쓰지 않을 채팅, 또는 그 채팅에서만 쓰기\n• 구성: 여러 설정 세트, 가져오기, 내보내기, 일정\n• 계정별 개별 설정\n\n시작하는 방법:\n1. 「텍스트 꾸미기」에서 마스크를 설정하세요.\n2. 「적용 범위」에서 꾸밀 대상을 고르세요.\n3. 채팅을 예외에 넣거나 빼려면 채팅 안의 메뉴 항목을 사용하세요.\n\n준비 끝. 이제 메시지를 보내기만 하면 됩니다.",
+        "welcome_ok": "확인",
     },
     "fr": {
         "setup_header_1": "Étape 1/3 : choisissez la langue",
@@ -2855,6 +2877,11 @@ _SETUP_STRINGS = {
         "setup_checking": "Vérification du compte…",
         "setup_checking_subtext": "Demande de la liste de blocage au serveur. Quelques secondes.",
         "setup_done": "Configuration initiale terminée",
+        "welcome_banner": "Merci d’avoir installé Prefixfy !",
+        "welcome_banner_subtext": "Touchez pour voir ce que fait le plugin et comment démarrer.",
+        "welcome_title": "Bienvenue dans Prefixfy",
+        "welcome_body": "Merci d’avoir installé Prefixfy ! Le plugin ajoute un masque à vos messages : texte avant ou après, mise en forme et décorations.\n\nCe qu’il sait faire :\n• un masque avec Markdown, styles de texte et séparateurs\n• effets mignons : kaomoji, UwU, décorations\n• média joint\n• exceptions : chats où le plugin est désactivé, ou seulement ceux-là\n• configurations : plusieurs jeux de réglages, import, export et planning\n• réglages distincts par compte\n\nPour commencer :\n1. Définissez votre masque dans « Mise en forme du texte ».\n2. Choisissez ce qui est mis en forme dans « Où ça s’applique ».\n3. Pour ajouter un chat aux exceptions ou l’en retirer, utilisez l’entrée de menu dans le chat.\n\nC’est tout : envoyez simplement des messages.",
+        "welcome_ok": "Compris",
     },
     "de": {
         "setup_header_1": "Schritt 1/3: Sprache wählen",
@@ -2869,6 +2896,11 @@ _SETUP_STRINGS = {
         "setup_checking": "Konto wird geprüft…",
         "setup_checking_subtext": "Sperrliste wird vom Server abgerufen. Das dauert einige Sekunden.",
         "setup_done": "Einrichtung abgeschlossen",
+        "welcome_banner": "Danke für die Installation von Prefixfy!",
+        "welcome_banner_subtext": "Tippe, um zu sehen, was das Plugin kann und wie du startest.",
+        "welcome_title": "Willkommen bei Prefixfy",
+        "welcome_body": "Danke für die Installation von Prefixfy! Das Plugin versieht deine Nachrichten mit einer Maske: Text davor oder danach, Formatierung und Verzierungen.\n\nDas kann es:\n• eine Maske mit Markdown, Textstilen und Trennern\n• süße Effekte: Kaomoji, UwU, Verzierungen\n• angehängte Medien\n• Ausnahmen: Chats ohne Plugin oder nur diese\n• Konfigurationen: mehrere Einstellungssätze, Import, Export und Zeitplan\n• eigene Einstellungen pro Konto\n\nSo startest du:\n1. Lege deine Maske unter „Textgestaltung“ fest.\n2. Wähle unter „Wo es wirkt“, was formatiert wird.\n3. Um einen Chat zu den Ausnahmen hinzuzufügen oder zu entfernen, nutze den Menüpunkt im Chat.\n\nFertig – schreib einfach Nachrichten.",
+        "welcome_ok": "Verstanden",
     },
 }
 for _code, _table in LocalizationManager.STRINGS.items():
@@ -9740,7 +9772,7 @@ _WIPE_MEDIA_RESET = {
 }
 _WIPE_INTERNAL_KEYS = {
     LANGUAGE_LAYOUT_KEY: 1, LANGUAGE_LIVE_KEY: 1, LANGUAGE_MIGRATED_KEY: "", CHAT_COUNTS_KEY: "", COUNTER_KEY: 0,
-    SETUP_STAGE_KEY: 1,
+    SETUP_STAGE_KEY: 1, WELCOME_UNTIL_KEY: 0,
     CHAT_CONFIGS_KEY: "{}", SCHEDULE_KEY: "", ACCT_MODE_KEY: False, ACCT_TARGET_KEY: ACCT_AUTO, ACCT_LIVE_KEY: "",
     ConfigurationsManager.LEGACY_SETTING_KEY: "", ConfigurationsManager.LEGACY_ACTIVE_KEY: "",
 }
@@ -13700,6 +13732,43 @@ class PrefixfyPlugin(BasePlugin):
 
         threading.Thread(target=work, name="PrefixfySetupGate", daemon=True).start()
 
+    def _welcome_start(self):
+        try:
+            self.set_setting(WELCOME_UNTIL_KEY, time.time() + WELCOME_SECONDS, reload_settings=False)
+            self.reload_settings_ui(int(WELCOME_SECONDS * 1000) + 1000)
+        except Exception as exc:
+            self.log(f"Prefixfy welcome start failed: {exc}")
+
+    def _welcome_items(self) -> List[Any]:
+        """Кнопка-благодарность в самом верху настроек: только первую минуту после успешного завершения мастера."""
+        try:
+            until = float(self.get_setting(WELCOME_UNTIL_KEY, 0) or 0)
+        except Exception:
+            return []
+        if until <= 0:
+            return []
+        if time.time() >= until:
+            try:
+                self.set_setting(WELCOME_UNTIL_KEY, 0, reload_settings=False)
+            except Exception as exc:
+                self.log(f"Prefixfy welcome clear failed: {exc}")
+            return []
+        tr = self._tr
+        return [self._setup_button(
+            tr("welcome_banner"), tr("welcome_banner_subtext"), self._icon("msg_info"),
+            self._show_welcome_dialog, accent=True,
+        )]
+
+    def _show_welcome_dialog(self, *_):
+        activity = self._dialog_activity()
+        if not activity:
+            return
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(self._tr("welcome_title"))
+        builder.set_message(self._tr("welcome_body"))
+        builder.set_positive_button(self._tr("welcome_ok"), lambda bld, which: bld.dismiss())
+        self._show_builder(builder)
+
     def _setup_button(self, text, subtext, icon, on_click, accent=False):
         if accent:
             try:
@@ -13737,6 +13806,8 @@ class PrefixfyPlugin(BasePlugin):
                     self.reload_settings_ui()
                     return
                 self._setup_set_stage(SETUP_DONE, reload_settings=False)
+                if not remote.blocked() and not remote.soft():
+                    self._welcome_start()
                 if getattr(self, "_check_running", False):
                     self._toast("setup_done")
                     self.reload_settings_ui()
@@ -13827,7 +13898,7 @@ class PrefixfyPlugin(BasePlugin):
             wizard = self._settings_setup(self._setup_stage())
             if wizard:
                 return wizard
-        settings: List[Any] = list(notice)
+        settings: List[Any] = self._welcome_items() + list(notice)
         try:
             self.configurations.sync_target()
         except Exception as exc:
