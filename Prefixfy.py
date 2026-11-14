@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "44.1.0"
-__build__ = "44.1.0_20261114.2_66"
+__version__ = "45.0.0"
+__build__ = "45.0.0_20261115.1_67"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -155,7 +155,7 @@ LANGUAGE_MIGRATED_KEY = "Prefixfy_language_migrated"
 LANGUAGE_LIVE_KEY = "Prefixfy_language_live_layout"
 SETUP_STAGE_KEY = "Prefixfy_setup_stage"
 WELCOME_UNTIL_KEY = "Prefixfy_welcome_until"
-WELCOME_SECONDS = 60
+WELCOME_SECONDS = 4 * 3600
 SETUP_STAGE_COUNT = 3
 SETUP_DONE = SETUP_STAGE_COUNT + 1
 MAX_STORE_JSON_BYTES = 2 * 1024 * 1024
@@ -1673,7 +1673,7 @@ _NEW_STRINGS = {
         "tag_lines_empty": "No lines yet",
         "tag_lines_limit": "At most {n} lines",
         "check_now": "Check now",
-        "check_now_subtext": "Clear saved check data and re-verify this build.",
+        "check_now_subtext": "Check this plugin build.",
         "check_started": "Clearing cache and checking…",
         "check_confirm_title": "Check this build now?",
         "check_confirm_body": "What it does: deletes saved check data (manifest, blacklist, settings profile), downloads it again and verifies the build is official.\n\nWhen to use: the build can’t be verified, features are paused, you just updated or reinstalled, or the status looks stale.\n\nSafe? Settings and configurations are untouched; check serial numbers are kept. Internet required; if it fails, features stay paused until a later check succeeds.",
@@ -1727,7 +1727,7 @@ _NEW_STRINGS = {
         "tag_lines_empty": "Строк пока нет",
         "tag_lines_limit": "Не больше {n} строк",
         "check_now": "Проверить сейчас",
-        "check_now_subtext": "Стереть данные проверки и перепроверить сборку с нуля.",
+        "check_now_subtext": "Проверить сборку плагина.",
         "check_started": "Очищаю кэш и проверяю…",
         "check_confirm_title": "Проверить сборку сейчас?",
         "check_confirm_body": "Что делает: удаляет сохранённые данные проверки (манифест, чёрный список, профиль настроек), скачивает их заново и проверяет, что сборка официальная.\n\nКогда нужно: если сборку не удалось подтвердить, функции приостановлены, вы только что обновили или переустановили плагин либо статус устарел.\n\nБезопасно ли: настройки и конфигурации не затрагиваются, серийные номера проверок сохраняются. Нужен интернет; при неудаче функции остаются приостановленными до следующей успешной проверки.",
@@ -1781,7 +1781,7 @@ _NEW_STRINGS = {
         "tag_lines_empty": "行がまだありません",
         "tag_lines_limit": "最大 {n} 行まで",
         "check_now": "今すぐ確認",
-        "check_now_subtext": "確認データを消去し、ビルドを再検証します。",
+        "check_now_subtext": "このビルドを確認します。",
         "check_started": "キャッシュを消去して確認中…",
         "check_confirm_title": "今すぐこのビルドを確認しますか？",
         "check_confirm_body": "動作: 保存された確認データ（マニフェスト、ブラックリスト、設定プロファイル）を削除して再取得し、公式ビルドか再確認します。\n\n用途: ビルドを確認できない、機能が停止中、更新・再インストール直後、ステータスが古いときに。\n\n安全性: 設定と構成は影響を受けず、確認のシリアル番号も保持されます。通信が必要です。失敗すると次回成功まで機能は停止したままです。",
@@ -1834,7 +1834,7 @@ _NEW_STRINGS = {
         "tag_lines_empty": "아직 문구가 없습니다",
         "tag_lines_limit": "최대 {n}줄",
         "check_now": "지금 확인",
-        "check_now_subtext": "저장된 확인 데이터를 지우고 빌드를 다시 검증합니다.",
+        "check_now_subtext": "이 빌드를 확인합니다.",
         "check_started": "캐시를 지우고 확인 중…",
         "check_confirm_title": "지금 이 빌드를 확인할까요?",
         "check_confirm_body": "동작: 저장된 확인 데이터(매니페스트, 블랙리스트, 설정 프로필)를 삭제하고 다시 받아 공식 빌드인지 확인합니다.\n\n용도: 빌드를 확인할 수 없거나, 기능이 중지되었거나, 방금 업데이트·재설치했거나, 상태가 오래되었을 때.\n\n안전성: 설정과 구성은 그대로이며 확인 일련번호도 유지됩니다. 인터넷이 필요하며, 실패하면 다음 성공까지 기능이 중지된 상태로 남습니다.",
@@ -1887,7 +1887,7 @@ _NEW_STRINGS = {
         "tag_lines_empty": "Aucune ligne pour le moment",
         "tag_lines_limit": "{n} lignes au maximum",
         "check_now": "Vérifier maintenant",
-        "check_now_subtext": "Effacer les données de vérification et revérifier le build.",
+        "check_now_subtext": "Vérifier ce build du plugin.",
         "check_started": "Effacement du cache et vérification…",
         "check_confirm_title": "Vérifier ce build maintenant ?",
         "check_confirm_body": "Ce que ça fait : supprime les données de vérification (manifeste, liste noire, profil de réglages), les retélécharge et vérifie que le build est officiel.\n\nQuand l’utiliser : build non vérifiable, fonctions suspendues, mise à jour ou réinstallation récente, ou état périmé.\n\nSûr ? Réglages et configurations intacts ; les numéros de série des vérifications sont conservés. Internet requis ; en cas d’échec, les fonctions restent suspendues jusqu’à une vérification réussie.",
@@ -1940,7 +1940,7 @@ _NEW_STRINGS = {
         "tag_lines_empty": "Noch keine Zeilen",
         "tag_lines_limit": "Höchstens {n} Zeilen",
         "check_now": "Jetzt prüfen",
-        "check_now_subtext": "Prüfdaten löschen und Build neu prüfen.",
+        "check_now_subtext": "Build des Plugins prüfen.",
         "check_started": "Cache wird gelöscht, Prüfung läuft…",
         "check_confirm_title": "Diesen Build jetzt prüfen?",
         "check_confirm_body": "Was es tut: löscht gespeicherte Prüfdaten (Manifest, Sperrliste, Einstellungsprofil), lädt sie neu und prüft, ob der Build offiziell ist.\n\nWann nutzen: Build nicht verifizierbar, Funktionen pausiert, gerade aktualisiert oder neu installiert oder Status veraltet.\n\nSicher? Einstellungen und Konfigurationen bleiben unberührt; Seriennummern der Prüfungen bleiben erhalten. Internet nötig; bei Fehlschlag bleiben Funktionen pausiert, bis eine Prüfung gelingt.",
@@ -2577,9 +2577,11 @@ _WIPE_STRINGS = {
     "ru": {
         "block_bypass_note": "Эта функция не поможет обойти блокировку.",
         "wipe_row": "Удалить данные",
-        "wipe_row_subtext": "Удалить все данные и отказаться от использования плагина.",
+        "wipe_row_subtext": "Очистить файлы плагина или полностью отказаться от него.",
         "wipe_title": "Удалить данные Prefixfy?",
-        "wipe_body": "Удалит всё, включая настройки, и отключит плагин: останется только «Возобновить работу». Обновление не скачивается, а после переустановки плагин поведёт себя как при первой установке.",
+        "wipe_body": "Удалит все данные плагина: конфигурации и пресеты аккаунтов, настройки, медиа, импортированные файлы и кэш проверок. Плагин перезапустится и начнёт с мастера настройки, как после первой установки.\n\nЕсли плагин устарел, сначала установится последняя версия, затем данные удалятся.\n\n«Отказаться от использования» дополнительно отключает плагин: останется только «Возобновить работу». Обновление не скачивается.",
+        "wipe_opt_out": "Отказаться от использования",
+        "wipe_confirm_clean": "Все файлы и настройки плагина будут удалены, плагин перезапустится и начнёт с мастера настройки. Конфигурации и медиа пропадут безвозвратно. Сначала экспортируйте конфигурации.",
         "wipe_next": "Далее",
         "wipe_confirm_title": "Подтвердите удаление",
         "wipe_confirm_out": "Все файлы и настройки плагина будут удалены, затем плагин отключится. Отменить нельзя.",
@@ -2601,9 +2603,11 @@ _WIPE_STRINGS = {
     "en": {
         "block_bypass_note": "This function won’t help bypass the block.",
         "wipe_row": "Delete data",
-        "wipe_row_subtext": "Delete all data and stop using the plugin.",
+        "wipe_row_subtext": "Clear plugin files or stop using it entirely.",
         "wipe_title": "Delete Prefixfy data?",
-        "wipe_body": "Deletes everything, settings included, and puts the plugin to sleep: only “Resume” remains. No update is downloaded, and after a reinstall it behaves as if never installed.",
+        "wipe_body": "Deletes all plugin data: configurations and account presets, settings, attached media, imported files and the verification cache. The plugin restarts and begins with the setup wizard, as after a first install.\n\nIf the plugin is outdated, the latest version is installed first, then the data is deleted.\n\n“Stop using the plugin” also puts the plugin to sleep: only “Resume” remains. No update is downloaded.",
+        "wipe_opt_out": "Stop using the plugin",
+        "wipe_confirm_clean": "All plugin files and settings will be deleted, then the plugin restarts and begins with the setup wizard. Configurations and attached media are lost for good. Export your configurations first.",
         "wipe_next": "Next",
         "wipe_confirm_title": "Confirm deletion",
         "wipe_confirm_out": "All plugin files and settings will be deleted and the plugin switched off. This can’t be undone.",
@@ -2625,9 +2629,11 @@ _WIPE_STRINGS = {
     "ja": {
         "block_bypass_note": "この機能ではブロックを回避できません。",
         "wipe_row": "データを削除",
-        "wipe_row_subtext": "すべてのデータを削除し、使用をやめます。",
+        "wipe_row_subtext": "ファイルを消去、または使用を完全にやめます。",
         "wipe_title": "Prefixfyのデータを削除しますか？",
-        "wipe_body": "設定を含むすべてを削除して休止状態にし、「再開」だけが残ります。更新は取得せず、再インストール後は初めて入れたように動作します。",
+        "wipe_body": "プラグインの全データ（構成・アカウント別プリセット、設定、添付メディア、インポートファイル、検証キャッシュ）を削除します。プラグインは再起動し、初回インストール時のように設定ウィザードから始まります。\n\nプラグインが古い場合は、先に最新版をインストールしてから削除します。\n\n「使用をやめる」にチェックすると、さらにプラグインを休止状態にし、「再開」だけが残ります。更新は取得しません。",
+        "wipe_opt_out": "使用をやめる",
+        "wipe_confirm_clean": "すべてのファイルと設定を削除し、プラグインを再起動して設定ウィザードから始めます。構成と添付メディアは完全に失われます。先に構成をエクスポートしてください。",
         "wipe_next": "次へ",
         "wipe_confirm_title": "削除の確認",
         "wipe_confirm_out": "すべてのファイルと設定を削除し、プラグインを停止します。元に戻せません。",
@@ -2649,9 +2655,11 @@ _WIPE_STRINGS = {
     "ko": {
         "block_bypass_note": "이 기능으로 차단을 우회할 수 없습니다.",
         "wipe_row": "데이터 삭제",
-        "wipe_row_subtext": "모든 데이터를 삭제하고 사용을 중단합니다.",
+        "wipe_row_subtext": "파일을 정리하거나 사용을 완전히 중단합니다.",
         "wipe_title": "Prefixfy 데이터를 삭제할까요?",
-        "wipe_body": "설정을 포함해 모두 삭제하고 휴면 상태가 되며 「다시 시작」만 남습니다. 업데이트는 받지 않고, 재설치하면 처음 설치한 것처럼 동작합니다.",
+        "wipe_body": "플러그인의 모든 데이터(구성·계정별 프리셋, 설정, 첨부 미디어, 가져온 파일, 검증 캐시)를 삭제합니다. 플러그인이 다시 시작되고 처음 설치한 것처럼 설정 마법사부터 시작합니다.\n\n플러그인이 오래되었다면 먼저 최신 버전을 설치한 뒤 삭제합니다.\n\n「사용 중단」을 선택하면 플러그인이 휴면 상태가 되며 「다시 시작」만 남습니다. 업데이트는 받지 않습니다.",
+        "wipe_opt_out": "사용 중단",
+        "wipe_confirm_clean": "모든 파일과 설정을 삭제하고 플러그인을 다시 시작해 설정 마법사부터 시작합니다. 구성과 첨부 미디어는 영구적으로 사라집니다. 먼저 구성을 내보내세요.",
         "wipe_next": "다음",
         "wipe_confirm_title": "삭제 확인",
         "wipe_confirm_out": "모든 파일과 설정을 삭제하고 플러그인을 끕니다. 되돌릴 수 없습니다.",
@@ -2673,9 +2681,11 @@ _WIPE_STRINGS = {
     "fr": {
         "block_bypass_note": "Cette fonction ne contourne pas le blocage.",
         "wipe_row": "Supprimer les données",
-        "wipe_row_subtext": "Supprimer toutes les données et cesser d’utiliser le plugin.",
+        "wipe_row_subtext": "Effacer les fichiers ou cesser de l’utiliser.",
         "wipe_title": "Supprimer les données de Prefixfy ?",
-        "wipe_body": "Supprime tout, réglages compris, et met le plugin en veille : seul « Reprendre » reste. Aucune mise à jour n’est téléchargée et, après réinstallation, le plugin se comporte comme à la première installation.",
+        "wipe_body": "Supprime toutes les données du plugin : configurations et préréglages de comptes, réglages, médias joints, fichiers importés et cache de vérification. Le plugin redémarre et commence par l’assistant de configuration, comme après une première installation.\n\nSi le plugin est obsolète, la dernière version est installée d’abord, puis les données sont supprimées.\n\n« Cesser d’utiliser le plugin » met en plus le plugin en veille : seul « Reprendre » reste. Aucune mise à jour n’est téléchargée.",
+        "wipe_opt_out": "Cesser d’utiliser le plugin",
+        "wipe_confirm_clean": "Tous les fichiers et réglages seront supprimés, puis le plugin redémarre et commence par l’assistant de configuration. Configurations et médias joints seront perdus définitivement. Exportez d’abord vos configurations.",
         "wipe_next": "Suivant",
         "wipe_confirm_title": "Confirmer la suppression",
         "wipe_confirm_out": "Tous les fichiers et réglages seront supprimés, puis le plugin se désactivera. Irréversible.",
@@ -2697,9 +2707,11 @@ _WIPE_STRINGS = {
     "de": {
         "block_bypass_note": "Diese Funktion umgeht die Sperre nicht.",
         "wipe_row": "Daten löschen",
-        "wipe_row_subtext": "Alle Daten löschen und das Plugin aufgeben.",
+        "wipe_row_subtext": "Dateien bereinigen oder Plugin ganz aufgeben.",
         "wipe_title": "Prefixfy-Daten löschen?",
-        "wipe_body": "Löscht alles, Einstellungen eingeschlossen, und legt das Plugin schlafen: nur „Fortsetzen“ bleibt. Es wird kein Update geladen, und nach einer Neuinstallation verhält sich das Plugin wie neu installiert.",
+        "wipe_body": "Löscht alle Plugin-Daten: Konfigurationen und Konto-Presets, Einstellungen, angehängte Medien, importierte Dateien und den Prüfcache. Das Plugin startet neu und beginnt mit dem Einrichtungsassistenten, wie nach einer Erstinstallation.\n\nIst das Plugin veraltet, wird zuerst die neueste Version installiert, dann werden die Daten gelöscht.\n\n„Nutzung aufgeben“ versetzt das Plugin zusätzlich in den Ruhezustand: nur „Fortsetzen“ bleibt. Es wird kein Update geladen.",
+        "wipe_opt_out": "Nutzung aufgeben",
+        "wipe_confirm_clean": "Alle Plugin-Dateien und Einstellungen werden gelöscht, dann startet das Plugin neu und beginnt mit dem Einrichtungsassistenten. Konfigurationen und Medien gehen unwiderruflich verloren. Exportiere zuerst deine Konfigurationen.",
         "wipe_next": "Weiter",
         "wipe_confirm_title": "Löschen bestätigen",
         "wipe_confirm_out": "Alle Dateien und Einstellungen werden gelöscht, dann schaltet sich das Plugin ab. Nicht rückgängig zu machen.",
@@ -9773,6 +9785,7 @@ _WIPE_MEDIA_RESET = {
 _WIPE_INTERNAL_KEYS = {
     LANGUAGE_LAYOUT_KEY: 1, LANGUAGE_LIVE_KEY: 1, LANGUAGE_MIGRATED_KEY: "", CHAT_COUNTS_KEY: "", COUNTER_KEY: 0,
     SETUP_STAGE_KEY: 1, WELCOME_UNTIL_KEY: 0,
+    "Prefixfy_markdown_style_pick": 0, "Prefixfy_text_style_pick": 0,
     CHAT_CONFIGS_KEY: "{}", SCHEDULE_KEY: "", ACCT_MODE_KEY: False, ACCT_TARGET_KEY: ACCT_AUTO, ACCT_LIVE_KEY: "",
     ConfigurationsManager.LEGACY_SETTING_KEY: "", ConfigurationsManager.LEGACY_ACTIVE_KEY: "",
 }
@@ -9893,10 +9906,9 @@ def _wipe_files(opt_out: bool, log):
 
 
 def _wipe_settings(plugin, opt_out: bool):
-    if not opt_out:
-        values: Dict[str, Any] = {**_WIPE_MEDIA_RESET, SETUP_STAGE_KEY: 1}
-    else:
-        values = {**SETTING_DEFAULTS, **TRANSIENT_SETTING_DEFAULTS, **OTA_SETTING_DEFAULTS, **_WIPE_INTERNAL_KEYS}
+    # Сброс без отказа тоже стирает все настройки и служебные ключи: иначе от конфигураций, расписания,
+    # режима аккаунтов и счётчиков остались бы «хвосты». От отказа он отличается только тем, что плагин не засыпает.
+    values: Dict[str, Any] = {**SETTING_DEFAULTS, **TRANSIENT_SETTING_DEFAULTS, **OTA_SETTING_DEFAULTS, **_WIPE_INTERNAL_KEYS}
     for key, value in values.items():
         try:
             plugin.set_setting(key, value)
@@ -9940,11 +9952,14 @@ def blacklist_guard_exists() -> bool:
 
 
 def wipe_plugin_data(plugin, opt_out: bool):
-    _wipe_files(opt_out, plugin.log)
-    if opt_out:
-        VAULT.attach(plugin.log)
-        VAULT.destroy()
-    _wipe_settings(plugin, opt_out)
+    """Всегда глубокий сброс: все файлы (включая служебные), ключи хранилища и все настройки.
+    opt_out влияет только на то, что делает вызывающий код дальше: усыпляет плагин или оставляет его работать
+    (тогда он запускается как после первой установки). Обновление до последней сборки происходит ДО сброса (_start_wipe)."""
+    _wipe_files(True, plugin.log)
+    VAULT.attach(plugin.log)
+    VAULT.destroy()
+    _wipe_settings(plugin, True)
+    plugin.log(f"Prefixfy: deep wipe done ({'opt-out' if opt_out else 'clean restart'})")
 
 
 AUTO_RESET_MARKER_FILE = ".pfx_autoreset"
@@ -13250,17 +13265,18 @@ class PrefixfyPlugin(BasePlugin):
         return ""
 
     def _show_wipe_dialog(self, *_):
-        """Диалог 1: пояснение. Удаление всегда с отказом от использования. Кнопка «Далее» красная и WIPE_COOLDOWN_SEC секунд неактивна."""
+        """Диалог 1: пояснение и чекбокс «Отказаться от использования» (по умолчанию снят). Кнопка «Далее» красная и WIPE_COOLDOWN_SEC секунд неактивна."""
         tr = self._tr
 
-        def next_step(selected, extra):
+        def next_step(selected, opt_out):
             def later():
-                run_on_ui_thread(lambda: self._show_wipe_confirm(True))
+                run_on_ui_thread(lambda: self._show_wipe_confirm(bool(opt_out)))
             run_on_queue(later, PLUGINS_QUEUE, 250)
 
         self.show_checklist(
             tr("wipe_title"), [], next_step, message=tr("wipe_body"),
-            positive=tr("wipe_next"), cooldown=WIPE_COOLDOWN_SEC, red=True,
+            extra=(tr("wipe_opt_out"), False, True), positive=tr("wipe_next"),
+            cooldown=WIPE_COOLDOWN_SEC, red=True,
         )
 
     def _show_wipe_confirm(self, opt_out: bool):
@@ -13273,7 +13289,7 @@ class PrefixfyPlugin(BasePlugin):
         shown_at = time.monotonic()
         builder = AlertDialogBuilder(activity)
         builder.set_title(tr("wipe_confirm_title"))
-        builder.set_message(tr("wipe_confirm_out") + self._bypass_note())
+        builder.set_message(tr("wipe_confirm_out" if opt_out else "wipe_confirm_clean") + self._bypass_note())
 
         def confirm(bld, which):
             if WIPE_COOLDOWN_SEC - (time.monotonic() - shown_at) > 0:
@@ -13735,12 +13751,11 @@ class PrefixfyPlugin(BasePlugin):
     def _welcome_start(self):
         try:
             self.set_setting(WELCOME_UNTIL_KEY, time.time() + WELCOME_SECONDS, reload_settings=False)
-            self.reload_settings_ui(int(WELCOME_SECONDS * 1000) + 1000)
         except Exception as exc:
             self.log(f"Prefixfy welcome start failed: {exc}")
 
     def _welcome_items(self) -> List[Any]:
-        """Кнопка-благодарность в самом верху настроек: только первую минуту после успешного завершения мастера."""
+        """Кнопка-благодарность в самом верху настроек: WELCOME_SECONDS (4 часа) после успешного завершения мастера или до нажатия «Понятно»."""
         try:
             until = float(self.get_setting(WELCOME_UNTIL_KEY, 0) or 0)
         except Exception:
@@ -13766,7 +13781,15 @@ class PrefixfyPlugin(BasePlugin):
         builder = AlertDialogBuilder(activity)
         builder.set_title(self._tr("welcome_title"))
         builder.set_message(self._tr("welcome_body"))
-        builder.set_positive_button(self._tr("welcome_ok"), lambda bld, which: bld.dismiss())
+        def understood(bld, which):
+            bld.dismiss()
+            try:
+                self.set_setting(WELCOME_UNTIL_KEY, 0, reload_settings=False)
+                self.reload_settings_ui()
+            except Exception as exc:
+                self.log(f"Prefixfy welcome dismiss failed: {exc}")
+
+        builder.set_positive_button(self._tr("welcome_ok"), understood)
         self._show_builder(builder)
 
     def _setup_button(self, text, subtext, icon, on_click, accent=False):
