@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "43.0.2"
-__build__ = "43.0.2_20261113.4_64"
+__version__ = "44.0.0"
+__build__ = "44.0.0_20261114.1_65"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -2575,13 +2575,11 @@ _WIPE_STRINGS = {
     "ru": {
         "block_bypass_note": "Эта функция не поможет обойти блокировку.",
         "wipe_row": "Удалить данные",
-        "wipe_row_subtext": "Очистить файлы плагина или полностью отказаться от него.",
+        "wipe_row_subtext": "Удалить все данные и отказаться от использования плагина.",
         "wipe_title": "Удалить данные Prefixfy?",
-        "wipe_body": "Удалит все файлы плагина: конфигурации и пресеты аккаунтов, медиа, импортированные файлы и кэш проверок. Текущие настройки сохранятся, а данные создадутся заново — это ручная очистка кэша.\n\nЕсли плагин устарел, сначала установится последняя версия, затем данные удалятся.\n\n«Отказаться от использования» удаляет всё, включая настройки, и отключает плагин: останется только «Возобновить работу». Обновление не скачивается, а после переустановки плагин поведёт себя как при первой установке.",
-        "wipe_opt_out": "Отказаться от использования",
+        "wipe_body": "Удалит всё, включая настройки, и отключит плагин: останется только «Возобновить работу». Обновление не скачивается, а после переустановки плагин поведёт себя как при первой установке.",
         "wipe_next": "Далее",
         "wipe_confirm_title": "Подтвердите удаление",
-        "wipe_confirm_clean": "Файлы плагина будут удалены, плагин перезапустится и создаст их заново. Конфигурации и медиа пропадут безвозвратно. Сначала экспортируйте конфигурации.",
         "wipe_confirm_out": "Все файлы и настройки плагина будут удалены, затем плагин отключится. Отменить нельзя.",
         "wipe_confirm_btn": "Очистить",
         "wipe_started": "Готовлю удаление…",
@@ -2601,13 +2599,11 @@ _WIPE_STRINGS = {
     "en": {
         "block_bypass_note": "This function won’t help bypass the block.",
         "wipe_row": "Delete data",
-        "wipe_row_subtext": "Clear plugin files or stop using it entirely.",
+        "wipe_row_subtext": "Delete all data and stop using the plugin.",
         "wipe_title": "Delete Prefixfy data?",
-        "wipe_body": "Deletes all plugin files: configurations and account presets, attached media, imported files and the verification cache. Current settings are kept and data is recreated — a manual cache cleanup.\n\nIf the plugin is outdated, the latest version is installed first, then the data is deleted.\n\n“Stop using the plugin” deletes everything, settings included, and puts the plugin to sleep: only “Resume” remains. No update is downloaded, and after a reinstall it behaves as if never installed.",
-        "wipe_opt_out": "Stop using the plugin",
+        "wipe_body": "Deletes everything, settings included, and puts the plugin to sleep: only “Resume” remains. No update is downloaded, and after a reinstall it behaves as if never installed.",
         "wipe_next": "Next",
         "wipe_confirm_title": "Confirm deletion",
-        "wipe_confirm_clean": "Plugin files will be deleted and recreated after a restart. Configurations and attached media are lost for good. Export your configurations first.",
         "wipe_confirm_out": "All plugin files and settings will be deleted and the plugin switched off. This can’t be undone.",
         "wipe_confirm_btn": "Clear",
         "wipe_started": "Preparing deletion…",
@@ -2627,13 +2623,11 @@ _WIPE_STRINGS = {
     "ja": {
         "block_bypass_note": "この機能ではブロックを回避できません。",
         "wipe_row": "データを削除",
-        "wipe_row_subtext": "ファイルを消去、または使用を完全にやめます。",
+        "wipe_row_subtext": "すべてのデータを削除し、使用をやめます。",
         "wipe_title": "Prefixfyのデータを削除しますか？",
-        "wipe_body": "プラグインの全ファイル（構成・アカウント別プリセット、添付メディア、インポートファイル、検証キャッシュ）を削除します。現在の設定は保持され、データは再作成されます（手動のキャッシュ消去）。\n\nプラグインが古い場合は、先に最新版をインストールしてから削除します。\n\n「使用をやめる」にチェックすると、設定を含むすべてを削除して休止状態にし、「再開」だけが残ります。更新は取得せず、再インストール後は初めて入れたように動作します。",
-        "wipe_opt_out": "使用をやめる",
+        "wipe_body": "設定を含むすべてを削除して休止状態にし、「再開」だけが残ります。更新は取得せず、再インストール後は初めて入れたように動作します。",
         "wipe_next": "次へ",
         "wipe_confirm_title": "削除の確認",
-        "wipe_confirm_clean": "ファイルを削除し、再起動して作り直します。構成と添付メディアは完全に失われます。先に構成をエクスポートしてください。",
         "wipe_confirm_out": "すべてのファイルと設定を削除し、プラグインを停止します。元に戻せません。",
         "wipe_confirm_btn": "消去",
         "wipe_started": "削除の準備中…",
@@ -2653,13 +2647,11 @@ _WIPE_STRINGS = {
     "ko": {
         "block_bypass_note": "이 기능으로 차단을 우회할 수 없습니다.",
         "wipe_row": "데이터 삭제",
-        "wipe_row_subtext": "파일을 정리하거나 사용을 완전히 중단합니다.",
+        "wipe_row_subtext": "모든 데이터를 삭제하고 사용을 중단합니다.",
         "wipe_title": "Prefixfy 데이터를 삭제할까요?",
-        "wipe_body": "플러그인의 모든 파일(구성·계정별 프리셋, 첨부 미디어, 가져온 파일, 검증 캐시)을 삭제합니다. 현재 설정은 유지되고 데이터는 다시 만들어집니다(수동 캐시 정리).\n\n플러그인이 오래되었다면 먼저 최신 버전을 설치한 뒤 삭제합니다.\n\n「사용 중단」을 선택하면 설정을 포함해 모두 삭제하고 휴면 상태가 되며 「다시 시작」만 남습니다. 업데이트는 받지 않고, 재설치하면 처음 설치한 것처럼 동작합니다.",
-        "wipe_opt_out": "사용 중단",
+        "wipe_body": "설정을 포함해 모두 삭제하고 휴면 상태가 되며 「다시 시작」만 남습니다. 업데이트는 받지 않고, 재설치하면 처음 설치한 것처럼 동작합니다.",
         "wipe_next": "다음",
         "wipe_confirm_title": "삭제 확인",
-        "wipe_confirm_clean": "파일을 삭제하고 다시 시작해 새로 만듭니다. 구성과 첨부 미디어는 영구적으로 사라집니다. 먼저 구성을 내보내세요.",
         "wipe_confirm_out": "모든 파일과 설정을 삭제하고 플러그인을 끕니다. 되돌릴 수 없습니다.",
         "wipe_confirm_btn": "삭제",
         "wipe_started": "삭제를 준비하는 중…",
@@ -2679,13 +2671,11 @@ _WIPE_STRINGS = {
     "fr": {
         "block_bypass_note": "Cette fonction ne contourne pas le blocage.",
         "wipe_row": "Supprimer les données",
-        "wipe_row_subtext": "Effacer les fichiers ou cesser de l’utiliser.",
+        "wipe_row_subtext": "Supprimer toutes les données et cesser d’utiliser le plugin.",
         "wipe_title": "Supprimer les données de Prefixfy ?",
-        "wipe_body": "Supprime tous les fichiers du plugin : configurations et préréglages de comptes, médias joints, fichiers importés et cache de vérification. Les réglages actuels sont conservés et les données recréées : un nettoyage manuel du cache.\n\nSi le plugin est obsolète, la dernière version est installée d’abord, puis les données sont supprimées.\n\n« Cesser d’utiliser le plugin » supprime tout, réglages compris, et met le plugin en veille : seul « Reprendre » reste. Aucune mise à jour n’est téléchargée ; après réinstallation, il se comporte comme au premier jour.",
-        "wipe_opt_out": "Cesser d’utiliser le plugin",
+        "wipe_body": "Supprime tout, réglages compris, et met le plugin en veille : seul « Reprendre » reste. Aucune mise à jour n’est téléchargée et, après réinstallation, le plugin se comporte comme à la première installation.",
         "wipe_next": "Suivant",
         "wipe_confirm_title": "Confirmer la suppression",
-        "wipe_confirm_clean": "Les fichiers seront supprimés puis recréés au redémarrage. Configurations et médias joints seront perdus définitivement. Exportez d’abord vos configurations.",
         "wipe_confirm_out": "Tous les fichiers et réglages seront supprimés, puis le plugin se désactivera. Irréversible.",
         "wipe_confirm_btn": "Effacer",
         "wipe_started": "Préparation de la suppression…",
@@ -2705,13 +2695,11 @@ _WIPE_STRINGS = {
     "de": {
         "block_bypass_note": "Diese Funktion umgeht die Sperre nicht.",
         "wipe_row": "Daten löschen",
-        "wipe_row_subtext": "Dateien bereinigen oder Plugin ganz aufgeben.",
+        "wipe_row_subtext": "Alle Daten löschen und das Plugin aufgeben.",
         "wipe_title": "Prefixfy-Daten löschen?",
-        "wipe_body": "Löscht alle Plugin-Dateien: Konfigurationen und Konto-Presets, angehängte Medien, importierte Dateien und den Prüfcache. Aktuelle Einstellungen bleiben, Daten werden neu angelegt – eine manuelle Cache-Bereinigung.\n\nIst das Plugin veraltet, wird zuerst die neueste Version installiert, dann werden die Daten gelöscht.\n\n„Nutzung aufgeben“ löscht alles, auch die Einstellungen, und versetzt das Plugin in den Ruhezustand: nur „Fortsetzen“ bleibt. Es wird kein Update geladen; nach einer Neuinstallation verhält es sich wie neu.",
-        "wipe_opt_out": "Nutzung aufgeben",
+        "wipe_body": "Löscht alles, Einstellungen eingeschlossen, und legt das Plugin schlafen: nur „Fortsetzen“ bleibt. Es wird kein Update geladen, und nach einer Neuinstallation verhält sich das Plugin wie neu installiert.",
         "wipe_next": "Weiter",
         "wipe_confirm_title": "Löschen bestätigen",
-        "wipe_confirm_clean": "Dateien werden gelöscht und nach dem Neustart neu angelegt. Konfigurationen und Medien gehen unwiderruflich verloren. Exportiere zuerst deine Konfigurationen.",
         "wipe_confirm_out": "Alle Dateien und Einstellungen werden gelöscht, dann schaltet sich das Plugin ab. Nicht rückgängig zu machen.",
         "wipe_confirm_btn": "Löschen",
         "wipe_started": "Löschen wird vorbereitet…",
@@ -7060,20 +7048,33 @@ class ConfigTransfer:
 
     def _import_opened_data(self, data, fragment, components, as_new):
         if as_new:
+            if self.plugin._acct_on():
+                try:
+                    asked = self._ask_import_target(data, components, fragment, as_new=True)
+                except Exception as exc:
+                    self.plugin.log(f"Prefixfy import target dialog failed: {exc}")
+                    asked = False
+                if not asked:
+                    self.plugin.log("Prefixfy import cancelled: the account picker could not be shown")
+                    self.discard_container_media(data)
+                    self._toast("configuration_import_failed", fragment)
+                return
             self._prompt_import_name(data, fragment, components)
             return
         self._finish_import(data, components, False, None, fragment)
 
-    def _prompt_import_name(self, data, fragment, components):
+    def _prompt_import_name(self, data, fragment, components, target=None):
         configurations = self.plugin.configurations
+        uid = None if target is None else (None if target == ACCT_COMMON else target)
+        scoped = target is not None
 
         def confirm(value, editor):
             name = ConfigurationsManager.normalize_name(value)
-            error = self.plugin.configurations.name_error(name)
+            error = configurations.name_error_in(uid, name) if scoped else configurations.name_error(name)
             if error:
                 editor.setError(self._tr(error))
                 return False
-            self._finish_import(data, components, True, name, fragment)
+            self._finish_import(data, components, True, name, fragment, target=target)
             return True
 
         def cancelled():
@@ -7082,21 +7083,21 @@ class ConfigTransfer:
 
         if not self.plugin.show_text_dialog(
             self._tr("import_new_configuration_name"), confirm,
-            text=unique_name(self._tr("imported_configuration"), configurations.selector_items()),
+            text=unique_name(self._tr("imported_configuration"), configurations.scope_names(uid) if scoped else configurations.selector_items()),
             hint=self._tr("configuration_name_hint"),
             positive=self._tr("config_found_import"), fragment=fragment, on_cancel=cancelled,
         ):
             self.discard_container_media(data)
 
-    def _ask_import_target(self, data, components, fragment) -> bool:
+    def _ask_import_target(self, data, components, fragment, as_new=False) -> bool:
         plugin = self.plugin
         activity = plugin._dialog_activity(fragment)
         if not activity:
             return False
         configs = plugin.configurations
         accounts = plugin._accounts()
-        choices: List[Any] = [ACCT_ALL, ACCT_COMMON] + list(accounts.values())
-        labels = [self._tr("acct_import_all"), self._tr("acct_import_common")]
+        choices: List[Any] = ([] if as_new else [ACCT_ALL]) + [ACCT_COMMON] + list(accounts.values())
+        labels = ([] if as_new else [self._tr("acct_import_all")]) + [self._tr("acct_import_common")]
         labels += [plugin._acct_label(slot, uid, mark=True) for slot, uid in accounts.items()]
         current = ACCT_COMMON if configs.edit_uid is None else configs.edit_uid
         labels = [("✓ " if choice == current else "") + label for choice, label in zip(choices, labels)]
@@ -7106,7 +7107,10 @@ class ConfigTransfer:
         def picked(bld, which):
             bld.dismiss()
             if 0 <= which < len(choices):
-                self._finish_import(data, components, False, None, fragment, target=choices[which])
+                if as_new:
+                    run_on_ui_thread(lambda: self._prompt_import_name(data, fragment, components, target=choices[which]))
+                else:
+                    self._finish_import(data, components, False, None, fragment, target=choices[which])
             else:
                 self.discard_container_media(data)
 
@@ -7140,6 +7144,8 @@ class ConfigTransfer:
         try:
             if target is None:
                 self.plugin.configurations.import_data(data, components, as_new=as_new, name=name)
+            elif as_new:
+                self.plugin.configurations.import_new_to_account(data, components, name, target)
             else:
                 self.plugin.configurations.import_to_accounts(data, components, target)
             self.plugin.reload_settings_ui()
@@ -8586,6 +8592,60 @@ class ConfigurationsManager:
             section = extract_component(data, "schedule")
             if section is not None:
                 self.plugin.import_schedule_section(section, None)
+        self.plugin.refresh_chat_menu_item()
+
+    def scope_names(self, uid) -> List[str]:
+        """Названия конфигураций набора аккаунта uid (None — общий набор), не переключая живые настройки."""
+        with self._lock:
+            origin = self.edit_uid
+            self.edit_uid = uid
+            try:
+                return self.selector_items()
+            finally:
+                self.edit_uid = origin
+
+    def name_error_in(self, uid, name):
+        with self._lock:
+            origin = self.edit_uid
+            self.edit_uid = uid
+            try:
+                return self.name_error(name)
+            finally:
+                self.edit_uid = origin
+
+    def import_new_to_account(self, data, components, name, target):
+        """Импорт как новая конфигурация в наборе target: user_id аккаунта или ACCT_COMMON (общий набор)."""
+        remote = getattr(self.plugin, "remote", None)
+        if remote is not None and not remote.allows():
+            raise ConfigurationError("plugin update required")
+        if not FEATURES.on("config_import"):
+            raise ConfigurationError("configuration import is switched off")
+        present = set(self.plugin._accounts().values())
+        if target == ACCT_COMMON:
+            uid = None
+        elif isinstance(target, int) and not isinstance(target, bool) and target in present:
+            uid = target
+        else:
+            raise ConfigurationError("unknown import target")
+        new_name = None
+        with self._lock:
+            if not self._save_active_checked():
+                raise ConfigurationSaveError("active configuration could not be saved")
+            origin = self.edit_uid
+            try:
+                self._switch_live(uid)
+                self.create_from_import(data, components, name=name)
+                if uid is None:
+                    new_name = as_text((self.configurations.get(self.active_id) or {}).get("name"))
+            finally:
+                try:
+                    self._switch_live(origin)
+                except Exception as exc:
+                    self.plugin.log(f"Prefixfy live set restore after import failed: {exc}")
+        if uid is None and "schedule" in components:
+            section = extract_component(data, "schedule")
+            if section is not None:
+                self.plugin.import_schedule_section(section, new_name)
         self.plugin.refresh_chat_menu_item()
 
     def request_add(self, view=None):
@@ -13158,18 +13218,17 @@ class PrefixfyPlugin(BasePlugin):
         return ""
 
     def _show_wipe_dialog(self, *_):
-        """Диалог 1: пояснение и чекбокс «Отказаться от использования» (по умолчанию снят). Кнопка «Далее» красная и WIPE_COOLDOWN_SEC секунд неактивна."""
+        """Диалог 1: пояснение. Удаление всегда с отказом от использования. Кнопка «Далее» красная и WIPE_COOLDOWN_SEC секунд неактивна."""
         tr = self._tr
 
-        def next_step(selected, opt_out):
+        def next_step(selected, extra):
             def later():
-                run_on_ui_thread(lambda: self._show_wipe_confirm(bool(opt_out)))
+                run_on_ui_thread(lambda: self._show_wipe_confirm(True))
             run_on_queue(later, PLUGINS_QUEUE, 250)
 
         self.show_checklist(
             tr("wipe_title"), [], next_step, message=tr("wipe_body"),
-            extra=(tr("wipe_opt_out"), False, True), positive=tr("wipe_next"),
-            cooldown=WIPE_COOLDOWN_SEC, red=True,
+            positive=tr("wipe_next"), cooldown=WIPE_COOLDOWN_SEC, red=True,
         )
 
     def _show_wipe_confirm(self, opt_out: bool):
@@ -13182,7 +13241,7 @@ class PrefixfyPlugin(BasePlugin):
         shown_at = time.monotonic()
         builder = AlertDialogBuilder(activity)
         builder.set_title(tr("wipe_confirm_title"))
-        builder.set_message(tr("wipe_confirm_out" if opt_out else "wipe_confirm_clean") + self._bypass_note())
+        builder.set_message(tr("wipe_confirm_out") + self._bypass_note())
 
         def confirm(bld, which):
             if WIPE_COOLDOWN_SEC - (time.monotonic() - shown_at) > 0:
