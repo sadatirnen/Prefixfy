@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "45.0.0"
-__build__ = "45.0.0_20261115.1_67"
+__version__ = "45.0.1"
+__build__ = "45.0.1_20261115.2_68"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -324,7 +324,7 @@ TRANSIENT_SETTING_DEFAULTS = {
 }
 
 OTA_SETTING_DEFAULTS = {
-    "ota_auto": True,
+    "ota_auto": False,
     "ota_mode": 0,
     "ota_action": 1,
     "ota_time": "04:00",
