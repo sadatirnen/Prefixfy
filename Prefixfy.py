@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "45.3.0"
-__build__ = "45.3.0_20261115.6_74"
+__version__ = "45.4.0"
+__build__ = "45.4.0_20261115.7_75"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -2591,6 +2591,8 @@ _WIPE_STRINGS = {
         "wipe_confirm_btn": "Очистить",
         "wipe_started": "Готовлю удаление…",
         "wipe_started_multi": "Готовлю удаление… Плагин перезапустится несколько раз.",
+        "wipe_halt": "Идёт очистка",
+        "wipe_halt_subtext": "Плагин ничего не делает и перезапустится ещё раз.",
         "wipe_updating": "Обновление до {version}, затем удаление данных…",
         "wipe_reinstalling": "Переустановка сборки {version}, затем удаление данных…",
         "wipe_update_failed": "Не удалось обновить плагин: {reason}. Ничего не удалено.",
@@ -2619,6 +2621,8 @@ _WIPE_STRINGS = {
         "wipe_confirm_btn": "Clear",
         "wipe_started": "Preparing deletion…",
         "wipe_started_multi": "Preparing deletion… The plugin will restart several times.",
+        "wipe_halt": "Cleaning in progress",
+        "wipe_halt_subtext": "The plugin does nothing and will restart once more.",
         "wipe_updating": "Updating to {version}, then deleting data…",
         "wipe_reinstalling": "Reinstalling {version}, then deleting data…",
         "wipe_update_failed": "Update failed: {reason}. Nothing was deleted.",
@@ -2647,6 +2651,8 @@ _WIPE_STRINGS = {
         "wipe_confirm_btn": "消去",
         "wipe_started": "削除の準備中…",
         "wipe_started_multi": "削除の準備中… プラグインは複数回再起動します。",
+        "wipe_halt": "消去中",
+        "wipe_halt_subtext": "プラグインは何も実行せず、もう一度再起動します。",
         "wipe_updating": "{version} に更新後、データを削除します…",
         "wipe_reinstalling": "{version} を再インストール後、データを削除します…",
         "wipe_update_failed": "更新に失敗: {reason}。何も削除していません。",
@@ -2675,6 +2681,8 @@ _WIPE_STRINGS = {
         "wipe_confirm_btn": "삭제",
         "wipe_started": "삭제를 준비하는 중…",
         "wipe_started_multi": "삭제 준비 중… 플러그인이 여러 번 다시 시작됩니다.",
+        "wipe_halt": "삭제 중",
+        "wipe_halt_subtext": "플러그인은 아무 작업도 하지 않으며 한 번 더 다시 시작됩니다.",
         "wipe_updating": "{version}(으)로 업데이트 후 데이터를 삭제합니다…",
         "wipe_reinstalling": "{version}을(를) 재설치한 후 데이터를 삭제합니다…",
         "wipe_update_failed": "업데이트 실패: {reason}. 삭제된 것은 없습니다.",
@@ -2703,6 +2711,8 @@ _WIPE_STRINGS = {
         "wipe_confirm_btn": "Effacer",
         "wipe_started": "Préparation de la suppression…",
         "wipe_started_multi": "Préparation de la suppression… Le plugin redémarrera plusieurs fois.",
+        "wipe_halt": "Nettoyage en cours",
+        "wipe_halt_subtext": "Le plugin ne fait rien et redémarrera encore une fois.",
         "wipe_updating": "Mise à jour vers {version}, puis suppression des données…",
         "wipe_reinstalling": "Réinstallation de {version}, puis suppression des données…",
         "wipe_update_failed": "Échec de la mise à jour : {reason}. Rien n’a été supprimé.",
@@ -2731,6 +2741,8 @@ _WIPE_STRINGS = {
         "wipe_confirm_btn": "Löschen",
         "wipe_started": "Löschen wird vorbereitet…",
         "wipe_started_multi": "Löschung wird vorbereitet… Das Plugin startet mehrmals neu.",
+        "wipe_halt": "Bereinigung läuft",
+        "wipe_halt_subtext": "Das Plugin tut nichts und startet noch einmal neu.",
         "wipe_updating": "Update auf {version}, danach Daten löschen…",
         "wipe_reinstalling": "{version} neu installieren, danach Daten löschen…",
         "wipe_update_failed": "Update fehlgeschlagen: {reason}. Nichts gelöscht.",
@@ -11531,16 +11543,13 @@ class PrefixfyPlugin(BasePlugin):
             except Exception:
                 pass
             raise
-        if self._dormant:
+        if self._dormant or self._wipe_halt:
             return
         try:
             self.remote.ota_loaded()
         except Exception as exc:
             self.log(f"Prefixfy OTA confirm failed: {exc}")
-        if self._wipe_restart_pending:
-            self._wipe_restart_pending = False
-            threading.Thread(target=self._wipe_second_restart, name="PrefixfyWipeRestart", daemon=True).start()
-        elif self._wiped_clean or self._auto_reset_done:
+        if self._wiped_clean or self._auto_reset_done:
             notice = "auto_reset_done" if self._auto_reset_done else "wipe_done"
             self._wiped_clean = False
             self._auto_reset_done = False
@@ -11552,23 +11561,37 @@ class PrefixfyPlugin(BasePlugin):
     _dormant = False
     _wiped_clean = False
     _wipe_running = False
-    _wipe_restart_pending = False
+    _wipe_halt = False
+
+    def _enter_wipe_halt(self):
+        """Между первым и вторым перезапуском плагин ничего не делает, кроме стирания, которое уже выполнено:
+        ни настроек, ни хуков, ни удалённого модуля, ни OTA. Единственное действие - второй перезапуск."""
+        self._wipe_halt = True
+        self._prefixfy_hooks = []
+        self.settings = PrefixfySettings(self)
+        self.localization = LocalizationManager(self)
+        self.log("Prefixfy: data wiped, the plugin does nothing until the second restart")
+        threading.Thread(target=self._wipe_second_restart, name="PrefixfyWipeRestart", daemon=True).start()
 
     def _wipe_second_restart(self):
-        """Второй перезапуск после очистки данных. Если перезапуск недоступен, плагин уже чистый: просто сообщаем."""
+        """Второй перезапуск после очистки. Метка остаётся: если перезапуск не удался и плагин включат вручную,
+        он загрузится чистым и покажет сообщение."""
         try:
-            time.sleep(2.0)
+            time.sleep(1.0)
             if _host_restart_plugin(self.log):
                 return
-            take_wipe_final_marker()
             self._toast("wipe_restart_manual")
         except Exception as exc:
             self.log(f"Prefixfy second restart failed: {exc}")
-            take_wipe_final_marker()
+
+    def _settings_wipe_halt(self) -> List[Any]:
+        return [Text(text=self._tr("wipe_halt"), subtext=self._tr("wipe_halt_subtext"),
+                     icon=self._icon("msg_retry", "msg_info"), on_click=lambda *_: None)]
 
     def _startup_gate(self) -> bool:
         """Отложенное удаление данных и режим отказа. True — плагин спит и остальное не загружается."""
         self._dormant = False
+        self._wipe_halt = False
         self._wiped_clean = False
         marker = read_wipe_marker()
         if marker is not None:
@@ -11595,8 +11618,10 @@ class PrefixfyPlugin(BasePlugin):
                     return True
                 # Перезапуск без отказа от использования: первый перезапуск был для переустановки сборки,
                 # второй делаем после очистки, чтобы плагин стартовал с нуля. Итоговое сообщение покажет второй запуск.
-                self._wipe_restart_pending = write_wipe_final_marker()
-                self._wiped_clean = not self._wipe_restart_pending
+                if write_wipe_final_marker():
+                    self._enter_wipe_halt()
+                    return True
+                self._wiped_clean = True
                 return False
         elif take_wipe_final_marker():
             self._wiped_clean = True
@@ -11626,7 +11651,7 @@ class PrefixfyPlugin(BasePlugin):
 
     def _request_blacklist_wipe(self):
         """Аккаунт устройства в ЧС: кладём метку и перезапускаем плагин, стирание выполнится в начале запуска."""
-        if self._dormant or self._wipe_running or blacklist_guard_exists():
+        if self._dormant or self._wipe_halt or self._wipe_running or blacklist_guard_exists():
             return
         self._wipe_running = True
 
@@ -14094,6 +14119,8 @@ class PrefixfyPlugin(BasePlugin):
         return items
 
     def create_settings(self) -> List[Any]:
+        if self._wipe_halt:
+            return self._settings_wipe_halt()
         if self._dormant:
             return self._settings_dormant()
         self.localization.refresh()
