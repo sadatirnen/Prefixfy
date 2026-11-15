@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "45.4.0"
-__build__ = "45.4.0_20261115.7_75"
+__version__ = "45.4.1"
+__build__ = "45.4.1_20261115.8_76"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -2592,7 +2592,7 @@ _WIPE_STRINGS = {
         "wipe_started": "Готовлю удаление…",
         "wipe_started_multi": "Готовлю удаление… Плагин перезапустится несколько раз.",
         "wipe_halt": "Идёт очистка",
-        "wipe_halt_subtext": "Плагин ничего не делает и перезапустится ещё раз.",
+        "wipe_halt_subtext": "Плагин скоро перезапустится ещё раз и начнёт с нуля.",
         "wipe_updating": "Обновление до {version}, затем удаление данных…",
         "wipe_reinstalling": "Переустановка сборки {version}, затем удаление данных…",
         "wipe_update_failed": "Не удалось обновить плагин: {reason}. Ничего не удалено.",
@@ -2622,7 +2622,7 @@ _WIPE_STRINGS = {
         "wipe_started": "Preparing deletion…",
         "wipe_started_multi": "Preparing deletion… The plugin will restart several times.",
         "wipe_halt": "Cleaning in progress",
-        "wipe_halt_subtext": "The plugin does nothing and will restart once more.",
+        "wipe_halt_subtext": "The plugin will restart once more shortly and start fresh.",
         "wipe_updating": "Updating to {version}, then deleting data…",
         "wipe_reinstalling": "Reinstalling {version}, then deleting data…",
         "wipe_update_failed": "Update failed: {reason}. Nothing was deleted.",
@@ -2652,7 +2652,7 @@ _WIPE_STRINGS = {
         "wipe_started": "削除の準備中…",
         "wipe_started_multi": "削除の準備中… プラグインは複数回再起動します。",
         "wipe_halt": "消去中",
-        "wipe_halt_subtext": "プラグインは何も実行せず、もう一度再起動します。",
+        "wipe_halt_subtext": "まもなくプラグインがもう一度再起動し、最初から始まります。",
         "wipe_updating": "{version} に更新後、データを削除します…",
         "wipe_reinstalling": "{version} を再インストール後、データを削除します…",
         "wipe_update_failed": "更新に失敗: {reason}。何も削除していません。",
@@ -2682,7 +2682,7 @@ _WIPE_STRINGS = {
         "wipe_started": "삭제를 준비하는 중…",
         "wipe_started_multi": "삭제 준비 중… 플러그인이 여러 번 다시 시작됩니다.",
         "wipe_halt": "삭제 중",
-        "wipe_halt_subtext": "플러그인은 아무 작업도 하지 않으며 한 번 더 다시 시작됩니다.",
+        "wipe_halt_subtext": "곧 플러그인이 한 번 더 다시 시작되며 처음부터 시작합니다.",
         "wipe_updating": "{version}(으)로 업데이트 후 데이터를 삭제합니다…",
         "wipe_reinstalling": "{version}을(를) 재설치한 후 데이터를 삭제합니다…",
         "wipe_update_failed": "업데이트 실패: {reason}. 삭제된 것은 없습니다.",
@@ -2712,7 +2712,7 @@ _WIPE_STRINGS = {
         "wipe_started": "Préparation de la suppression…",
         "wipe_started_multi": "Préparation de la suppression… Le plugin redémarrera plusieurs fois.",
         "wipe_halt": "Nettoyage en cours",
-        "wipe_halt_subtext": "Le plugin ne fait rien et redémarrera encore une fois.",
+        "wipe_halt_subtext": "Le plugin va redémarrer encore une fois et repartira de zéro.",
         "wipe_updating": "Mise à jour vers {version}, puis suppression des données…",
         "wipe_reinstalling": "Réinstallation de {version}, puis suppression des données…",
         "wipe_update_failed": "Échec de la mise à jour : {reason}. Rien n’a été supprimé.",
@@ -2742,7 +2742,7 @@ _WIPE_STRINGS = {
         "wipe_started": "Löschen wird vorbereitet…",
         "wipe_started_multi": "Löschung wird vorbereitet… Das Plugin startet mehrmals neu.",
         "wipe_halt": "Bereinigung läuft",
-        "wipe_halt_subtext": "Das Plugin tut nichts und startet noch einmal neu.",
+        "wipe_halt_subtext": "Das Plugin startet gleich noch einmal neu und beginnt von vorn.",
         "wipe_updating": "Update auf {version}, danach Daten löschen…",
         "wipe_reinstalling": "{version} neu installieren, danach Daten löschen…",
         "wipe_update_failed": "Update fehlgeschlagen: {reason}. Nichts gelöscht.",
