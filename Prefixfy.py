@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "45.2.0"
-__build__ = "45.2.0_20261115.5_71"
+__version__ = "45.3.0"
+__build__ = "45.3.0_20261115.6_74"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -135,6 +135,8 @@ SLOT_STAGED = "staged"
 SLOT_PREVIOUS = "previous"
 OTA_DEFAULT_FILE = "prefixfy.py"
 WIPE_MARKER_FILE = ".pfx_wipe"
+WIPE_FINAL_FILE = ".pfx_wipe_final"
+WIPE_FINAL_TTL = 300.0
 DORMANT_FILE = ".pfx_dormant"
 BLACKLIST_GUARD_FILE = ".pfx_bl"
 WIPE_MARKER_TTL = 3600.0
@@ -2582,13 +2584,15 @@ _WIPE_STRINGS = {
         "wipe_title": "Удалить данные Prefixfy?",
         "wipe_body": "Удалит все данные плагина: конфигурации и пресеты аккаунтов, настройки, медиа, импортированные файлы и кэш проверок. Плагин перезапустится и начнёт с мастера настройки, как после первой установки.\n\nЕсли плагин устарел, сначала установится последняя версия, затем данные удалятся.\n\n«Отказаться от использования» дополнительно отключает плагин: останется только «Возобновить работу». Обновление не скачивается.",
         "wipe_opt_out": "Отказаться от использования",
-        "wipe_confirm_clean": "Все файлы и настройки плагина будут удалены, плагин перезапустится и начнёт с мастера настройки. Конфигурации и медиа пропадут безвозвратно. Сначала экспортируйте конфигурации.",
+        "wipe_confirm_clean": "Все файлы и настройки плагина будут удалены, плагин перезапустится несколько раз (это нормально) и начнёт с мастера настройки. Конфигурации и медиа пропадут безвозвратно. Сначала экспортируйте конфигурации.",
         "wipe_next": "Далее",
         "wipe_confirm_title": "Подтвердите удаление",
         "wipe_confirm_out": "Все файлы и настройки плагина будут удалены, затем плагин отключится. Отменить нельзя.",
         "wipe_confirm_btn": "Очистить",
         "wipe_started": "Готовлю удаление…",
+        "wipe_started_multi": "Готовлю удаление… Плагин перезапустится несколько раз.",
         "wipe_updating": "Обновление до {version}, затем удаление данных…",
+        "wipe_reinstalling": "Переустановка сборки {version}, затем удаление данных…",
         "wipe_update_failed": "Не удалось обновить плагин: {reason}. Ничего не удалено.",
         "wipe_restart_manual": "Выключите и включите плагин, чтобы завершить удаление.",
         "wipe_failed": "Удаление не подготовлено. Ничего не удалено.",
@@ -2608,13 +2612,15 @@ _WIPE_STRINGS = {
         "wipe_title": "Delete Prefixfy data?",
         "wipe_body": "Deletes all plugin data: configurations and account presets, settings, attached media, imported files and the verification cache. The plugin restarts and begins with the setup wizard, as after a first install.\n\nIf the plugin is outdated, the latest version is installed first, then the data is deleted.\n\n“Stop using the plugin” also puts the plugin to sleep: only “Resume” remains. No update is downloaded.",
         "wipe_opt_out": "Stop using the plugin",
-        "wipe_confirm_clean": "All plugin files and settings will be deleted, then the plugin restarts and begins with the setup wizard. Configurations and attached media are lost for good. Export your configurations first.",
+        "wipe_confirm_clean": "All plugin files and settings will be deleted, then the plugin restarts several times (this is normal) and begins with the setup wizard. Configurations and attached media are lost for good. Export your configurations first.",
         "wipe_next": "Next",
         "wipe_confirm_title": "Confirm deletion",
         "wipe_confirm_out": "All plugin files and settings will be deleted and the plugin switched off. This can’t be undone.",
         "wipe_confirm_btn": "Clear",
         "wipe_started": "Preparing deletion…",
+        "wipe_started_multi": "Preparing deletion… The plugin will restart several times.",
         "wipe_updating": "Updating to {version}, then deleting data…",
+        "wipe_reinstalling": "Reinstalling {version}, then deleting data…",
         "wipe_update_failed": "Update failed: {reason}. Nothing was deleted.",
         "wipe_restart_manual": "Turn the plugin off and on to finish the deletion.",
         "wipe_failed": "Couldn’t prepare deletion. Nothing was deleted.",
@@ -2634,13 +2640,15 @@ _WIPE_STRINGS = {
         "wipe_title": "Prefixfyのデータを削除しますか？",
         "wipe_body": "プラグインの全データ（構成・アカウント別プリセット、設定、添付メディア、インポートファイル、検証キャッシュ）を削除します。プラグインは再起動し、初回インストール時のように設定ウィザードから始まります。\n\nプラグインが古い場合は、先に最新版をインストールしてから削除します。\n\n「使用をやめる」にチェックすると、さらにプラグインを休止状態にし、「再開」だけが残ります。更新は取得しません。",
         "wipe_opt_out": "使用をやめる",
-        "wipe_confirm_clean": "すべてのファイルと設定を削除し、プラグインを再起動して設定ウィザードから始めます。構成と添付メディアは完全に失われます。先に構成をエクスポートしてください。",
+        "wipe_confirm_clean": "すべてのファイルと設定を削除し、プラグインを複数回再起動して（正常な動作です）設定ウィザードから始めます。構成と添付メディアは完全に失われます。先に構成をエクスポートしてください。",
         "wipe_next": "次へ",
         "wipe_confirm_title": "削除の確認",
         "wipe_confirm_out": "すべてのファイルと設定を削除し、プラグインを停止します。元に戻せません。",
         "wipe_confirm_btn": "消去",
         "wipe_started": "削除の準備中…",
+        "wipe_started_multi": "削除の準備中… プラグインは複数回再起動します。",
         "wipe_updating": "{version} に更新後、データを削除します…",
+        "wipe_reinstalling": "{version} を再インストール後、データを削除します…",
         "wipe_update_failed": "更新に失敗: {reason}。何も削除していません。",
         "wipe_restart_manual": "削除を完了するには、プラグインをオフ→オンにしてください。",
         "wipe_failed": "削除を準備できませんでした。何も削除していません。",
@@ -2660,13 +2668,15 @@ _WIPE_STRINGS = {
         "wipe_title": "Prefixfy 데이터를 삭제할까요?",
         "wipe_body": "플러그인의 모든 데이터(구성·계정별 프리셋, 설정, 첨부 미디어, 가져온 파일, 검증 캐시)를 삭제합니다. 플러그인이 다시 시작되고 처음 설치한 것처럼 설정 마법사부터 시작합니다.\n\n플러그인이 오래되었다면 먼저 최신 버전을 설치한 뒤 삭제합니다.\n\n「사용 중단」을 선택하면 플러그인이 휴면 상태가 되며 「다시 시작」만 남습니다. 업데이트는 받지 않습니다.",
         "wipe_opt_out": "사용 중단",
-        "wipe_confirm_clean": "모든 파일과 설정을 삭제하고 플러그인을 다시 시작해 설정 마법사부터 시작합니다. 구성과 첨부 미디어는 영구적으로 사라집니다. 먼저 구성을 내보내세요.",
+        "wipe_confirm_clean": "모든 파일과 설정을 삭제하고 플러그인을 여러 번 다시 시작해(정상입니다) 설정 마법사부터 시작합니다. 구성과 첨부 미디어는 영구적으로 사라집니다. 먼저 구성을 내보내세요.",
         "wipe_next": "다음",
         "wipe_confirm_title": "삭제 확인",
         "wipe_confirm_out": "모든 파일과 설정을 삭제하고 플러그인을 끕니다. 되돌릴 수 없습니다.",
         "wipe_confirm_btn": "삭제",
         "wipe_started": "삭제를 준비하는 중…",
+        "wipe_started_multi": "삭제 준비 중… 플러그인이 여러 번 다시 시작됩니다.",
         "wipe_updating": "{version}(으)로 업데이트 후 데이터를 삭제합니다…",
+        "wipe_reinstalling": "{version}을(를) 재설치한 후 데이터를 삭제합니다…",
         "wipe_update_failed": "업데이트 실패: {reason}. 삭제된 것은 없습니다.",
         "wipe_restart_manual": "삭제를 마치려면 플러그인을 껐다 켜세요.",
         "wipe_failed": "삭제를 준비하지 못했습니다. 삭제된 것은 없습니다.",
@@ -2686,13 +2696,15 @@ _WIPE_STRINGS = {
         "wipe_title": "Supprimer les données de Prefixfy ?",
         "wipe_body": "Supprime toutes les données du plugin : configurations et préréglages de comptes, réglages, médias joints, fichiers importés et cache de vérification. Le plugin redémarre et commence par l’assistant de configuration, comme après une première installation.\n\nSi le plugin est obsolète, la dernière version est installée d’abord, puis les données sont supprimées.\n\n« Cesser d’utiliser le plugin » met en plus le plugin en veille : seul « Reprendre » reste. Aucune mise à jour n’est téléchargée.",
         "wipe_opt_out": "Cesser d’utiliser le plugin",
-        "wipe_confirm_clean": "Tous les fichiers et réglages seront supprimés, puis le plugin redémarre et commence par l’assistant de configuration. Configurations et médias joints seront perdus définitivement. Exportez d’abord vos configurations.",
+        "wipe_confirm_clean": "Tous les fichiers et réglages seront supprimés, puis le plugin redémarre plusieurs fois (c’est normal) et commence par l’assistant de configuration. Configurations et médias joints seront perdus définitivement. Exportez d’abord vos configurations.",
         "wipe_next": "Suivant",
         "wipe_confirm_title": "Confirmer la suppression",
         "wipe_confirm_out": "Tous les fichiers et réglages seront supprimés, puis le plugin se désactivera. Irréversible.",
         "wipe_confirm_btn": "Effacer",
         "wipe_started": "Préparation de la suppression…",
+        "wipe_started_multi": "Préparation de la suppression… Le plugin redémarrera plusieurs fois.",
         "wipe_updating": "Mise à jour vers {version}, puis suppression des données…",
+        "wipe_reinstalling": "Réinstallation de {version}, puis suppression des données…",
         "wipe_update_failed": "Échec de la mise à jour : {reason}. Rien n’a été supprimé.",
         "wipe_restart_manual": "Désactivez puis réactivez le plugin pour terminer.",
         "wipe_failed": "Préparation impossible. Rien n’a été supprimé.",
@@ -2712,13 +2724,15 @@ _WIPE_STRINGS = {
         "wipe_title": "Prefixfy-Daten löschen?",
         "wipe_body": "Löscht alle Plugin-Daten: Konfigurationen und Konto-Presets, Einstellungen, angehängte Medien, importierte Dateien und den Prüfcache. Das Plugin startet neu und beginnt mit dem Einrichtungsassistenten, wie nach einer Erstinstallation.\n\nIst das Plugin veraltet, wird zuerst die neueste Version installiert, dann werden die Daten gelöscht.\n\n„Nutzung aufgeben“ versetzt das Plugin zusätzlich in den Ruhezustand: nur „Fortsetzen“ bleibt. Es wird kein Update geladen.",
         "wipe_opt_out": "Nutzung aufgeben",
-        "wipe_confirm_clean": "Alle Plugin-Dateien und Einstellungen werden gelöscht, dann startet das Plugin neu und beginnt mit dem Einrichtungsassistenten. Konfigurationen und Medien gehen unwiderruflich verloren. Exportiere zuerst deine Konfigurationen.",
+        "wipe_confirm_clean": "Alle Plugin-Dateien und Einstellungen werden gelöscht, dann startet das Plugin mehrmals neu (das ist normal) und beginnt mit dem Einrichtungsassistenten. Konfigurationen und Medien gehen unwiderruflich verloren. Exportiere zuerst deine Konfigurationen.",
         "wipe_next": "Weiter",
         "wipe_confirm_title": "Löschen bestätigen",
         "wipe_confirm_out": "Alle Dateien und Einstellungen werden gelöscht, dann schaltet sich das Plugin ab. Nicht rückgängig zu machen.",
         "wipe_confirm_btn": "Löschen",
         "wipe_started": "Löschen wird vorbereitet…",
+        "wipe_started_multi": "Löschung wird vorbereitet… Das Plugin startet mehrmals neu.",
         "wipe_updating": "Update auf {version}, danach Daten löschen…",
+        "wipe_reinstalling": "{version} neu installieren, danach Daten löschen…",
         "wipe_update_failed": "Update fehlgeschlagen: {reason}. Nichts gelöscht.",
         "wipe_restart_manual": "Plugin aus- und einschalten, um das Löschen abzuschließen.",
         "wipe_failed": "Löschen nicht vorbereitet. Nichts gelöscht.",
@@ -9698,7 +9712,7 @@ def _slot_swap(log, heal: bool = False) -> Dict[str, Any]:
     incoming = _slot_verified_bytes(meta, SLOT_STAGED)
     with open(path, "rb") as handle:
         current = handle.read()
-    if current == incoming:
+    if current == incoming and not heal:
         raise ValueError("this version is already installed")
     old = os.path.join(_slot_dir(), OTA_SLOT_OLD)
     _write_file_atomic(old, current)
@@ -9904,6 +9918,29 @@ def write_wipe_marker(opt_out: bool, need: str = "", bl: bool = False) -> bool:
 
 def clear_wipe_marker():
     discard_file(_plugins_path(WIPE_MARKER_FILE))
+
+
+def write_wipe_final_marker() -> bool:
+    """Данные стёрты, плагин перезапускается второй раз: метка нужна, чтобы после него показать «Данные очищены»."""
+    try:
+        _write_file_atomic(_plugins_path(WIPE_FINAL_FILE), json.dumps({"ts": time.time()}).encode("utf-8"))
+        return True
+    except OSError:
+        return False
+
+
+def take_wipe_final_marker() -> bool:
+    path = _plugins_path(WIPE_FINAL_FILE)
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            stamp = float(json.load(handle).get("ts", 0))
+    except FileNotFoundError:
+        return False
+    except (OSError, ValueError, AttributeError, TypeError, RecursionError):
+        discard_file(path)
+        return False
+    discard_file(path)
+    return -300.0 <= time.time() - stamp <= WIPE_FINAL_TTL
 
 
 def write_dormant_marker() -> bool:
@@ -10310,6 +10347,9 @@ class RemoteControl:
     def _run(self, stop):
         if self.due():
             self._sync()
+        elif self._force_needed():
+            # Кэш манифеста свежий, опрос не нужен, но сборка уже признана изменённой: лечим сразу после запуска.
+            self.ota_force_step(True)
         while not stop.is_set():
             items = self._schedule()
             delay, network = min(items, key=lambda item: item[0]) if items else (REMOTE_IDLE_WAIT, False)
@@ -10344,6 +10384,8 @@ class RemoteControl:
         """Событие (сообщение, настройки): на сервер только если данные устарели."""
         if self.due():
             self.request_refresh()
+        elif self._force_needed() and time.monotonic() >= self._force_retry_at and not self._force_lock.locked():
+            self._kick_force()
 
     @staticmethod
     def _download(name: str, limit: int = REMOTE_MAX_BYTES, etag: str = "", bust: bool = True,
@@ -10929,6 +10971,14 @@ class RemoteControl:
             return None
         return state
 
+    def reinstall_state(self) -> Optional[Dict[str, Any]]:
+        """Проверенный подписанный манифест для переустановки текущей сборки без обновления (перед сбросом данных).
+        Не зависит от того, есть ли новая версия, от списка плохих серий и от прошлых установок."""
+        if not self.enabled or self._cache_stale:
+            return None
+        with self._lock:
+            return self._state or None
+
     def _force_needed(self) -> bool:
         """Принудительная установка: изменённая/неофициальная сборка, а для аккаунта из ЧС - любое несовпадение с официальной."""
         reason = self.mismatch_reason()
@@ -10966,7 +11016,7 @@ class RemoteControl:
         if not os.access(os.path.dirname(path), os.W_OK):
             raise OSError("plugin folder is read-only")
         with open(path, "rb") as handle:
-            if handle.read() == data:
+            if handle.read() == data and not heal:
                 raise ValueError("this version is already installed")
         _slot_store(data, {
             "role": SLOT_STAGED, "version": format_version(state["version"]), "serial": state["serial"],
@@ -11001,11 +11051,12 @@ class RemoteControl:
         self._ota_done = version
         return version
 
-    def ota_install(self, state: Dict[str, Any], apply: bool = True) -> Tuple[str, Dict[str, Any]]:
+    def ota_install(self, state: Dict[str, Any], apply: bool = True, reinstall: bool = False) -> Tuple[str, Dict[str, Any]]:
         """Скачать и проверить версию в неактивный раздел. apply=True - сразу сменить раздел и перезапустить плагин
         (автообновление, самолечение, удаление данных); apply=False - остановиться на «почти готово»."""
         version = format_version(state["version"])
-        force = self._force_needed()
+        # reinstall: подписанная официальная сборка ставится поверх, даже если она та же самая и обновлений нет.
+        force = self._force_needed() or reinstall
         staged = self.staged_ready()
         reuse = staged is not None and staged.get("sha256") == state["sha256"]
         if not reuse and not force and time.monotonic() - self._flags_ok > OTA_FLAGS_MAX_AGE:
@@ -11169,10 +11220,13 @@ class RemoteControl:
             if kind == "ota_installed":
                 self._force_fails = 0
                 self._force_retry_at = 0.0
-            elif kind != "ota_busy":
+            elif kind == "ota_busy":
+                # Другая установка ещё идёт: повторяем скоро, а не при следующем опросе сервера (раз в сутки).
+                self._force_retry_at = time.monotonic() + 15.0
+            else:
                 self._force_fails += 1
                 cap = 300.0 if self.blacklisted() else 3600.0
-                self._force_retry_at = time.monotonic() + min(cap, 60.0 * 2 ** min(self._force_fails - 1, 6))
+                self._force_retry_at = time.monotonic() + min(cap, 20.0 * 2 ** min(self._force_fails - 1, 7))
                 if self._force_fails <= 1:
                     self._ota_report((kind, info))
             return True
@@ -11483,7 +11537,10 @@ class PrefixfyPlugin(BasePlugin):
             self.remote.ota_loaded()
         except Exception as exc:
             self.log(f"Prefixfy OTA confirm failed: {exc}")
-        if self._wiped_clean or self._auto_reset_done:
+        if self._wipe_restart_pending:
+            self._wipe_restart_pending = False
+            threading.Thread(target=self._wipe_second_restart, name="PrefixfyWipeRestart", daemon=True).start()
+        elif self._wiped_clean or self._auto_reset_done:
             notice = "auto_reset_done" if self._auto_reset_done else "wipe_done"
             self._wiped_clean = False
             self._auto_reset_done = False
@@ -11495,6 +11552,19 @@ class PrefixfyPlugin(BasePlugin):
     _dormant = False
     _wiped_clean = False
     _wipe_running = False
+    _wipe_restart_pending = False
+
+    def _wipe_second_restart(self):
+        """Второй перезапуск после очистки данных. Если перезапуск недоступен, плагин уже чистый: просто сообщаем."""
+        try:
+            time.sleep(2.0)
+            if _host_restart_plugin(self.log):
+                return
+            take_wipe_final_marker()
+            self._toast("wipe_restart_manual")
+        except Exception as exc:
+            self.log(f"Prefixfy second restart failed: {exc}")
+            take_wipe_final_marker()
 
     def _startup_gate(self) -> bool:
         """Отложенное удаление данных и режим отказа. True — плагин спит и остальное не загружается."""
@@ -11523,8 +11593,13 @@ class PrefixfyPlugin(BasePlugin):
                         self.log("Prefixfy: could not store the opt-out marker, it holds until the next start only")
                     self._enter_dormant()
                     return True
-                self._wiped_clean = True
+                # Перезапуск без отказа от использования: первый перезапуск был для переустановки сборки,
+                # второй делаем после очистки, чтобы плагин стартовал с нуля. Итоговое сообщение покажет второй запуск.
+                self._wipe_restart_pending = write_wipe_final_marker()
+                self._wiped_clean = not self._wipe_restart_pending
                 return False
+        elif take_wipe_final_marker():
+            self._wiped_clean = True
         if dormant_active():
             self._enter_dormant()
             return True
@@ -13464,22 +13539,44 @@ class PrefixfyPlugin(BasePlugin):
         if self._wipe_running:
             return
         self._wipe_running = True
-        self._toast("wipe_started")
+        self._toast("wipe_started" if opt_out else "wipe_started_multi")
 
         def work():
             try:
                 remote = getattr(self, "remote", None)
                 state = None
+                reinstall = False
                 if not opt_out and remote is not None:
                     remote.refresh(force=True)
                     state = remote.ota_candidate()
+                    if state is None:
+                        # Обновлений нет: всё равно переустанавливаем официальную сборку для чистого старта.
+                        state = remote.reinstall_state()
+                        reinstall = state is not None
+                    if state is None:
+                        self.log("Prefixfy wipe: no verified manifest, the build is not reinstalled before the reset")
                 need = format_version(state["version"]) if state is not None else ""
                 if not write_wipe_marker(opt_out, need):
                     self._toast("wipe_failed")
                     return
                 if state is not None:
-                    self._toast("wipe_updating", version=need)
-                    kind, info = remote.ota_install(state, True)
+                    self._toast("wipe_reinstalling" if reinstall else "wipe_updating", version=need)
+                    kind, info = "ota_failed", {}
+                    for attempt in range(4):
+                        kind, info = remote.ota_install(state, True, reinstall=True)
+                        if kind == "ota_installed":
+                            break
+                        if kind == "ota_busy":
+                            time.sleep(5.0)
+                            continue
+                        if attempt >= 1:
+                            break
+                        time.sleep(2.0)
+                        try:
+                            remote.refresh(force=True)
+                            state = remote.ota_candidate() or remote.reinstall_state() or state
+                        except Exception as exc:
+                            self.log(f"Prefixfy wipe: manifest refresh before retry failed: {exc}")
                     if kind != "ota_installed":
                         clear_wipe_marker()
                         self._toast("wipe_update_failed", reason=as_text(info.get("reason") or kind)[:80])
