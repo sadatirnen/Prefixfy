@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "45.4.1"
-__build__ = "45.4.1_20261115.8_76"
+__version__ = "45.5.0"
+__build__ = "45.5.0_20261116.1_77"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -512,6 +512,7 @@ class LocalizationManager:
             "apply": "Применить",
             "configuration_imported": "Конфигурация импортирована",
             "configuration_import_failed": "Не удалось импортировать конфигурацию",
+            "import_locked_setup": "Импорт конфигураций станет доступен после начальной настройки.",
             "configuration_save_failed": "Не удалось сохранить текущую конфигурацию",
             "configuration_exported": "Конфигурация экспортирована",
             "configuration_export_failed": "Не удалось экспортировать конфигурацию",
@@ -713,6 +714,7 @@ class LocalizationManager:
             "apply": "Apply",
             "configuration_imported": "Configuration imported",
             "configuration_import_failed": "Could not import configuration",
+            "import_locked_setup": "Importing configurations becomes available after the initial setup.",
             "configuration_save_failed": "Could not save the current configuration",
             "configuration_exported": "Configuration exported",
             "configuration_export_failed": "Could not export configuration",
@@ -915,6 +917,7 @@ class LocalizationManager:
             "apply": "適用",
             "configuration_imported": "設定をインポートしました",
             "configuration_import_failed": "設定をインポートできませんでした",
+            "import_locked_setup": "設定のインポートは初期設定の完了後に利用できます。",
             "configuration_save_failed": "現在の設定を保存できませんでした",
             "configuration_exported": "設定をエクスポートしました",
             "configuration_export_failed": "設定をエクスポートできませんでした",
@@ -1117,6 +1120,7 @@ class LocalizationManager:
             "apply": "적용",
             "configuration_imported": "구성을 가져왔습니다",
             "configuration_import_failed": "구성을 가져오지 못했습니다",
+            "import_locked_setup": "구성 가져오기는 초기 설정이 끝난 뒤에 사용할 수 있습니다.",
             "configuration_save_failed": "현재 구성을 저장하지 못했습니다",
             "configuration_exported": "구성을 내보냈습니다",
             "configuration_export_failed": "구성을 내보내지 못했습니다",
@@ -1319,6 +1323,7 @@ class LocalizationManager:
             "apply": "Appliquer",
             "configuration_imported": "Configuration importée",
             "configuration_import_failed": "Impossible d’importer la configuration",
+            "import_locked_setup": "L’importation de configurations sera disponible après la configuration initiale.",
             "configuration_save_failed": "Impossible d’enregistrer la configuration actuelle",
             "configuration_exported": "Configuration exportée",
             "configuration_export_failed": "Impossible d’exporter la configuration",
@@ -1521,6 +1526,7 @@ class LocalizationManager:
             "apply": "Anwenden",
             "configuration_imported": "Konfiguration importiert",
             "configuration_import_failed": "Konfiguration konnte nicht importiert werden",
+            "import_locked_setup": "Der Import von Konfigurationen ist nach der Ersteinrichtung verfügbar.",
             "configuration_save_failed": "Die aktuelle Konfiguration konnte nicht gespeichert werden",
             "configuration_exported": "Konfiguration exportiert",
             "configuration_export_failed": "Konfiguration konnte nicht exportiert werden",
@@ -6859,6 +6865,17 @@ class ConfigTransfer:
         self._toast(key, fragment, **kwargs)
         return True
 
+    def _import_locked(self, fragment=None) -> bool:
+        """Импорт конфигураций закрыт, пока не завершена начальная настройка. При любой ошибке проверки: закрыто."""
+        try:
+            done = self.plugin._setup_stage() >= SETUP_DONE
+        except Exception:
+            done = False
+        if done:
+            return False
+        self._toast("import_locked_setup", fragment)
+        return True
+
     def request_media_import(self, view=None):
         if self._blocked():
             return
@@ -6927,6 +6944,8 @@ class ConfigTransfer:
     def _show_selection(self, operation):
         if self._blocked():
             return
+        if operation == "import" and self._import_locked():
+            return
         fragment, _ = self._activity()
         available = tuple(c for c in self.visible_components() if operation != "reset" or COMPONENT_KEYS.get(c))
         rows = [(self._component_label(component), True, True) for component in available]
@@ -6961,6 +6980,8 @@ class ConfigTransfer:
         )
 
     def _request_import(self, components, as_new=False):
+        if self._import_locked():
+            return
         _, activity = self._activity()
         if not activity:
             return
@@ -7079,6 +7100,8 @@ class ConfigTransfer:
         fragment = getattr(args, "parent_fragment", None) or get_last_fragment()
         if self._blocked(fragment):
             return
+        if self._import_locked(fragment):
+            return
         data = None
         handed_over = False
         try:
@@ -7118,6 +7141,9 @@ class ConfigTransfer:
                 self.discard_container_media(data)
 
     def _import_opened_data(self, data, fragment, components, as_new):
+        if self._import_locked(fragment):
+            self.discard_container_media(data)
+            return
         if as_new:
             if self.plugin._acct_on():
                 try:
@@ -7195,6 +7221,9 @@ class ConfigTransfer:
         return bool(plugin._show_builder(builder))
 
     def _finish_import(self, data, components, as_new, name, fragment, target=None):
+        if self._import_locked(fragment):
+            self.discard_container_media(data)
+            return
         if target is None and not as_new:
             if self.plugin._acct_on():
                 try:
@@ -7490,6 +7519,8 @@ class ConfigTransfer:
         components, as_new = self.pending_components, self.pending_import_as_new
         if request_code != self.MEDIA_IMPORT_REQUEST_CODE:
             self.pending_components, self.pending_import_as_new = (), False
+        if request_code == self.CONFIG_IMPORT_REQUEST_CODE and self._import_locked(fragment):
+            return True
         uri = data.getData() if (result_code == Activity.RESULT_OK and data is not None) else None
         if uri is None:
             return True
@@ -8427,7 +8458,15 @@ class ConfigurationsManager:
         record = self._record(config_id or self.scope_active_id()) or {}
         return record.get("origin") == self.ORIGIN_IMPORTED
 
+    def _setup_finished(self) -> bool:
+        try:
+            return self.plugin._setup_stage() >= SETUP_DONE
+        except Exception:
+            return False
+
     def import_data(self, data, components, as_new=False, name=None):
+        if not self._setup_finished():
+            raise ConfigurationError("initial setup is not finished")
         remote = getattr(self.plugin, "remote", None)
         if remote is not None and not remote.allows():
             raise ConfigurationError("plugin update required")
@@ -8691,6 +8730,8 @@ class ConfigurationsManager:
 
     def import_to_accounts(self, data, components, target):
         """target: ACCT_ALL (общий набор + все свои наборы), ACCT_COMMON или user_id аккаунта."""
+        if not self._setup_finished():
+            raise ConfigurationError("initial setup is not finished")
         remote = getattr(self.plugin, "remote", None)
         if remote is not None and not remote.allows():
             raise ConfigurationError("plugin update required")
@@ -8744,6 +8785,8 @@ class ConfigurationsManager:
 
     def import_new_to_account(self, data, components, name, target):
         """Импорт как новая конфигурация в наборе target: user_id аккаунта или ACCT_COMMON (общий набор)."""
+        if not self._setup_finished():
+            raise ConfigurationError("initial setup is not finished")
         remote = getattr(self.plugin, "remote", None)
         if remote is not None and not remote.allows():
             raise ConfigurationError("plugin update required")
@@ -14904,7 +14947,12 @@ class PrefixfyPlugin(BasePlugin):
         changed = 0
         try:
             targets = article_text_blocks(blocks)
-            for block in targets:
+        except Exception as exc:
+            self.log(f"Prefixfy article blocks lookup failed: {exc}")
+            return HookResult()
+        for block in targets:
+            # Каждый блок независим: исключение, пропуск или сбой одного блока не отменяют остальные.
+            try:
                 leaf = article_text_leaf(block)
                 if leaf is None:
                     continue
@@ -14913,9 +14961,8 @@ class PrefixfyPlugin(BasePlugin):
                     continue
                 if self._decorate_article_leaf(runtime, account, holder, field, text, parent):
                     changed += 1
-        except Exception as exc:
-            self.log(f"Prefixfy article decorate failed: {exc}")
-            return HookResult()
+            except Exception as exc:
+                self.log(f"Prefixfy article block skipped after an error: {exc}")
         if not changed:
             return HookResult()
         return HookResult(strategy=HookStrategy.MODIFY, params=params)
