@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "45.6.0"
-__build__ = "45.6.0_20261116.2_78"
+__version__ = "45.7.0"
+__build__ = "45.7.0_20261117.1_79"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -461,6 +461,9 @@ class LocalizationManager:
             "ignore_hashtags_subtext": "#теги остаются как есть.",
             "ignore_cashtags": "Не трогать $кэштеги",
             "ignore_cashtags_subtext": "$TON, $BTC и подобные остаются как есть.",
+            "ignore_segments": "Что не трогать",
+            "ignore_segments_hint": "Отметьте, какие части сообщения оставлять как есть.",
+            "ignore_segments_count": "Включено: {n} из {total}",
             "chat_menu": "Добавить/удалить чат в/из списка исключений",
             "chat_added": "Чат добавлен в список исключений",
             "chat_removed": "Чат удалён из списка исключений",
@@ -673,6 +676,9 @@ class LocalizationManager:
             "ignore_hashtags_subtext": "#tags stay as is.",
             "ignore_cashtags": "Skip $cashtags",
             "ignore_cashtags_subtext": "$TON, $BTC and similar stay as is.",
+            "ignore_segments": "What to skip",
+            "ignore_segments_hint": "Choose which parts of a message stay as is.",
+            "ignore_segments_count": "Enabled: {n} of {total}",
             "chat_menu": "Add/remove chat to/from the exception list",
             "chat_added": "Chat added to the exception list",
             "chat_removed": "Chat removed from the exception list",
@@ -886,6 +892,9 @@ class LocalizationManager:
             "ignore_hashtags_subtext": "#タグはそのままにします。",
             "ignore_cashtags": "$キャッシュタグを除外",
             "ignore_cashtags_subtext": "$TON や $BTC などはそのままにします。",
+            "ignore_segments": "除外する要素",
+            "ignore_segments_hint": "そのままにするメッセージの要素を選択します。",
+            "ignore_segments_count": "有効: {n}/{total}",
             "chat_menu": "例外リストにチャットを追加または削除",
             "chat_added": "チャットを例外リストに追加しました",
             "chat_removed": "チャットを例外リストから削除しました",
@@ -1099,6 +1108,9 @@ class LocalizationManager:
             "ignore_hashtags_subtext": "#태그는 그대로 둡니다.",
             "ignore_cashtags": "$캐시태그 제외",
             "ignore_cashtags_subtext": "$TON, $BTC 등은 그대로 둡니다.",
+            "ignore_segments": "제외할 항목",
+            "ignore_segments_hint": "그대로 둘 메시지 요소를 선택하세요.",
+            "ignore_segments_count": "사용 중: {n}/{total}",
             "chat_menu": "예외 목록에 채팅 추가/제거",
             "chat_added": "채팅이 예외 목록에 추가되었습니다",
             "chat_removed": "채팅이 예외 목록에서 제거되었습니다",
@@ -1312,6 +1324,9 @@ class LocalizationManager:
             "ignore_hashtags_subtext": "Les #tags restent intacts.",
             "ignore_cashtags": "Ignorer les $cashtags",
             "ignore_cashtags_subtext": "$TON, $BTC et similaires restent intacts.",
+            "ignore_segments": "Éléments à ignorer",
+            "ignore_segments_hint": "Choisissez les parties du message à laisser intactes.",
+            "ignore_segments_count": "Activé : {n} sur {total}",
             "chat_menu": "Ajouter/retirer le chat à/de la liste d’exceptions",
             "chat_added": "Chat ajouté à la liste d’exceptions",
             "chat_removed": "Chat retiré de la liste d’exceptions",
@@ -1525,6 +1540,9 @@ class LocalizationManager:
             "ignore_hashtags_subtext": "#Tags bleiben unverändert.",
             "ignore_cashtags": "$Cashtags auslassen",
             "ignore_cashtags_subtext": "$TON, $BTC und ähnliche bleiben unverändert.",
+            "ignore_segments": "Was auslassen",
+            "ignore_segments_hint": "Wähle, welche Teile der Nachricht unverändert bleiben.",
+            "ignore_segments_count": "Aktiv: {n} von {total}",
             "chat_menu": "Chat zur Ausnahmeliste hinzufügen/entfernen",
             "chat_added": "Chat zur Ausnahmeliste hinzugefügt",
             "chat_removed": "Chat aus der Ausnahmeliste entfernt",
@@ -13046,6 +13064,25 @@ class PrefixfyPlugin(BasePlugin):
             return self._tr("exceptions_hint")
         return self._tr("exceptions_count", n=values, m=chats)
 
+    IGNORE_SEGMENT_KEYS = IGNORE_KEYS + ("ignore_emoji_only",)
+
+    def _show_ignore_segments_editor(self, view=None):
+        keys = self.IGNORE_SEGMENT_KEYS
+        rows = [(self._tr(key), bool(self.settings.get(key)), True) for key in keys]
+
+        def save(selected, extra):
+            chosen = set(selected)
+            last = len(keys) - 1
+            for index, key in enumerate(keys):
+                self.settings.set(key, index in chosen, reload_settings=(index == last))
+
+        self.show_checklist(self._tr("ignore_segments"), rows, save, message=self._tr("ignore_segments_hint"))
+
+    def _ignore_segments_subtext(self) -> str:
+        keys = self.IGNORE_SEGMENT_KEYS
+        enabled = sum(1 for key in keys if bool(self.settings.get(key)))
+        return self._tr("ignore_segments_count", n=enabled, total=len(keys))
+
     _ICON_KNOWN: Dict[str, bool] = {}
 
     @staticmethod
@@ -13312,8 +13349,7 @@ class PrefixfyPlugin(BasePlugin):
         if FEATURES.on("regex_exceptions"):
             items.append(Text(text=tr("regex_exceptions"), subtext=self._regex_subtext(), icon=self._icon("msg_text", "msg_info"), on_click=self._show_regex_exceptions_editor))
         items += [
-            *[self._switch(key, tr(key), tr(f"{key}_subtext"), "msg_info") for key in IGNORE_KEYS],
-            self._switch("ignore_emoji_only", tr("ignore_emoji_only"), tr("ignore_emoji_only_subtext"), "msg_info"),
+            Text(text=tr("ignore_segments"), subtext=self._ignore_segments_subtext(), icon="msg_info", on_click=self._show_ignore_segments_editor),
         ]
         return items
 
