@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "45.5.0"
-__build__ = "45.5.0_20261116.1_77"
+__version__ = "45.6.0"
+__build__ = "45.6.0_20261116.2_78"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -148,6 +148,10 @@ OTA_MAX_BOOTS = 3
 OTA_BAD_LIMIT = 20
 OTA_TIME_RE = re.compile(r"\s*([01]?[0-9]|2[0-3])\s*:\s*([0-5][0-9])\s*")
 MASK_PLACEHOLDER = "[text]"
+IGNORE_KINDS = ("code", "commands", "mentions", "links", "hashtags", "cashtags")
+IGNORE_KEYS = tuple(f"ignore_{kind}" for kind in IGNORE_KINDS)
+IGNORE_LEGACY_KEY = "ignore_special"
+IGNORE_SPLIT_KEY = "Prefixfy_ignore_split"
 DEFAULT_SEPARATORS = "•, ·, —, ~, |"
 LANGUAGE_MODES = (None, "ru", "en", "ja", "ko", "fr", "de")
 LEGACY_LANGUAGE_MODES = (None, "ru", "en", "ja", "ko", "ar", "fr", "pl", "de", "uk")
@@ -285,7 +289,12 @@ SETTING_DEFAULTS = {
     "separator_space_mode": 0,
     "separator_frequency": 4,
     "exceptions": "",
-    "ignore_special": True,
+    "ignore_code": True,
+    "ignore_commands": True,
+    "ignore_mentions": True,
+    "ignore_links": True,
+    "ignore_hashtags": True,
+    "ignore_cashtags": True,
     "ignore_emoji_only": True,
     "disabled_chats": "",
     "text_style_enabled": False,
@@ -440,8 +449,18 @@ class LocalizationManager:
             "ignore_emoji_only": "Игнорировать сообщения только из эмодзи",
             "ignore_emoji_only_subtext": "Не менять обычные сообщения только из эмодзи. Подписи к медиа оформляются всегда.",
             "exceptions_hint": "Сообщения, начинающиеся или заканчивающиеся этим значением, не меняются. Одно значение в строке.",
-            "ignore_special": "Не трогать код, команды, упоминания и ссылки",
-            "ignore_special_subtext": "Команды, @упоминания, ссылки и код не меняются; Markdown маски там не применяется.",
+            "ignore_code": "Не трогать код",
+            "ignore_code_subtext": "Блоки ``` и `инлайн`-код остаются как есть.",
+            "ignore_commands": "Не трогать команды",
+            "ignore_commands_subtext": "Команды вроде /start или /help@bot остаются как есть; сообщение, которое начинается с команды, не меняется.",
+            "ignore_mentions": "Не трогать упоминания",
+            "ignore_mentions_subtext": "@username остаются как есть; сообщение, которое начинается с @упоминания, не меняется.",
+            "ignore_links": "Не трогать ссылки",
+            "ignore_links_subtext": "Ссылки, e-mail и адреса сайтов остаются как есть. Сообщение только из ссылки не оформляется.",
+            "ignore_hashtags": "Не трогать #хэштеги",
+            "ignore_hashtags_subtext": "#теги остаются как есть.",
+            "ignore_cashtags": "Не трогать $кэштеги",
+            "ignore_cashtags_subtext": "$TON, $BTC и подобные остаются как есть.",
             "chat_menu": "Добавить/удалить чат в/из списка исключений",
             "chat_added": "Чат добавлен в список исключений",
             "chat_removed": "Чат удалён из списка исключений",
@@ -642,8 +661,18 @@ class LocalizationManager:
             "ignore_emoji_only": "Ignore emoji-only messages",
             "ignore_emoji_only_subtext": "Skip regular messages made only of emoji. Media captions are always styled.",
             "exceptions_hint": "Messages starting or ending with a value are left unchanged. One value per line.",
-            "ignore_special": "Skip code, commands, mentions and links",
-            "ignore_special_subtext": "Commands, @mentions, links and code stay as is; mask Markdown isn’t applied.",
+            "ignore_code": "Skip code",
+            "ignore_code_subtext": "Code blocks and `inline code` stay as is.",
+            "ignore_commands": "Skip commands",
+            "ignore_commands_subtext": "Commands like /start or /help@bot stay as is; a message starting with a command is left untouched.",
+            "ignore_mentions": "Skip @mentions",
+            "ignore_mentions_subtext": "@usernames stay as is; a message starting with a mention is left untouched.",
+            "ignore_links": "Skip links",
+            "ignore_links_subtext": "URLs, e-mails and site addresses stay as is. A message made only of a link is left untouched.",
+            "ignore_hashtags": "Skip #hashtags",
+            "ignore_hashtags_subtext": "#tags stay as is.",
+            "ignore_cashtags": "Skip $cashtags",
+            "ignore_cashtags_subtext": "$TON, $BTC and similar stay as is.",
             "chat_menu": "Add/remove chat to/from the exception list",
             "chat_added": "Chat added to the exception list",
             "chat_removed": "Chat removed from the exception list",
@@ -845,8 +874,18 @@ class LocalizationManager:
             "ignore_emoji_only": "絵文字だけのメッセージを無視",
             "ignore_emoji_only_subtext": "絵文字のみの通常メッセージは変更しません。メディアのキャプションは常に装飾します。",
             "exceptions_hint": "この値で始まる/終わるメッセージは変更しません。1行1値。",
-            "ignore_special": "コード・コマンド・メンション・リンクを除外",
-            "ignore_special_subtext": "コマンド、@メンション、リンク、コードはそのまま。マスクのMarkdownも適用しません。",
+            "ignore_code": "コードを除外",
+            "ignore_code_subtext": "コードブロックとインラインコードはそのままにします。",
+            "ignore_commands": "コマンドを除外",
+            "ignore_commands_subtext": "/start や /help@bot などのコマンドはそのまま。コマンドで始まるメッセージは変更しません。",
+            "ignore_mentions": "メンションを除外",
+            "ignore_mentions_subtext": "@ユーザー名はそのまま。メンションで始まるメッセージは変更しません。",
+            "ignore_links": "リンクを除外",
+            "ignore_links_subtext": "URL、メール、サイトのアドレスはそのまま。リンクのみのメッセージは変更しません。",
+            "ignore_hashtags": "#ハッシュタグを除外",
+            "ignore_hashtags_subtext": "#タグはそのままにします。",
+            "ignore_cashtags": "$キャッシュタグを除外",
+            "ignore_cashtags_subtext": "$TON や $BTC などはそのままにします。",
             "chat_menu": "例外リストにチャットを追加または削除",
             "chat_added": "チャットを例外リストに追加しました",
             "chat_removed": "チャットを例外リストから削除しました",
@@ -1048,8 +1087,18 @@ class LocalizationManager:
             "ignore_emoji_only": "이모지만 있는 메시지 무시",
             "ignore_emoji_only_subtext": "이모지만 있는 일반 메시지는 건너뜁니다. 미디어 캡션은 항상 꾸밉니다.",
             "exceptions_hint": "이 값으로 시작하거나 끝나는 메시지는 바꾸지 않습니다. 한 줄에 하나.",
-            "ignore_special": "코드, 명령어, 멘션, 링크 제외",
-            "ignore_special_subtext": "명령어, @멘션, 링크, 코드는 그대로 두며 마스크 Markdown도 적용하지 않습니다.",
+            "ignore_code": "코드 제외",
+            "ignore_code_subtext": "코드 블록과 인라인 코드는 그대로 둡니다.",
+            "ignore_commands": "명령어 제외",
+            "ignore_commands_subtext": "/start, /help@bot 같은 명령어는 그대로 두며, 명령어로 시작하는 메시지는 변경하지 않습니다.",
+            "ignore_mentions": "멘션 제외",
+            "ignore_mentions_subtext": "@사용자명은 그대로 두며, 멘션으로 시작하는 메시지는 변경하지 않습니다.",
+            "ignore_links": "링크 제외",
+            "ignore_links_subtext": "URL, 이메일, 사이트 주소는 그대로 둡니다. 링크만 있는 메시지는 변경하지 않습니다.",
+            "ignore_hashtags": "#해시태그 제외",
+            "ignore_hashtags_subtext": "#태그는 그대로 둡니다.",
+            "ignore_cashtags": "$캐시태그 제외",
+            "ignore_cashtags_subtext": "$TON, $BTC 등은 그대로 둡니다.",
             "chat_menu": "예외 목록에 채팅 추가/제거",
             "chat_added": "채팅이 예외 목록에 추가되었습니다",
             "chat_removed": "채팅이 예외 목록에서 제거되었습니다",
@@ -1251,8 +1300,18 @@ class LocalizationManager:
             "ignore_emoji_only": "Ignorer les messages composés uniquement d’émojis",
             "ignore_emoji_only_subtext": "Ignorer les messages composés uniquement d’émojis. Les légendes de médias sont toujours stylisées.",
             "exceptions_hint": "Les messages commençant ou finissant par une valeur restent intacts. Une valeur par ligne.",
-            "ignore_special": "Ignorer code, commandes, mentions et liens",
-            "ignore_special_subtext": "Commandes, @mentions, liens et code restent intacts, sans Markdown de masque.",
+            "ignore_code": "Ignorer le code",
+            "ignore_code_subtext": "Les blocs de code et le `code en ligne` restent intacts.",
+            "ignore_commands": "Ignorer les commandes",
+            "ignore_commands_subtext": "Les commandes comme /start ou /help@bot restent intactes ; un message commençant par une commande n’est pas modifié.",
+            "ignore_mentions": "Ignorer les @mentions",
+            "ignore_mentions_subtext": "Les @pseudos restent intacts ; un message commençant par une mention n’est pas modifié.",
+            "ignore_links": "Ignorer les liens",
+            "ignore_links_subtext": "URL, e-mails et adresses de sites restent intacts. Un message composé uniquement d’un lien n’est pas modifié.",
+            "ignore_hashtags": "Ignorer les #hashtags",
+            "ignore_hashtags_subtext": "Les #tags restent intacts.",
+            "ignore_cashtags": "Ignorer les $cashtags",
+            "ignore_cashtags_subtext": "$TON, $BTC et similaires restent intacts.",
             "chat_menu": "Ajouter/retirer le chat à/de la liste d’exceptions",
             "chat_added": "Chat ajouté à la liste d’exceptions",
             "chat_removed": "Chat retiré de la liste d’exceptions",
@@ -1454,8 +1513,18 @@ class LocalizationManager:
             "ignore_emoji_only": "Nachrichten nur aus Emojis ignorieren",
             "ignore_emoji_only_subtext": "Nachrichten nur aus Emojis auslassen. Medienbeschriftungen werden immer gestaltet.",
             "exceptions_hint": "Nachrichten mit diesem Anfang oder Ende bleiben unverändert. Ein Wert pro Zeile.",
-            "ignore_special": "Code, Befehle, Erwähnungen und Links auslassen",
-            "ignore_special_subtext": "Befehle, @Erwähnungen, Links und Code bleiben unverändert, ohne Masken-Markdown.",
+            "ignore_code": "Code auslassen",
+            "ignore_code_subtext": "Codeblöcke und `Inline-Code` bleiben unverändert.",
+            "ignore_commands": "Befehle auslassen",
+            "ignore_commands_subtext": "Befehle wie /start oder /help@bot bleiben unverändert; eine Nachricht, die mit einem Befehl beginnt, wird nicht verändert.",
+            "ignore_mentions": "@Erwähnungen auslassen",
+            "ignore_mentions_subtext": "@Benutzernamen bleiben unverändert; eine Nachricht, die mit einer Erwähnung beginnt, wird nicht verändert.",
+            "ignore_links": "Links auslassen",
+            "ignore_links_subtext": "URLs, E-Mails und Website-Adressen bleiben unverändert. Eine Nachricht nur aus einem Link wird nicht verändert.",
+            "ignore_hashtags": "#Hashtags auslassen",
+            "ignore_hashtags_subtext": "#Tags bleiben unverändert.",
+            "ignore_cashtags": "$Cashtags auslassen",
+            "ignore_cashtags_subtext": "$TON, $BTC und ähnliche bleiben unverändert.",
             "chat_menu": "Chat zur Ausnahmeliste hinzufügen/entfernen",
             "chat_added": "Chat zur Ausnahmeliste hinzugefügt",
             "chat_removed": "Chat aus der Ausnahmeliste entfernt",
@@ -4927,6 +4996,15 @@ class CuteOptions:
         self.active = self.enabled and any(getattr(self, key[5:]) for key in CUTE_EFFECT_KEYS)
 
 
+def setting_default(source, key: str):
+    """45.6.0: «ignore_special» разбит на шесть тумблеров. В старых наборах новых ключей нет, и они наследуют старое значение."""
+    if key in IGNORE_KEYS and isinstance(source, dict):
+        legacy = source.get(IGNORE_LEGACY_KEY)
+        if isinstance(legacy, bool):
+            return legacy
+    return SETTING_DEFAULTS[key]
+
+
 class RuntimeSettings:
     __slots__ = (
         "language", "chat_scope_enabled", "process_message", "process_media", "process_article", "process_edit",
@@ -4934,7 +5012,7 @@ class RuntimeSettings:
         "mask", "mask_parts", "mask_link", "markdown_enabled", "markdown_style", "markdown_wrap", "text_style_enabled", "text_style",
         "text_style_random", "text_style_translit", "style_only", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "regex_exceptions", "conditional_rules", "chat_type_rules",
         "separator_enabled", "separators", "separator_count", "separator_chance", "separator_spaces", "separator_space_mode", "cute",
-        "exceptions", "ignore_special", "ignore_emoji_only", "disabled_chats",
+        "exceptions", "ignore_kinds", "ignore_emoji_only", "disabled_chats",
         "media_enabled", "media_path", "media_name", "media_mime", "raw",
     )
 
@@ -4942,7 +5020,7 @@ class RuntimeSettings:
         self.raw = dict(raw)
 
         def get(key):
-            return raw.get(key, SETTING_DEFAULTS[key])
+            return raw.get(key, setting_default(raw, key))
 
         self.language = clamp_int(get("language"), 0, 0, len(LANGUAGE_MODES) - 1)
         self.chat_scope_enabled = bool(get("chat_scope_enabled"))
@@ -4996,7 +5074,9 @@ class RuntimeSettings:
         self.separator_space_mode = clamp_int(get("separator_space_mode"), 0, 0, 2) if spaces_on else 0
         self.cute = CuteOptions(get, LANGUAGE_MODES[self.language])
         self.exceptions = parse_lines(get("exceptions"))
-        self.ignore_special = bool(get("ignore_special"))
+        self.ignore_kinds = frozenset(
+            kind for kind, key in zip(IGNORE_KINDS, IGNORE_KEYS) if bool(raw.get(key, setting_default(raw, key)))
+        )
         self.ignore_emoji_only = bool(get("ignore_emoji_only"))
         self.disabled_chats = parse_chat_ids(get("disabled_chats"))
         self.media_enabled = bool(get("attached_media_enabled")) and FEATURES.on("attached_media")
@@ -5245,21 +5325,34 @@ _LINK_PATTERN = (
     + r"|(?<![\w@.\-/])(?:[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?\.)+(?i:" + _LINK_TLDS + r")(?![\w\-])"
     + r"(?::\d{1,5}(?!\d))?(?:[/?#](?:" + _LINK_ANY + "*" + _LINK_END + ")?)?"
 )
-_PROTECTED_RE = re.compile(
-    r"```[\s\S]*?```"
-    r"|`[^`\n]+`"
-    r"|(?<![\w@])@[A-Za-z][A-Za-z0-9_]{2,31}"
-    r"|(?<!\S)/[A-Za-z][A-Za-z0-9_]*(?:@[A-Za-z][A-Za-z0-9_]*)?(?![\w/])"
-    r"|" + _LINK_PATTERN
-    + r"|(?<![\w&/#])#(?!\d+(?!\w))\w{1,64}(?:@[A-Za-z][A-Za-z0-9_]{2,31})?"
-    + r"|(?<![\w$])\$[A-Za-z]{1,8}(?!\w)"
+_PROTECT_PARTS = (
+    ("code", r"```[\s\S]*?```|`[^`\n]+`"),
+    ("mentions", r"(?<![\w@])@[A-Za-z][A-Za-z0-9_]{2,31}"),
+    ("commands", r"(?<!\S)/[A-Za-z][A-Za-z0-9_]*(?:@[A-Za-z][A-Za-z0-9_]*)?(?![\w/])"),
+    ("links", _LINK_PATTERN),
+    ("hashtags", r"(?<![\w&/#])#(?!\d+(?!\w))\w{1,64}(?:@[A-Za-z][A-Za-z0-9_]{2,31})?"),
+    ("cashtags", r"(?<![\w$])\$[A-Za-z]{1,8}(?!\w)"),
 )
-_LEADING_SPECIAL_RE = re.compile(
-    r"\s*(?:"
-    r"[/!.][A-Za-z][A-Za-z0-9_]*(?:@[A-Za-z][A-Za-z0-9_]*)?"
-    r"|@[A-Za-z][A-Za-z0-9_]{2,31}"
-    r")(?![A-Za-z0-9_@])"
+_LEADING_PARTS = (
+    ("commands", r"[/!.][A-Za-z][A-Za-z0-9_]*(?:@[A-Za-z][A-Za-z0-9_]*)?"),
+    ("mentions", r"@[A-Za-z][A-Za-z0-9_]{2,31}"),
 )
+
+
+@lru_cache(maxsize=64)
+def _protected_re(kinds: frozenset):
+    parts = [pattern for kind, pattern in _PROTECT_PARTS if kind in kinds]
+    return re.compile("|".join(parts)) if parts else None
+
+
+@lru_cache(maxsize=16)
+def _leading_special_re(kinds: frozenset):
+    parts = [pattern for kind, pattern in _LEADING_PARTS if kind in kinds]
+    if not parts:
+        return None
+    return re.compile(r"\s*(?:" + "|".join(parts) + r")(?![A-Za-z0-9_@])")
+
+
 _PLACEHOLDER_RE = re.compile("\uE000(\\d+)\uE001")
 
 
@@ -5493,8 +5586,9 @@ def has_marker_chars(text: str) -> bool:
     return "\uE000" in text or "\uE001" in text or _MD_SENTINEL_RE.search(text) is not None
 
 
-def protect_special(text: str) -> Tuple[str, List[str]]:
-    if has_marker_chars(text):
+def protect_special(text: str, kinds: frozenset) -> Tuple[str, List[str]]:
+    pattern = _protected_re(kinds)
+    if pattern is None or has_marker_chars(text):
         return text, []
     spans: List[str] = []
 
@@ -5502,12 +5596,7 @@ def protect_special(text: str) -> Tuple[str, List[str]]:
         spans.append(match.group(0))
         return f"\uE000{len(spans) - 1}\uE001"
 
-    return _PROTECTED_RE.sub(stash, text), spans
-
-
-def _is_link_span(spans: List[str], match) -> bool:
-    index = int(match.group(1))
-    return index < len(spans) and not spans[index].startswith(("`", "@", "/"))
+    return pattern.sub(stash, text), spans
 
 
 def restore_special(text: str, spans: List[str]) -> str:
@@ -5521,7 +5610,8 @@ def restore_special(text: str, spans: List[str]) -> str:
 class TransformationPipeline:
     def __init__(self, settings: RuntimeSettings, logger=None):
         self.filter = TextFilter(settings)
-        self.protect_special = settings.ignore_special
+        self.ignore_kinds = settings.ignore_kinds
+        self.protect_special = bool(self.ignore_kinds)
         self.logger = logger
         self.transformations: List[Transformation] = []
         self.markdown_table: List[Tuple[str, str]] = []
@@ -5609,13 +5699,14 @@ class TransformationPipeline:
             return None
         if not self.protect_special:
             return text, []
-        if _LEADING_SPECIAL_RE.match(text):
+        leading = _leading_special_re(self.ignore_kinds)
+        if leading is not None and leading.match(text):
             return None
         if has_marker_chars(text):
             return None
-        protected, spans = protect_special(text)
-        visible = _PLACEHOLDER_RE.sub(lambda match: "x" if _is_link_span(spans, match) else "", protected)
-        if spans and not visible.strip():
+        protected, spans = protect_special(text, self.ignore_kinds)
+        # 45.6.0: сообщение, состоящее только из защищённых фрагментов (ссылка, код, упоминание...), не оформляется.
+        if spans and not _PLACEHOLDER_RE.sub("", protected).strip():
             return None
         return protected, spans
 
@@ -6491,7 +6582,7 @@ COMPONENT_KEYS = {
     "mask": ("mask", "markdown_enabled", "markdown_style", "text_style_enabled", "text_style", "text_style_random", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "conditional_masks", "text_style_translit", "style_words", "tag_lines"),
     "separator": ("separator_enabled", "custom_emojis", "emoji_count", "separator_frequency", "separator_spaces", "separator_space_mode"),
     "cute": CUTE_KEYS,
-    "exceptions": ("exceptions", "ignore_special", "ignore_emoji_only", "disabled_chats", "chat_scope_enabled", "regex_exceptions", "chat_type_rules"),
+    "exceptions": ("exceptions", *IGNORE_KEYS, "ignore_emoji_only", "disabled_chats", "chat_scope_enabled", "regex_exceptions", "chat_type_rules"),
     "media": ("attached_media_enabled", "attached_media_path", "attached_media_name", "attached_media_mime"),
     "schedule": (),
 }
@@ -6515,7 +6606,7 @@ def _section_from_flat_settings(settings, component):
             "count": settings.get("emoji_count", 1),
         }
     flat_exception_keys = ("exceptions", "disabled_chats", "chat_scope_enabled", "chat_scope", "ignore_emoji_only",
-                           "ignore_special")
+                           IGNORE_LEGACY_KEY, *IGNORE_KEYS)
     if component == "exceptions" and any(k in settings for k in flat_exception_keys):
         return {
             "values": settings.get("exceptions", ""),
@@ -6523,7 +6614,7 @@ def _section_from_flat_settings(settings, component):
             "chat_scope_enabled": settings.get("chat_scope_enabled", True),
             "chat_scope": settings.get("chat_scope"),
             "ignore_emoji_only": settings.get("ignore_emoji_only", SETTING_DEFAULTS["ignore_emoji_only"]),
-            "ignore_special": settings.get("ignore_special", True),
+            **{key: settings.get(key, setting_default(settings, key)) for key in IGNORE_KEYS},
         }
     return None
 
@@ -6653,7 +6744,9 @@ def validate_component(component: str, section: dict) -> bool:
             return False
         if "chat_type_rules" in section and not isinstance(section["chat_type_rules"], str):
             return False
-        if not isinstance(section.get("ignore_special", True), bool):
+        if not isinstance(section.get(IGNORE_LEGACY_KEY, True), bool):
+            return False
+        if any(key in section and not isinstance(section[key], bool) for key in IGNORE_KEYS):
             return False
         if scope is None:
             return True
@@ -7308,7 +7401,8 @@ class ConfigTransfer:
                     self.settings.set("disabled_chats", chats)
                     self.settings.set("chat_scope_enabled", scope_enabled)
                     self.settings.set("ignore_emoji_only", section.get("ignore_emoji_only", SETTING_DEFAULTS["ignore_emoji_only"]))
-                    self.settings.set("ignore_special", section.get("ignore_special", True))
+                    for key in IGNORE_KEYS:
+                        self.settings.set(key, section.get(key, setting_default(section, key)))
                     if "regex_exceptions" in section:
                         self.settings.set("regex_exceptions", section["regex_exceptions"])
                     if "chat_type_rules" in section:
@@ -7441,7 +7535,8 @@ class ConfigTransfer:
                 "chat_scope_enabled": scope_enabled,
                 "chat_scope": {"mode": "exceptions" if scope_enabled else "included", "chats": chats},
                 "ignore_emoji_only": bool(s.get("ignore_emoji_only")),
-                "ignore_special": bool(s.get("ignore_special")),
+                **{key: bool(s.get(key)) for key in IGNORE_KEYS},
+                IGNORE_LEGACY_KEY: all(bool(s.get(key)) for key in IGNORE_KEYS),
                 "regex_exceptions": as_text(s.get("regex_exceptions")),
                 "chat_type_rules": dump_chat_type_rules(parse_chat_type_rules(s.get("chat_type_rules"))),
             }
@@ -7806,7 +7901,7 @@ class ConfigurationsManager:
     def _read_params(self, config_id: str, role: str, fallback: Optional[dict]) -> Dict[str, Any]:
         result = {}
         for key in self.CONFIG_KEYS:
-            default = fallback.get(key, SETTING_DEFAULTS[key]) if fallback is not None else SETTING_DEFAULTS[key]
+            default = fallback.get(key, setting_default(fallback, key)) if fallback is not None else SETTING_DEFAULTS[key]
             ok, value = self._read_json(self._param_path(config_id, role, key))
             result[key] = self._coerce(key, value) if ok else default
         return result
@@ -7871,7 +7966,7 @@ class ConfigurationsManager:
         merged = {}
         all_ok = True
         for key in self.CONFIG_KEYS:
-            value = self._coerce(key, new.get(key, old.get(key, SETTING_DEFAULTS[key])))
+            value = self._coerce(key, new.get(key, old.get(key, setting_default(old, key))))
             merged[key] = value
             marker = (config_id, role, key)
             if (marker not in self._failed_writes and key in old
@@ -8624,7 +8719,7 @@ class ConfigurationsManager:
         params = params if isinstance(params, dict) else {}
         signature = []
         for key in self.CONFIG_KEYS:
-            value = self._coerce(key, params.get(key, SETTING_DEFAULTS[key]))
+            value = self._coerce(key, params.get(key, setting_default(params, key)))
             signature.append(bool(value) if key == "attached_media_path" else value)
         return tuple(signature)
 
@@ -8667,7 +8762,7 @@ class ConfigurationsManager:
     def _same_as_shared(self, snapshot: dict) -> bool:
         shared = self._current(self.active_id)
         return all(
-            snapshot.get(key) == self._coerce(key, shared.get(key, SETTING_DEFAULTS[key]))
+            snapshot.get(key) == self._coerce(key, shared.get(key, setting_default(shared, key)))
             for key in self.CONFIG_KEYS
         )
 
@@ -9342,7 +9437,7 @@ class AccountProfiles:
     @staticmethod
     def _clean(params) -> Dict[str, Any]:
         coerce = ConfigurationsManager._coerce
-        return {key: coerce(key, params.get(key, SETTING_DEFAULTS[key])) for key in ConfigurationsManager.CONFIG_KEYS}
+        return {key: coerce(key, params.get(key, setting_default(params, key))) for key in ConfigurationsManager.CONFIG_KEYS}
 
     def load(self):
         manager = self.manager
@@ -9912,7 +10007,7 @@ _WIPE_MEDIA_RESET = {
 }
 _WIPE_INTERNAL_KEYS = {
     LANGUAGE_LAYOUT_KEY: 1, LANGUAGE_LIVE_KEY: 1, LANGUAGE_MIGRATED_KEY: "", CHAT_COUNTS_KEY: "", COUNTER_KEY: 0,
-    SETUP_STAGE_KEY: 1, SETUP_SEEN_KEY: 1, WELCOME_UNTIL_KEY: 0,
+    SETUP_STAGE_KEY: 1, SETUP_SEEN_KEY: 1, WELCOME_UNTIL_KEY: 0, IGNORE_SPLIT_KEY: 1,
     "Prefixfy_markdown_style_pick": 0, "Prefixfy_text_style_pick": 0,
     CHAT_CONFIGS_KEY: "{}", SCHEDULE_KEY: "", ACCT_MODE_KEY: False, ACCT_TARGET_KEY: ACCT_AUTO, ACCT_LIVE_KEY: "",
     ConfigurationsManager.LEGACY_SETTING_KEY: "", ConfigurationsManager.LEGACY_ACTIVE_KEY: "",
@@ -11749,6 +11844,7 @@ class PrefixfyPlugin(BasePlugin):
         self._reset_transient_settings()
         self._remove_stale_files()
         self._migrate_language_setting()
+        self._migrate_ignore_split()
         self.configurations = ConfigurationsManager(self)
         try:
             self.configurations.sync_target()
@@ -11817,6 +11913,18 @@ class PrefixfyPlugin(BasePlugin):
         if language_layout_pending(self) and not live_done:
             self.set_setting("language", migrate_language_index(self.get_setting("language", 0)))
             self.set_setting(LANGUAGE_LIVE_KEY, LANGUAGE_LAYOUT_VERSION)
+
+    def _migrate_ignore_split(self):
+        """45.6.0: старый тумблер «ignore_special» разбит на шесть; выключенный раньше остаётся выключенным."""
+        try:
+            if self.get_setting(IGNORE_SPLIT_KEY, 0):
+                return
+            if self.get_setting(IGNORE_LEGACY_KEY, None) is False:
+                for key in IGNORE_KEYS:
+                    self.set_setting(key, False)
+            self.set_setting(IGNORE_SPLIT_KEY, 1)
+        except Exception as exc:
+            self.log(f"Prefixfy ignore split migration failed: {exc}")
 
     def _reset_transient_settings(self):
         for key, default in TRANSIENT_SETTING_DEFAULTS.items():
@@ -13204,7 +13312,7 @@ class PrefixfyPlugin(BasePlugin):
         if FEATURES.on("regex_exceptions"):
             items.append(Text(text=tr("regex_exceptions"), subtext=self._regex_subtext(), icon=self._icon("msg_text", "msg_info"), on_click=self._show_regex_exceptions_editor))
         items += [
-            self._switch("ignore_special", tr("ignore_special"), tr("ignore_special_subtext"), "msg_info"),
+            *[self._switch(key, tr(key), tr(f"{key}_subtext"), "msg_info") for key in IGNORE_KEYS],
             self._switch("ignore_emoji_only", tr("ignore_emoji_only"), tr("ignore_emoji_only_subtext"), "msg_info"),
         ]
         return items
