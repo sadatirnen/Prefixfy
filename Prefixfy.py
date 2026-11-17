@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "46.2.0"
-__build__ = "46.2.0_20261117.5_83"
+__version__ = "46.3.0"
+__build__ = "46.3.0_20261117.6_84"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -547,6 +547,7 @@ class LocalizationManager:
             "export_select_configs": "Выберите конфиги для экспорта",
             "export_select_configs_subtext": "Выберите до {n} конфигураций. Для каждой дальше откроется выбор частей. Если выбрано несколько, файлы сразу уйдут в Избранное активного аккаунта.",
             "export_next": "Далее",
+            "export_include_name": "Включить имя конфигурации",
             "export_parts_title": "Части: {name}",
             "export_parts_progress": "Конфиг {i} из {n}",
             "configuration_export_limit": "Можно выбрать не более {n} конфигураций",
@@ -772,6 +773,7 @@ class LocalizationManager:
             "export_select_configs": "Select configurations to export",
             "export_select_configs_subtext": "Select up to {n} configurations. A parts picker opens for each one next. If several are selected, the files go straight to the active account's Saved Messages.",
             "export_next": "Next",
+            "export_include_name": "Include configuration name",
             "export_parts_title": "Parts: {name}",
             "export_parts_progress": "Configuration {i} of {n}",
             "configuration_export_limit": "You can select at most {n} configurations",
@@ -998,6 +1000,7 @@ class LocalizationManager:
             "export_select_configs": "エクスポートする設定を選択",
             "export_select_configs_subtext": "最大{n}件まで選択できます。続いて各設定の項目を選びます。複数選択した場合、ファイルはアクティブなアカウントの保存メッセージに直接送られます。",
             "export_next": "次へ",
+            "export_include_name": "設定名を含める",
             "export_parts_title": "項目: {name}",
             "export_parts_progress": "設定 {i} / {n}",
             "configuration_export_limit": "選択できるのは最大{n}件です",
@@ -1224,6 +1227,7 @@ class LocalizationManager:
             "export_select_configs": "내보낼 구성 선택",
             "export_select_configs_subtext": "최대 {n}개까지 선택할 수 있습니다. 이어서 각 구성의 항목을 고릅니다. 여러 개를 선택하면 파일이 활성 계정의 저장된 메시지로 바로 전송됩니다.",
             "export_next": "다음",
+            "export_include_name": "구성 이름 포함",
             "export_parts_title": "항목: {name}",
             "export_parts_progress": "구성 {i} / {n}",
             "configuration_export_limit": "최대 {n}개까지 선택할 수 있습니다",
@@ -1450,6 +1454,7 @@ class LocalizationManager:
             "export_select_configs": "Choisir les configurations à exporter",
             "export_select_configs_subtext": "Sélectionnez jusqu’à {n} configurations. Un choix des parties s’ouvre ensuite pour chacune. Si plusieurs sont choisies, les fichiers partent directement dans les Messages enregistrés du compte actif.",
             "export_next": "Suivant",
+            "export_include_name": "Inclure le nom de la configuration",
             "export_parts_title": "Parties : {name}",
             "export_parts_progress": "Configuration {i} sur {n}",
             "configuration_export_limit": "Vous pouvez en choisir {n} au maximum",
@@ -1676,6 +1681,7 @@ class LocalizationManager:
             "export_select_configs": "Konfigurationen zum Export wählen",
             "export_select_configs_subtext": "Wähle bis zu {n} Konfigurationen. Danach öffnet sich für jede die Auswahl der Teile. Bei mehreren Konfigurationen gehen die Dateien direkt in die Gespeicherten Nachrichten des aktiven Kontos.",
             "export_next": "Weiter",
+            "export_include_name": "Konfigurationsnamen einbeziehen",
             "export_parts_title": "Teile: {name}",
             "export_parts_progress": "Konfiguration {i} von {n}",
             "configuration_export_limit": "Es sind höchstens {n} Konfigurationen wählbar",
@@ -6952,6 +6958,7 @@ class ConfigTransfer:
         self.pending_import_as_new = False
         self.pending_export_id: Optional[str] = None
         self.pending_export_name = ""
+        self.pending_export_include = False
         self._file_handler_secret = None
         self.media_data_dir = os.path.join(get_plugins_dir(), "Prefixfy_media")
         ensure_dir_exists(self.media_data_dir)
@@ -7359,6 +7366,12 @@ class ConfigTransfer:
             return
         self._finish_import(data, components, False, None, fragment)
 
+    def _imported_name_base(self, data) -> str:
+        """46.3.0: имя из файла (если оно есть) подставляется в диалог имени; изменить его по-прежнему можно."""
+        raw = data.get("name") if isinstance(data, dict) else None
+        name = ConfigurationsManager.normalize_name(raw) if isinstance(raw, str) else ""
+        return name[:MAX_CONFIG_NAME_LENGTH - 4].strip() or self._tr("imported_configuration")
+
     def _prompt_import_name(self, data, fragment, components, target=None):
         configurations = self.plugin.configurations
         uid = None if target is None else (None if target == ACCT_COMMON else target)
@@ -7379,7 +7392,10 @@ class ConfigTransfer:
 
         if not self.plugin.show_text_dialog(
             self._tr("import_new_configuration_name"), confirm,
-            text=unique_name(self._tr("imported_configuration"), configurations.scope_names(uid) if scoped else configurations.selector_items()),
+            text=unique_name(
+                self._imported_name_base(data),
+                configurations.scope_names(uid) if scoped else configurations.selector_items(),
+            ),
             hint=self._tr("configuration_name_hint"),
             positive=self._tr("config_found_import"), fragment=fragment, on_cancel=cancelled,
         ):
@@ -7598,7 +7614,7 @@ class ConfigTransfer:
                 self._toast("configuration_nothing_selected", fragment)
                 return False
             components = tuple(available[position] for position in selected)
-            done = picked + [(config_id, name, components)]
+            done = picked + [(config_id, name, components, bool(extra_checked and name))]
             if last:
                 self._export_deliver(done)
             else:
@@ -7607,6 +7623,7 @@ class ConfigTransfer:
 
         self.plugin.show_checklist(
             title, rows, confirm, message=message,
+            extra=(self._tr("export_include_name"), True) if as_text(name) else None,
             positive=self._tr("apply") if last else self._tr("export_next"), fragment=fragment,
         )
 
@@ -7616,12 +7633,12 @@ class ConfigTransfer:
         if not items or self._blocked(fragment, export=True):
             return
         if len(items) == 1:
-            config_id, name, components = items[0]
-            self._request_export(components, config_id, name)
+            config_id, name, components, include_name = items[0]
+            self._request_export(components, config_id, name, include_name)
         else:
             self._export_many_to_saved(items[: self.EXPORT_MAX_CONFIGS])
 
-    def _request_export(self, components, config_id=None, name=""):
+    def _request_export(self, components, config_id=None, name="", include_name=False):
         _, activity = self._activity()
         if not activity or not components:
             return
@@ -7629,29 +7646,30 @@ class ConfigTransfer:
         builder.set_title(self._tr("configuration_export_destination_title"))
         builder.set_items(
             [self._tr("configuration_export_to_saved"), self._tr("configuration_export_to_device")],
-            lambda bld, which: self._on_export_destination(bld, which, tuple(components), config_id, name),
+            lambda bld, which: self._on_export_destination(bld, which, tuple(components), config_id, name, include_name),
         )
         builder.set_negative_button(self._tr("cancel"), lambda bld, which: bld.dismiss())
         self.plugin._show_builder(builder)
 
-    def _on_export_destination(self, builder, which, components, config_id=None, name=""):
+    def _on_export_destination(self, builder, which, components, config_id=None, name="", include_name=False):
         builder.dismiss()
         if which == 0:
-            self._export_to_saved_messages(components, config_id, name)
+            self._export_to_saved_messages(components, config_id, name, include_name)
         elif which == 1:
-            self._request_export_to_device(components, config_id, name)
+            self._request_export_to_device(components, config_id, name, include_name)
 
     @staticmethod
     def _file_stem(name) -> str:
         return re.sub(r"[^\w\-]+", "_", as_text(name), flags=re.UNICODE).strip("_")[:40]
 
-    def _request_export_to_device(self, components, config_id=None, name=""):
+    def _request_export_to_device(self, components, config_id=None, name="", include_name=False):
         _, activity = self._activity()
         if not activity:
             return
         self.pending_components = components
         self.pending_export_id = config_id
         self.pending_export_name = as_text(name)
+        self.pending_export_include = bool(include_name)
         intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.setType("application/octet-stream")
@@ -7670,11 +7688,11 @@ class ConfigTransfer:
             raise RuntimeError("active account user id is not available")
         return account, user_id
 
-    def _export_to_saved_messages(self, components, config_id=None, name=""):
+    def _export_to_saved_messages(self, components, config_id=None, name="", include_name=False):
         fragment, _ = self._activity()
         try:
             account, user_id = self._saved_messages_target()
-            path = self.build_config_file(components, temp_dir("exports"), config_id=config_id, name=name)
+            path = self.build_config_file(components, temp_dir("exports"), config_id=config_id, name=name, include_name=include_name)
             send_document(user_id, path, caption="", account=account)
             self._toast("configuration_exported", fragment)
         except Exception as exc:
@@ -7690,9 +7708,9 @@ class ConfigTransfer:
             self._toast("configuration_export_failed", fragment)
             return
         sent = 0
-        for config_id, name, components in items:
+        for config_id, name, components, include_name in items:
             try:
-                path = self.build_config_file(components, temp_dir("exports"), config_id=config_id, name=name)
+                path = self.build_config_file(components, temp_dir("exports"), config_id=config_id, name=name, include_name=include_name)
                 send_document(user_id, path, caption="", account=account)
                 sent += 1
             except Exception as exc:
@@ -7715,9 +7733,12 @@ class ConfigTransfer:
                 raise ValueError("configuration is not available")
             return _SnapshotSettings(record.get("current"))
 
-    def selected_data(self, components, media_ready: Optional[bool] = None, source=None, config_id=None) -> dict:
+    def selected_data(self, components, media_ready: Optional[bool] = None, source=None, config_id=None, config_name=None) -> dict:
         s = source if source is not None else self.settings
         data = {"format": CONFIG_FORMAT, "version": CONFIG_VERSION}
+        name = ConfigurationsManager.normalize_name(config_name) if config_name else ""
+        if name:
+            data["name"] = name  # 46.3.0: необязательное имя конфигурации
         if "language" in components:
             data["language"] = {"value": s.language_index()}
         if "mask" in components:
@@ -7780,14 +7801,17 @@ class ConfigTransfer:
             }
         return data
 
-    def build_config_file(self, components, directory: str, config_id=None, name="") -> str:
+    def build_config_file(self, components, directory: str, config_id=None, name="", include_name=False) -> str:
         if not components:
             raise ValueError("no components selected")
         source = self._export_source(config_id)
         ensure_dir_exists(directory)
         self._prune_old_exports(directory)
         media_ready = "media" in components and self.media_exists(source)
-        config = self.selected_data(components, media_ready=media_ready, source=source, config_id=config_id)
+        config = self.selected_data(
+            components, media_ready=media_ready, source=source, config_id=config_id,
+            config_name=name if include_name else None,
+        )
         stem = self._file_stem(name)
         path = os.path.join(directory, f"Prefixfy_{stem + '_' if stem else ''}{time.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:4]}{self.CONFIG_EXTENSION}")
         temp = path + ".tmp"
@@ -7838,14 +7862,15 @@ class ConfigTransfer:
             return False
         if self._blocked(export=request_code == self.CONFIG_EXPORT_REQUEST_CODE):
             self.pending_components, self.pending_import_as_new = (), False
-            self.pending_export_id, self.pending_export_name = None, ""
+            self.pending_export_id, self.pending_export_name, self.pending_export_include = None, "", False
             return True
         fragment, _ = self._activity()
         components, as_new = self.pending_components, self.pending_import_as_new
         export_id, export_name = self.pending_export_id, self.pending_export_name
+        export_include = self.pending_export_include
         if request_code != self.MEDIA_IMPORT_REQUEST_CODE:
             self.pending_components, self.pending_import_as_new = (), False
-            self.pending_export_id, self.pending_export_name = None, ""
+            self.pending_export_id, self.pending_export_name, self.pending_export_include = None, "", False
         if request_code == self.CONFIG_IMPORT_REQUEST_CODE and self._import_locked(fragment):
             return True
         uri = data.getData() if (result_code == Activity.RESULT_OK and data is not None) else None
@@ -7869,7 +7894,7 @@ class ConfigTransfer:
         elif request_code == self.CONFIG_EXPORT_REQUEST_CODE:
             path = None
             try:
-                path = self.build_config_file(components, temp_dir("exports"), config_id=export_id, name=export_name)
+                path = self.build_config_file(components, temp_dir("exports"), config_id=export_id, name=export_name, include_name=export_include)
                 self._write_file_to_uri(uri, path)
                 self._toast("configuration_exported", fragment)
             except Exception as exc:
