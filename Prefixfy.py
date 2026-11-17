@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "46.1.0"
-__build__ = "46.1.0_20261117.4_82"
+__version__ = "46.2.0"
+__build__ = "46.2.0_20261117.5_83"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -527,6 +527,7 @@ class LocalizationManager:
             "import_media": "Импортировать медиа",
             "delete_media": "Удалить медиа",
             "delete_media_subtext": "Удалить импортированный файл из Prefixfy.",
+            "delete_media_confirm": "Удалить медиа «{name}»? Файл будет удалён из Prefixfy, это действие нельзя отменить.",
             "media_imported": "Медиа импортировано",
             "media_deleted": "Медиа удалено",
             "media_import_failed": "Не удалось импортировать медиа",
@@ -751,6 +752,7 @@ class LocalizationManager:
             "import_media": "Import media",
             "delete_media": "Delete media",
             "delete_media_subtext": "Delete the imported file from Prefixfy.",
+            "delete_media_confirm": "Delete the media “{name}”? The file will be removed from Prefixfy. This cannot be undone.",
             "media_imported": "Media imported",
             "media_deleted": "Media deleted",
             "media_import_failed": "Could not import media",
@@ -976,6 +978,7 @@ class LocalizationManager:
             "import_media": "メディアをインポート",
             "delete_media": "メディアを削除",
             "delete_media_subtext": "Prefixfyからインポートしたファイルを削除します。",
+            "delete_media_confirm": "メディア「{name}」を削除しますか？ファイルはPrefixfyから削除され、元に戻せません。",
             "media_imported": "メディアをインポートしました",
             "media_deleted": "メディアを削除しました",
             "media_import_failed": "メディアをインポートできませんでした",
@@ -1201,6 +1204,7 @@ class LocalizationManager:
             "import_media": "미디어 가져오기",
             "delete_media": "미디어 삭제",
             "delete_media_subtext": "Prefixfy에서 가져온 파일을 삭제합니다.",
+            "delete_media_confirm": "미디어 “{name}”을(를) 삭제할까요? 파일이 Prefixfy에서 삭제되며 되돌릴 수 없습니다.",
             "media_imported": "미디어를 가져왔습니다",
             "media_deleted": "미디어를 삭제했습니다",
             "media_import_failed": "미디어를 가져오지 못했습니다",
@@ -1426,6 +1430,7 @@ class LocalizationManager:
             "import_media": "Importer un média",
             "delete_media": "Supprimer le média",
             "delete_media_subtext": "Supprimer le fichier importé de Prefixfy.",
+            "delete_media_confirm": "Supprimer le média « {name} » ? Le fichier sera retiré de Prefixfy, cette action est irréversible.",
             "media_imported": "Média importé",
             "media_deleted": "Média supprimé",
             "media_import_failed": "Impossible d’importer le média",
@@ -1651,6 +1656,7 @@ class LocalizationManager:
             "import_media": "Medien importieren",
             "delete_media": "Medien löschen",
             "delete_media_subtext": "Die importierte Datei aus Prefixfy löschen.",
+            "delete_media_confirm": "Das Medium „{name}“ löschen? Die Datei wird aus Prefixfy entfernt. Das lässt sich nicht rückgängig machen.",
             "media_imported": "Medien importiert",
             "media_deleted": "Medien gelöscht",
             "media_import_failed": "Medien konnten nicht importiert werden",
@@ -13036,6 +13042,24 @@ class PrefixfyPlugin(BasePlugin):
         self.settings.set("attached_media_enabled", enabled, reload_settings=True)
 
     def _delete_imported_media(self, view=None):
+        """46.2.0: удаление импортированного медиа только после подтверждения."""
+        activity = self._dialog_activity()
+        if not activity:
+            return
+        name = as_text(self.settings.get("attached_media_name")) or os.path.basename(self.transfer.media_path())
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(self._tr("delete_media"))
+        builder.set_message(self._tr("delete_media_confirm", name=name))
+
+        def confirmed(bld, which):
+            bld.dismiss()
+            self._do_delete_imported_media()
+
+        builder.set_positive_button(self._tr("delete"), confirmed)
+        builder.set_negative_button(self._tr("cancel"), lambda bld, which: bld.dismiss())
+        self._show_builder(builder)
+
+    def _do_delete_imported_media(self):
         try:
             self.transfer.delete_media()
             self._toast("media_deleted")
