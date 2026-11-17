@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "45.7.0"
-__build__ = "45.7.0_20261117.1_79"
+__version__ = "46.0.0"
+__build__ = "46.0.0_20261117.2_80"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -543,6 +543,16 @@ class LocalizationManager:
             "configuration_export_to_device": "В память устройства",
             "configuration_restored": "Выбранные значения восстановлены",
             "configuration_nothing_selected": "Выберите хотя бы одну часть конфигурации",
+            "export_select_configs": "Выберите конфиги для экспорта",
+            "export_select_configs_subtext": "Выберите до {n} конфигураций. Для каждой дальше откроется выбор частей. Если выбрано несколько, файлы сразу уйдут в Избранное активного аккаунта.",
+            "export_next": "Далее",
+            "export_parts_title": "Части: {name}",
+            "export_parts_progress": "Конфиг {i} из {n}",
+            "configuration_export_limit": "Можно выбрать не более {n} конфигураций",
+            "configuration_export_none": "Выберите хотя бы одну конфигурацию",
+            "configurations_exported": "Экспортировано конфигураций: {n}",
+            "configurations_export_partial": "Экспортировано {ok} из {total}",
+            "export_while_outdated_subtext": "Доступен, пока плагин не обновлён",
             "config_found_title": "Найдена конфигурация",
             "config_found_contains": "Содержит",
             "config_import_as_new": "Импортировать как новую конфигурацию",
@@ -758,6 +768,16 @@ class LocalizationManager:
             "configuration_export_to_device": "Device storage",
             "configuration_restored": "Selected values restored",
             "configuration_nothing_selected": "Select at least one configuration part",
+            "export_select_configs": "Select configurations to export",
+            "export_select_configs_subtext": "Select up to {n} configurations. A parts picker opens for each one next. If several are selected, the files go straight to the active account's Saved Messages.",
+            "export_next": "Next",
+            "export_parts_title": "Parts: {name}",
+            "export_parts_progress": "Configuration {i} of {n}",
+            "configuration_export_limit": "You can select at most {n} configurations",
+            "configuration_export_none": "Select at least one configuration",
+            "configurations_exported": "Configurations exported: {n}",
+            "configurations_export_partial": "Exported {ok} of {total}",
+            "export_while_outdated_subtext": "Available while the plugin is not updated",
             "config_found_title": "Configuration found",
             "config_found_contains": "Contains",
             "config_import_as_new": "Import as a new configuration",
@@ -974,6 +994,16 @@ class LocalizationManager:
             "configuration_export_to_device": "端末のストレージ",
             "configuration_restored": "選択した設定を復元しました",
             "configuration_nothing_selected": "少なくとも1つの設定項目を選択してください",
+            "export_select_configs": "エクスポートする設定を選択",
+            "export_select_configs_subtext": "最大{n}件まで選択できます。続いて各設定の項目を選びます。複数選択した場合、ファイルはアクティブなアカウントの保存メッセージに直接送られます。",
+            "export_next": "次へ",
+            "export_parts_title": "項目: {name}",
+            "export_parts_progress": "設定 {i} / {n}",
+            "configuration_export_limit": "選択できるのは最大{n}件です",
+            "configuration_export_none": "少なくとも1つの設定を選択してください",
+            "configurations_exported": "エクスポートした設定: {n}件",
+            "configurations_export_partial": "{total}件中{ok}件をエクスポートしました",
+            "export_while_outdated_subtext": "プラグインが未更新の間も利用できます",
             "config_found_title": "設定が見つかりました",
             "config_found_contains": "内容",
             "config_import_as_new": "新しい設定としてインポート",
@@ -1190,6 +1220,16 @@ class LocalizationManager:
             "configuration_export_to_device": "기기 저장공간",
             "configuration_restored": "선택한 값을 복원했습니다",
             "configuration_nothing_selected": "구성 항목을 하나 이상 선택하세요",
+            "export_select_configs": "내보낼 구성 선택",
+            "export_select_configs_subtext": "최대 {n}개까지 선택할 수 있습니다. 이어서 각 구성의 항목을 고릅니다. 여러 개를 선택하면 파일이 활성 계정의 저장된 메시지로 바로 전송됩니다.",
+            "export_next": "다음",
+            "export_parts_title": "항목: {name}",
+            "export_parts_progress": "구성 {i} / {n}",
+            "configuration_export_limit": "최대 {n}개까지 선택할 수 있습니다",
+            "configuration_export_none": "구성을 하나 이상 선택하세요",
+            "configurations_exported": "내보낸 구성: {n}개",
+            "configurations_export_partial": "{total}개 중 {ok}개를 내보냈습니다",
+            "export_while_outdated_subtext": "플러그인이 업데이트되기 전에도 사용할 수 있습니다",
             "config_found_title": "구성을 찾았습니다",
             "config_found_contains": "포함 내용",
             "config_import_as_new": "새 구성으로 가져오기",
@@ -1406,6 +1446,16 @@ class LocalizationManager:
             "configuration_export_to_device": "Stockage de l’appareil",
             "configuration_restored": "Valeurs sélectionnées restaurées",
             "configuration_nothing_selected": "Sélectionnez au moins une partie de la configuration",
+            "export_select_configs": "Choisir les configurations à exporter",
+            "export_select_configs_subtext": "Sélectionnez jusqu’à {n} configurations. Un choix des parties s’ouvre ensuite pour chacune. Si plusieurs sont choisies, les fichiers partent directement dans les Messages enregistrés du compte actif.",
+            "export_next": "Suivant",
+            "export_parts_title": "Parties : {name}",
+            "export_parts_progress": "Configuration {i} sur {n}",
+            "configuration_export_limit": "Vous pouvez en choisir {n} au maximum",
+            "configuration_export_none": "Sélectionnez au moins une configuration",
+            "configurations_exported": "Configurations exportées : {n}",
+            "configurations_export_partial": "{ok} exportées sur {total}",
+            "export_while_outdated_subtext": "Disponible tant que le plugin n’est pas mis à jour",
             "config_found_title": "Configuration trouvée",
             "config_found_contains": "Contient",
             "config_import_as_new": "Importer comme nouvelle configuration",
@@ -1622,6 +1672,16 @@ class LocalizationManager:
             "configuration_export_to_device": "Gerätespeicher",
             "configuration_restored": "Ausgewählte Werte wiederhergestellt",
             "configuration_nothing_selected": "Wähle mindestens einen Konfigurationsteil aus",
+            "export_select_configs": "Konfigurationen zum Export wählen",
+            "export_select_configs_subtext": "Wähle bis zu {n} Konfigurationen. Danach öffnet sich für jede die Auswahl der Teile. Bei mehreren Konfigurationen gehen die Dateien direkt in die Gespeicherten Nachrichten des aktiven Kontos.",
+            "export_next": "Weiter",
+            "export_parts_title": "Teile: {name}",
+            "export_parts_progress": "Konfiguration {i} von {n}",
+            "configuration_export_limit": "Es sind höchstens {n} Konfigurationen wählbar",
+            "configuration_export_none": "Wähle mindestens eine Konfiguration aus",
+            "configurations_exported": "Konfigurationen exportiert: {n}",
+            "configurations_export_partial": "{ok} von {total} exportiert",
+            "export_while_outdated_subtext": "Verfügbar, solange das Plugin nicht aktualisiert ist",
             "config_found_title": "Konfiguration gefunden",
             "config_found_contains": "Enthält",
             "config_import_as_new": "Als neue Konfiguration importieren",
@@ -5158,6 +5218,25 @@ class PrefixfySettings:
         self.set("disabled_chats", "\n".join(str(chat_id) for chat_id in ordered))
 
 
+class _SnapshotSettings:
+    """46.0.0: значения сохранённой (не активной) конфигурации только для чтения: те же методы, что у PrefixfySettings."""
+
+    def __init__(self, values):
+        self._values = dict(SETTING_DEFAULTS)
+        if isinstance(values, dict):
+            self._values.update(values)
+
+    def get(self, key, default=None):
+        if key in self._values:
+            return self._values[key]
+        return PrefixfySettings.DEFAULTS.get(key) if default is None else default
+
+    language_index = PrefixfySettings.language_index
+    separator_count = PrefixfySettings.separator_count
+    markdown_enabled = PrefixfySettings.markdown_enabled
+    markdown_style_value = PrefixfySettings.markdown_style_value
+
+
 _EMOJI_SYMBOL = r"[\u00A9\u00AE\u203C\u2049\u2122\u2139\u2194-\u2199\u21A9-\u21AA\u231A-\u231B\u2328\u23CF\u23E9-\u23F3\u23F8-\u23FA\u24C2\u25AA-\u25AB\u25B6\u25C0\u25FB-\u25FE\u2600-\u2604\u260E\u2611\u2614-\u2615\u2618\u261D\u2620\u2622-\u2623\u2626\u262A\u262E-\u262F\u2638-\u263A\u2640\u2642\u2648-\u2653\u265F-\u2660\u2663\u2665-\u2666\u2668\u267B\u267E-\u267F\u2692-\u2697\u2699\u269B-\u269C\u26A0\u26A7\u26AA-\u26AB\u26B0-\u26B1\u26BD-\u26BE\u26C4-\u26C5\u26C8\u26CE-\u26CF\u26D1\u26D3-\u26D4\u26E9-\u26EA\u26F0-\u26F5\u26F7-\u26FA\u26FD\u2702\u2705\u2708-\u270D\u270F\u2712\u2714\u2716\u271D\u2721\u2728\u2733-\u2734\u2744\u2747\u274C\u274E\u2753-\u2755\u2757\u2763-\u2764\u2795-\u2797\u27A1\u27B0\u27BF\u2934-\u2935\u2B05-\u2B07\u2B1B-\u2B1C\u2B50\u2B55\u3030\u303D\u3297\u3299\U0001F000-\U0001FAFF]"
 _EMOJI_ELEMENT = (
     r"(?:[\U0001F1E6-\U0001F1FF]{2}|[#*0-9]\uFE0F?\u20E3|" + _EMOJI_SYMBOL + r")"
@@ -6863,6 +6942,7 @@ class ConfigTransfer:
     CONFIG_EXPORT_REQUEST_CODE = 7401
     MEDIA_IMPORT_REQUEST_CODE = 7403
     CONFIG_EXTENSION = ".prefixfy"
+    EXPORT_MAX_CONFIGS = 10
 
     def __init__(self, plugin):
         self.plugin = plugin
@@ -6870,6 +6950,8 @@ class ConfigTransfer:
         self.localization = plugin.localization
         self.pending_components: Tuple[str, ...] = ()
         self.pending_import_as_new = False
+        self.pending_export_id: Optional[str] = None
+        self.pending_export_name = ""
         self._file_handler_secret = None
         self.media_data_dir = os.path.join(get_plugins_dir(), "Prefixfy_media")
         ensure_dir_exists(self.media_data_dir)
@@ -6886,16 +6968,17 @@ class ConfigTransfer:
     def _toast(self, key, fragment=None, **kwargs):
         self.plugin._toast(key, fragment, **kwargs)
 
-    def media_path(self) -> str:
-        return as_text(self.settings.get("attached_media_path", ""))
+    def media_path(self, source=None) -> str:
+        return as_text((source if source is not None else self.settings).get("attached_media_path", ""))
 
-    def media_exists(self) -> bool:
-        path = self.media_path()
+    def media_exists(self, source=None) -> bool:
+        path = self.media_path(source)
         return bool(path and is_media_store_file(path) and os.path.isfile(path))
 
-    def media_info(self) -> Dict[str, str]:
-        name = as_text(self.settings.get("attached_media_name", "")) or os.path.basename(self.media_path())
-        mime = as_text(self.settings.get("attached_media_mime", "")) or mimetypes.guess_type(name)[0] or "application/octet-stream"
+    def media_info(self, source=None) -> Dict[str, str]:
+        reader = source if source is not None else self.settings
+        name = as_text(reader.get("attached_media_name", "")) or os.path.basename(self.media_path(source))
+        mime = as_text(reader.get("attached_media_mime", "")) or mimetypes.guess_type(name)[0] or "application/octet-stream"
         return {"name": name, "mime": mime}
 
     _MIME_RE = re.compile(r"[a-z0-9.+\-]{1,60}/[a-z0-9.+\-]{1,80}")
@@ -6968,9 +7051,11 @@ class ConfigTransfer:
         if path and is_inside(path, self.media_data_dir) and os.path.isfile(path):
             discard_file(path)
 
-    def _blocked(self, fragment=None) -> bool:
+    def _blocked(self, fragment=None, export: bool = False) -> bool:
         remote = getattr(self.plugin, "remote", None)
         if remote is None or remote.allows():
+            return False
+        if export and remote.export_open():
             return False
         key, kwargs = remote.notice()
         self._toast(key, fragment, **kwargs)
@@ -7053,9 +7138,12 @@ class ConfigTransfer:
         self._show_selection("reset")
 
     def _show_selection(self, operation):
-        if self._blocked():
+        if self._blocked(export=operation == "export"):
             return
         if operation == "import" and self._import_locked():
+            return
+        if operation == "export":
+            self._show_export_selection()
             return
         fragment, _ = self._activity()
         available = tuple(c for c in self.visible_components() if operation != "reset" or COMPONENT_KEYS.get(c))
@@ -7456,7 +7544,84 @@ class ConfigTransfer:
             if key in section:
                 self.settings.set(key, section[key])
 
-    def _request_export(self, components):
+    def _export_candidates(self) -> List[Tuple[Optional[str], str]]:
+        """Конфигурации открытой области (общий набор или пресеты аккаунта): [(id, имя)]."""
+        configurations = self.plugin.configurations
+        with configurations._lock:
+            found = [(cid, as_text(record.get("name", cid)) or cid) for cid, record in configurations.scope_records().items()]
+        return found or [(None, "")]
+
+    def _show_export_selection(self):
+        """46.0.0: 1) выбор конфигов (до EXPORT_MAX_CONFIGS), 2) отдельный выбор частей для каждого конфига по очереди."""
+        fragment, _ = self._activity()
+        available = self.visible_components()
+        if not available:
+            return
+        candidates = self._export_candidates()
+        if len(candidates) <= 1:
+            self._export_ask_parts(list(candidates), 0, [], available)
+            return
+        active = self.plugin.configurations.scope_active_id()
+        rows = [(name, cid == active, True) for cid, name in candidates]
+        limit = self.EXPORT_MAX_CONFIGS
+
+        def confirm(selected, extra_checked):
+            if not selected:
+                self._toast("configuration_export_none", fragment)
+                return False
+            if len(selected) > limit:
+                self._toast("configuration_export_limit", fragment, n=limit)
+                return False
+            self._export_ask_parts([candidates[index] for index in selected], 0, [], available)
+            return True
+
+        self.plugin.show_checklist(
+            self._tr("export_select_configs"), rows, confirm,
+            message=self._tr("export_select_configs_subtext", n=limit),
+            positive=self._tr("export_next"), fragment=fragment,
+        )
+
+    def _export_ask_parts(self, chosen, index, picked, available):
+        fragment, _ = self._activity()
+        config_id, name = chosen[index]
+        total = len(chosen)
+        last = index + 1 >= total
+        rows = [(self._component_label(component), True, True) for component in available]
+        message = self._tr("select_configuration_subtext")
+        title = self._tr("select_configuration")
+        if total > 1:
+            title = self._tr("export_parts_title", name=name)
+            message = self._tr("export_parts_progress", i=index + 1, n=total) + "\n\n" + message
+
+        def confirm(selected, extra_checked):
+            if not selected:
+                self._toast("configuration_nothing_selected", fragment)
+                return False
+            components = tuple(available[position] for position in selected)
+            done = picked + [(config_id, name, components)]
+            if last:
+                self._export_deliver(done)
+            else:
+                self._export_ask_parts(chosen, index + 1, done, available)
+            return True
+
+        self.plugin.show_checklist(
+            title, rows, confirm, message=message,
+            positive=self._tr("apply") if last else self._tr("export_next"), fragment=fragment,
+        )
+
+    def _export_deliver(self, items):
+        """Один конфиг: спрашиваем, куда сохранить. Несколько: принудительно в Избранное активного аккаунта."""
+        fragment, _ = self._activity()
+        if not items or self._blocked(fragment, export=True):
+            return
+        if len(items) == 1:
+            config_id, name, components = items[0]
+            self._request_export(components, config_id, name)
+        else:
+            self._export_many_to_saved(items[: self.EXPORT_MAX_CONFIGS])
+
+    def _request_export(self, components, config_id=None, name=""):
         _, activity = self._activity()
         if not activity or not components:
             return
@@ -7464,59 +7629,103 @@ class ConfigTransfer:
         builder.set_title(self._tr("configuration_export_destination_title"))
         builder.set_items(
             [self._tr("configuration_export_to_saved"), self._tr("configuration_export_to_device")],
-            lambda bld, which: self._on_export_destination(bld, which, tuple(components)),
+            lambda bld, which: self._on_export_destination(bld, which, tuple(components), config_id, name),
         )
         builder.set_negative_button(self._tr("cancel"), lambda bld, which: bld.dismiss())
         self.plugin._show_builder(builder)
 
-    def _on_export_destination(self, builder, which, components):
+    def _on_export_destination(self, builder, which, components, config_id=None, name=""):
         builder.dismiss()
         if which == 0:
-            self._export_to_saved_messages(components)
+            self._export_to_saved_messages(components, config_id, name)
         elif which == 1:
-            self._request_export_to_device(components)
+            self._request_export_to_device(components, config_id, name)
 
-    def _request_export_to_device(self, components):
+    @staticmethod
+    def _file_stem(name) -> str:
+        return re.sub(r"[^\w\-]+", "_", as_text(name), flags=re.UNICODE).strip("_")[:40]
+
+    def _request_export_to_device(self, components, config_id=None, name=""):
         _, activity = self._activity()
         if not activity:
             return
         self.pending_components = components
+        self.pending_export_id = config_id
+        self.pending_export_name = as_text(name)
         intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.setType("application/octet-stream")
-        name = (components[0] if len(components) == 1 else "Prefixfy_config") + self.CONFIG_EXTENSION
-        intent.putExtra(Intent.EXTRA_TITLE, name)
+        base = self._file_stem(name) or (components[0] if len(components) == 1 else "Prefixfy_config")
+        intent.putExtra(Intent.EXTRA_TITLE, base + self.CONFIG_EXTENSION)
         activity.startActivityForResult(intent, self.CONFIG_EXPORT_REQUEST_CODE)
 
-    def _export_to_saved_messages(self, components):
+    def _saved_messages_target(self):
+        account = get_selected_account()
+        if account is None:
+            raise RuntimeError("active account is not available")
+        user_config = get_user_config(account)
+        current_user = user_config.getCurrentUser() if user_config else None
+        user_id = java_int(getattr(current_user, "id", None)) if current_user is not None else None
+        if not user_id or user_id <= 0:
+            raise RuntimeError("active account user id is not available")
+        return account, user_id
+
+    def _export_to_saved_messages(self, components, config_id=None, name=""):
         fragment, _ = self._activity()
         try:
-            account = get_selected_account()
-            if account is None:
-                raise RuntimeError("active account is not available")
-            user_config = get_user_config(account)
-            current_user = user_config.getCurrentUser() if user_config else None
-            user_id = java_int(getattr(current_user, "id", None)) if current_user is not None else None
-            if not user_id or user_id <= 0:
-                raise RuntimeError("active account user id is not available")
-            path = self.build_config_file(components, temp_dir("exports"))
+            account, user_id = self._saved_messages_target()
+            path = self.build_config_file(components, temp_dir("exports"), config_id=config_id, name=name)
             send_document(user_id, path, caption="", account=account)
             self._toast("configuration_exported", fragment)
         except Exception as exc:
             self.plugin.log(f"Saved Messages export failed: {exc}")
             self._toast("configuration_export_failed", fragment)
 
-    def selected_data(self, components, media_ready: Optional[bool] = None) -> dict:
-        s = self.settings
+    def _export_many_to_saved(self, items):
+        fragment, _ = self._activity()
+        try:
+            account, user_id = self._saved_messages_target()
+        except Exception as exc:
+            self.plugin.log(f"Saved Messages export failed: {exc}")
+            self._toast("configuration_export_failed", fragment)
+            return
+        sent = 0
+        for config_id, name, components in items:
+            try:
+                path = self.build_config_file(components, temp_dir("exports"), config_id=config_id, name=name)
+                send_document(user_id, path, caption="", account=account)
+                sent += 1
+            except Exception as exc:
+                self.plugin.log(f"Saved Messages export of {config_id} failed: {exc}")
+        if sent == len(items):
+            self._toast("configurations_exported", fragment, n=sent)
+        elif sent:
+            self._toast("configurations_export_partial", fragment, ok=sent, total=len(items))
+        else:
+            self._toast("configuration_export_failed", fragment)
+
+    def _export_source(self, config_id):
+        """None — живые настройки (активный конфиг), иначе сохранённые значения выбранного конфига."""
+        configurations = self.plugin.configurations
+        if not config_id or config_id == configurations.scope_active_id():
+            return None
+        with configurations._lock:
+            record = configurations._record(config_id)
+            if not record:
+                raise ValueError("configuration is not available")
+            return _SnapshotSettings(record.get("current"))
+
+    def selected_data(self, components, media_ready: Optional[bool] = None, source=None, config_id=None) -> dict:
+        s = source if source is not None else self.settings
         data = {"format": CONFIG_FORMAT, "version": CONFIG_VERSION}
         if "language" in components:
             data["language"] = {"value": s.language_index()}
         if "mask" in components:
             data["mask"] = {
                 "value": as_text(s.get("mask")),
-                "markdown": self.settings.markdown_enabled(),
-                "markdown_enabled": self.settings.markdown_enabled(),
-                "markdown_style": self.settings.markdown_style_value(),
+                "markdown": s.markdown_enabled(),
+                "markdown_enabled": s.markdown_enabled(),
+                "markdown_style": s.markdown_style_value(),
                 "style": {
                     "enabled": bool(s.get("text_style_enabled")),
                     "value": clamp_int(s.get("text_style"), 0, 0, TEXT_STYLE_COUNT - 1),
@@ -7559,10 +7768,10 @@ class ConfigTransfer:
                 "chat_type_rules": dump_chat_type_rules(parse_chat_type_rules(s.get("chat_type_rules"))),
             }
         if "schedule" in components:
-            data["schedule"] = self.plugin.export_schedule_section()
+            data["schedule"] = self.plugin.export_schedule_section(config_id)
         if "media" in components:
-            exists = self.media_exists() if media_ready is None else bool(media_ready)
-            info = self.media_info() if exists else {"name": "", "mime": ""}
+            exists = self.media_exists(source) if media_ready is None else bool(media_ready)
+            info = self.media_info(source) if exists else {"name": "", "mime": ""}
             data["media"] = {
                 "enabled": bool(s.get("attached_media_enabled")) and exists,
                 "file": "",
@@ -7571,21 +7780,23 @@ class ConfigTransfer:
             }
         return data
 
-    def build_config_file(self, components, directory: str) -> str:
+    def build_config_file(self, components, directory: str, config_id=None, name="") -> str:
         if not components:
             raise ValueError("no components selected")
+        source = self._export_source(config_id)
         ensure_dir_exists(directory)
         self._prune_old_exports(directory)
-        media_ready = "media" in components and self.media_exists()
-        config = self.selected_data(components, media_ready=media_ready)
-        path = os.path.join(directory, f"Prefixfy_{time.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:4]}{self.CONFIG_EXTENSION}")
+        media_ready = "media" in components and self.media_exists(source)
+        config = self.selected_data(components, media_ready=media_ready, source=source, config_id=config_id)
+        stem = self._file_stem(name)
+        path = os.path.join(directory, f"Prefixfy_{stem + '_' if stem else ''}{time.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:4]}{self.CONFIG_EXTENSION}")
         temp = path + ".tmp"
         try:
             with zipfile.ZipFile(temp, "w", compression=zipfile.ZIP_DEFLATED) as archive:
                 if media_ready:
                     entry = "media/attached_media" + safe_extension(config["media"]["name"])
                     config["media"]["file"] = entry
-                    archive.write(self.media_path(), entry, compress_type=zipfile.ZIP_STORED)
+                    archive.write(self.media_path(source), entry, compress_type=zipfile.ZIP_STORED)
                 payload = json.dumps(config, ensure_ascii=False, indent=2).encode("utf-8")
                 if len(payload) > MAX_CONFIG_JSON_BYTES:
                     raise ValueError("configuration is too large to export")
@@ -7625,13 +7836,16 @@ class ConfigTransfer:
     def handle_activity_result(self, request_code, result_code, data) -> bool:
         if request_code not in (self.MEDIA_IMPORT_REQUEST_CODE, self.CONFIG_IMPORT_REQUEST_CODE, self.CONFIG_EXPORT_REQUEST_CODE):
             return False
-        if self._blocked():
+        if self._blocked(export=request_code == self.CONFIG_EXPORT_REQUEST_CODE):
             self.pending_components, self.pending_import_as_new = (), False
+            self.pending_export_id, self.pending_export_name = None, ""
             return True
         fragment, _ = self._activity()
         components, as_new = self.pending_components, self.pending_import_as_new
+        export_id, export_name = self.pending_export_id, self.pending_export_name
         if request_code != self.MEDIA_IMPORT_REQUEST_CODE:
             self.pending_components, self.pending_import_as_new = (), False
+            self.pending_export_id, self.pending_export_name = None, ""
         if request_code == self.CONFIG_IMPORT_REQUEST_CODE and self._import_locked(fragment):
             return True
         uri = data.getData() if (result_code == Activity.RESULT_OK and data is not None) else None
@@ -7655,7 +7869,7 @@ class ConfigTransfer:
         elif request_code == self.CONFIG_EXPORT_REQUEST_CODE:
             path = None
             try:
-                path = self.build_config_file(components, temp_dir("exports"))
+                path = self.build_config_file(components, temp_dir("exports"), config_id=export_id, name=export_name)
                 self._write_file_to_uri(uri, path)
                 self._toast("configuration_exported", fragment)
             except Exception as exc:
@@ -11104,6 +11318,17 @@ class RemoteControl:
         self.soft(blocked)
         return not blocked
 
+    def export_open(self) -> bool:
+        """46.0.0: экспорт конфигураций доступен и при «Требуется обновление», и при «Изменённая сборка».
+        Закрыт, если аккаунт в чёрном списке, ключа нет, список ЧС ещё не получен или блок вызван чем-то иным."""
+        try:
+            if not self.enabled or not self._bl_known or self.blacklisted():
+                return False
+            return bool(self.mismatched() and self.mismatch_reason())
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy export gate failed: {exc}")
+            return False
+
     def notice(self) -> Tuple[str, Dict[str, Any]]:
         if self.enabled and self.blacklisted():
             return "account_blocked_subtext", {}
@@ -12350,7 +12575,7 @@ class PrefixfyPlugin(BasePlugin):
         if changed:
             self.set_setting(SCHEDULE_KEY, text)
 
-    def export_schedule_section(self) -> dict:
+    def export_schedule_section(self, config_id: Optional[str] = None) -> dict:
         configs = self.configurations
         chats = {}
         for dialog, config_id in self._chat_bindings().items():
@@ -12359,7 +12584,7 @@ class PrefixfyPlugin(BasePlugin):
             record = configs.configurations.get(config_id)
             if record:
                 chats[dialog] = as_text(record.get("name"))
-        active = configs.configurations.get(configs.active_id) or {}
+        active = (configs._record(config_id) if config_id else None) or configs.configurations.get(configs.active_id) or {}
         return {"source": as_text(active.get("name")), "chats": chats, "rules": as_text(self.get_setting(SCHEDULE_KEY, ""))}
 
     def import_schedule_section(self, section: dict, new_name: Optional[str] = None):
@@ -13446,6 +13671,17 @@ class PrefixfyPlugin(BasePlugin):
         except Exception as exc:
             self.log(f"Prefixfy features UI scheduling failed: {exc}")
 
+    def _settings_export_blocked(self) -> List[Any]:
+        """46.0.0: при «Требуется обновление» / «Изменённая сборка» оставляем только экспорт конфигураций."""
+        remote = getattr(self, "remote", None)
+        if remote is None or not remote.export_open():
+            return []
+        tr = self._tr
+        return [Text(
+            text=tr("export_configuration"), subtext=tr("export_while_outdated_subtext"),
+            icon=self._icon("msg_upload", "msg_document"), on_click=self.transfer.request_export,
+        )]
+
     def _remote_notice(self) -> List[Any]:
         remote = getattr(self, "remote", None)
         if remote is None:
@@ -14316,7 +14552,7 @@ class PrefixfyPlugin(BasePlugin):
         if notice and self.remote.blocked():
             if self.remote.blacklisted():
                 return notice + [Header(text=self._tr("ota_section"))] + self._check_items()[:1] + self._settings_about()
-            return notice + self._settings_ota() + self._settings_about()
+            return notice + self._settings_export_blocked() + self._settings_ota() + self._settings_about()
         if self._setup_stage() < SETUP_DONE:
             wizard = self._settings_setup(self._setup_stage())
             if wizard:
