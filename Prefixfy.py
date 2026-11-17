@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "46.0.1"
-__build__ = "46.0.1_20261117.3_81"
+__version__ = "46.1.0"
+__build__ = "46.1.0_20261117.4_82"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -552,7 +552,6 @@ class LocalizationManager:
             "configuration_export_none": "Выберите хотя бы одну конфигурацию",
             "configurations_exported": "Экспортировано конфигураций: {n}",
             "configurations_export_partial": "Экспортировано {ok} из {total}",
-            "export_while_outdated_subtext": "Доступен, пока плагин не обновлён",
             "config_found_title": "Найдена конфигурация",
             "config_found_contains": "Содержит",
             "config_import_as_new": "Импортировать как новую конфигурацию",
@@ -777,7 +776,6 @@ class LocalizationManager:
             "configuration_export_none": "Select at least one configuration",
             "configurations_exported": "Configurations exported: {n}",
             "configurations_export_partial": "Exported {ok} of {total}",
-            "export_while_outdated_subtext": "Available while the plugin is not updated",
             "config_found_title": "Configuration found",
             "config_found_contains": "Contains",
             "config_import_as_new": "Import as a new configuration",
@@ -1003,7 +1001,6 @@ class LocalizationManager:
             "configuration_export_none": "少なくとも1つの設定を選択してください",
             "configurations_exported": "エクスポートした設定: {n}件",
             "configurations_export_partial": "{total}件中{ok}件をエクスポートしました",
-            "export_while_outdated_subtext": "プラグインが未更新の間も利用できます",
             "config_found_title": "設定が見つかりました",
             "config_found_contains": "内容",
             "config_import_as_new": "新しい設定としてインポート",
@@ -1229,7 +1226,6 @@ class LocalizationManager:
             "configuration_export_none": "구성을 하나 이상 선택하세요",
             "configurations_exported": "내보낸 구성: {n}개",
             "configurations_export_partial": "{total}개 중 {ok}개를 내보냈습니다",
-            "export_while_outdated_subtext": "플러그인이 업데이트되기 전에도 사용할 수 있습니다",
             "config_found_title": "구성을 찾았습니다",
             "config_found_contains": "포함 내용",
             "config_import_as_new": "새 구성으로 가져오기",
@@ -1455,7 +1451,6 @@ class LocalizationManager:
             "configuration_export_none": "Sélectionnez au moins une configuration",
             "configurations_exported": "Configurations exportées : {n}",
             "configurations_export_partial": "{ok} exportées sur {total}",
-            "export_while_outdated_subtext": "Disponible tant que le plugin n’est pas mis à jour",
             "config_found_title": "Configuration trouvée",
             "config_found_contains": "Contient",
             "config_import_as_new": "Importer comme nouvelle configuration",
@@ -1681,7 +1676,6 @@ class LocalizationManager:
             "configuration_export_none": "Wähle mindestens eine Konfiguration aus",
             "configurations_exported": "Konfigurationen exportiert: {n}",
             "configurations_export_partial": "{ok} von {total} exportiert",
-            "export_while_outdated_subtext": "Verfügbar, solange das Plugin nicht aktualisiert ist",
             "config_found_title": "Konfiguration gefunden",
             "config_found_contains": "Enthält",
             "config_import_as_new": "Als neue Konfiguration importieren",
@@ -13677,10 +13671,13 @@ class PrefixfyPlugin(BasePlugin):
         if remote is None or not remote.export_open():
             return []
         tr = self._tr
-        return [Text(
-            text=tr("export_configuration"), subtext=tr("export_while_outdated_subtext"),
-            icon=self._icon("msg_upload", "msg_document"), on_click=self.transfer.request_export,
-        )]
+        return [
+            Header(text=tr("configurations")),
+            Text(
+                text=tr("export_configuration"), subtext=tr("configuration_short"),
+                icon=self._icon("msg_upload", "msg_document"), on_click=self.transfer.request_export,
+            ),
+        ]
 
     def _remote_notice(self) -> List[Any]:
         remote = getattr(self, "remote", None)
