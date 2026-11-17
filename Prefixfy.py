@@ -73,8 +73,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "46.0.0"
-__build__ = "46.0.0_20261117.2_80"
+__version__ = "46.0.1"
+__build__ = "46.0.1_20261117.3_81"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -513,7 +513,7 @@ class LocalizationManager:
             "delete_configurations_select": "Выберите неактивные конфигурации для удаления.",
             "import_new_configuration_name": "Название новой конфигурации",
             "select_configuration": "Выберите конфигурацию",
-            "select_configuration_subtext": "Выберите от одной до шести частей конфигурации.",
+            "select_configuration_subtext": "Выберите от одной до семи частей конфигурации.",
             "config_mask": "Маска",
             "config_separator": "Разделители",
             "config_exceptions": "Исключения и чаты",
@@ -738,7 +738,7 @@ class LocalizationManager:
             "delete_configurations_select": "Select inactive configurations to delete.",
             "import_new_configuration_name": "New configuration name",
             "select_configuration": "Select configuration",
-            "select_configuration_subtext": "Select one to six parts.",
+            "select_configuration_subtext": "Select one to seven parts.",
             "config_mask": "Mask",
             "config_separator": "Separators",
             "config_exceptions": "Exceptions and chats",
@@ -964,7 +964,7 @@ class LocalizationManager:
             "delete_configurations_select": "削除する非アクティブな設定を選択。",
             "import_new_configuration_name": "新しい設定の名前",
             "select_configuration": "設定を選択",
-            "select_configuration_subtext": "1〜6項目を選択できます。",
+            "select_configuration_subtext": "1〜7項目を選択できます。",
             "config_mask": "マスク",
             "config_separator": "区切り文字",
             "config_exceptions": "例外とチャット",
@@ -1190,7 +1190,7 @@ class LocalizationManager:
             "delete_configurations_select": "삭제할 비활성 구성을 선택하세요.",
             "import_new_configuration_name": "새 구성 이름",
             "select_configuration": "구성 선택",
-            "select_configuration_subtext": "항목을 1~6개 선택하세요.",
+            "select_configuration_subtext": "항목을 1~7개 선택하세요.",
             "config_mask": "마스크",
             "config_separator": "구분자",
             "config_exceptions": "예외 및 채팅",
@@ -1416,7 +1416,7 @@ class LocalizationManager:
             "delete_configurations_select": "Choisissez les configurations inactives à supprimer.",
             "import_new_configuration_name": "Nom de la nouvelle configuration",
             "select_configuration": "Sélectionner la configuration",
-            "select_configuration_subtext": "Sélectionnez de une à six parties.",
+            "select_configuration_subtext": "Sélectionnez de une à sept parties.",
             "config_mask": "Masque",
             "config_separator": "Séparateurs",
             "config_exceptions": "Exceptions et chats",
@@ -1642,7 +1642,7 @@ class LocalizationManager:
             "delete_configurations_select": "Inaktive Konfigurationen zum Löschen wählen.",
             "import_new_configuration_name": "Name der neuen Konfiguration",
             "select_configuration": "Konfiguration auswählen",
-            "select_configuration_subtext": "Wähle ein bis sechs Teile.",
+            "select_configuration_subtext": "Wähle ein bis sieben Teile.",
             "config_mask": "Maske",
             "config_separator": "Trennzeichen",
             "config_exceptions": "Ausnahmen und Chats",
