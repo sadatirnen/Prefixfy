@@ -74,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "48.0.0"
-__build__ = "48.0.0_20261118.3_87"
+__version__ = "48.1.0"
+__build__ = "48.1.0_20261118.4_88"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -598,6 +598,10 @@ class LocalizationManager:
             "config_part_language": "Выбранный язык",
             "config_part_media": "Медиа",
             "config_import_done": "Конфигурация импортирована",
+            "config_import_take_name_title": "Имя конфигурации",
+            "config_import_take_name": "В файле есть имя «{name}». Переименовать текущую конфигурацию «{current}» в него?",
+            "config_import_take_name_yes": "Переименовать",
+            "config_import_take_name_no": "Оставить имя",
             "config_import_failed": "Не удалось импортировать конфигурацию",
             "config_import_locked": "Импорт конфигураций станет доступен после начальной настройки.",
             "config_save_failed": "Не удалось сохранить текущую конфигурацию",
@@ -1029,6 +1033,10 @@ class LocalizationManager:
             "config_part_language": "Selected language",
             "config_part_media": "Media",
             "config_import_done": "Configuration imported",
+            "config_import_take_name_title": "Configuration name",
+            "config_import_take_name": "The file contains the name “{name}”. Rename the current configuration “{current}” to it?",
+            "config_import_take_name_yes": "Rename",
+            "config_import_take_name_no": "Keep name",
             "config_import_failed": "Could not import configuration",
             "config_import_locked": "Importing configurations becomes available after the initial setup.",
             "config_save_failed": "Could not save the current configuration",
@@ -1460,6 +1468,10 @@ class LocalizationManager:
             "config_part_language": "選択した言語",
             "config_part_media": "メディア",
             "config_import_done": "設定をインポートしました",
+            "config_import_take_name_title": "設定名",
+            "config_import_take_name": "ファイルに名前「{name}」が含まれています。現在の設定「{current}」をこの名前に変更しますか？",
+            "config_import_take_name_yes": "名前を変更",
+            "config_import_take_name_no": "そのまま",
             "config_import_failed": "設定をインポートできませんでした",
             "config_import_locked": "設定のインポートは初期設定の完了後に利用できます。",
             "config_save_failed": "現在の設定を保存できませんでした",
@@ -1891,6 +1903,10 @@ class LocalizationManager:
             "config_part_language": "선택한 언어",
             "config_part_media": "미디어",
             "config_import_done": "구성을 가져왔습니다",
+            "config_import_take_name_title": "구성 이름",
+            "config_import_take_name": "파일에 이름 “{name}”이(가) 있습니다. 현재 구성 “{current}”의 이름을 바꿀까요?",
+            "config_import_take_name_yes": "이름 변경",
+            "config_import_take_name_no": "유지",
             "config_import_failed": "구성을 가져오지 못했습니다",
             "config_import_locked": "구성 가져오기는 초기 설정이 끝난 뒤에 사용할 수 있습니다.",
             "config_save_failed": "현재 구성을 저장하지 못했습니다",
@@ -2322,6 +2338,10 @@ class LocalizationManager:
             "config_part_language": "Langue choisie",
             "config_part_media": "Médias",
             "config_import_done": "Configuration importée",
+            "config_import_take_name_title": "Nom de la configuration",
+            "config_import_take_name": "Le fichier contient le nom « {name} ». Renommer la configuration actuelle « {current} » ?",
+            "config_import_take_name_yes": "Renommer",
+            "config_import_take_name_no": "Garder le nom",
             "config_import_failed": "Impossible d’importer la configuration",
             "config_import_locked": "L’importation de configurations sera disponible après la configuration initiale.",
             "config_save_failed": "Impossible d’enregistrer la configuration actuelle",
@@ -6954,6 +6974,58 @@ class ConfigTransfer:
         builder.set_negative_button(self._tr("action_cancel"), cancelled)
         return bool(plugin._show_builder(builder))
 
+    @staticmethod
+    def _file_config_name(data) -> str:
+        raw = data.get("name") if isinstance(data, dict) else None
+        name = ConfigurationsManager.normalize_name(raw) if isinstance(raw, str) else ""
+        return name[:MAX_CONFIG_NAME_LENGTH - 4].strip()
+
+    def _import_rename_plan(self, data, target):
+        """48.1.0: импорт в существующую конфигурацию. Если в файле есть имя, отличное от текущего, после импорта
+        спрашиваем, брать ли его. Для «во все аккаунты» вопроса нет: целей несколько."""
+        imported = self._file_config_name(data)
+        if not imported:
+            return None
+        configs = self.plugin.configurations
+        if target is None:
+            uid, config_id = configs.edit_uid, configs.scope_active_id()
+        elif target == ACCT_COMMON:
+            uid, config_id = None, configs.active_id
+        elif isinstance(target, int) and not isinstance(target, bool):
+            uid = target
+            config_id = configs.accounts.pin(uid) or configs.accounts.active_id(uid)
+        else:
+            return None
+        record = configs._record(config_id) if config_id else None
+        if record is None:
+            return None
+        current = as_text(record.get("name"))
+        if ConfigurationsManager.normalize_name(current).casefold() == imported.casefold():
+            return None
+        return uid, config_id, imported, current
+
+    def _offer_import_rename(self, plan, fragment=None):
+        uid, config_id, imported, current = plan
+        activity = self.plugin._dialog_activity(fragment)
+        if not activity:
+            return
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(self._tr("config_import_take_name_title"))
+        builder.set_message(self._tr("config_import_take_name", name=imported, current=current))
+
+        def accepted(bld, which):
+            bld.dismiss()
+            try:
+                if not self.plugin.configurations.rename_imported(uid, config_id, imported):
+                    self._toast("config_save_failed", fragment)
+            except Exception as exc:
+                self.plugin.log(f"Prefixfy import rename failed: {exc}")
+                self._toast("config_save_failed", fragment)
+
+        builder.set_positive_button(self._tr("config_import_take_name_yes"), accepted)
+        builder.set_negative_button(self._tr("config_import_take_name_no"), lambda bld, which: bld.dismiss())
+        self.plugin._show_builder(builder)
+
     def _finish_import(self, data, components, as_new, name, fragment, target=None):
         if self._import_locked(fragment):
             self.discard_container_media(data)
@@ -6975,6 +7047,12 @@ class ConfigTransfer:
                 f"Prefixfy import: account picker skipped (account mode is off or fewer than 2 accounts: "
                 f"{len(self.plugin._accounts())} found)"
             )
+        rename_plan = None
+        if not as_new:
+            try:
+                rename_plan = self._import_rename_plan(data, target)
+            except Exception as exc:
+                self.plugin.log(f"Prefixfy import rename plan failed: {exc}")
         try:
             if target is None:
                 self.plugin.configurations.import_data(data, components, as_new=as_new, name=name)
@@ -6984,6 +7062,8 @@ class ConfigTransfer:
                 self.plugin.configurations.import_to_accounts(data, components, target)
             self.plugin.reload_settings_ui()
             self._toast("config_import_done", fragment)
+            if rename_plan is not None:
+                run_on_ui_thread(lambda: self._offer_import_rename(rename_plan, fragment))
         except ConfigurationError as exc:
             self.plugin.log(f"Prefixfy import rejected: {exc}")
             self._toast("config_import_invalid", fragment)
@@ -8463,6 +8543,23 @@ class ConfigurationsManager:
             self.plugin.rename_in_schedule(old_name, new_name)
         self._refresh_ui()
         return True
+
+    def rename_imported(self, uid, config_id, name) -> bool:
+        """48.1.0: переименование импортированной конфигурации в её области (None — общий набор, иначе uid аккаунта).
+        Если имя занято другой конфигурацией области, добавляется номер."""
+        with self._lock:
+            origin = self.edit_uid
+            self.edit_uid = uid
+            try:
+                records = self.configurations if uid is None else self.accounts.bucket(uid)
+                if config_id not in records:
+                    return False
+                base = self.normalize_name(name)[:MAX_CONFIG_NAME_LENGTH - 4].strip()
+                taken = [as_text(data.get("name", cid)) for cid, data in list(records.items()) if cid != config_id]
+                return self.rename(config_id, unique_name(base, taken))
+            finally:
+                self.edit_uid = origin
+                self._refresh_ui()
 
     def inactive_ids(self) -> List[str]:
         active = self.scope_active_id()
