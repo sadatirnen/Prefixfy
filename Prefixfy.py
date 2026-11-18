@@ -72,10 +72,10 @@ except ImportError:
 
 __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
-__description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
+__description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "47.1.0"
-__build__ = "47.1.0_20261118.2_86"
+__version__ = "48.0.0"
+__build__ = "48.0.0_20261118.3_87"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -154,8 +154,10 @@ IGNORE_KEYS = tuple(f"ignore_{kind}" for kind in IGNORE_KINDS)
 IGNORE_LEGACY_KEY = "ignore_special"
 IGNORE_SPLIT_KEY = "Prefixfy_ignore_split"
 DEFAULT_SEPARATORS = "•, ·, —, ~, |"
-LANGUAGE_MODES = (None, "ru", "en", "ja", "ko", "fr", "de")
+LANGUAGE_MODES = (None, "ru", "en", "ja", "ko", "fr")  # 48.0.0: немецкий удалён (он был последним в списке, индексы остальных не сдвинулись)
 LEGACY_LANGUAGE_MODES = (None, "ru", "en", "ja", "ko", "ar", "fr", "pl", "de", "uk")
+GERMAN_LEGACY_INDEX = 6  # место «de» в раскладке до удаления немецкого: LANGUAGE_MODES + ("de",)
+ENGLISH_INDEX = LANGUAGE_MODES.index("en")
 LANGUAGE_LAYOUT_KEY = "Prefixfy_language_layout"
 LANGUAGE_LAYOUT_VERSION = 2
 LANGUAGE_MIGRATED_KEY = "Prefixfy_language_migrated"
@@ -216,7 +218,6 @@ WEEKDAY_NAMES = {
     "ja": ("月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日", "日曜日"),
     "ko": ("월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"),
     "fr": ("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"),
-    "de": ("Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"),
 }
 
 MONTH_NAMES = {
@@ -225,11 +226,9 @@ MONTH_NAMES = {
     "ja": tuple(f"{n}月" for n in range(1, 13)),
     "ko": tuple(f"{n}월" for n in range(1, 13)),
     "fr": ("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"),
-    "de": ("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"),
 }
 WEEKDAY_SHORT = {
     "ru": ("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"),
-    "de": ("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"),
     "ja": ("月", "火", "水", "木", "金", "土", "日"),
     "ko": ("월", "화", "수", "목", "금", "토", "일"),
     "en": ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
@@ -241,14 +240,13 @@ DAYPART_NAMES = {
     "ja": ("朝", "昼", "夕方", "夜"),
     "ko": ("아침", "낮", "저녁", "밤"),
     "fr": ("Matin", "Après-midi", "Soir", "Nuit"),
-    "de": ("Morgen", "Tag", "Abend", "Nacht"),
 }
 DAYPART_BOUNDS = ((5 * 60, 12 * 60), (12 * 60, 17 * 60), (17 * 60, 23 * 60), (23 * 60, 5 * 60))
 DAYPART_ALIASES = {
-    0: ("morning", "утро", "matin", "morgen", "朝", "아침"),
-    1: ("afternoon", "day", "день", "tag", "après-midi", "昼", "낮"),
-    2: ("evening", "вечер", "soir", "abend", "夕方", "저녁"),
-    3: ("night", "ночь", "nuit", "nacht", "夜", "밤"),
+    0: ("morning", "утро", "matin", "朝", "아침"),
+    1: ("afternoon", "day", "день", "après-midi", "昼", "낮"),
+    2: ("evening", "вечер", "soir", "夕方", "저녁"),
+    3: ("night", "ночь", "nuit", "夜", "밤"),
 }
 DAYPART_BY_ALIAS = {alias: index for index, names in DAYPART_ALIASES.items() for alias in names}
 _DAYPART_PATTERN = "|".join(re.escape(a) for a in sorted(DAYPART_BY_ALIAS, key=len, reverse=True))
@@ -351,40 +349,75 @@ MEDIA_EXTENSIONS = frozenset({
 
 class LocalizationManager:
     LANGUAGE_ITEMS = {
-        "ru": ["Русский", "Английский", "Японский", "Корейский", "Французский", "Немецкий"],
-        "en": ["Russian", "English", "Japanese", "Korean", "French", "German"],
-        "ja": ["ロシア語", "英語", "日本語", "韓国語", "フランス語", "ドイツ語"],
-        "ko": ["러시아어", "영어", "일본어", "한국어", "프랑스어", "독일어"],
-        "fr": ["Russe", "Anglais", "Japonais", "Coréen", "Français", "Allemand"],
-        "de": ["Russisch", "Englisch", "Japanisch", "Koreanisch", "Französisch", "Deutsch"],
+        "ru": ["Русский", "Английский", "Японский", "Корейский", "Французский"],
+        "en": ["Russian", "English", "Japanese", "Korean", "French"],
+        "ja": ["ロシア語", "英語", "日本語", "韓国語", "フランス語"],
+        "ko": ["러시아어", "영어", "일본어", "한국어", "프랑스어"],
+        "fr": ["Russe", "Anglais", "Japonais", "Coréen", "Français"],
     }
 
     STRINGS = {
         "ru": {
-            "enable_plugin": "Включить плагин",
-            "enable_plugin_subtext": "Вкл — везде, кроме списка. Выкл — только в списке.",
-            "language": "Язык",
-            "update_required": "Требуется обновление",
-            "update_required_subtext": "Установите официальную сборку Prefixfy {version}. Пока плагин не оформляет сообщения.",
-            "verify_required": "Проверка не пройдена",
-            "verify_required_subtext": "Сборку не удалось проверить. Оформление отключено; проверьте интернет.",
-            "account_blocked": "Доступ запрещён",
-            "account_blocked_subtext": "Один из аккаунтов в чёрном списке Prefixfy. Плагин отключён.",
+            # Общие действия, ошибки, подсказки редакторов
+            "editor_empty_means_default": "Пустое поле и «Сохранить» — значение по умолчанию.",
+            "action_save": "Сохранить",
+            "action_delete": "Удалить",
+            "action_cancel": "Отмена",
+            "action_create": "Создать",
+            "action_apply": "Применить",
+            "action_next": "Далее",
+            "error_operation_failed": "Не удалось выполнить действие",
+            # Заголовки разделов
             "section_scope": "Где работает",
-            "plugin_language": "Язык плагина",
+            "section_language": "Язык плагина",
+            "section_configurations": "Конфигурации",
+            "section_appearance": "Оформление текста",
+            "section_general": "Основное",
+            "section_about": "Сведения",
+            "section_accounts": "Аккаунты",
+            "section_updates": "Обновления и проверка",
+            "section_cute": "Милые эффекты",
+            # Плагин и язык
+            "plugin_enable": "Включить плагин",
+            "plugin_enable_subtext": "Вкл — везде, кроме списка. Выкл — только в списке.",
+            "language": "Язык",
             "language_auto": "Автоопределение языка",
             "language_auto_subtext": "Язык интерфейса Telegram. Выключите для ручного выбора.",
-            "message": "Сообщение",
-            "message_subtext": "Оформлять обычные текстовые сообщения.",
-            "media": "Медиа",
-            "media_subtext": "Использовать плагин для подписей к медиа.",
-            "edit_message": "Редактирование сообщений",
-            "edit_message_subtext": "Оформлять при редактировании. Уже оформленное не меняется.",
+            # Область применения, исключения по чатам, конфигурация чата
+            "scope_message": "Сообщение",
+            "scope_message_subtext": "Оформлять обычные текстовые сообщения.",
+            "scope_media": "Медиа",
+            "scope_media_subtext": "Использовать плагин для подписей к медиа.",
+            "scope_edit": "Редактирование сообщений",
+            "scope_edit_subtext": "Оформлять при редактировании. Уже оформленное не меняется.",
+            "skip_once_expired": "Пропуск истёк: следующее сообщение будет оформлено",
+            "chat_config_menu": "Конфигурация для этого чата",
+            "chat_config_auto": "Основная (и расписание)",
+            "chat_config_saved": "Конфигурация чата сохранена",
+            "chat_config_reset": "Чат использует основную конфигурацию",
+            "skip_once_menu": "Пропустить оформление один раз",
+            "skip_once_on": "Следующее сообщение уйдёт без оформления",
+            "skip_once_off": "Пропуск отменён",
+            "chat_types": "Типы чатов",
+            "chat_types_hint": "Оформление только в выбранных типах чатов.",
+            "chat_types_all": "Все чаты",
+            "chat_types_none": "Выберите хотя бы один тип",
+            "chat_type_private": "Личные",
+            "chat_type_group": "Группы",
+            "chat_type_channel": "Каналы",
+            "scope_edit_message": "Правка текста",
+            "scope_edit_message_subtext": "Оформлять обычные сообщения при редактировании.",
+            "scope_edit_media": "Правка подписей",
+            "scope_edit_media_subtext": "Оформлять подписи к медиа при редактировании.",
+            "scope_article": "Статьи",
+            "scope_article_subtext": "Оформлять текстовые блоки статей при отправке.",
+            "scope_edit_article": "Правка статей",
+            "scope_edit_article_subtext": "Оформлять статьи при редактировании.",
+            "skip_once_on_edit": "«Пропустить один раз» при правке",
+            "skip_once_on_edit_subtext": "Если пропуск включён, следующая правка в чате останется без оформления.",
+            # Маска, Markdown, ротация и условные маски
             "mask": "Маска",
             "mask_text": "Текст маски",
-            "text_style": "Стиль текста",
-            "skip_once_expired": "Пропуск истёк: следующее сообщение будет оформлено",
-            "empty_means_default": "Пустое поле и «Сохранить» — значение по умолчанию.",
             "markdown_style": "Стиль Markdown",
             "markdown_style_subtext": "Маркеры в маске или оформление всей маски",
             "markdown_style_pick": "Стиль",
@@ -394,27 +427,6 @@ class LocalizationManager:
             "md_strike": "Вся маска: зачёркнутый",
             "md_spoiler": "Вся маска: спойлер",
             "md_mono": "Вся маска: моно",
-            "chat_config_menu": "Конфигурация для этого чата",
-            "chat_config_auto": "Основная (и расписание)",
-            "chat_config_saved": "Конфигурация чата сохранена",
-            "chat_config_reset": "Чат использует основную конфигурацию",
-            "schedule": "Расписание конфигураций",
-            "schedule_empty": "Не задано",
-            "schedule_count": "Правил: {n}",
-            "schedule_message": "Правило в строке: [дата] [ЧЧ:ММ-ЧЧ:ММ] [дни] = конфигурация.\nДата: ГГГГ-ММ-ДД, ДД.ММ.ГГГГ или ДД.ММ (каждый год); диапазон — «..». Без времени — весь день. Дни: пн-пт, сб,вс или mon-fri; без дней — ежедневно. Правила с датой важнее правил по дням, затем первое подходящее. Чат со своей конфигурацией не затрагивается. Вместо времени — часть суток: утро (05–12), день (12–17), вечер (17–23), ночь (23–05) или «утро-вечер».",
-            "schedule_hint": "22:00-07:00 = Ночная\n09:00-18:00 пн-пт = Рабочая\n31.12 = Праздничная\n2026-12-28..2027-01-10 = Отпуск\nутро пн-пт = Рабочая\nночь = Ночная",
-            "schedule_saved": "Расписание сохранено",
-            "schedule_error": "Строка {n}: {reason}",
-            "schedule_err_format": "формат: [дата] [ЧЧ:ММ-ЧЧ:ММ] [дни] = конфигурация",
-            "schedule_err_time": "неверное время",
-            "schedule_err_days": "неверные дни",
-            "schedule_err_config": "нет конфигурации «{name}»",
-            "schedule_err_limit": "не больше {n} правил",
-            "skip_once_menu": "Пропустить оформление один раз",
-            "skip_once_on": "Следующее сообщение уйдёт без оформления",
-            "skip_once_off": "Пропуск отменён",
-            "random_style": "Случайный стиль",
-            "random_style_subtext": "Случайный стиль для каждого сообщения (кроме перевёрнутого).",
             "mask_rotation": "Ротация масок",
             "mask_rotation_subtext": "Маски из списка вместо основной. Маска чата важнее.",
             "masks_list": "Список масок",
@@ -423,29 +435,92 @@ class LocalizationManager:
             "masks_list_hint": "Одна маска в строке, в каждой один [text].",
             "masks_list_invalid": "В каждой маске должен быть ровно один [text]",
             "masks_list_limit": "Не больше {n} масок",
-            "mask_tags_hint": "Теги: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice].",
+            "mask_tags_hint": "Теги: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice].\n[reply] — имя адресата ответа; [chatcount] — номер вашего сообщения в чате; [battery] — заряд; [moon] — фаза луны; [line] — случайная строка из списка; [since:2026-12-31] / [until:2026-12-31] — дней прошло / осталось; [quote] — начало цитируемого сообщения; [countdown:2026-12-31 18:00] — сколько осталось; [weather] / [weather:Париж] — температура с wttr.in (нужен интернет).",
             "mask_rotation_mode": "Порядок ротации",
-            "rotation_random": "Случайная",
-            "rotation_sequential": "По кругу",
+            "mask_rotation_mode_random": "Случайная",
+            "mask_rotation_mode_sequential": "По кругу",
+            "mask_editor_title": "Настройка маски",
+            "mask_editor_hint": "Введите маску. [text] — текст сообщения, [text: ссылка] — гиперссылка.",
+            "mask_invalid": "Маска должна содержать ровно один [text]",
+            "mask_too_long": "Маска слишком длинная: не больше {n} символов",
+            "mask_preview_sample": "Пример сообщения",
+            "mask_preview_invalid": "Маска повреждена: нужен ровно один [text]",
+            "conditional_masks": "Маски по содержимому",
+            "conditional_masks_hint": "Правило в строке: регулярное выражение => маска. Если текст подходит, берётся маска первой подходящей строки. В каждой маске один [text].",
+            "conditional_masks_count": "Правил: {n}",
+            "conditional_masks_empty": "Если в тексте есть…",
+            "conditional_masks_format": "Строка {n}: ожидается «выражение => маска»",
+            "md_quote": "Вся маска: цитата",
+            # Стиль текста, слова и строки для тегов
+            "text_style": "Стиль текста",
+            "text_style_random": "Случайный стиль",
+            "text_style_random_subtext": "Случайный стиль для каждого сообщения (кроме перевёрнутого).",
+            "text_style_subtext": "Только текст сообщения. Fancy, Bold, Gothic, Circled — латиница; L33T ещё и кириллица.",
+            "text_style_enable": "Включить стиль текста",
+            "text_style_translit": "Транслитерировать кириллицу",
+            "text_style_translit_subtext": "Латинские стили заработают и с русским, и с украинским.",
+            "style_words": "Стиль только для слов",
+            "style_words_hint": "Одно слово в строке. Пусто — стиль для всего текста.",
+            "style_words_count": "Слов: {n}",
+            "style_words_empty": "Весь текст",
+            "style_words_limit": "Не больше {n} слов",
+            "tag_lines": "Строки для [line]",
+            "tag_lines_hint": "Одна строка в ряд. Тег [line] подставит случайную (до 64 символов).",
+            "tag_lines_count": "Строк: {n}",
+            "tag_lines_empty": "Строк пока нет",
+            "tag_lines_limit": "Не больше {n} строк",
+            # Разделители
+            "separator": "Разделитель",
+            "separator_enable": "Включить разделитель",
+            "separator_enable_subtext": "Добавлять собственные разделители между словами.",
+            "separator_set": "Набор разделителей",
+            "separator_count": "Количество разделителей между словами",
+            "separator_count_subtext": "Нажмите, чтобы изменить.",
+            "separator_custom_title": "Своя",
+            "separator_custom_message": "Введите разделители через запятую, например:\n•, ·, —, ~, |",
+            "separator_preview_sample": "Пример текста для предпросмотра",
+            "separator_frequency": "Частота разделителей",
+            "separator_frequency_subtext": "Вероятность разделителя между двумя словами. 100% — между каждой парой.",
+            "separator_spaces": "Включить пробелы",
+            "separator_spaces_subtext": "Если выключено, разделитель ставится вплотную к словам: приветякакядела.",
+            "separator_space_mode": "Где ставить пробелы",
+            "separator_space_both": "С обеих сторон",
+            "separator_space_left": "Слева",
+            "separator_space_right": "Справа",
+            # Милые эффекты
+            "cute_enabled": "Включить милые эффекты",
+            "cute_enabled_subtext": "Каомодзи, UwU, действия и украшения. Ссылки, @упоминания, #теги и код не трогаются.",
+            "cute_preview": "Предпросмотр",
+            "cute_preview_sample": "Привет! Как дела? Сегодня отличный день.",
+            "cute_preview_none": "Включите хотя бы один эффект. Нажмите, чтобы обновить.",
+            "cute_preview_tap": "Нажмите, чтобы обновить.",
+            "cute_sentence_frequency": "Частота эффектов предложений",
+            "cute_sentence_frequency_subtext": "Каомодзи, спарклы, пунктуация, суффиксы и действия.",
+            "cute_word_frequency": "Частота эффектов слов",
+            "cute_word_frequency_subtext": "Заикание, растягивание гласных и мягкий знак.",
+            "cute_kaomoji": "Каомодзи в конце предложения (◕‿◕)",
+            "cute_sparkles": "Звёздочки вокруг предложения ✨",
+            "cute_exclamations": "Милые восклицания (! → !✨)",
+            "cute_punctuation": "Милая пунктуация (. → .~, ? → ?✨)",
+            "cute_uwu_suffixes": "UwU-суффиксы (nya~, owo)",
+            "cute_actions": "Милые действия (*обнимает*)",
+            "cute_actions_newline": "Действия на новой строке",
+            "cute_lowercase": "Только строчные буквы",
+            "cute_uwu_speak": "UwU-речь (р/л → в, r/l → w)",
+            "cute_stutter": "Заикание (п-привет)",
+            "cute_stretch": "Растягивать гласные (милооо)",
+            "cute_stretch_max": "Макс. длина растянутой гласной",
+            "cute_stretch_2x": "Двойная (x2)",
+            "cute_stretch_3x": "Тройная (x3)",
+            "cute_soft_sign": "Мягкий знак в конце слов (котикь)",
+            "cute_soft_sign_subtext": "Только для русских слов.",
+            # Исключения: списки, игнорирование, regex
             "regex_exceptions": "Regex-исключения",
             "regex_exceptions_hint": "Одно регулярное выражение в строке. Подходящие сообщения не оформляются.",
             "regex_exceptions_count": "Правил: {n}",
             "regex_exceptions_empty": "Для продвинутых пользователей",
-            "regex_invalid": "Некорректное выражение: {error}",
-            "regex_limit": "Не больше {n} выражений, до {m} символов каждое",
-            "chat_types": "Типы чатов",
-            "chat_types_hint": "Оформление только в выбранных типах чатов.",
-            "chat_types_all": "Все чаты",
-            "chat_types_none": "Выберите хотя бы один тип",
-            "chat_type_private": "Личные",
-            "chat_type_group": "Группы",
-            "chat_type_channel": "Каналы",
-            "separator": "Разделитель",
-            "enable_separator": "Включить разделитель",
-            "enable_separator_subtext": "Добавлять собственные разделители между словами.",
-            "separator_set": "Набор разделителей",
-            "separator_count": "Количество разделителей между словами",
-            "separator_count_subtext": "Нажмите, чтобы изменить.",
+            "regex_exceptions_invalid": "Некорректное выражение: {error}",
+            "regex_exceptions_limit": "Не больше {n} выражений, до {m} символов каждое",
             "exceptions": "Исключения",
             "ignore_emoji_only": "Игнорировать сообщения только из эмодзи",
             "ignore_emoji_only_subtext": "Не менять обычные сообщения только из эмодзи. Подписи к медиа оформляются всегда.",
@@ -465,153 +540,315 @@ class LocalizationManager:
             "ignore_segments": "Что не трогать",
             "ignore_segments_hint": "Отметьте, какие части сообщения оставлять как есть.",
             "ignore_segments_count": "Включено: {n} из {total}",
-            "chat_menu": "Добавить/удалить чат в/из списка исключений",
-            "chat_added": "Чат добавлен в список исключений",
-            "chat_removed": "Чат удалён из списка исключений",
-            "mask_editor_title": "Настройка маски",
-            "mask_editor_hint": "Введите маску. [text] — текст сообщения, [text: ссылка] — гиперссылка.",
-            "custom_separator_title": "Своя",
-            "custom_separator_message": "Введите разделители через запятую, например:\n•, ·, —, ~, |",
-            "save": "Сохранить",
-            "delete": "Удалить",
-            "cancel": "Отмена",
-            "capture_custom_emoji": "Захват Premium Emoji",
-            "capture_enabled": "Захват Premium Emoji включён: отправьте сообщение с ним",
-            "capture_disabled": "Захват Premium Emoji выключен",
-            "custom_emoji_hint": "Premium Emoji: маркер (id|🙂), где 🙂 — обычный эмодзи для остальных. Получить: «Захват Premium Emoji» в меню чата.",
-            "mask_invalid": "Маска должна содержать ровно один [text]",
-            "mask_too_long": "Маска слишком длинная: не больше {n} символов",
-            "mask_preview_sample": "Пример сообщения",
-            "mask_preview_invalid": "Маска повреждена: нужен ровно один [text]",
-            "separator_preview_words": "Пример текста для превью",
+            "exceptions_chat_menu": "Добавить/удалить чат в/из списка исключений",
+            "exceptions_chat_added": "Чат добавлен в список исключений",
+            "exceptions_chat_removed": "Чат удалён из списка исключений",
             "exceptions_count": "Исключений: {n}, чатов: {m}",
-            "configuration_import_cancelled": "Импорт отменён",
-            "import_configuration": "Импортировать",
-            "export_configuration": "Экспортировать",
-            "reset_configuration": "Восстановить значения по умолчанию",
-            "reset_to_plugin_defaults": "Игнорировать импортированное: вернуть настройки плагина по умолчанию",
-            "reset_to_plugin_defaults_unavailable": "Недоступно: конфигурация создана плагином, сброс вернёт её к исходному состоянию.",
-            "configurations": "Конфигурации",
-            "active_configuration": "Активная конфигурация",
-            "add_configuration": "Создать новую конфигурацию",
-            "add_configuration_subtext": "Отдельный набор настроек, сразу активный.",
-            "configuration_name_hint": "Название конфигурации",
-            "new_configuration_source_title": "Настройки новой конфигурации",
-            "new_configuration_source_message": "Что взять за основу? Без выбора — настройки по умолчанию.",
-            "new_configuration_copy_current": "Скопировать настройки текущей конфигурации",
-            "create": "Создать",
-            "delete_configuration": "Удалить конфигурацию",
-            "delete_configuration_confirm": "Удалить конфигурацию «{name}»?",
-            "no_inactive_configurations": "Нет неактивных конфигураций для удаления",
-            "imported_configuration": "Импортированная конфигурация",
-            "rename_configuration": "Переименовать конфигурацию",
-            "rename_configuration_subtext": "Изменить название текущей конфигурации.",
-            "configuration_name_invalid": "Введите уникальное название конфигурации.",
-            "configuration_name_taken": "Конфигурация с таким названием уже существует.",
-            "configuration_deleted": "Удалено конфигураций: {n}",
-            "delete_configurations": "Удалить конфигурации",
-            "delete_configurations_subtext": "Удалить неактивные конфигурации; активная останется.",
-            "delete_configurations_select": "Выберите неактивные конфигурации для удаления.",
-            "import_new_configuration_name": "Название новой конфигурации",
-            "select_configuration": "Выберите конфигурацию",
-            "select_configuration_subtext": "Выберите части конфигурации: от 1 до {n}.",
-            "config_mask": "Маска",
-            "config_separator": "Разделители",
-            "config_exceptions": "Исключения и чаты",
-            "config_language": "Выбранный язык",
-            "config_media": "Медиа",
+            # Premium Emoji
+            "capture_custom_emoji": "Захват Premium Emoji",
+            "capture_custom_emoji_enabled": "Захват Premium Emoji включён: отправьте сообщение с ним",
+            "capture_custom_emoji_disabled": "Захват Premium Emoji выключен",
+            "capture_custom_emoji_hint": "Premium Emoji: маркер (id|🙂), где 🙂 — обычный эмодзи для остальных. Получить: «Захват Premium Emoji» в меню чата.",
+            # Расписание
+            "schedule": "Расписание конфигураций",
+            "schedule_empty": "Не задано",
+            "schedule_count": "Правил: {n}",
+            "schedule_message": "Правило в строке: [дата] [ЧЧ:ММ-ЧЧ:ММ] [дни] = конфигурация.\nДата: ГГГГ-ММ-ДД, ДД.ММ.ГГГГ или ДД.ММ (каждый год); диапазон — «..». Без времени — весь день. Дни: пн-пт, сб,вс или mon-fri; без дней — ежедневно. Правила с датой важнее правил по дням, затем первое подходящее. Чат со своей конфигурацией не затрагивается. Вместо времени — часть суток: утро (05–12), день (12–17), вечер (17–23), ночь (23–05) или «утро-вечер».",
+            "schedule_hint": "22:00-07:00 = Ночная\n09:00-18:00 пн-пт = Рабочая\n31.12 = Праздничная\n2026-12-28..2027-01-10 = Отпуск\nутро пн-пт = Рабочая\nночь = Ночная",
+            "schedule_saved": "Расписание сохранено",
+            "schedule_error": "Строка {n}: {reason}",
+            "schedule_err_format": "формат: [дата] [ЧЧ:ММ-ЧЧ:ММ] [дни] = конфигурация",
+            "schedule_err_time": "неверное время",
+            "schedule_err_days": "неверные дни",
+            "schedule_err_config": "нет конфигурации «{name}»",
+            "schedule_err_limit": "не больше {n} правил",
+            "schedule_err_date": "неверная дата",
+            # Конфигурации
+            "config_import_cancelled": "Импорт отменён",
+            "config_import": "Импортировать",
+            "config_export": "Экспортировать",
+            "config_reset": "Восстановить значения по умолчанию",
+            "config_reset_to_plugin": "Игнорировать импортированное: вернуть настройки плагина по умолчанию",
+            "config_reset_to_plugin_unavailable": "Недоступно: конфигурация создана плагином, сброс вернёт её к исходному состоянию.",
+            "config_active": "Активная конфигурация",
+            "config_new": "Создать новую конфигурацию",
+            "config_new_subtext": "Отдельный набор настроек, сразу активный.",
+            "config_name_hint": "Название конфигурации",
+            "config_new_source_title": "Настройки новой конфигурации",
+            "config_new_source_message": "Что взять за основу? Без выбора — настройки по умолчанию.",
+            "config_new_copy_current": "Скопировать настройки текущей конфигурации",
+            "config_delete": "Удалить конфигурацию",
+            "config_delete_confirm": "Удалить конфигурацию «{name}»?",
+            "config_delete_none": "Нет неактивных конфигураций для удаления",
+            "config_imported_name": "Импортированная конфигурация",
+            "config_rename": "Переименовать конфигурацию",
+            "config_rename_subtext": "Изменить название текущей конфигурации.",
+            "config_name_invalid": "Введите уникальное название конфигурации.",
+            "config_name_taken": "Конфигурация с таким названием уже существует.",
+            "config_deleted": "Удалено конфигураций: {n}",
+            "config_delete_multi": "Удалить конфигурации",
+            "config_delete_multi_subtext": "Удалить неактивные конфигурации; активная останется.",
+            "config_delete_multi_select": "Выберите неактивные конфигурации для удаления.",
+            "config_import_new_name": "Название новой конфигурации",
+            "config_parts_title": "Выберите конфигурацию",
+            "config_parts_message": "Выберите части конфигурации: от 1 до {n}.",
+            "config_part_mask": "Маска",
+            "config_part_separator": "Разделители",
+            "config_part_exceptions": "Исключения и чаты",
+            "config_part_language": "Выбранный язык",
+            "config_part_media": "Медиа",
+            "config_import_done": "Конфигурация импортирована",
+            "config_import_failed": "Не удалось импортировать конфигурацию",
+            "config_import_locked": "Импорт конфигураций станет доступен после начальной настройки.",
+            "config_save_failed": "Не удалось сохранить текущую конфигурацию",
+            "config_export_done": "Конфигурация экспортирована",
+            "config_export_failed": "Не удалось экспортировать конфигурацию",
+            "config_export_destination_title": "Куда экспортировать?",
+            "config_export_to_saved": "В «Избранное» активного аккаунта",
+            "config_export_to_device": "В память устройства",
+            "config_restored": "Выбранные значения восстановлены",
+            "config_parts_none": "Выберите хотя бы одну часть конфигурации",
+            "config_export_select": "Выберите конфигурации для экспорта",
+            "config_export_select_subtext": "Выберите до {n} конфигураций. Для каждой дальше откроется выбор частей. Если выбрано несколько, файлы сразу уйдут в Избранное активного аккаунта.",
+            "config_export_include_name": "Включить имя конфигурации",
+            "config_shared_marker": "общая",
+            "config_export_parts_title": "Части: {name}",
+            "config_export_parts_progress": "Конфигурация {i} из {n}",
+            "config_export_limit": "Можно выбрать не более {n} конфигураций",
+            "config_export_none": "Выберите хотя бы одну конфигурацию",
+            "config_export_done_multi": "Экспортировано конфигураций: {n}",
+            "config_export_partial": "Экспортировано {ok} из {total}",
+            "config_import_found_title": "Найдена конфигурация",
+            "config_import_found_contains": "Содержит",
+            "config_import_as_new": "Импортировать как новую конфигурацию",
+            "config_import_file_failed": "Не удалось открыть файл конфигурации",
+            "config_import_invalid": "В файле нет выбранной конфигурации или неверный формат.",
+            "config_default_name": "Конфигурация по умолчанию",
+            "config_numbered_name": "Конфигурация {n}",
+            "config_actions_subtext": "Выбрать части конфигурации",
+            "config_part_schedule": "Привязки чатов и расписание",
+            "config_part_cute": "Милые эффекты",
+            # Медиа
             "media_attachment": "Медиа",
-            "enable_media_attachment": "Включить медиа",
-            "enable_media_attachment_subtext": "Прикладывать импортированный файл к отправкам.",
+            "media_attachment_enable": "Включить медиа",
+            "media_attachment_enable_subtext": "Прикладывать импортированный файл к отправкам.",
             "media_file": "Выбранный файл",
             "media_file_none": "Файл не выбран",
-            "import_media": "Импортировать медиа",
-            "delete_media": "Удалить медиа",
-            "delete_media_subtext": "Удалить импортированный файл из Prefixfy.",
-            "delete_media_confirm": "Удалить медиа «{name}»? Файл будет удалён из Prefixfy, это действие нельзя отменить.",
+            "media_import": "Импортировать медиа",
+            "media_delete": "Удалить медиа",
+            "media_delete_subtext": "Удалить импортированный файл из Prefixfy.",
+            "media_delete_confirm": "Удалить медиа «{name}»? Файл будет удалён из Prefixfy, это действие нельзя отменить.",
             "media_imported": "Медиа импортировано",
             "media_deleted": "Медиа удалено",
             "media_import_failed": "Не удалось импортировать медиа",
             "media_delete_failed": "Не удалось удалить медиа",
-            "apply": "Применить",
-            "configuration_imported": "Конфигурация импортирована",
-            "configuration_import_failed": "Не удалось импортировать конфигурацию",
-            "import_locked_setup": "Импорт конфигураций станет доступен после начальной настройки.",
-            "configuration_save_failed": "Не удалось сохранить текущую конфигурацию",
-            "configuration_exported": "Конфигурация экспортирована",
-            "configuration_export_failed": "Не удалось экспортировать конфигурацию",
-            "configuration_export_destination_title": "Куда экспортировать?",
-            "configuration_export_to_saved": "В Избранные активного аккаунта",
-            "configuration_export_to_device": "В память устройства",
-            "configuration_restored": "Выбранные значения восстановлены",
-            "configuration_nothing_selected": "Выберите хотя бы одну часть конфигурации",
-            "export_select_configs": "Выберите конфиги для экспорта",
-            "export_select_configs_subtext": "Выберите до {n} конфигураций. Для каждой дальше откроется выбор частей. Если выбрано несколько, файлы сразу уйдут в Избранное активного аккаунта.",
-            "export_next": "Далее",
-            "export_include_name": "Включить имя конфигурации",
-            "shared_configuration_marker": "общая",
-            "export_parts_title": "Части: {name}",
-            "export_parts_progress": "Конфиг {i} из {n}",
-            "configuration_export_limit": "Можно выбрать не более {n} конфигураций",
-            "configuration_export_none": "Выберите хотя бы одну конфигурацию",
-            "configurations_exported": "Экспортировано конфигураций: {n}",
-            "configurations_export_partial": "Экспортировано {ok} из {total}",
-            "config_found_title": "Найдена конфигурация",
-            "config_found_contains": "Содержит",
-            "config_import_as_new": "Импортировать как новую конфигурацию",
-            "config_found_import": "Импортировать",
-            "config_file_open_failed": "Не удалось открыть файл конфигурации",
-            "invalid_configuration": "В файле нет выбранной конфигурации или неверный формат.",
-            "default_configuration_name": "Конфигурация по умолчанию",
-            "configuration_n": "Конфигурация {n}",
-            "operation_failed": "Не удалось выполнить действие",
-            "text_style_subtext": "Только текст сообщения. Fancy, Bold, Gothic, Circled — латиница; L33T ещё и кириллица.",
-            "enable_text_style": "Включить стиль текста",
-            "configuration_short": "Выбрать части конфигурации",
-            "edit_text_toggle": "Правка текста",
-            "edit_text_toggle_subtext": "Оформлять обычные сообщения при редактировании.",
-            "edit_media_toggle": "Правка подписей",
-            "edit_media_toggle_subtext": "Оформлять подписи к медиа при редактировании.",
-            "article": "Статьи",
-            "article_subtext": "Оформлять текстовые блоки статей при отправке.",
-            "edit_article_toggle": "Правка статей",
-            "edit_article_toggle_subtext": "Оформлять статьи при редактировании.",
-            "skip_once_on_edit": "«Пропустить один раз» при правке",
-            "skip_once_on_edit_subtext": "Если пропуск включён, следующая правка в чате останется без оформления.",
-            "conditional_masks": "Маски по содержимому",
-            "conditional_masks_hint": "Правило в строке: регулярное выражение => маска. Если текст подходит, берётся маска первой подходящей строки. В каждой маске один [text].",
-            "conditional_masks_count": "Правил: {n}",
-            "conditional_masks_empty": "Если в тексте есть…",
-            "conditional_masks_format": "Строка {n}: ожидается «выражение => маска»",
-            "md_quote": "Вся маска: цитата",
-            "config_schedule": "Привязки чатов и расписание",
-            "schedule_err_date": "неверная дата",
+            # Аккаунты
+            "account_mode": "Настройки по аккаунтам",
+            "account_mode_subtext": "Отдельные настройки для каждого аккаунта. Пока вы ничего не меняли, они общие.",
+            "account_target": "Аккаунт для настройки",
+            "account_auto": "Авто (текущий аккаунт)",
+            "account_common": "Общие (для всех)",
+            "account_auto_now": "Авто показывает",
+            "account_editing": "Открыты настройки",
+            "account_own": "свои настройки",
+            "account_shared": "общие настройки",
+            "account_common_hint": "общие настройки (для аккаунтов без своих)",
+            "account_none": "аккаунт не определён",
+            "account_reset": "Сбросить к общим настройкам",
+            "account_reset_subtext": "Удалить свои настройки этого аккаунта",
+            "account_reset_title": "Сброс настроек аккаунта",
+            "account_reset_confirm": "Удалить настройки этого аккаунта со всеми конфигурациями? Он снова будет использовать общие.",
+            "account_reset_button": "Сбросить",
+            "account_reset_done": "Настройки аккаунта сброшены к общим",
+            "account_import_title": "Куда применить конфигурацию?",
+            "account_import_all": "Все аккаунты",
+            "account_import_common": "Общие (аккаунты без своих настроек)",
+            # Обновления и проверка
+            "check_now": "Проверить сейчас",
+            "check_now_subtext": "Проверить сборку плагина.",
+            "check_started": "Очищаю кэш и проверяю…",
+            "check_confirm_title": "Проверить сборку сейчас?",
+            "check_confirm_body": "Что делает: удаляет сохранённые данные проверки (манифест, чёрный список, профиль настроек), скачивает их заново и проверяет, что сборка официальная.\n\nКогда нужно: если сборку не удалось подтвердить, функции приостановлены, вы только что обновили или переустановили плагин либо статус устарел.\n\nБезопасно ли: настройки и конфигурации не затрагиваются, серийные номера проверок сохраняются. Нужен интернет; при неудаче функции остаются приостановленными до следующей успешной проверки.",
+            "check_confirm_yes": "Проверить",
+            "check_ok": "Проверка пройдена",
+            "check_failed": "Проверка не пройдена. Проверьте интернет и повторите.",
+            "ota_auto": "Автообновление",
+            "ota_auto_subtext": "Скачивает и ставит обновления сам. Подпись и контрольные суммы проверяются.",
+            "ota_mode": "Режим автообновления",
+            "ota_mode_available": "По мере выхода",
+            "ota_mode_time": "В выбранное время",
+            "ota_action": "Действие при автообновлении",
+            "ota_action_download": "Только загрузка",
+            "ota_action_install": "Загрузка и установка",
+            "ota_time": "Время обновления",
+            "ota_time_subtext": "Системное время устройства, ЧЧ:ММ (например 04:00).",
+            "ota_time_invalid": "Введите время в формате ЧЧ:ММ, например 04:00",
+            "ota_disabled": "OTA отключён разработчиком",
+            "ota_disabled_subtext": "Обновления временно недоступны. Ставьте новую версию вручную из репозитория.",
+            "ota_installed": "Prefixfy {version} установлен. Перезапуск…",
+            "ota_restart_manual": "Prefixfy {version} установлен. Выключите и включите плагин, чтобы применить.",
+            "ota_modified_found": "Плагин изменён. Ставлю официальную сборку {version}…",
+            "ota_failed": "Не удалось обновить: {reason}",
+            "ota_busy": "Обновление уже выполняется",
+            "ota_check_note": "Новую версию эта проверка не установит: придёт уведомление, а установить можно кнопкой «Скачать» под «Требуется обновление».",
+            "ota_almost_ready": "Почти готово",
+            "ota_almost_ready_subtext": "Версия {version} скачана. Осталось перезагрузить плагин.",
+            "ota_reload": "Перезагрузить",
+            "ota_reload_subtext": "Применить обновление и перезапустить плагин.",
+            "ota_staged": "Prefixfy {version} скачан. Нажмите «Перезагрузить».",
+            "ota_download": "Скачать",
+            "check_update_found": "Найдено обновление Prefixfy {version}. Нажмите «Скачать» под «Требуется обновление».",
+            "ota_download_subtext": "Версия {version}. Сначала — сведения об обновлении.",
+            "ota_dl_title": "Обновление Prefixfy",
+            "ota_dl_size": "Размер",
+            "ota_dl_confirm": "Скачать и установить",
+            "ota_dl_warning": "Внимание: через мобильную сеть оператор может взять плату за трафик. Лучше Wi-Fi.",
+            "ota_unit_kb": "КБ",
+            "ota_unit_mb": "МБ",
+            # О плагине, статусы и уведомления проверки
+            "gate_update_required": "Требуется обновление",
+            "gate_update_required_subtext": "Установите официальную сборку Prefixfy {version}. Пока плагин не оформляет сообщения.",
+            "gate_verify_required": "Проверка не пройдена",
+            "gate_verify_required_subtext": "Сборку не удалось проверить. Оформление отключено; проверьте интернет.",
+            "gate_account_blocked": "Доступ запрещён",
+            "gate_account_blocked_subtext": "Один из аккаунтов в чёрном списке Prefixfy. Плагин отключён.",
+            "about_plugin": "О плагине",
+            "about_plugin_subtext": "Версия, сборка и статус проверки.",
+            "about_title": "О Prefixfy",
+            "about_version": "Версия",
+            "about_build_date": "Дата сборки",
+            "about_build_number": "Номер сборки за день",
+            "about_serial": "Серийный номер",
+            "about_build_label": "Полная метка сборки",
+            "about_latest": "Последняя официальная сборка",
+            "about_status": "Проверка",
+            "about_unknown": "неизвестно",
+            "about_note": "Значения читаются из метки сборки файла при открытии окна.",
+            "status_ok": "пройдена: сборка совпадает с официальным релизом",
+            "status_pending": "ожидание первой проверки",
+            "status_soft": "не подтверждена: доп. функции приостановлены",
+            "status_blacklisted": "отказано: аккаунт в чёрном списке",
+            "status_no_key": "не пройдена: в этой сборке нет ключа обновлений",
+            "status_integrity": "не подтверждена: файл плагина не прочитан",
+            "notice_ok": "OK",
+            "status_outdated": "не пройдена: сборка устарела, есть новый релиз",
+            "status_modified": "не пройдена: сборка изменена",
+            "gate_modified": "Изменённая сборка",
+            "gate_modified_subtext": "Файл Prefixfy отличается от официального релиза {version}. Плагин сам переустановит официальную сборку; до этого оформление отключено.",
+            "notice_verify_body": "Что произошло: эту сборку невозможно проверить — нет действующего ключа обновлений для подписанного манифеста.\n\nЧто это значит: плагин не оформляет исходящие сообщения. Настройки сохранены.\n\nЧто делать: установите официальную сборку из репозитория.",
+            "notice_soft_body": "Что произошло: Prefixfy не может подтвердить, что сборка официальная: не удалось завершить проверку подписанного манифеста или чёрного списка (нет интернета, GitHub недоступен, последняя проверка слишком старая или файл плагина не читается).\n\nЧто приостановлено: все дополнительные функции (стили, Markdown, ротация и условные маски, теги, расписание, конфигурации чатов, вложение медиа, Premium Emoji, оформление при редактировании, импорт). Работает только базовая маска.\n\nЧто делать: проверьте интернет и нажмите «Проверить сейчас». После успешной проверки всё вернётся само.",
+            "notice_account_body": "Что произошло: один из аккаунтов Telegram на этом устройстве в чёрном списке Prefixfy.\n\nЧто это значит: плагин отключён на этом устройстве. Настройки не меняются.\n\nЕсли это ошибка, свяжитесь с автором плагина.",
+            "gate_soft": "Функции приостановлены",
+            "gate_soft_subtext": "Сборку сейчас не удаётся проверить: дополнительные функции отключены, работает только базовое оформление. Проверьте интернет — после успешной проверки всё вернётся.",
+            "gate_bypass_note": "Эта функция не поможет обойти блокировку.",
+            # Удаление данных и возобновление работы
+            "wipe_row": "Удалить данные",
+            "wipe_row_subtext": "Очистить файлы плагина или полностью отказаться от него.",
+            "wipe_title": "Удалить данные Prefixfy?",
+            "wipe_body": "Удалит все данные плагина: конфигурации и пресеты аккаунтов, настройки, медиа, импортированные файлы и кэш проверок. Плагин перезапустится и начнёт с мастера настройки, как после первой установки.\n\nЕсли плагин устарел, сначала установится последняя версия, затем данные удалятся.\n\n«Отказаться от использования» дополнительно отключает плагин: останется только «Возобновить работу». Обновление не скачивается.",
+            "wipe_opt_out": "Отказаться от использования",
+            "wipe_confirm_clean": "Все файлы и настройки плагина будут удалены, плагин перезапустится несколько раз (это нормально) и начнёт с мастера настройки. Конфигурации и медиа пропадут безвозвратно. Сначала экспортируйте конфигурации.",
+            "wipe_confirm_title": "Подтвердите удаление",
+            "wipe_confirm_out": "Все файлы и настройки плагина будут удалены, затем плагин отключится. Отменить нельзя.",
+            "wipe_confirm_btn": "Очистить",
+            "wipe_started": "Готовлю удаление…",
+            "wipe_started_multi": "Готовлю удаление… Плагин перезапустится несколько раз.",
+            "wipe_halt": "Идёт очистка",
+            "wipe_halt_subtext": "Плагин скоро перезапустится ещё раз и начнёт с нуля.",
+            "wipe_updating": "Обновление до {version}, затем удаление данных…",
+            "wipe_reinstalling": "Переустановка сборки {version}, затем удаление данных…",
+            "wipe_update_failed": "Не удалось обновить плагин: {reason}. Ничего не удалено.",
+            "wipe_restart_manual": "Выключите и включите плагин, чтобы завершить удаление.",
+            "wipe_failed": "Удаление не подготовлено. Ничего не удалено.",
+            "wipe_done": "Данные очищены и созданы заново",
+            "resume_title": "Возобновить работу",
+            "resume_subtext": "Prefixfy отключён и ничего не хранит. Нажмите, чтобы начать с нуля.",
+            "resume_confirm_title": "Возобновить работу?",
+            "resume_confirm_body": "Плагин запустится как при первой установке, с настройками по умолчанию.",
+            "resume_btn": "Возобновить",
+            "resume_done": "Prefixfy запущен",
+            "resume_failed": "Не удалось запустить плагин. Выключите и включите его.",
+            "wipe_auto_reset_done": "Данные повреждены, плагин сброшен автоматически",
+            # Первая настройка и приветствие
+            "setup_step_1": "Этап 1/3: выберите язык",
+            "setup_step_2": "Этап 2/3: настройте оформление",
+            "setup_step_3": "Этап 3/3: настройте обновление",
+            "setup_next": "Далее",
+            "setup_next_subtext": "Перейти к этапу {step} из 3",
+            "setup_back": "Назад",
+            "setup_back_subtext": "Вернуться к этапу {step} из 3",
+            "setup_finish": "Завершить настройку",
+            "setup_finish_subtext": "Проверит обновления и установит их, если они есть, затем откроет все настройки.",
+            "setup_checking": "Проверка аккаунта…",
+            "setup_checking_subtext": "Запрашиваю у сервера список блокировок. Это займёт несколько секунд.",
+            "setup_done": "Начальная настройка завершена",
+            "welcome_banner": "Спасибо за установку Prefixfy!",
+            "welcome_banner_subtext": "Нажмите, чтобы узнать, что умеет плагин и как начать.",
+            "welcome_title": "Добро пожаловать в Prefixfy",
+            "welcome_body": "Спасибо, что установили Prefixfy! Плагин добавляет к вашим сообщениям маску: текст до или после, оформление и украшения.\n\nЧто умеет:\n• маска с Markdown, стилями текста и разделителями\n• милые эффекты: каомодзи, UwU, украшения\n• прикреплённое медиа\n• исключения: чаты, где плагин не работает, или только они\n• конфигурации: несколько наборов настроек, импорт, экспорт и расписание\n• отдельные настройки для каждого аккаунта\n\nКак начать:\n1. В разделе «Оформление текста» задайте маску.\n2. В разделе «Где работает» выберите, что оформлять.\n3. Чтобы добавить чат в исключения или убрать из них, используйте пункт меню в самом чате.\n\nГотово — просто пишите сообщения.",
+            "welcome_ok": "Понятно",
         },
         "en": {
-            "enable_plugin": "Enable plugin",
-            "enable_plugin_subtext": "On: all chats except the list. Off: only the list.",
-            "language": "Language",
-            "update_required": "Update required",
-            "update_required_subtext": "Install official Prefixfy {version}. Messages aren’t formatted until then.",
-            "verify_required": "Verification failed",
-            "verify_required_subtext": "Couldn’t verify this build. Formatting is off; check your connection.",
-            "account_blocked": "Access denied",
-            "account_blocked_subtext": "An account on this device is blacklisted. The plugin is disabled.",
+            # Общие действия, ошибки, подсказки редакторов
+            "editor_empty_means_default": "Clear the field and tap “Save” to reset.",
+            "action_save": "Save",
+            "action_delete": "Delete",
+            "action_cancel": "Cancel",
+            "action_create": "Create",
+            "action_apply": "Apply",
+            "action_next": "Next",
+            "error_operation_failed": "Action failed",
+            # Заголовки разделов
             "section_scope": "Where it works",
-            "plugin_language": "Plugin language",
+            "section_language": "Plugin language",
+            "section_configurations": "Configurations",
+            "section_appearance": "Text appearance",
+            "section_general": "General",
+            "section_about": "Details",
+            "section_accounts": "Accounts",
+            "section_updates": "Updates & verification",
+            "section_cute": "Cute effects",
+            # Плагин и язык
+            "plugin_enable": "Enable plugin",
+            "plugin_enable_subtext": "On: all chats except the list. Off: only the list.",
+            "language": "Language",
             "language_auto": "Detect language automatically",
             "language_auto_subtext": "Use Telegram’s language. Turn off to choose manually.",
-            "message": "Message",
-            "message_subtext": "Style regular text messages.",
-            "media": "Media",
-            "media_subtext": "Use the plugin for media captions.",
-            "edit_message": "Message editing",
-            "edit_message_subtext": "Style on edit. Already styled text stays as is.",
+            # Область применения, исключения по чатам, конфигурация чата
+            "scope_message": "Message",
+            "scope_message_subtext": "Style regular text messages.",
+            "scope_media": "Media",
+            "scope_media_subtext": "Use the plugin for media captions.",
+            "scope_edit": "Message editing",
+            "scope_edit_subtext": "Style on edit. Already styled text stays as is.",
+            "skip_once_expired": "Skip expired: next message will be styled",
+            "chat_config_menu": "Configuration for this chat",
+            "chat_config_auto": "Main (and schedule)",
+            "chat_config_saved": "Chat configuration saved",
+            "chat_config_reset": "This chat uses the main configuration",
+            "skip_once_menu": "Skip styling once",
+            "skip_once_on": "The next message will be sent without styling",
+            "skip_once_off": "Skip cancelled",
+            "chat_types": "Chat types",
+            "chat_types_hint": "Styling only in the selected chat types.",
+            "chat_types_all": "All chats",
+            "chat_types_none": "Choose at least one type",
+            "chat_type_private": "Private chats",
+            "chat_type_group": "Groups",
+            "chat_type_channel": "Channels",
+            "scope_edit_message": "Edit text messages",
+            "scope_edit_message_subtext": "Style regular messages when edited.",
+            "scope_edit_media": "Edit captions",
+            "scope_edit_media_subtext": "Style media captions when you edit them.",
+            "scope_article": "Articles",
+            "scope_article_subtext": "Style text blocks of articles when sending.",
+            "scope_edit_article": "Edit articles",
+            "scope_edit_article_subtext": "Style articles when you edit them.",
+            "skip_once_on_edit": "“Skip once” when editing",
+            "skip_once_on_edit_subtext": "If skip is on, the next edit in this chat stays unstyled.",
+            # Маска, Markdown, ротация и условные маски
             "mask": "Mask",
             "mask_text": "Mask text",
-            "text_style": "Text style",
-            "skip_once_expired": "Skip expired: next message will be styled",
-            "empty_means_default": "Clear the field and tap “Save” to reset.",
             "markdown_style": "Markdown style",
             "markdown_style_subtext": "Markers in the mask or formatting for the whole mask",
             "markdown_style_pick": "Style",
@@ -621,27 +858,6 @@ class LocalizationManager:
             "md_strike": "Whole mask: strikethrough",
             "md_spoiler": "Whole mask: spoiler",
             "md_mono": "Whole mask: monospace",
-            "chat_config_menu": "Configuration for this chat",
-            "chat_config_auto": "Main (and schedule)",
-            "chat_config_saved": "Chat configuration saved",
-            "chat_config_reset": "This chat uses the main configuration",
-            "schedule": "Configuration schedule",
-            "schedule_empty": "Not set",
-            "schedule_count": "Rules: {n}",
-            "schedule_message": "One rule per line: [date] [HH:MM-HH:MM] [days] = configuration.\nDate: YYYY-MM-DD, DD.MM.YYYY or DD.MM (yearly); ranges with “..”. No time = all day. Days: mon-fri, sat,sun or пн-пт; none = daily. Dated rules beat weekday rules; otherwise the first match wins. Chats with their own configuration are unaffected. Instead of a time: morning (05–12), afternoon/day (12–17), evening (17–23), night (23–05) or “morning-evening”.",
-            "schedule_hint": "22:00-07:00 = Night\n09:00-18:00 mon-fri = Work\n31.12 = Holiday\n2026-12-28..2027-01-10 = Vacation\nmorning mon-fri = Work\nnight = Night",
-            "schedule_saved": "Schedule saved",
-            "schedule_error": "Line {n}: {reason}",
-            "schedule_err_format": "format: [date] [HH:MM-HH:MM] [days] = configuration",
-            "schedule_err_time": "invalid time",
-            "schedule_err_days": "invalid days",
-            "schedule_err_config": "no configuration “{name}”",
-            "schedule_err_limit": "no more than {n} rules",
-            "skip_once_menu": "Skip styling once",
-            "skip_once_on": "The next message will be sent without styling",
-            "skip_once_off": "Skip cancelled",
-            "random_style": "Random style",
-            "random_style_subtext": "A random style per message (except upside-down).",
             "mask_rotation": "Mask rotation",
             "mask_rotation_subtext": "Masks from the list replace the main one. Chat mask wins.",
             "masks_list": "Mask list",
@@ -650,29 +866,92 @@ class LocalizationManager:
             "masks_list_hint": "One mask per line, each with one [text].",
             "masks_list_invalid": "Each mask needs exactly one [text]",
             "masks_list_limit": "At most {n} masks",
-            "mask_tags_hint": "Tags: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice].",
+            "mask_tags_hint": "Tags: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice].\n[reply] — name of who you reply to; [chatcount] — your message number in the chat; [battery] — battery level; [moon] — moon phase; [line] — random line from your list; [since:2026-12-31] / [until:2026-12-31] — days passed / left; [quote] — start of the replied message; [countdown:2026-12-31 18:00] — time left; [weather] / [weather:Paris] — temperature from wttr.in (online).",
             "mask_rotation_mode": "Rotation order",
-            "rotation_random": "Random",
-            "rotation_sequential": "In turn",
+            "mask_rotation_mode_random": "Random",
+            "mask_rotation_mode_sequential": "In turn",
+            "mask_editor_title": "Mask settings",
+            "mask_editor_hint": "Enter a mask. [text] is the message, [text: link] makes it a hyperlink.",
+            "mask_invalid": "The mask must contain exactly one [text]",
+            "mask_too_long": "The mask is too long: {n} characters at most",
+            "mask_preview_sample": "Sample message",
+            "mask_preview_invalid": "Mask is invalid: exactly one [text] is required",
+            "conditional_masks": "Content-based masks",
+            "conditional_masks_hint": "One rule per line: regex => mask. The first matching line’s mask is used. Each mask needs one [text].",
+            "conditional_masks_count": "Rules: {n}",
+            "conditional_masks_empty": "If the text contains…",
+            "conditional_masks_format": "Line {n}: expected “expression => mask”",
+            "md_quote": "Whole mask: quote",
+            # Стиль текста, слова и строки для тегов
+            "text_style": "Text style",
+            "text_style_random": "Random style",
+            "text_style_random_subtext": "A random style per message (except upside-down).",
+            "text_style_subtext": "Message text only. Fancy, Bold, Gothic, Circled: Latin only; L33T also Cyrillic.",
+            "text_style_enable": "Enable text style",
+            "text_style_translit": "Transliterate Cyrillic",
+            "text_style_translit_subtext": "Latin-only styles will work with Russian and Ukrainian too.",
+            "style_words": "Style only these words",
+            "style_words_hint": "One word per line. Empty = whole text.",
+            "style_words_count": "Words: {n}",
+            "style_words_empty": "Whole text",
+            "style_words_limit": "At most {n} words",
+            "tag_lines": "Lines for [line]",
+            "tag_lines_hint": "One line per row. [line] inserts a random one (max 64 chars).",
+            "tag_lines_count": "Lines: {n}",
+            "tag_lines_empty": "No lines yet",
+            "tag_lines_limit": "At most {n} lines",
+            # Разделители
+            "separator": "Separator",
+            "separator_enable": "Enable separator",
+            "separator_enable_subtext": "Add your custom separators between words.",
+            "separator_set": "Separator set",
+            "separator_count": "Separators between words",
+            "separator_count_subtext": "Tap to change.",
+            "separator_custom_title": "Custom",
+            "separator_custom_message": "Enter separators separated by commas, for example:\n•, ·, —, ~, |",
+            "separator_preview_sample": "Sample text for preview",
+            "separator_frequency": "Separator frequency",
+            "separator_frequency_subtext": "Chance of a separator between two words. 100% = every pair.",
+            "separator_spaces": "Enable spaces",
+            "separator_spaces_subtext": "When off, the separator sits right against the words: hixtherexyou.",
+            "separator_space_mode": "Where to put spaces",
+            "separator_space_both": "Both sides",
+            "separator_space_left": "Left",
+            "separator_space_right": "Right",
+            # Милые эффекты
+            "cute_enabled": "Enable cute effects",
+            "cute_enabled_subtext": "Kaomoji, UwU, actions and decorations. Links, @mentions, #tags and code stay intact.",
+            "cute_preview": "Preview",
+            "cute_preview_sample": "Hello! How are you? It is a lovely day.",
+            "cute_preview_none": "Turn on at least one effect. Tap to refresh.",
+            "cute_preview_tap": "Tap to refresh.",
+            "cute_sentence_frequency": "Sentence effects frequency",
+            "cute_sentence_frequency_subtext": "Kaomoji, sparkles, punctuation, suffixes and actions.",
+            "cute_word_frequency": "Word effects frequency",
+            "cute_word_frequency_subtext": "Stuttering, vowel stretching and the soft sign.",
+            "cute_kaomoji": "Kaomoji at the end of a sentence (◕‿◕)",
+            "cute_sparkles": "Sparkles around a sentence ✨",
+            "cute_exclamations": "Cute exclamations (! → !✨)",
+            "cute_punctuation": "Cute punctuation (. → .~, ? → ?✨)",
+            "cute_uwu_suffixes": "UwU suffixes (nya~, owo)",
+            "cute_actions": "Cute actions (*hugs*)",
+            "cute_actions_newline": "Actions on a new line",
+            "cute_lowercase": "Lowercase only",
+            "cute_uwu_speak": "UwU-speak (r/l → w)",
+            "cute_stutter": "Stuttering (h-hello)",
+            "cute_stretch": "Stretch vowels (cuuute)",
+            "cute_stretch_max": "Max stretched vowel length",
+            "cute_stretch_2x": "Double (x2)",
+            "cute_stretch_3x": "Triple (x3)",
+            "cute_soft_sign": "Soft sign at word ends (kotikь)",
+            "cute_soft_sign_subtext": "Russian words only.",
+            # Исключения: списки, игнорирование, regex
             "regex_exceptions": "Regex exceptions",
             "regex_exceptions_hint": "One regex per line. Matching messages stay unstyled.",
             "regex_exceptions_count": "Rules: {n}",
             "regex_exceptions_empty": "For advanced users",
-            "regex_invalid": "Invalid expression: {error}",
-            "regex_limit": "Up to {n} expressions, {m} characters each",
-            "chat_types": "Chat types",
-            "chat_types_hint": "Styling only in the selected chat types.",
-            "chat_types_all": "All chats",
-            "chat_types_none": "Choose at least one type",
-            "chat_type_private": "Private chats",
-            "chat_type_group": "Groups",
-            "chat_type_channel": "Channels",
-            "separator": "Separator",
-            "enable_separator": "Enable separator",
-            "enable_separator_subtext": "Add your custom separators between words.",
-            "separator_set": "Separator set",
-            "separator_count": "Separators between words",
-            "separator_count_subtext": "Tap to change.",
+            "regex_exceptions_invalid": "Invalid expression: {error}",
+            "regex_exceptions_limit": "Up to {n} expressions, {m} characters each",
             "exceptions": "Exceptions",
             "ignore_emoji_only": "Ignore emoji-only messages",
             "ignore_emoji_only_subtext": "Skip regular messages made only of emoji. Media captions are always styled.",
@@ -692,154 +971,315 @@ class LocalizationManager:
             "ignore_segments": "What to skip",
             "ignore_segments_hint": "Choose which parts of a message stay as is.",
             "ignore_segments_count": "Enabled: {n} of {total}",
-            "chat_menu": "Add/remove chat to/from the exception list",
-            "chat_added": "Chat added to the exception list",
-            "chat_removed": "Chat removed from the exception list",
-            "mask_editor_title": "Mask settings",
-            "mask_editor_hint": "Enter a mask. [text] is the message, [text: link] makes it a hyperlink.",
-            "custom_separator_title": "Custom",
-            "custom_separator_message": "Enter separators separated by commas, for example:\n•, ·, —, ~, |",
-            "save": "Save",
-            "delete": "Delete",
-            "cancel": "Cancel",
-            "capture_custom_emoji": "Capture Premium Emoji",
-            "capture_enabled": "Premium Emoji capture on: send a message with one",
-            "capture_disabled": "Premium Emoji capture is off",
-            "custom_emoji_hint": "Premium Emoji: marker (id|🙂), where 🙂 is the fallback for others. Get one via “Capture Premium Emoji” in the chat menu.",
-            "mask_invalid": "The mask must contain exactly one [text]",
-            "mask_too_long": "The mask is too long: {n} characters at most",
-            "mask_preview_sample": "Sample message",
-            "mask_preview_invalid": "Mask is invalid: exactly one [text] is required",
-            "separator_preview_words": "Sample text for preview",
+            "exceptions_chat_menu": "Add/remove chat to/from the exception list",
+            "exceptions_chat_added": "Chat added to the exception list",
+            "exceptions_chat_removed": "Chat removed from the exception list",
             "exceptions_count": "Exceptions: {n}, chats: {m}",
-            "configuration_import_cancelled": "Import cancelled",
-            "import_configuration": "Import",
-            "export_configuration": "Export",
-            "reset_configuration": "Restore defaults",
-            "reset_to_plugin_defaults": "Ignore imported values: use plugin defaults",
-            "reset_to_plugin_defaults_unavailable": "Unavailable: created by the plugin, so reset restores its original state.",
-            "configurations": "Configurations",
-            "active_configuration": "Active configuration",
-            "add_configuration": "Create new configuration",
-            "add_configuration_subtext": "A separate settings set, active right away.",
-            "configuration_name_hint": "Configuration name",
-            "new_configuration_source_title": "New configuration settings",
-            "new_configuration_source_message": "Start from what? Nothing checked = defaults.",
-            "new_configuration_copy_current": "Copy settings of the current configuration",
-            "create": "Create",
-            "delete_configuration": "Delete configuration",
-            "delete_configuration_confirm": "Delete configuration “{name}”?",
-            "no_inactive_configurations": "No inactive configurations to delete",
-            "imported_configuration": "Imported configuration",
-            "rename_configuration": "Rename configuration",
-            "rename_configuration_subtext": "Change the name of the current configuration.",
-            "configuration_name_invalid": "Enter a unique configuration name.",
-            "configuration_name_taken": "A configuration with this name already exists.",
-            "configuration_deleted": "Configurations deleted: {n}",
-            "delete_configurations": "Delete configurations",
-            "delete_configurations_subtext": "Delete inactive configurations; the active one stays.",
-            "delete_configurations_select": "Select inactive configurations to delete.",
-            "import_new_configuration_name": "New configuration name",
-            "select_configuration": "Select configuration",
-            "select_configuration_subtext": "Select 1 to {n} parts.",
-            "config_mask": "Mask",
-            "config_separator": "Separators",
-            "config_exceptions": "Exceptions and chats",
-            "config_language": "Selected language",
-            "config_media": "Media",
+            # Premium Emoji
+            "capture_custom_emoji": "Capture Premium Emoji",
+            "capture_custom_emoji_enabled": "Premium Emoji capture on: send a message with one",
+            "capture_custom_emoji_disabled": "Premium Emoji capture is off",
+            "capture_custom_emoji_hint": "Premium Emoji: marker (id|🙂), where 🙂 is the fallback for others. Get one via “Capture Premium Emoji” in the chat menu.",
+            # Расписание
+            "schedule": "Configuration schedule",
+            "schedule_empty": "Not set",
+            "schedule_count": "Rules: {n}",
+            "schedule_message": "One rule per line: [date] [HH:MM-HH:MM] [days] = configuration.\nDate: YYYY-MM-DD, DD.MM.YYYY or DD.MM (yearly); ranges with “..”. No time = all day. Days: mon-fri, sat,sun or пн-пт; none = daily. Dated rules beat weekday rules; otherwise the first match wins. Chats with their own configuration are unaffected. Instead of a time: morning (05–12), afternoon/day (12–17), evening (17–23), night (23–05) or “morning-evening”.",
+            "schedule_hint": "22:00-07:00 = Night\n09:00-18:00 mon-fri = Work\n31.12 = Holiday\n2026-12-28..2027-01-10 = Vacation\nmorning mon-fri = Work\nnight = Night",
+            "schedule_saved": "Schedule saved",
+            "schedule_error": "Line {n}: {reason}",
+            "schedule_err_format": "format: [date] [HH:MM-HH:MM] [days] = configuration",
+            "schedule_err_time": "invalid time",
+            "schedule_err_days": "invalid days",
+            "schedule_err_config": "no configuration “{name}”",
+            "schedule_err_limit": "no more than {n} rules",
+            "schedule_err_date": "invalid date",
+            # Конфигурации
+            "config_import_cancelled": "Import cancelled",
+            "config_import": "Import",
+            "config_export": "Export",
+            "config_reset": "Restore defaults",
+            "config_reset_to_plugin": "Ignore imported values: use plugin defaults",
+            "config_reset_to_plugin_unavailable": "Unavailable: created by the plugin, so reset restores its original state.",
+            "config_active": "Active configuration",
+            "config_new": "Create new configuration",
+            "config_new_subtext": "A separate settings set, active right away.",
+            "config_name_hint": "Configuration name",
+            "config_new_source_title": "New configuration settings",
+            "config_new_source_message": "Start from what? Nothing checked = defaults.",
+            "config_new_copy_current": "Copy settings of the current configuration",
+            "config_delete": "Delete configuration",
+            "config_delete_confirm": "Delete configuration “{name}”?",
+            "config_delete_none": "No inactive configurations to delete",
+            "config_imported_name": "Imported configuration",
+            "config_rename": "Rename configuration",
+            "config_rename_subtext": "Change the name of the current configuration.",
+            "config_name_invalid": "Enter a unique configuration name.",
+            "config_name_taken": "A configuration with this name already exists.",
+            "config_deleted": "Configurations deleted: {n}",
+            "config_delete_multi": "Delete configurations",
+            "config_delete_multi_subtext": "Delete inactive configurations; the active one stays.",
+            "config_delete_multi_select": "Select inactive configurations to delete.",
+            "config_import_new_name": "New configuration name",
+            "config_parts_title": "Select configuration",
+            "config_parts_message": "Select 1 to {n} parts.",
+            "config_part_mask": "Mask",
+            "config_part_separator": "Separators",
+            "config_part_exceptions": "Exceptions and chats",
+            "config_part_language": "Selected language",
+            "config_part_media": "Media",
+            "config_import_done": "Configuration imported",
+            "config_import_failed": "Could not import configuration",
+            "config_import_locked": "Importing configurations becomes available after the initial setup.",
+            "config_save_failed": "Could not save the current configuration",
+            "config_export_done": "Configuration exported",
+            "config_export_failed": "Could not export configuration",
+            "config_export_destination_title": "Where to export?",
+            "config_export_to_saved": "Active account’s Saved Messages",
+            "config_export_to_device": "Device storage",
+            "config_restored": "Selected values restored",
+            "config_parts_none": "Select at least one configuration part",
+            "config_export_select": "Select configurations to export",
+            "config_export_select_subtext": "Select up to {n} configurations. A parts picker opens for each one next. If several are selected, the files go straight to the active account’s Saved Messages.",
+            "config_export_include_name": "Include configuration name",
+            "config_shared_marker": "shared",
+            "config_export_parts_title": "Parts: {name}",
+            "config_export_parts_progress": "Configuration {i} of {n}",
+            "config_export_limit": "You can select at most {n} configurations",
+            "config_export_none": "Select at least one configuration",
+            "config_export_done_multi": "Configurations exported: {n}",
+            "config_export_partial": "Exported {ok} of {total}",
+            "config_import_found_title": "Configuration found",
+            "config_import_found_contains": "Contains",
+            "config_import_as_new": "Import as a new configuration",
+            "config_import_file_failed": "Could not open configuration file",
+            "config_import_invalid": "The file lacks the selected configuration or has a wrong format.",
+            "config_default_name": "Default configuration",
+            "config_numbered_name": "Configuration {n}",
+            "config_actions_subtext": "Choose configuration parts",
+            "config_part_schedule": "Chat bindings and schedule",
+            "config_part_cute": "Cute effects",
+            # Медиа
             "media_attachment": "Media",
-            "enable_media_attachment": "Enable media",
-            "enable_media_attachment_subtext": "Attach the imported file to outgoing messages.",
+            "media_attachment_enable": "Enable media",
+            "media_attachment_enable_subtext": "Attach the imported file to outgoing messages.",
             "media_file": "Selected file",
             "media_file_none": "No file selected",
-            "import_media": "Import media",
-            "delete_media": "Delete media",
-            "delete_media_subtext": "Delete the imported file from Prefixfy.",
-            "delete_media_confirm": "Delete the media “{name}”? The file will be removed from Prefixfy. This cannot be undone.",
+            "media_import": "Import media",
+            "media_delete": "Delete media",
+            "media_delete_subtext": "Delete the imported file from Prefixfy.",
+            "media_delete_confirm": "Delete the media “{name}”? The file will be removed from Prefixfy. This cannot be undone.",
             "media_imported": "Media imported",
             "media_deleted": "Media deleted",
             "media_import_failed": "Could not import media",
             "media_delete_failed": "Could not delete media",
-            "apply": "Apply",
-            "configuration_imported": "Configuration imported",
-            "configuration_import_failed": "Could not import configuration",
-            "import_locked_setup": "Importing configurations becomes available after the initial setup.",
-            "configuration_save_failed": "Could not save the current configuration",
-            "configuration_exported": "Configuration exported",
-            "configuration_export_failed": "Could not export configuration",
-            "configuration_export_destination_title": "Where to export?",
-            "configuration_export_to_saved": "Active account's Saved Messages",
-            "configuration_export_to_device": "Device storage",
-            "configuration_restored": "Selected values restored",
-            "configuration_nothing_selected": "Select at least one configuration part",
-            "export_select_configs": "Select configurations to export",
-            "export_select_configs_subtext": "Select up to {n} configurations. A parts picker opens for each one next. If several are selected, the files go straight to the active account's Saved Messages.",
-            "export_next": "Next",
-            "export_include_name": "Include configuration name",
-            "shared_configuration_marker": "shared",
-            "export_parts_title": "Parts: {name}",
-            "export_parts_progress": "Configuration {i} of {n}",
-            "configuration_export_limit": "You can select at most {n} configurations",
-            "configuration_export_none": "Select at least one configuration",
-            "configurations_exported": "Configurations exported: {n}",
-            "configurations_export_partial": "Exported {ok} of {total}",
-            "config_found_title": "Configuration found",
-            "config_found_contains": "Contains",
-            "config_import_as_new": "Import as a new configuration",
-            "config_found_import": "Import",
-            "config_file_open_failed": "Could not open configuration file",
-            "invalid_configuration": "The file lacks the selected configuration or has a wrong format.",
-            "default_configuration_name": "Default configuration",
-            "configuration_n": "Configuration {n}",
-            "operation_failed": "Action failed",
-            "text_style_subtext": "Message text only. Fancy, Bold, Gothic, Circled: Latin only; L33T also Cyrillic.",
-            "enable_text_style": "Enable text style",
-            "configuration_short": "Choose configuration parts",
-            "edit_text_toggle": "Edit text messages",
-            "edit_text_toggle_subtext": "Style regular messages when edited.",
-            "edit_media_toggle": "Edit captions",
-            "edit_media_toggle_subtext": "Style media captions when you edit them.",
-            "article": "Articles",
-            "article_subtext": "Style text blocks of articles when sending.",
-            "edit_article_toggle": "Edit articles",
-            "edit_article_toggle_subtext": "Style articles when you edit them.",
-            "skip_once_on_edit": "“Skip once” when editing",
-            "skip_once_on_edit_subtext": "If skip is on, the next edit in this chat stays unstyled.",
-            "conditional_masks": "Content-based masks",
-            "conditional_masks_hint": "One rule per line: regex => mask. The first matching line’s mask is used. Each mask needs one [text].",
-            "conditional_masks_count": "Rules: {n}",
-            "conditional_masks_empty": "If the text contains…",
-            "conditional_masks_format": "Line {n}: expected “expression => mask”",
-            "md_quote": "Whole mask: quote",
-            "config_schedule": "Chat bindings and schedule",
-            "schedule_err_date": "invalid date",
+            # Аккаунты
+            "account_mode": "Per-account settings",
+            "account_mode_subtext": "Separate settings per account. Until you change something, all share the same.",
+            "account_target": "Account to configure",
+            "account_auto": "Auto (current account)",
+            "account_common": "Common (for all)",
+            "account_auto_now": "Auto is showing",
+            "account_editing": "Settings open for",
+            "account_own": "own settings",
+            "account_shared": "common settings",
+            "account_common_hint": "common settings (for accounts without their own)",
+            "account_none": "account not detected",
+            "account_reset": "Reset to common settings",
+            "account_reset_subtext": "Remove this account’s own settings",
+            "account_reset_title": "Reset account settings",
+            "account_reset_confirm": "Remove this account’s settings and all its configurations? It will use the common settings again.",
+            "account_reset_button": "Reset",
+            "account_reset_done": "Account settings reset to common",
+            "account_import_title": "Where to apply the configuration?",
+            "account_import_all": "All accounts",
+            "account_import_common": "Common (accounts without their own settings)",
+            # Обновления и проверка
+            "check_now": "Check now",
+            "check_now_subtext": "Check this plugin build.",
+            "check_started": "Clearing cache and checking…",
+            "check_confirm_title": "Check this build now?",
+            "check_confirm_body": "What it does: deletes saved check data (manifest, blacklist, settings profile), downloads it again and verifies the build is official.\n\nWhen to use: the build can’t be verified, features are paused, you just updated or reinstalled, or the status looks stale.\n\nSafe? Settings and configurations are untouched; check serial numbers are kept. Internet required; if it fails, features stay paused until a later check succeeds.",
+            "check_confirm_yes": "Check",
+            "check_ok": "Verification passed",
+            "check_failed": "Verification failed. Check your connection and retry.",
+            "ota_auto": "Auto-update",
+            "ota_auto_subtext": "Downloads and installs updates automatically. Signature and checksums are verified.",
+            "ota_mode": "Auto-update mode",
+            "ota_mode_available": "As soon as available",
+            "ota_mode_time": "At a chosen time",
+            "ota_action": "Auto-update action",
+            "ota_action_download": "Download only",
+            "ota_action_install": "Download and install",
+            "ota_time": "Update time",
+            "ota_time_subtext": "Device time, HH:MM (e.g. 04:00).",
+            "ota_time_invalid": "Enter the time as HH:MM, for example 04:00",
+            "ota_disabled": "OTA is disabled by the developer",
+            "ota_disabled_subtext": "Updates are temporarily off. Install new versions manually from the repository.",
+            "ota_installed": "Prefixfy {version} installed. Restarting…",
+            "ota_restart_manual": "Prefixfy {version} installed. Turn the plugin off and on to apply.",
+            "ota_modified_found": "Plugin modified. Installing official build {version}…",
+            "ota_failed": "Update failed: {reason}",
+            "ota_busy": "An update is already in progress",
+            "ota_check_note": "This check won’t install a new version: you’ll get a notice, then tap “Download” under “Update required”.",
+            "ota_almost_ready": "Almost ready",
+            "ota_almost_ready_subtext": "Version {version} downloaded. Just reload the plugin.",
+            "ota_reload": "Reload",
+            "ota_reload_subtext": "Apply the update and restart the plugin.",
+            "ota_staged": "Prefixfy {version} downloaded. Tap “Reload”.",
+            "ota_download": "Download",
+            "check_update_found": "Prefixfy {version} update found. Tap “Download” under “Update required”.",
+            "ota_download_subtext": "Version {version}. Details are shown first.",
+            "ota_dl_title": "Prefixfy update",
+            "ota_dl_size": "Size",
+            "ota_dl_confirm": "Download and install",
+            "ota_dl_warning": "Warning: mobile data may incur carrier charges. Wi-Fi is recommended.",
+            "ota_unit_kb": "KB",
+            "ota_unit_mb": "MB",
+            # О плагине, статусы и уведомления проверки
+            "gate_update_required": "Update required",
+            "gate_update_required_subtext": "Install official Prefixfy {version}. Messages aren’t formatted until then.",
+            "gate_verify_required": "Verification failed",
+            "gate_verify_required_subtext": "Couldn’t verify this build. Formatting is off; check your connection.",
+            "gate_account_blocked": "Access denied",
+            "gate_account_blocked_subtext": "An account on this device is blacklisted. The plugin is disabled.",
+            "about_plugin": "About plugin",
+            "about_plugin_subtext": "Version, build and verification status.",
+            "about_title": "About Prefixfy",
+            "about_version": "Version",
+            "about_build_date": "Build date",
+            "about_build_number": "Build number of the day",
+            "about_serial": "Serial",
+            "about_build_label": "Full build label",
+            "about_latest": "Latest official build",
+            "about_status": "Verification",
+            "about_unknown": "unknown",
+            "about_note": "Values are read from this file’s build label when the window opens.",
+            "status_ok": "passed: matches the signed official release",
+            "status_pending": "waiting for the first check",
+            "status_soft": "not verified: optional features paused",
+            "status_blacklisted": "denied: an account is blacklisted",
+            "status_no_key": "failed: this build contains no update key",
+            "status_integrity": "not verified: plugin file unreadable",
+            "notice_ok": "OK",
+            "status_outdated": "failed: outdated, a newer release exists",
+            "status_modified": "failed: build modified, differs from official",
+            "gate_modified": "Modified build",
+            "gate_modified_subtext": "This file differs from official release {version}. The plugin is reinstalling the official build; formatting is off until then.",
+            "notice_verify_body": "What happened: this build can’t be verified — it has no valid update key for the signed manifest.\n\nWhat it means: outgoing messages aren’t formatted. Settings are kept.\n\nWhat to do: install the official build from the repository.",
+            "notice_soft_body": "What happened: Prefixfy can’t confirm this build is official: the signed manifest or blacklist check didn’t finish (no internet, GitHub unreachable, last check too old, or the plugin file is unreadable).\n\nWhat’s paused: all optional features (text styles, Markdown, mask rotation and conditional masks, tags, schedule, chat configurations, media attachment, Premium Emoji, edit processing, configuration import). Only the basic mask works.\n\nWhat to do: check your connection and tap “Check now”. Everything returns after a successful check.",
+            "notice_account_body": "What happened: a Telegram account on this device is on the Prefixfy blacklist.\n\nWhat it means: the plugin is disabled on this device. Settings are unchanged.\n\nIf this is a mistake, contact the plugin author.",
+            "gate_soft": "Features paused",
+            "gate_soft_subtext": "Can’t verify this build now: optional features are off, basic formatting only. Check your connection; everything returns after verification.",
+            "gate_bypass_note": "This function won’t help bypass the block.",
+            # Удаление данных и возобновление работы
+            "wipe_row": "Delete data",
+            "wipe_row_subtext": "Clear plugin files or stop using it entirely.",
+            "wipe_title": "Delete Prefixfy data?",
+            "wipe_body": "Deletes all plugin data: configurations and account presets, settings, attached media, imported files and the verification cache. The plugin restarts and begins with the setup wizard, as after a first install.\n\nIf the plugin is outdated, the latest version is installed first, then the data is deleted.\n\n“Stop using the plugin” also puts the plugin to sleep: only “Resume” remains. No update is downloaded.",
+            "wipe_opt_out": "Stop using the plugin",
+            "wipe_confirm_clean": "All plugin files and settings will be deleted, then the plugin restarts several times (this is normal) and begins with the setup wizard. Configurations and attached media are lost for good. Export your configurations first.",
+            "wipe_confirm_title": "Confirm deletion",
+            "wipe_confirm_out": "All plugin files and settings will be deleted and the plugin switched off. This can’t be undone.",
+            "wipe_confirm_btn": "Clear",
+            "wipe_started": "Preparing deletion…",
+            "wipe_started_multi": "Preparing deletion… The plugin will restart several times.",
+            "wipe_halt": "Cleaning in progress",
+            "wipe_halt_subtext": "The plugin will restart once more shortly and start fresh.",
+            "wipe_updating": "Updating to {version}, then deleting data…",
+            "wipe_reinstalling": "Reinstalling {version}, then deleting data…",
+            "wipe_update_failed": "Update failed: {reason}. Nothing was deleted.",
+            "wipe_restart_manual": "Turn the plugin off and on to finish the deletion.",
+            "wipe_failed": "Couldn’t prepare deletion. Nothing was deleted.",
+            "wipe_done": "Data cleared and recreated",
+            "resume_title": "Resume",
+            "resume_subtext": "Prefixfy is off and stores nothing. Tap to start fresh.",
+            "resume_confirm_title": "Resume the plugin?",
+            "resume_confirm_body": "The plugin starts as if freshly installed, with default settings.",
+            "resume_btn": "Resume",
+            "resume_done": "Prefixfy started",
+            "resume_failed": "Couldn’t start the plugin. Turn it off and on.",
+            "wipe_auto_reset_done": "Data was damaged, plugin reset automatically",
+            # Первая настройка и приветствие
+            "setup_step_1": "Step 1/3: choose a language",
+            "setup_step_2": "Step 2/3: set up the appearance",
+            "setup_step_3": "Step 3/3: set up updates",
+            "setup_next": "Next",
+            "setup_next_subtext": "Go to step {step} of 3",
+            "setup_back": "Back",
+            "setup_back_subtext": "Back to step {step} of 3",
+            "setup_finish": "Finish setup",
+            "setup_finish_subtext": "Checks for updates and installs them if found, then opens all settings.",
+            "setup_checking": "Checking account…",
+            "setup_checking_subtext": "Requesting the block list from the server. This takes a few seconds.",
+            "setup_done": "Initial setup complete",
+            "welcome_banner": "Thanks for installing Prefixfy!",
+            "welcome_banner_subtext": "Tap to see what the plugin does and how to get started.",
+            "welcome_title": "Welcome to Prefixfy",
+            "welcome_body": "Thanks for installing Prefixfy! The plugin adds a mask to your messages: text before or after, styling and decorations.\n\nWhat it does:\n• a mask with Markdown, text styles and separators\n• cute effects: kaomoji, UwU, decorations\n• attached media\n• exceptions: chats where the plugin is off, or only those\n• configurations: several sets of settings, import, export and a schedule\n• separate settings for each account\n\nGetting started:\n1. Set your mask in “Text appearance”.\n2. Choose what to style in “Where it works”.\n3. To add a chat to the exceptions or remove it, use the menu item inside the chat.\n\nThat’s it — just send messages.",
+            "welcome_ok": "Got it",
         },
         "ja": {
-            "enable_plugin": "プラグインを有効にする",
-            "enable_plugin_subtext": "オン: リスト以外すべて。オフ: リストのみ。",
-            "language": "言語",
-            "update_required": "アップデートが必要です",
-            "update_required_subtext": "公式の Prefixfy {version} をインストールしてください。それまで装飾は無効です。",
-            "verify_required": "検証に失敗しました",
-            "verify_required_subtext": "このビルドを検証できません。装飾は無効です。接続を確認してください。",
-            "account_blocked": "アクセスが拒否されました",
-            "account_blocked_subtext": "この端末のアカウントがブラックリストに登録されています。プラグインは無効です。",
+            # Общие действия, ошибки, подсказки редакторов
+            "editor_empty_means_default": "空にして「保存」でデフォルトに戻ります。",
+            "action_save": "保存",
+            "action_delete": "削除",
+            "action_cancel": "キャンセル",
+            "action_create": "作成",
+            "action_apply": "適用",
+            "action_next": "次へ",
+            "error_operation_failed": "操作に失敗しました",
+            # Заголовки разделов
             "section_scope": "適用範囲",
-            "plugin_language": "プラグインの言語",
+            "section_language": "プラグインの言語",
+            "section_configurations": "設定セット",
+            "section_appearance": "テキストの装飾",
+            "section_general": "基本",
+            "section_about": "詳細情報",
+            "section_accounts": "アカウント",
+            "section_updates": "アップデートと検証",
+            "section_cute": "かわいい効果",
+            # Плагин и язык
+            "plugin_enable": "プラグインを有効にする",
+            "plugin_enable_subtext": "オン: リスト以外すべて。オフ: リストのみ。",
+            "language": "言語",
             "language_auto": "言語を自動検出",
-            "about_section": "詳細情報",
             "language_auto_subtext": "Telegramの言語を使用。オフで手動選択。",
-            "message": "メッセージ",
-            "message_subtext": "通常のテキストメッセージを装飾します。",
-            "media": "メディア",
-            "media_subtext": "メディアのキャプションにプラグインを使用します。",
-            "edit_message": "メッセージの編集",
-            "edit_message_subtext": "編集時も装飾。装飾済みは変更しません。",
+            # Область применения, исключения по чатам, конфигурация чата
+            "scope_message": "メッセージ",
+            "scope_message_subtext": "通常のテキストメッセージを装飾します。",
+            "scope_media": "メディア",
+            "scope_media_subtext": "メディアのキャプションにプラグインを使用します。",
+            "scope_edit": "メッセージの編集",
+            "scope_edit_subtext": "編集時も装飾。装飾済みは変更しません。",
+            "skip_once_expired": "スキップ期限切れ。次は装飾されます",
+            "chat_config_menu": "このチャットの設定",
+            "chat_config_auto": "メイン（スケジュール適用）",
+            "chat_config_saved": "チャットの設定を保存しました",
+            "chat_config_reset": "このチャットはメイン設定を使用します",
+            "skip_once_menu": "今回だけ装飾しない",
+            "skip_once_on": "次のメッセージは装飾なしで送信されます",
+            "skip_once_off": "スキップを取り消しました",
+            "chat_types": "チャットの種類",
+            "chat_types_hint": "選択した種類のチャットのみ装飾します。",
+            "chat_types_all": "すべてのチャット",
+            "chat_types_none": "少なくとも1つ選択してください",
+            "chat_type_private": "個人チャット",
+            "chat_type_group": "グループ",
+            "chat_type_channel": "チャンネル",
+            "scope_edit_message": "テキストの編集",
+            "scope_edit_message_subtext": "通常のメッセージを編集時に装飾します。",
+            "scope_edit_media": "キャプションの編集",
+            "scope_edit_media_subtext": "メディアのキャプションの編集時に装飾します。",
+            "scope_article": "記事",
+            "scope_article_subtext": "送信時に記事のテキストブロックを装飾します。",
+            "scope_edit_article": "記事の編集",
+            "scope_edit_article_subtext": "記事の編集時に装飾します。",
+            "skip_once_on_edit": "編集時も「今回だけ装飾しない」",
+            "skip_once_on_edit_subtext": "スキップ有効時、このチャットの次の編集は装飾されません。",
+            # Маска, Markdown, ротация и условные маски
             "mask": "マスク",
             "mask_text": "マスクテキスト",
-            "text_style": "テキストスタイル",
-            "skip_once_expired": "スキップ期限切れ。次は装飾されます",
-            "empty_means_default": "空にして「保存」でデフォルトに戻ります。",
             "markdown_style": "Markdownスタイル",
             "markdown_style_subtext": "マスク内のマーカー、またはマスク全体の装飾",
             "markdown_style_pick": "スタイル",
@@ -849,27 +1289,6 @@ class LocalizationManager:
             "md_strike": "マスク全体: 取り消し線",
             "md_spoiler": "マスク全体: スポイラー",
             "md_mono": "マスク全体: 等幅",
-            "chat_config_menu": "このチャットの設定",
-            "chat_config_auto": "メイン（スケジュール適用）",
-            "chat_config_saved": "チャットの設定を保存しました",
-            "chat_config_reset": "このチャットはメイン設定を使用します",
-            "schedule": "設定のスケジュール",
-            "schedule_empty": "未設定",
-            "schedule_count": "ルール: {n}",
-            "schedule_message": "1行1ルール: [日付] [HH:MM-HH:MM] [曜日] = 設定名\n日付: YYYY-MM-DD、DD.MM.YYYY、DD.MM（毎年）。範囲は「..」。時刻なしは終日。曜日: mon-fri、sat,sun（省略で毎日）。日付ルールが曜日ルールより優先、他は最初の一致。専用設定のチャットは対象外。時刻の代わりに時間帯も可: 朝(05–12)、昼(12–17)、夕方(17–23)、夜(23–05)、「朝-夕方」。",
-            "schedule_hint": "22:00-07:00 = 夜\n09:00-18:00 mon-fri = 仕事\n31.12 = 祝日\n2026-12-28..2027-01-10 = 休暇\n朝 mon-fri = 仕事\n夜 = 夜",
-            "schedule_saved": "スケジュールを保存しました",
-            "schedule_error": "{n}行目: {reason}",
-            "schedule_err_format": "形式: [日付] [HH:MM-HH:MM] [曜日] = 設定名",
-            "schedule_err_time": "時刻が正しくありません",
-            "schedule_err_days": "曜日が正しくありません",
-            "schedule_err_config": "設定「{name}」がありません",
-            "schedule_err_limit": "ルールは最大{n}件",
-            "skip_once_menu": "今回だけ装飾しない",
-            "skip_once_on": "次のメッセージは装飾なしで送信されます",
-            "skip_once_off": "スキップを取り消しました",
-            "random_style": "ランダムスタイル",
-            "random_style_subtext": "メッセージごとにランダムなスタイル（上下反転を除く）。",
             "mask_rotation": "マスクのローテーション",
             "mask_rotation_subtext": "リストのマスクをメインの代わりに使用。チャットのマスク優先。",
             "masks_list": "マスク一覧",
@@ -878,29 +1297,92 @@ class LocalizationManager:
             "masks_list_hint": "1行1マスク、各 [text] を1つ含める。",
             "masks_list_invalid": "各マスクには [text] がちょうど1つ必要です",
             "masks_list_limit": "マスクは最大{n}個までです",
-            "mask_tags_hint": "タグ: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice]",
+            "mask_tags_hint": "タグ: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice]\n[reply] — 返信先の名前; [chatcount] — チャットでのメッセージ番号; [battery] — バッテリー残量; [moon] — 月齢; [line] — リストからランダムな1行; [since:2026-12-31] / [until:2026-12-31] — 経過 / 残り日数; [quote] — 返信先の冒頭; [countdown:2026-12-31 18:00] — 残り時間; [weather] / [weather:東京] — wttr.in の気温（要ネット）。",
             "mask_rotation_mode": "ローテーションの順序",
-            "rotation_random": "ランダム",
-            "rotation_sequential": "順番",
+            "mask_rotation_mode_random": "ランダム",
+            "mask_rotation_mode_sequential": "順番",
+            "mask_editor_title": "マスク設定",
+            "mask_editor_hint": "マスクを入力。[text] はメッセージ本文、[text: リンク] でリンクになります。",
+            "mask_invalid": "マスクには [text] をちょうど1つ含めてください",
+            "mask_too_long": "マスクが長すぎます（最大{n}文字）",
+            "mask_preview_sample": "メッセージの例",
+            "mask_preview_invalid": "マスクが無効です。[text] を1つだけ指定してください",
+            "conditional_masks": "内容別マスク",
+            "conditional_masks_hint": "1行1ルール: 正規表現 => マスク。最初に一致した行のマスクを使用。各マスクに [text] を1つ含める。",
+            "conditional_masks_count": "ルール数: {n}",
+            "conditional_masks_empty": "テキストに…が含まれる場合",
+            "conditional_masks_format": "{n}行目: 「式 => マスク」の形式で入力してください",
+            "md_quote": "マスク全体: 引用",
+            # Стиль текста, слова и строки для тегов
+            "text_style": "テキストスタイル",
+            "text_style_random": "ランダムスタイル",
+            "text_style_random_subtext": "メッセージごとにランダムなスタイル（上下反転を除く）。",
+            "text_style_subtext": "本文のみ変換。Fancy・Bold・Gothic・Circled はラテン文字のみ、L33T はキリル文字も対応。",
+            "text_style_enable": "テキストスタイルを有効にする",
+            "text_style_translit": "キリル文字を音訳",
+            "text_style_translit_subtext": "ラテン文字専用スタイルがロシア語・ウクライナ語でも使えます。",
+            "style_words": "指定した単語のみにスタイルを適用",
+            "style_words_hint": "1行1単語。空なら全文に適用。",
+            "style_words_count": "単語数: {n}",
+            "style_words_empty": "テキスト全体",
+            "style_words_limit": "最大 {n} 単語まで",
+            "tag_lines": "[line] 用の行",
+            "tag_lines_hint": "1行1項目。[line] でランダムに挿入（各64文字まで）。",
+            "tag_lines_count": "行数: {n}",
+            "tag_lines_empty": "行がまだありません",
+            "tag_lines_limit": "最大 {n} 行まで",
+            # Разделители
+            "separator": "区切り文字",
+            "separator_enable": "区切り文字を有効にする",
+            "separator_enable_subtext": "単語の間にカスタム区切り文字を追加します。",
+            "separator_set": "区切り文字セット",
+            "separator_count": "単語間の区切り文字数",
+            "separator_count_subtext": "タップして変更します。",
+            "separator_custom_title": "カスタム",
+            "separator_custom_message": "区切り文字をカンマで区切って入力してください。例:\n•, ·, —, ~, |",
+            "separator_preview_sample": "プレビュー用のサンプルテキスト",
+            "separator_frequency": "区切り文字の頻度",
+            "separator_frequency_subtext": "2単語の間に区切り文字を入れる確率。100%で毎回。",
+            "separator_spaces": "スペースを有効にする",
+            "separator_spaces_subtext": "オフの場合、区切り文字は単語にくっつきます：こんにちはxげんきxです。",
+            "separator_space_mode": "スペースの位置",
+            "separator_space_both": "両側",
+            "separator_space_left": "左",
+            "separator_space_right": "右",
+            # Милые эффекты
+            "cute_enabled": "かわいい効果を有効にする",
+            "cute_enabled_subtext": "顔文字、UwU、アクションなどの装飾。リンク、@メンション、#タグ、コードはそのまま。",
+            "cute_preview": "プレビュー",
+            "cute_preview_sample": "こんにちは！元気ですか？今日はいい天気です。",
+            "cute_preview_none": "効果を1つ以上オンに。タップで更新。",
+            "cute_preview_tap": "タップで更新します。",
+            "cute_sentence_frequency": "文の効果の頻度",
+            "cute_sentence_frequency_subtext": "顔文字、きらきら、句読点、語尾、アクション。",
+            "cute_word_frequency": "単語の効果の頻度",
+            "cute_word_frequency_subtext": "どもり、母音の引き伸ばし、軟音記号。",
+            "cute_kaomoji": "文末に顔文字 (◕‿◕)",
+            "cute_sparkles": "文をきらきらで囲む ✨",
+            "cute_exclamations": "かわいい感嘆符 (! → !✨)",
+            "cute_punctuation": "かわいい句読点 (. → .~, ? → ?✨)",
+            "cute_uwu_suffixes": "UwU語尾 (nya~, owo)",
+            "cute_actions": "かわいいアクション (*ぎゅっ*)",
+            "cute_actions_newline": "アクションを改行して表示",
+            "cute_lowercase": "小文字のみ",
+            "cute_uwu_speak": "UwU話法 (r/l → w)",
+            "cute_stutter": "どもり (h-hello)",
+            "cute_stretch": "母音を伸ばす (cuuute)",
+            "cute_stretch_max": "母音の最大の長さ",
+            "cute_stretch_2x": "2倍 (x2)",
+            "cute_stretch_3x": "3倍 (x3)",
+            "cute_soft_sign": "語末に軟音記号 (kotikь)",
+            "cute_soft_sign_subtext": "ロシア語の単語のみ。",
+            # Исключения: списки, игнорирование, regex
             "regex_exceptions": "正規表現の除外",
             "regex_exceptions_hint": "1行1正規表現。一致するメッセージは装飾しません。",
             "regex_exceptions_count": "ルール数: {n}",
             "regex_exceptions_empty": "上級者向け",
-            "regex_invalid": "無効な式です: {error}",
-            "regex_limit": "式は最大{n}個、各{m}文字までです",
-            "chat_types": "チャットの種類",
-            "chat_types_hint": "選択した種類のチャットのみ装飾します。",
-            "chat_types_all": "すべてのチャット",
-            "chat_types_none": "少なくとも1つ選択してください",
-            "chat_type_private": "個人チャット",
-            "chat_type_group": "グループ",
-            "chat_type_channel": "チャンネル",
-            "separator": "区切り文字",
-            "enable_separator": "区切り文字を有効にする",
-            "enable_separator_subtext": "単語の間にカスタム区切り文字を追加します。",
-            "separator_set": "区切り文字セット",
-            "separator_count": "単語間の区切り文字数",
-            "separator_count_subtext": "タップして変更します。",
+            "regex_exceptions_invalid": "無効な式です: {error}",
+            "regex_exceptions_limit": "式は最大{n}個、各{m}文字までです",
             "exceptions": "例外",
             "ignore_emoji_only": "絵文字だけのメッセージを無視",
             "ignore_emoji_only_subtext": "絵文字のみの通常メッセージは変更しません。メディアのキャプションは常に装飾します。",
@@ -920,154 +1402,315 @@ class LocalizationManager:
             "ignore_segments": "除外する要素",
             "ignore_segments_hint": "そのままにするメッセージの要素を選択します。",
             "ignore_segments_count": "有効: {n}/{total}",
-            "chat_menu": "例外リストにチャットを追加または削除",
-            "chat_added": "チャットを例外リストに追加しました",
-            "chat_removed": "チャットを例外リストから削除しました",
-            "mask_editor_title": "マスク設定",
-            "mask_editor_hint": "マスクを入力。[text] はメッセージ本文、[text: リンク] でリンクになります。",
-            "custom_separator_title": "カスタム",
-            "custom_separator_message": "区切り文字をカンマで区切って入力してください。例:\n•, ·, —, ~, |",
-            "save": "保存",
-            "delete": "削除",
-            "cancel": "キャンセル",
-            "capture_custom_emoji": "プレミアム絵文字を取得",
-            "capture_enabled": "プレミアム絵文字の取得オン。絵文字を含むメッセージを送信してください",
-            "capture_disabled": "プレミアム絵文字の取得をオフにしました",
-            "custom_emoji_hint": "プレミアム絵文字はマーカー (id|🙂) で指定。🙂 は非プレミアム用の代替です。チャットメニューの「プレミアム絵文字を取得」で取得できます。",
-            "mask_invalid": "マスクには [text] をちょうど1つ含めてください",
-            "mask_too_long": "マスクが長すぎます（最大{n}文字）",
-            "mask_preview_sample": "メッセージの例",
-            "mask_preview_invalid": "マスクが無効です。[text] を1つだけ指定してください",
-            "separator_preview_words": "プレビュー用の サンプル テキスト",
+            "exceptions_chat_menu": "例外リストにチャットを追加または削除",
+            "exceptions_chat_added": "チャットを例外リストに追加しました",
+            "exceptions_chat_removed": "チャットを例外リストから削除しました",
             "exceptions_count": "除外: {n}、チャット: {m}",
-            "configuration_import_cancelled": "インポートをキャンセルしました",
-            "import_configuration": "インポート",
-            "export_configuration": "エクスポート",
-            "reset_configuration": "デフォルト値に戻す",
-            "reset_to_plugin_defaults": "インポート値を無視して初期設定に戻す",
-            "reset_to_plugin_defaults_unavailable": "利用不可: プラグイン作成の設定のため、リセットで作成時の状態に戻ります。",
-            "configurations": "設定",
-            "active_configuration": "設定",
-            "add_configuration": "新しい設定を作成",
-            "add_configuration_subtext": "独立した設定を作成して即有効化。",
-            "configuration_name_hint": "設定名",
-            "new_configuration_source_title": "新しい設定の内容",
-            "new_configuration_source_message": "何を元にしますか？未選択なら初期設定です。",
-            "new_configuration_copy_current": "現在の設定の内容をコピー",
-            "create": "作成",
-            "delete_configuration": "設定を削除",
-            "delete_configuration_confirm": "設定「{name}」を削除しますか？",
-            "no_inactive_configurations": "削除できる非アクティブな設定がありません",
-            "imported_configuration": "インポートした設定",
-            "rename_configuration": "設定の名前を変更",
-            "rename_configuration_subtext": "現在の設定の名前を変更します。",
-            "configuration_name_invalid": "一意の設定名を入力してください。",
-            "configuration_name_taken": "同じ名前の設定がすでに存在します。",
-            "configuration_deleted": "削除した設定: {n}",
-            "delete_configurations": "設定を削除",
-            "delete_configurations_subtext": "非アクティブな設定を削除（アクティブは残ります）。",
-            "delete_configurations_select": "削除する非アクティブな設定を選択。",
-            "import_new_configuration_name": "新しい設定の名前",
-            "select_configuration": "設定を選択",
-            "select_configuration_subtext": "1〜{n}項目を選択できます。",
-            "config_mask": "マスク",
-            "config_separator": "区切り文字",
-            "config_exceptions": "例外とチャット",
-            "config_language": "選択した言語",
-            "config_media": "メディア",
+            # Premium Emoji
+            "capture_custom_emoji": "プレミアム絵文字を取得",
+            "capture_custom_emoji_enabled": "プレミアム絵文字の取得オン。絵文字を含むメッセージを送信してください",
+            "capture_custom_emoji_disabled": "プレミアム絵文字の取得をオフにしました",
+            "capture_custom_emoji_hint": "プレミアム絵文字はマーカー (id|🙂) で指定。🙂 は非プレミアム用の代替です。チャットメニューの「プレミアム絵文字を取得」で取得できます。",
+            # Расписание
+            "schedule": "設定のスケジュール",
+            "schedule_empty": "未設定",
+            "schedule_count": "ルール: {n}",
+            "schedule_message": "1行1ルール: [日付] [HH:MM-HH:MM] [曜日] = 設定名\n日付: YYYY-MM-DD、DD.MM.YYYY、DD.MM（毎年）。範囲は「..」。時刻なしは終日。曜日: mon-fri、sat,sun（省略で毎日）。日付ルールが曜日ルールより優先、他は最初の一致。専用設定のチャットは対象外。時刻の代わりに時間帯も可: 朝(05–12)、昼(12–17)、夕方(17–23)、夜(23–05)、「朝-夕方」。",
+            "schedule_hint": "22:00-07:00 = 夜\n09:00-18:00 mon-fri = 仕事\n31.12 = 祝日\n2026-12-28..2027-01-10 = 休暇\n朝 mon-fri = 仕事\n夜 = 夜",
+            "schedule_saved": "スケジュールを保存しました",
+            "schedule_error": "{n}行目: {reason}",
+            "schedule_err_format": "形式: [日付] [HH:MM-HH:MM] [曜日] = 設定名",
+            "schedule_err_time": "時刻が正しくありません",
+            "schedule_err_days": "曜日が正しくありません",
+            "schedule_err_config": "設定「{name}」がありません",
+            "schedule_err_limit": "ルールは最大{n}件",
+            "schedule_err_date": "日付が正しくありません",
+            # Конфигурации
+            "config_import_cancelled": "インポートをキャンセルしました",
+            "config_import": "インポート",
+            "config_export": "エクスポート",
+            "config_reset": "デフォルト値に戻す",
+            "config_reset_to_plugin": "インポート値を無視して初期設定に戻す",
+            "config_reset_to_plugin_unavailable": "利用不可: プラグイン作成の設定のため、リセットで作成時の状態に戻ります。",
+            "config_active": "設定",
+            "config_new": "新しい設定を作成",
+            "config_new_subtext": "独立した設定を作成して即有効化。",
+            "config_name_hint": "設定名",
+            "config_new_source_title": "新しい設定の内容",
+            "config_new_source_message": "何を元にしますか？未選択なら初期設定です。",
+            "config_new_copy_current": "現在の設定の内容をコピー",
+            "config_delete": "設定を削除",
+            "config_delete_confirm": "設定「{name}」を削除しますか？",
+            "config_delete_none": "削除できる非アクティブな設定がありません",
+            "config_imported_name": "インポートした設定",
+            "config_rename": "設定の名前を変更",
+            "config_rename_subtext": "現在の設定の名前を変更します。",
+            "config_name_invalid": "一意の設定名を入力してください。",
+            "config_name_taken": "同じ名前の設定がすでに存在します。",
+            "config_deleted": "削除した設定: {n}",
+            "config_delete_multi": "設定をまとめて削除",
+            "config_delete_multi_subtext": "非アクティブな設定を削除（アクティブは残ります）。",
+            "config_delete_multi_select": "削除する非アクティブな設定を選択。",
+            "config_import_new_name": "新しい設定の名前",
+            "config_parts_title": "設定を選択",
+            "config_parts_message": "1〜{n}項目を選択できます。",
+            "config_part_mask": "マスク",
+            "config_part_separator": "区切り文字",
+            "config_part_exceptions": "例外とチャット",
+            "config_part_language": "選択した言語",
+            "config_part_media": "メディア",
+            "config_import_done": "設定をインポートしました",
+            "config_import_failed": "設定をインポートできませんでした",
+            "config_import_locked": "設定のインポートは初期設定の完了後に利用できます。",
+            "config_save_failed": "現在の設定を保存できませんでした",
+            "config_export_done": "設定をエクスポートしました",
+            "config_export_failed": "設定をエクスポートできませんでした",
+            "config_export_destination_title": "エクスポート先",
+            "config_export_to_saved": "アクティブなアカウントの保存メッセージ",
+            "config_export_to_device": "端末のストレージ",
+            "config_restored": "選択した設定を復元しました",
+            "config_parts_none": "少なくとも1つの設定項目を選択してください",
+            "config_export_select": "エクスポートする設定を選択",
+            "config_export_select_subtext": "最大{n}件まで選択できます。続いて各設定の項目を選びます。複数選択した場合、ファイルはアクティブなアカウントの保存メッセージに直接送られます。",
+            "config_export_include_name": "設定名を含める",
+            "config_shared_marker": "共通",
+            "config_export_parts_title": "項目: {name}",
+            "config_export_parts_progress": "設定 {i} / {n}",
+            "config_export_limit": "選択できるのは最大{n}件です",
+            "config_export_none": "少なくとも1つの設定を選択してください",
+            "config_export_done_multi": "エクスポートした設定: {n}件",
+            "config_export_partial": "{total}件中{ok}件をエクスポートしました",
+            "config_import_found_title": "設定が見つかりました",
+            "config_import_found_contains": "内容",
+            "config_import_as_new": "新しい設定としてインポート",
+            "config_import_file_failed": "設定ファイルを開けませんでした",
+            "config_import_invalid": "ファイルに選択した設定がないか、形式が不正です。",
+            "config_default_name": "デフォルト設定",
+            "config_numbered_name": "設定 {n}",
+            "config_actions_subtext": "対象の設定項目を選択",
+            "config_part_schedule": "チャット設定とスケジュール",
+            "config_part_cute": "かわいい効果",
+            # Медиа
             "media_attachment": "メディア",
-            "enable_media_attachment": "メディアを有効にする",
-            "enable_media_attachment_subtext": "インポートしたファイルを送信時に自動添付。",
+            "media_attachment_enable": "メディアを有効にする",
+            "media_attachment_enable_subtext": "インポートしたファイルを送信時に自動添付。",
             "media_file": "選択したファイル",
             "media_file_none": "ファイルが選択されていません",
-            "import_media": "メディアをインポート",
-            "delete_media": "メディアを削除",
-            "delete_media_subtext": "Prefixfyからインポートしたファイルを削除します。",
-            "delete_media_confirm": "メディア「{name}」を削除しますか？ファイルはPrefixfyから削除され、元に戻せません。",
+            "media_import": "メディアをインポート",
+            "media_delete": "メディアを削除",
+            "media_delete_subtext": "Prefixfyからインポートしたファイルを削除します。",
+            "media_delete_confirm": "メディア「{name}」を削除しますか？ファイルはPrefixfyから削除され、元に戻せません。",
             "media_imported": "メディアをインポートしました",
             "media_deleted": "メディアを削除しました",
             "media_import_failed": "メディアをインポートできませんでした",
             "media_delete_failed": "メディアを削除できませんでした",
-            "apply": "適用",
-            "configuration_imported": "設定をインポートしました",
-            "configuration_import_failed": "設定をインポートできませんでした",
-            "import_locked_setup": "設定のインポートは初期設定の完了後に利用できます。",
-            "configuration_save_failed": "現在の設定を保存できませんでした",
-            "configuration_exported": "設定をエクスポートしました",
-            "configuration_export_failed": "設定をエクスポートできませんでした",
-            "configuration_export_destination_title": "エクスポート先",
-            "configuration_export_to_saved": "アクティブなアカウントの保存メッセージ",
-            "configuration_export_to_device": "端末のストレージ",
-            "configuration_restored": "選択した設定を復元しました",
-            "configuration_nothing_selected": "少なくとも1つの設定項目を選択してください",
-            "export_select_configs": "エクスポートする設定を選択",
-            "export_select_configs_subtext": "最大{n}件まで選択できます。続いて各設定の項目を選びます。複数選択した場合、ファイルはアクティブなアカウントの保存メッセージに直接送られます。",
-            "export_next": "次へ",
-            "export_include_name": "設定名を含める",
-            "shared_configuration_marker": "共通",
-            "export_parts_title": "項目: {name}",
-            "export_parts_progress": "設定 {i} / {n}",
-            "configuration_export_limit": "選択できるのは最大{n}件です",
-            "configuration_export_none": "少なくとも1つの設定を選択してください",
-            "configurations_exported": "エクスポートした設定: {n}件",
-            "configurations_export_partial": "{total}件中{ok}件をエクスポートしました",
-            "config_found_title": "設定が見つかりました",
-            "config_found_contains": "内容",
-            "config_import_as_new": "新しい設定としてインポート",
-            "config_found_import": "インポート",
-            "config_file_open_failed": "設定ファイルを開けませんでした",
-            "invalid_configuration": "ファイルに選択した設定がないか、形式が不正です。",
-            "default_configuration_name": "デフォルト設定",
-            "configuration_n": "設定 {n}",
-            "operation_failed": "操作に失敗しました",
-            "text_style_subtext": "本文のみ変換。Fancy・Bold・Gothic・Circled はラテン文字のみ、L33T はキリル文字も対応。",
-            "enable_text_style": "テキストスタイルを有効にする",
-            "configuration_short": "対象の設定項目を選択",
-            "edit_text_toggle": "テキストの編集",
-            "edit_text_toggle_subtext": "通常のメッセージを編集時に装飾します。",
-            "edit_media_toggle": "キャプションの編集",
-            "edit_media_toggle_subtext": "メディアのキャプションの編集時に装飾します。",
-            "article": "記事",
-            "article_subtext": "送信時に記事のテキストブロックを装飾します。",
-            "edit_article_toggle": "記事の編集",
-            "edit_article_toggle_subtext": "記事の編集時に装飾します。",
-            "skip_once_on_edit": "編集時も「今回だけ装飾しない」",
-            "skip_once_on_edit_subtext": "スキップ有効時、このチャットの次の編集は装飾されません。",
-            "conditional_masks": "内容別マスク",
-            "conditional_masks_hint": "1行1ルール: 正規表現 => マスク。最初に一致した行のマスクを使用。各マスクに [text] を1つ含める。",
-            "conditional_masks_count": "ルール数: {n}",
-            "conditional_masks_empty": "テキストに…が含まれる場合",
-            "conditional_masks_format": "{n}行目: 「式 => マスク」の形式で入力してください",
-            "md_quote": "マスク全体: 引用",
-            "config_schedule": "チャット設定とスケジュール",
-            "schedule_err_date": "日付が正しくありません",
+            # Аккаунты
+            "account_mode": "アカウント別の設定",
+            "account_mode_subtext": "アカウントごとに個別設定。変更するまでは共通の設定を使います。",
+            "account_target": "設定するアカウント",
+            "account_auto": "自動（現在のアカウント）",
+            "account_common": "共通（全アカウント）",
+            "account_auto_now": "自動で表示中",
+            "account_editing": "開いている設定",
+            "account_own": "個別の設定",
+            "account_shared": "共通の設定",
+            "account_common_hint": "共通の設定（個別設定のないアカウント用）",
+            "account_none": "アカウントを特定できません",
+            "account_reset": "共通の設定に戻す",
+            "account_reset_subtext": "このアカウントの個別設定を削除します",
+            "account_reset_title": "アカウント設定のリセット",
+            "account_reset_confirm": "このアカウントの個別設定を、すべての設定セットとともに削除しますか？共通設定に戻ります。",
+            "account_reset_button": "リセット",
+            "account_reset_done": "アカウントの設定を共通に戻しました",
+            "account_import_title": "設定の適用先",
+            "account_import_all": "すべてのアカウント",
+            "account_import_common": "共通（個別設定のないアカウント）",
+            # Обновления и проверка
+            "check_now": "今すぐ確認",
+            "check_now_subtext": "このビルドを確認します。",
+            "check_started": "キャッシュを消去して確認中…",
+            "check_confirm_title": "今すぐこのビルドを確認しますか？",
+            "check_confirm_body": "動作: 保存された確認データ（マニフェスト、ブラックリスト、設定プロファイル）を削除して再取得し、公式ビルドか再確認します。\n\n用途: ビルドを確認できない、機能が停止中、更新・再インストール直後、ステータスが古いときに。\n\n安全性: 設定と設定セットは影響を受けず、確認のシリアル番号も保持されます。通信が必要です。失敗すると次回成功まで機能は停止したままです。",
+            "check_confirm_yes": "確認する",
+            "check_ok": "確認に成功しました",
+            "check_failed": "確認に失敗しました。接続を確認して再試行してください。",
+            "ota_auto": "自動アップデート",
+            "ota_auto_subtext": "新しい公式バージョンを自動で取得・インストール。署名とチェックサムを検証します。",
+            "ota_mode": "自動アップデートのモード",
+            "ota_mode_available": "公開され次第",
+            "ota_mode_time": "指定した時刻",
+            "ota_action": "自動アップデートの動作",
+            "ota_action_download": "ダウンロードのみ",
+            "ota_action_install": "ダウンロードとインストール",
+            "ota_time": "アップデート時刻",
+            "ota_time_subtext": "端末の時刻、HH:MM 形式（例: 04:00）。",
+            "ota_time_invalid": "時刻を HH:MM 形式で入力してください（例: 04:00）",
+            "ota_disabled": "OTA は開発者により無効化されています",
+            "ota_disabled_subtext": "アップデートは一時停止中です。リポジトリから手動でインストールしてください。",
+            "ota_installed": "Prefixfy {version} をインストールしました。再起動します…",
+            "ota_restart_manual": "Prefixfy {version} をインストールしました。オフ→オンで適用します。",
+            "ota_modified_found": "改変を検出。公式ビルド {version} をインストールします…",
+            "ota_failed": "更新に失敗しました: {reason}",
+            "ota_busy": "更新はすでに実行中です",
+            "ota_check_note": "この確認では新バージョンはインストールされません。通知後、「アップデートが必要です」の下の「ダウンロード」で更新します。",
+            "ota_almost_ready": "もうすぐ完了",
+            "ota_almost_ready_subtext": "バージョン {version} はダウンロード済み。再読み込みのみです。",
+            "ota_reload": "再読み込み",
+            "ota_reload_subtext": "アップデートを適用してプラグインを再起動します。",
+            "ota_staged": "Prefixfy {version} をダウンロードしました。「再読み込み」をタップ。",
+            "ota_download": "ダウンロード",
+            "check_update_found": "Prefixfy {version} が見つかりました。「アップデートが必要です」の下の「ダウンロード」をタップ。",
+            "ota_download_subtext": "バージョン {version}。最初に詳細を表示します。",
+            "ota_dl_title": "Prefixfy のアップデート",
+            "ota_dl_size": "サイズ",
+            "ota_dl_confirm": "ダウンロードしてインストール",
+            "ota_dl_warning": "注意: モバイル回線では通信料が発生する場合があります。Wi-Fi 推奨。",
+            "ota_unit_kb": "KB",
+            "ota_unit_mb": "MB",
+            # О плагине, статусы и уведомления проверки
+            "gate_update_required": "アップデートが必要です",
+            "gate_update_required_subtext": "公式の Prefixfy {version} をインストールしてください。それまで装飾は無効です。",
+            "gate_verify_required": "検証に失敗しました",
+            "gate_verify_required_subtext": "このビルドを検証できません。装飾は無効です。接続を確認してください。",
+            "gate_account_blocked": "アクセスが拒否されました",
+            "gate_account_blocked_subtext": "この端末のアカウントがブラックリストに登録されています。プラグインは無効です。",
+            "about_plugin": "プラグインについて",
+            "about_plugin_subtext": "バージョン、ビルド、検証ステータス。",
+            "about_title": "Prefixfy について",
+            "about_version": "バージョン",
+            "about_build_date": "ビルド日",
+            "about_build_number": "その日のビルド番号",
+            "about_serial": "シリアル",
+            "about_build_label": "完全なビルドラベル",
+            "about_latest": "最新の公式ビルド",
+            "about_status": "検証",
+            "about_unknown": "不明",
+            "about_note": "値はウィンドウを開いた時点でこのファイルのビルドラベルから読み取ります。",
+            "status_ok": "合格: 署名済み公式リリースと一致",
+            "status_pending": "最初の確認を待っています",
+            "status_soft": "未確認: オプション機能は停止中",
+            "status_blacklisted": "拒否: アカウントがブラックリスト入り",
+            "status_no_key": "不合格: このビルドには更新キーが含まれていません",
+            "status_integrity": "未確認: プラグインファイルを読み取れません",
+            "notice_ok": "OK",
+            "status_outdated": "不合格: 古いビルド、新しい公式リリースあり",
+            "status_modified": "不合格: 改変されたビルド",
+            "gate_modified": "改変されたビルド",
+            "gate_modified_subtext": "このファイルは公式リリース {version} と異なります。公式ビルドを自動で再インストールします。それまで装飾は無効です。",
+            "notice_verify_body": "状況: このビルドは有効な更新キーがなく、署名済みマニフェストを確認できません。\n\n影響: 送信メッセージは装飾されません。設定は保持されます。\n\n対処: リポジトリから公式ビルドをインストールしてください。",
+            "notice_soft_body": "状況: このビルドが公式か確認できません。署名済みマニフェストまたはブラックリストの確認が完了しませんでした（未接続、GitHub に到達不可、前回の確認が古い、ファイルを読み取れない）。\n\n停止中: すべてのオプション機能（スタイル、Markdown、マスクのローテーション・条件付きマスク、タグ、スケジュール、チャット別設定、メディア添付、Premium Emoji、編集時処理、設定のインポート）。基本のマスクのみ動作します。\n\n対処: 接続を確認し「今すぐ確認」をタップしてください。確認に成功すれば自動で元に戻ります。",
+            "notice_account_body": "状況: この端末の Telegram アカウントの1つが Prefixfy のブラックリストに登録されています。\n\n影響: この端末ではプラグインが無効です。設定は変更されません。\n\n誤りの場合は作者に連絡してください。",
+            "gate_soft": "機能を一時停止中",
+            "gate_soft_subtext": "ビルドを確認できないため、オプション機能はオフで基本の装飾のみ動作します。接続を確認してください。確認後に元に戻ります。",
+            "gate_bypass_note": "この機能ではブロックを回避できません。",
+            # Удаление данных и возобновление работы
+            "wipe_row": "データを削除",
+            "wipe_row_subtext": "ファイルを消去、または使用を完全にやめます。",
+            "wipe_title": "Prefixfyのデータを削除しますか？",
+            "wipe_body": "プラグインの全データ（設定セット・アカウント別プリセット、設定、添付メディア、インポートファイル、検証キャッシュ）を削除します。プラグインは再起動し、初回インストール時のように設定ウィザードから始まります。\n\nプラグインが古い場合は、先に最新版をインストールしてから削除します。\n\n「使用をやめる」にチェックすると、さらにプラグインを休止状態にし、「再開」だけが残ります。更新は取得しません。",
+            "wipe_opt_out": "使用をやめる",
+            "wipe_confirm_clean": "すべてのファイルと設定を削除し、プラグインを複数回再起動して（正常な動作です）設定ウィザードから始めます。設定セットと添付メディアは完全に失われます。先に設定セットをエクスポートしてください。",
+            "wipe_confirm_title": "削除の確認",
+            "wipe_confirm_out": "すべてのファイルと設定を削除し、プラグインを停止します。元に戻せません。",
+            "wipe_confirm_btn": "消去",
+            "wipe_started": "削除の準備中…",
+            "wipe_started_multi": "削除の準備中… プラグインは複数回再起動します。",
+            "wipe_halt": "消去中",
+            "wipe_halt_subtext": "まもなくプラグインがもう一度再起動し、最初から始まります。",
+            "wipe_updating": "{version} に更新後、データを削除します…",
+            "wipe_reinstalling": "{version} を再インストール後、データを削除します…",
+            "wipe_update_failed": "更新に失敗: {reason}。何も削除していません。",
+            "wipe_restart_manual": "削除を完了するには、プラグインをオフ→オンにしてください。",
+            "wipe_failed": "削除を準備できませんでした。何も削除していません。",
+            "wipe_done": "データを消去して再作成しました",
+            "resume_title": "再開",
+            "resume_subtext": "Prefixfy は停止中で何も保存していません。タップでやり直し。",
+            "resume_confirm_title": "再開しますか？",
+            "resume_confirm_body": "初めてインストールしたように、初期設定で起動します。",
+            "resume_btn": "再開",
+            "resume_done": "Prefixfyを起動しました",
+            "resume_failed": "起動できませんでした。オフ→オンにしてください。",
+            "wipe_auto_reset_done": "データが破損したため自動でリセットしました",
+            # Первая настройка и приветствие
+            "setup_step_1": "ステップ 1/3: 言語を選択",
+            "setup_step_2": "ステップ 2/3: 外観を設定",
+            "setup_step_3": "ステップ 3/3: アップデートを設定",
+            "setup_next": "次へ",
+            "setup_next_subtext": "ステップ {step}/3 へ進みます",
+            "setup_back": "戻る",
+            "setup_back_subtext": "ステップ {step}/3 に戻ります",
+            "setup_finish": "設定を完了",
+            "setup_finish_subtext": "アップデートを確認し、新しい版があればインストールしてから、すべての設定を開きます。",
+            "setup_checking": "アカウントを確認中…",
+            "setup_checking_subtext": "サーバーからブロックリストを取得しています。数秒かかります。",
+            "setup_done": "初期設定が完了しました",
+            "welcome_banner": "Prefixfyをインストールいただきありがとうございます！",
+            "welcome_banner_subtext": "タップして、機能と使い始め方を確認できます。",
+            "welcome_title": "Prefixfyへようこそ",
+            "welcome_body": "Prefixfyをインストールいただきありがとうございます！このプラグインは、メッセージの前後に文字を付けたり、装飾を加えたりします。\n\n主な機能:\n• Markdown、文字スタイル、区切りに対応したマスク\n• かわいい効果: 顔文字、UwU、装飾\n• 添付メディア\n• 例外設定: プラグインを使わないチャット、またはそのチャットだけで使う設定\n• 設定セット: 複数の設定、インポート、エクスポート、スケジュール\n• アカウントごとの個別設定\n\n使い始めるには:\n1. 「テキストの装飾」でマスクを設定します。\n2. 「適用範囲」で装飾する対象を選びます。\n3. チャットを例外に追加・削除するには、チャット内のメニュー項目を使います。\n\n準備は完了です。あとはメッセージを送るだけ。",
+            "welcome_ok": "了解",
         },
         "ko": {
-            "enable_plugin": "플러그인 사용",
-            "enable_plugin_subtext": "켜짐: 목록 제외 전체. 꺼짐: 목록만.",
-            "language": "언어",
-            "update_required": "업데이트 필요",
-            "update_required_subtext": "공식 Prefixfy {version}을(를) 설치하세요. 그전까지 꾸미기는 꺼집니다.",
-            "verify_required": "검증 실패",
-            "verify_required_subtext": "이 빌드를 검증하지 못했습니다. 꾸미기가 꺼졌습니다. 연결을 확인하세요.",
-            "account_blocked": "접근이 거부되었습니다",
-            "account_blocked_subtext": "이 기기의 계정이 블랙리스트에 있습니다. 플러그인이 꺼졌습니다.",
+            # Общие действия, ошибки, подсказки редакторов
+            "editor_empty_means_default": "비우고 “저장”을 누르면 기본값으로 돌아갑니다.",
+            "action_save": "저장",
+            "action_delete": "삭제",
+            "action_cancel": "취소",
+            "action_create": "만들기",
+            "action_apply": "적용",
+            "action_next": "다음",
+            "error_operation_failed": "작업을 수행하지 못했습니다",
+            # Заголовки разделов
             "section_scope": "적용 범위",
-            "plugin_language": "플러그인 언어",
+            "section_language": "플러그인 언어",
+            "section_configurations": "구성",
+            "section_appearance": "텍스트 꾸미기",
+            "section_general": "일반",
+            "section_about": "정보",
+            "section_accounts": "계정",
+            "section_updates": "업데이트 및 확인",
+            "section_cute": "귀여운 효과",
+            # Плагин и язык
+            "plugin_enable": "플러그인 사용",
+            "plugin_enable_subtext": "켜짐: 목록 제외 전체. 꺼짐: 목록만.",
+            "language": "언어",
             "language_auto": "언어 자동 감지",
-            "about_section": "정보",
             "language_auto_subtext": "Telegram 언어 사용. 끄면 직접 선택.",
-            "message": "메시지",
-            "message_subtext": "일반 텍스트 메시지를 꾸밉니다.",
-            "media": "미디어",
-            "media_subtext": "미디어 캡션에 플러그인을 사용합니다.",
-            "edit_message": "메시지 수정",
-            "edit_message_subtext": "수정 시에도 꾸밈. 이미 꾸민 글은 그대로.",
+            # Область применения, исключения по чатам, конфигурация чата
+            "scope_message": "메시지",
+            "scope_message_subtext": "일반 텍스트 메시지를 꾸밉니다.",
+            "scope_media": "미디어",
+            "scope_media_subtext": "미디어 캡션에 플러그인을 사용합니다.",
+            "scope_edit": "메시지 수정",
+            "scope_edit_subtext": "수정 시에도 꾸밈. 이미 꾸민 글은 그대로.",
+            "skip_once_expired": "건너뛰기 만료. 다음 메시지는 꾸밉니다",
+            "chat_config_menu": "이 채팅의 구성",
+            "chat_config_auto": "기본(및 일정)",
+            "chat_config_saved": "채팅 구성을 저장했습니다",
+            "chat_config_reset": "이 채팅은 기본 구성을 사용합니다",
+            "skip_once_menu": "한 번만 꾸미기 건너뛰기",
+            "skip_once_on": "다음 메시지는 꾸밈 없이 전송됩니다",
+            "skip_once_off": "건너뛰기를 취소했습니다",
+            "chat_types": "채팅 유형",
+            "chat_types_hint": "선택한 채팅 유형에서만 꾸밉니다.",
+            "chat_types_all": "모든 채팅",
+            "chat_types_none": "하나 이상 선택하세요",
+            "chat_type_private": "개인 채팅",
+            "chat_type_group": "그룹",
+            "chat_type_channel": "채널",
+            "scope_edit_message": "텍스트 수정",
+            "scope_edit_message_subtext": "일반 메시지를 수정할 때 꾸밉니다.",
+            "scope_edit_media": "캡션 수정",
+            "scope_edit_media_subtext": "미디어 캡션을 수정할 때 꾸밉니다.",
+            "scope_article": "아티클",
+            "scope_article_subtext": "전송할 때 아티클의 텍스트 블록을 꾸밉니다.",
+            "scope_edit_article": "아티클 수정",
+            "scope_edit_article_subtext": "아티클을 수정할 때 꾸밉니다.",
+            "skip_once_on_edit": "수정 시에도 “한 번만 건너뛰기”",
+            "skip_once_on_edit_subtext": "건너뛰기가 켜져 있으면 이 채팅의 다음 수정은 꾸미지 않습니다.",
+            # Маска, Markdown, ротация и условные маски
             "mask": "마스크",
             "mask_text": "마스크 텍스트",
-            "text_style": "텍스트 스타일",
-            "skip_once_expired": "건너뛰기 만료. 다음 메시지는 꾸밉니다",
-            "empty_means_default": "비우고 “저장”을 누르면 기본값으로 돌아갑니다.",
             "markdown_style": "Markdown 스타일",
             "markdown_style_subtext": "마스크의 마커 또는 마스크 전체 서식",
             "markdown_style_pick": "스타일",
@@ -1077,27 +1720,6 @@ class LocalizationManager:
             "md_strike": "마스크 전체: 취소선",
             "md_spoiler": "마스크 전체: 스포일러",
             "md_mono": "마스크 전체: 고정폭",
-            "chat_config_menu": "이 채팅의 구성",
-            "chat_config_auto": "기본(및 일정)",
-            "chat_config_saved": "채팅 구성을 저장했습니다",
-            "chat_config_reset": "이 채팅은 기본 구성을 사용합니다",
-            "schedule": "구성 일정",
-            "schedule_empty": "설정 안 됨",
-            "schedule_count": "규칙: {n}",
-            "schedule_message": "한 줄에 규칙 하나: [날짜] [HH:MM-HH:MM] [요일] = 구성 이름\n날짜: YYYY-MM-DD, DD.MM.YYYY, DD.MM(매년), 범위는 “..”. 시간 생략 시 종일. 요일: mon-fri, sat,sun(생략 시 매일). 날짜 규칙이 요일 규칙보다 우선, 나머지는 첫 일치. 자체 구성이 있는 채팅은 제외. 시간 대신 시간대도 가능: 아침(05–12), 낮(12–17), 저녁(17–23), 밤(23–05), “아침-저녁”.",
-            "schedule_hint": "22:00-07:00 = 밤\n09:00-18:00 mon-fri = 업무\n31.12 = 휴일\n2026-12-28..2027-01-10 = 휴가\n아침 mon-fri = 업무\n밤 = 밤",
-            "schedule_saved": "일정을 저장했습니다",
-            "schedule_error": "{n}번째 줄: {reason}",
-            "schedule_err_format": "형식: [날짜] [HH:MM-HH:MM] [요일] = 구성",
-            "schedule_err_time": "잘못된 시간",
-            "schedule_err_days": "잘못된 요일",
-            "schedule_err_config": "“{name}” 구성이 없습니다",
-            "schedule_err_limit": "규칙은 최대 {n}개",
-            "skip_once_menu": "한 번만 꾸미기 건너뛰기",
-            "skip_once_on": "다음 메시지는 꾸밈 없이 전송됩니다",
-            "skip_once_off": "건너뛰기를 취소했습니다",
-            "random_style": "랜덤 스타일",
-            "random_style_subtext": "메시지마다 무작위 스타일(뒤집기 제외).",
             "mask_rotation": "마스크 순환",
             "mask_rotation_subtext": "목록의 마스크를 기본 대신 사용. 채팅 마스크 우선.",
             "masks_list": "마스크 목록",
@@ -1106,29 +1728,92 @@ class LocalizationManager:
             "masks_list_hint": "한 줄에 마스크 하나, 각각 [text] 하나.",
             "masks_list_invalid": "각 마스크에는 [text]가 정확히 하나 있어야 합니다",
             "masks_list_limit": "마스크는 최대 {n}개입니다",
-            "mask_tags_hint": "태그: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice]",
+            "mask_tags_hint": "태그: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice]\n[reply] — 답장 대상 이름; [chatcount] — 채팅에서의 내 메시지 번호; [battery] — 배터리 잔량; [moon] — 달의 위상; [line] — 목록의 무작위 한 줄; [since:2026-12-31] / [until:2026-12-31] — 경과 / 남은 일수; [quote] — 답장 대상 메시지의 시작; [countdown:2026-12-31 18:00] — 남은 시간; [weather] / [weather:서울] — wttr.in 기온(인터넷 필요).",
             "mask_rotation_mode": "순환 순서",
-            "rotation_random": "무작위",
-            "rotation_sequential": "순서대로",
+            "mask_rotation_mode_random": "무작위",
+            "mask_rotation_mode_sequential": "순서대로",
+            "mask_editor_title": "마스크 설정",
+            "mask_editor_hint": "마스크를 입력하세요. [text]는 메시지, [text: 링크]는 하이퍼링크입니다.",
+            "mask_invalid": "마스크에는 [text]가 정확히 하나 있어야 합니다",
+            "mask_too_long": "마스크가 너무 깁니다(최대 {n}자)",
+            "mask_preview_sample": "메시지 예시",
+            "mask_preview_invalid": "마스크가 올바르지 않습니다: [text]가 정확히 하나 필요합니다",
+            "conditional_masks": "내용별 마스크",
+            "conditional_masks_hint": "한 줄에 규칙 하나: 정규식 => 마스크. 처음 일치한 줄의 마스크를 사용. 마스크마다 [text] 하나.",
+            "conditional_masks_count": "규칙 수: {n}",
+            "conditional_masks_empty": "텍스트에 …가 있으면",
+            "conditional_masks_format": "{n}번째 줄: “식 => 마스크” 형식이어야 합니다",
+            "md_quote": "마스크 전체: 인용",
+            # Стиль текста, слова и строки для тегов
+            "text_style": "텍스트 스타일",
+            "text_style_random": "랜덤 스타일",
+            "text_style_random_subtext": "메시지마다 무작위 스타일(뒤집기 제외).",
+            "text_style_subtext": "본문만 변환. Fancy, Bold, Gothic, Circled는 라틴 문자만, L33T는 키릴 문자도 지원.",
+            "text_style_enable": "텍스트 스타일 사용",
+            "text_style_translit": "키릴 문자 음역",
+            "text_style_translit_subtext": "라틴 전용 스타일을 러시아어·우크라이나어에도 사용합니다.",
+            "style_words": "지정한 단어에만 스타일 적용",
+            "style_words_hint": "한 줄에 한 단어. 비우면 전체 텍스트.",
+            "style_words_count": "단어: {n}",
+            "style_words_empty": "전체 텍스트",
+            "style_words_limit": "최대 {n}개 단어",
+            "tag_lines": "[line]용 문구",
+            "tag_lines_hint": "한 줄에 하나. [line]은 무작위로 하나 삽입(각 64자까지).",
+            "tag_lines_count": "문구: {n}",
+            "tag_lines_empty": "아직 문구가 없습니다",
+            "tag_lines_limit": "최대 {n}줄",
+            # Разделители
+            "separator": "구분자",
+            "separator_enable": "구분자 사용",
+            "separator_enable_subtext": "단어 사이에 사용자 지정 구분자를 추가합니다.",
+            "separator_set": "구분자 세트",
+            "separator_count": "단어 사이 구분자 개수",
+            "separator_count_subtext": "눌러서 변경하세요.",
+            "separator_custom_title": "사용자 지정",
+            "separator_custom_message": "구분자를 쉼표로 구분하여 입력하세요. 예:\n•, ·, —, ~, |",
+            "separator_preview_sample": "미리보기용 예시 텍스트",
+            "separator_frequency": "구분자 빈도",
+            "separator_frequency_subtext": "두 단어 사이에 구분자가 들어갈 확률. 100%면 매번.",
+            "separator_spaces": "공백 사용",
+            "separator_spaces_subtext": "끄면 구분자가 단어에 붙어서 들어갑니다: 안녕x잘지내x.",
+            "separator_space_mode": "공백 위치",
+            "separator_space_both": "양쪽",
+            "separator_space_left": "왼쪽",
+            "separator_space_right": "오른쪽",
+            # Милые эффекты
+            "cute_enabled": "귀여운 효과 켜기",
+            "cute_enabled_subtext": "이모티콘, UwU, 행동 묘사 등 장식. 링크, @멘션, #태그, 코드는 그대로.",
+            "cute_preview": "미리보기",
+            "cute_preview_sample": "안녕! 잘 지내? 오늘은 정말 좋은 날이야.",
+            "cute_preview_none": "효과를 하나 이상 켜세요. 눌러서 새로고침.",
+            "cute_preview_tap": "눌러서 새로고침합니다.",
+            "cute_sentence_frequency": "문장 효과 빈도",
+            "cute_sentence_frequency_subtext": "이모티콘, 반짝이, 문장부호, 어미, 행동 묘사.",
+            "cute_word_frequency": "단어 효과 빈도",
+            "cute_word_frequency_subtext": "말더듬, 모음 늘이기, 연음 부호.",
+            "cute_kaomoji": "문장 끝에 이모티콘 (◕‿◕)",
+            "cute_sparkles": "문장을 반짝이로 감싸기 ✨",
+            "cute_exclamations": "귀여운 느낌표 (! → !✨)",
+            "cute_punctuation": "귀여운 문장부호 (. → .~, ? → ?✨)",
+            "cute_uwu_suffixes": "UwU 어미 (nya~, owo)",
+            "cute_actions": "귀여운 행동 묘사 (*꼬옥 안아줌*)",
+            "cute_actions_newline": "행동 묘사를 새 줄에",
+            "cute_lowercase": "소문자만 사용",
+            "cute_uwu_speak": "UwU 말투 (r/l → w)",
+            "cute_stutter": "말더듬 (h-hello)",
+            "cute_stretch": "모음 늘이기 (cuuute)",
+            "cute_stretch_max": "늘인 모음의 최대 길이",
+            "cute_stretch_2x": "2배 (x2)",
+            "cute_stretch_3x": "3배 (x3)",
+            "cute_soft_sign": "단어 끝에 연음 부호 (kotikь)",
+            "cute_soft_sign_subtext": "러시아어 단어에만 적용됩니다.",
+            # Исключения: списки, игнорирование, regex
             "regex_exceptions": "정규식 예외",
             "regex_exceptions_hint": "한 줄에 정규식 하나. 일치하는 메시지는 꾸미지 않습니다.",
             "regex_exceptions_count": "규칙 수: {n}",
             "regex_exceptions_empty": "고급 사용자용",
-            "regex_invalid": "잘못된 식: {error}",
-            "regex_limit": "식은 최대 {n}개, 각 {m}자까지입니다",
-            "chat_types": "채팅 유형",
-            "chat_types_hint": "선택한 채팅 유형에서만 꾸밉니다.",
-            "chat_types_all": "모든 채팅",
-            "chat_types_none": "하나 이상 선택하세요",
-            "chat_type_private": "개인 채팅",
-            "chat_type_group": "그룹",
-            "chat_type_channel": "채널",
-            "separator": "구분자",
-            "enable_separator": "구분자 사용",
-            "enable_separator_subtext": "단어 사이에 사용자 지정 구분자를 추가합니다.",
-            "separator_set": "구분자 세트",
-            "separator_count": "단어 사이 구분자 개수",
-            "separator_count_subtext": "눌러서 변경하세요.",
+            "regex_exceptions_invalid": "잘못된 식: {error}",
+            "regex_exceptions_limit": "식은 최대 {n}개, 각 {m}자까지입니다",
             "exceptions": "예외",
             "ignore_emoji_only": "이모지만 있는 메시지 무시",
             "ignore_emoji_only_subtext": "이모지만 있는 일반 메시지는 건너뜁니다. 미디어 캡션은 항상 꾸밉니다.",
@@ -1148,154 +1833,315 @@ class LocalizationManager:
             "ignore_segments": "제외할 항목",
             "ignore_segments_hint": "그대로 둘 메시지 요소를 선택하세요.",
             "ignore_segments_count": "사용 중: {n}/{total}",
-            "chat_menu": "예외 목록에 채팅 추가/제거",
-            "chat_added": "채팅이 예외 목록에 추가되었습니다",
-            "chat_removed": "채팅이 예외 목록에서 제거되었습니다",
-            "mask_editor_title": "마스크 설정",
-            "mask_editor_hint": "마스크를 입력하세요. [text]는 메시지, [text: 링크]는 하이퍼링크입니다.",
-            "custom_separator_title": "사용자 지정",
-            "custom_separator_message": "구분자를 쉼표로 구분하여 입력하세요. 예:\n•, ·, —, ~, |",
-            "save": "저장",
-            "delete": "삭제",
-            "cancel": "취소",
-            "capture_custom_emoji": "프리미엄 이모지 캡처",
-            "capture_enabled": "프리미엄 이모지 캡처 켜짐. 포함한 메시지를 보내세요",
-            "capture_disabled": "프리미엄 이모지 캡처를 껐습니다",
-            "custom_emoji_hint": "프리미엄 이모지는 마커 (id|🙂)로 지정하며 🙂는 대체 이모지입니다. 채팅 메뉴의 '프리미엄 이모지 캡처'로 얻으세요.",
-            "mask_invalid": "마스크에는 [text]가 정확히 하나 있어야 합니다",
-            "mask_too_long": "마스크가 너무 깁니다(최대 {n}자)",
-            "mask_preview_sample": "메시지 예시",
-            "mask_preview_invalid": "마스크가 올바르지 않습니다: [text]가 정확히 하나 필요합니다",
-            "separator_preview_words": "미리보기용 예시 텍스트",
+            "exceptions_chat_menu": "예외 목록에 채팅 추가/제거",
+            "exceptions_chat_added": "채팅이 예외 목록에 추가되었습니다",
+            "exceptions_chat_removed": "채팅이 예외 목록에서 제거되었습니다",
             "exceptions_count": "예외: {n}, 채팅: {m}",
-            "configuration_import_cancelled": "가져오기가 취소되었습니다",
-            "import_configuration": "가져오기",
-            "export_configuration": "내보내기",
-            "reset_configuration": "기본값 복원",
-            "reset_to_plugin_defaults": "가져온 값 무시, 플러그인 기본값 사용",
-            "reset_to_plugin_defaults_unavailable": "사용 불가: 플러그인이 만든 구성이라 초기화하면 생성 당시 상태로 돌아갑니다.",
-            "configurations": "구성",
-            "active_configuration": "활성 구성",
-            "add_configuration": "새 구성 만들기",
-            "add_configuration_subtext": "별도 설정 세트를 만들어 바로 활성화합니다.",
-            "configuration_name_hint": "구성 이름",
-            "new_configuration_source_title": "새 구성 설정",
-            "new_configuration_source_message": "무엇을 기준으로 할까요? 선택 없으면 기본 설정.",
-            "new_configuration_copy_current": "현재 구성의 설정 복사",
-            "create": "만들기",
-            "delete_configuration": "구성 삭제",
-            "delete_configuration_confirm": "구성 “{name}”을(를) 삭제할까요?",
-            "no_inactive_configurations": "삭제할 비활성 구성이 없습니다",
-            "imported_configuration": "가져온 구성",
-            "rename_configuration": "구성 이름 변경",
-            "rename_configuration_subtext": "현재 구성의 이름을 변경합니다.",
-            "configuration_name_invalid": "고유한 구성 이름을 입력하세요.",
-            "configuration_name_taken": "같은 이름의 구성이 이미 있습니다.",
-            "configuration_deleted": "삭제된 구성: {n}",
-            "delete_configurations": "구성 삭제",
-            "delete_configurations_subtext": "비활성 구성을 삭제합니다(활성 구성은 유지).",
-            "delete_configurations_select": "삭제할 비활성 구성을 선택하세요.",
-            "import_new_configuration_name": "새 구성 이름",
-            "select_configuration": "구성 선택",
-            "select_configuration_subtext": "항목을 1~{n}개 선택하세요.",
-            "config_mask": "마스크",
-            "config_separator": "구분자",
-            "config_exceptions": "예외 및 채팅",
-            "config_language": "선택한 언어",
-            "config_media": "미디어",
+            # Premium Emoji
+            "capture_custom_emoji": "프리미엄 이모지 캡처",
+            "capture_custom_emoji_enabled": "프리미엄 이모지 캡처 켜짐. 포함한 메시지를 보내세요",
+            "capture_custom_emoji_disabled": "프리미엄 이모지 캡처를 껐습니다",
+            "capture_custom_emoji_hint": "프리미엄 이모지는 마커 (id|🙂)로 지정하며 🙂는 대체 이모지입니다. 채팅 메뉴의 “프리미엄 이모지 캡처”로 얻으세요.",
+            # Расписание
+            "schedule": "구성 일정",
+            "schedule_empty": "설정 안 됨",
+            "schedule_count": "규칙: {n}",
+            "schedule_message": "한 줄에 규칙 하나: [날짜] [HH:MM-HH:MM] [요일] = 구성 이름\n날짜: YYYY-MM-DD, DD.MM.YYYY, DD.MM(매년), 범위는 “..”. 시간 생략 시 종일. 요일: mon-fri, sat,sun(생략 시 매일). 날짜 규칙이 요일 규칙보다 우선, 나머지는 첫 일치. 자체 구성이 있는 채팅은 제외. 시간 대신 시간대도 가능: 아침(05–12), 낮(12–17), 저녁(17–23), 밤(23–05), “아침-저녁”.",
+            "schedule_hint": "22:00-07:00 = 밤\n09:00-18:00 mon-fri = 업무\n31.12 = 휴일\n2026-12-28..2027-01-10 = 휴가\n아침 mon-fri = 업무\n밤 = 밤",
+            "schedule_saved": "일정을 저장했습니다",
+            "schedule_error": "{n}번째 줄: {reason}",
+            "schedule_err_format": "형식: [날짜] [HH:MM-HH:MM] [요일] = 구성",
+            "schedule_err_time": "잘못된 시간",
+            "schedule_err_days": "잘못된 요일",
+            "schedule_err_config": "“{name}” 구성이 없습니다",
+            "schedule_err_limit": "규칙은 최대 {n}개",
+            "schedule_err_date": "잘못된 날짜",
+            # Конфигурации
+            "config_import_cancelled": "가져오기가 취소되었습니다",
+            "config_import": "가져오기",
+            "config_export": "내보내기",
+            "config_reset": "기본값 복원",
+            "config_reset_to_plugin": "가져온 값 무시, 플러그인 기본값 사용",
+            "config_reset_to_plugin_unavailable": "사용 불가: 플러그인이 만든 구성이라 초기화하면 생성 당시 상태로 돌아갑니다.",
+            "config_active": "활성 구성",
+            "config_new": "새 구성 만들기",
+            "config_new_subtext": "별도 설정 세트를 만들어 바로 활성화합니다.",
+            "config_name_hint": "구성 이름",
+            "config_new_source_title": "새 구성 설정",
+            "config_new_source_message": "무엇을 기준으로 할까요? 선택 없으면 기본 설정.",
+            "config_new_copy_current": "현재 구성의 설정 복사",
+            "config_delete": "구성 삭제",
+            "config_delete_confirm": "구성 “{name}”을(를) 삭제할까요?",
+            "config_delete_none": "삭제할 비활성 구성이 없습니다",
+            "config_imported_name": "가져온 구성",
+            "config_rename": "구성 이름 변경",
+            "config_rename_subtext": "현재 구성의 이름을 변경합니다.",
+            "config_name_invalid": "고유한 구성 이름을 입력하세요.",
+            "config_name_taken": "같은 이름의 구성이 이미 있습니다.",
+            "config_deleted": "삭제된 구성: {n}",
+            "config_delete_multi": "구성 일괄 삭제",
+            "config_delete_multi_subtext": "비활성 구성을 삭제합니다(활성 구성은 유지).",
+            "config_delete_multi_select": "삭제할 비활성 구성을 선택하세요.",
+            "config_import_new_name": "새 구성 이름",
+            "config_parts_title": "구성 선택",
+            "config_parts_message": "항목을 1~{n}개 선택하세요.",
+            "config_part_mask": "마스크",
+            "config_part_separator": "구분자",
+            "config_part_exceptions": "예외 및 채팅",
+            "config_part_language": "선택한 언어",
+            "config_part_media": "미디어",
+            "config_import_done": "구성을 가져왔습니다",
+            "config_import_failed": "구성을 가져오지 못했습니다",
+            "config_import_locked": "구성 가져오기는 초기 설정이 끝난 뒤에 사용할 수 있습니다.",
+            "config_save_failed": "현재 구성을 저장하지 못했습니다",
+            "config_export_done": "구성을 내보냈습니다",
+            "config_export_failed": "구성을 내보내지 못했습니다",
+            "config_export_destination_title": "어디로 내보낼까요?",
+            "config_export_to_saved": "활성 계정의 저장된 메시지",
+            "config_export_to_device": "기기 저장공간",
+            "config_restored": "선택한 값을 복원했습니다",
+            "config_parts_none": "구성 항목을 하나 이상 선택하세요",
+            "config_export_select": "내보낼 구성 선택",
+            "config_export_select_subtext": "최대 {n}개까지 선택할 수 있습니다. 이어서 각 구성의 항목을 고릅니다. 여러 개를 선택하면 파일이 활성 계정의 저장된 메시지로 바로 전송됩니다.",
+            "config_export_include_name": "구성 이름 포함",
+            "config_shared_marker": "공통",
+            "config_export_parts_title": "항목: {name}",
+            "config_export_parts_progress": "구성 {i} / {n}",
+            "config_export_limit": "최대 {n}개까지 선택할 수 있습니다",
+            "config_export_none": "구성을 하나 이상 선택하세요",
+            "config_export_done_multi": "내보낸 구성: {n}개",
+            "config_export_partial": "{total}개 중 {ok}개를 내보냈습니다",
+            "config_import_found_title": "구성을 찾았습니다",
+            "config_import_found_contains": "포함 내용",
+            "config_import_as_new": "새 구성으로 가져오기",
+            "config_import_file_failed": "구성 파일을 열 수 없습니다",
+            "config_import_invalid": "파일에 선택한 구성이 없거나 형식이 잘못되었습니다.",
+            "config_default_name": "기본 구성",
+            "config_numbered_name": "구성 {n}",
+            "config_actions_subtext": "구성 항목 선택",
+            "config_part_schedule": "채팅 구성과 일정",
+            "config_part_cute": "귀여운 효과",
+            # Медиа
             "media_attachment": "미디어",
-            "enable_media_attachment": "미디어 사용",
-            "enable_media_attachment_subtext": "가져온 파일을 전송 시 자동 첨부.",
+            "media_attachment_enable": "미디어 사용",
+            "media_attachment_enable_subtext": "가져온 파일을 전송 시 자동 첨부.",
             "media_file": "선택한 파일",
             "media_file_none": "선택한 파일 없음",
-            "import_media": "미디어 가져오기",
-            "delete_media": "미디어 삭제",
-            "delete_media_subtext": "Prefixfy에서 가져온 파일을 삭제합니다.",
-            "delete_media_confirm": "미디어 “{name}”을(를) 삭제할까요? 파일이 Prefixfy에서 삭제되며 되돌릴 수 없습니다.",
+            "media_import": "미디어 가져오기",
+            "media_delete": "미디어 삭제",
+            "media_delete_subtext": "Prefixfy에서 가져온 파일을 삭제합니다.",
+            "media_delete_confirm": "미디어 “{name}”을(를) 삭제할까요? 파일이 Prefixfy에서 삭제되며 되돌릴 수 없습니다.",
             "media_imported": "미디어를 가져왔습니다",
             "media_deleted": "미디어를 삭제했습니다",
             "media_import_failed": "미디어를 가져오지 못했습니다",
             "media_delete_failed": "미디어를 삭제하지 못했습니다",
-            "apply": "적용",
-            "configuration_imported": "구성을 가져왔습니다",
-            "configuration_import_failed": "구성을 가져오지 못했습니다",
-            "import_locked_setup": "구성 가져오기는 초기 설정이 끝난 뒤에 사용할 수 있습니다.",
-            "configuration_save_failed": "현재 구성을 저장하지 못했습니다",
-            "configuration_exported": "구성을 내보냈습니다",
-            "configuration_export_failed": "구성을 내보내지 못했습니다",
-            "configuration_export_destination_title": "어디로 내보낼까요?",
-            "configuration_export_to_saved": "활성 계정의 저장된 메시지",
-            "configuration_export_to_device": "기기 저장공간",
-            "configuration_restored": "선택한 값을 복원했습니다",
-            "configuration_nothing_selected": "구성 항목을 하나 이상 선택하세요",
-            "export_select_configs": "내보낼 구성 선택",
-            "export_select_configs_subtext": "최대 {n}개까지 선택할 수 있습니다. 이어서 각 구성의 항목을 고릅니다. 여러 개를 선택하면 파일이 활성 계정의 저장된 메시지로 바로 전송됩니다.",
-            "export_next": "다음",
-            "export_include_name": "구성 이름 포함",
-            "shared_configuration_marker": "공통",
-            "export_parts_title": "항목: {name}",
-            "export_parts_progress": "구성 {i} / {n}",
-            "configuration_export_limit": "최대 {n}개까지 선택할 수 있습니다",
-            "configuration_export_none": "구성을 하나 이상 선택하세요",
-            "configurations_exported": "내보낸 구성: {n}개",
-            "configurations_export_partial": "{total}개 중 {ok}개를 내보냈습니다",
-            "config_found_title": "구성을 찾았습니다",
-            "config_found_contains": "포함 내용",
-            "config_import_as_new": "새 구성으로 가져오기",
-            "config_found_import": "가져오기",
-            "config_file_open_failed": "구성 파일을 열 수 없습니다",
-            "invalid_configuration": "파일에 선택한 구성이 없거나 형식이 잘못되었습니다.",
-            "default_configuration_name": "기본 구성",
-            "configuration_n": "구성 {n}",
-            "operation_failed": "작업을 수행하지 못했습니다",
-            "text_style_subtext": "본문만 변환. Fancy, Bold, Gothic, Circled는 라틴 문자만, L33T는 키릴 문자도 지원.",
-            "enable_text_style": "텍스트 스타일 사용",
-            "configuration_short": "구성 항목 선택",
-            "edit_text_toggle": "텍스트 수정",
-            "edit_text_toggle_subtext": "일반 메시지를 수정할 때 꾸밉니다.",
-            "edit_media_toggle": "캡션 수정",
-            "edit_media_toggle_subtext": "미디어 캡션을 수정할 때 꾸밉니다.",
-            "article": "아티클",
-            "article_subtext": "전송할 때 아티클의 텍스트 블록을 꾸밉니다.",
-            "edit_article_toggle": "아티클 수정",
-            "edit_article_toggle_subtext": "아티클을 수정할 때 꾸밉니다.",
-            "skip_once_on_edit": "수정 시에도 ‘한 번만 건너뛰기’",
-            "skip_once_on_edit_subtext": "건너뛰기가 켜져 있으면 이 채팅의 다음 수정은 꾸미지 않습니다.",
-            "conditional_masks": "내용별 마스크",
-            "conditional_masks_hint": "한 줄에 규칙 하나: 정규식 => 마스크. 처음 일치한 줄의 마스크를 사용. 마스크마다 [text] 하나.",
-            "conditional_masks_count": "규칙 수: {n}",
-            "conditional_masks_empty": "텍스트에 …가 있으면",
-            "conditional_masks_format": "{n}번째 줄: ‘식 => 마스크’ 형식이어야 합니다",
-            "md_quote": "마스크 전체: 인용",
-            "config_schedule": "채팅 구성과 일정",
-            "schedule_err_date": "잘못된 날짜",
+            # Аккаунты
+            "account_mode": "계정별 설정",
+            "account_mode_subtext": "계정별 개별 설정. 변경 전까지는 모두 같은 설정을 씁니다.",
+            "account_target": "설정할 계정",
+            "account_auto": "자동(현재 계정)",
+            "account_common": "공통(모든 계정)",
+            "account_auto_now": "자동으로 표시 중",
+            "account_editing": "열려 있는 설정",
+            "account_own": "개별 설정",
+            "account_shared": "공통 설정",
+            "account_common_hint": "공통 설정(개별 설정이 없는 계정용)",
+            "account_none": "계정을 확인할 수 없음",
+            "account_reset": "공통 설정으로 되돌리기",
+            "account_reset_subtext": "이 계정의 개별 설정을 삭제합니다",
+            "account_reset_title": "계정 설정 초기화",
+            "account_reset_confirm": "이 계정의 설정을 모든 구성과 함께 삭제할까요? 공통 설정으로 돌아갑니다.",
+            "account_reset_button": "초기화",
+            "account_reset_done": "계정 설정을 공통으로 되돌렸습니다",
+            "account_import_title": "구성을 적용할 대상",
+            "account_import_all": "모든 계정",
+            "account_import_common": "공통(개별 설정이 없는 계정)",
+            # Обновления и проверка
+            "check_now": "지금 확인",
+            "check_now_subtext": "이 빌드를 확인합니다.",
+            "check_started": "캐시를 지우고 확인 중…",
+            "check_confirm_title": "지금 이 빌드를 확인할까요?",
+            "check_confirm_body": "동작: 저장된 확인 데이터(매니페스트, 블랙리스트, 설정 프로필)를 삭제하고 다시 받아 공식 빌드인지 확인합니다.\n\n용도: 빌드를 확인할 수 없거나, 기능이 중지되었거나, 방금 업데이트·재설치했거나, 상태가 오래되었을 때.\n\n안전성: 설정과 구성은 그대로이며 확인 일련번호도 유지됩니다. 인터넷이 필요하며, 실패하면 다음 성공까지 기능이 중지된 상태로 남습니다.",
+            "check_confirm_yes": "확인",
+            "check_ok": "확인에 성공했습니다",
+            "check_failed": "확인 실패. 연결을 확인하고 다시 시도하세요.",
+            "ota_auto": "자동 업데이트",
+            "ota_auto_subtext": "새 공식 버전을 자동으로 내려받아 설치. 서명과 체크섬을 검증합니다.",
+            "ota_mode": "자동 업데이트 모드",
+            "ota_mode_available": "배포되는 즉시",
+            "ota_mode_time": "지정한 시간",
+            "ota_action": "자동 업데이트 동작",
+            "ota_action_download": "다운로드만",
+            "ota_action_install": "다운로드 및 설치",
+            "ota_time": "업데이트 시간",
+            "ota_time_subtext": "기기 시간, HH:MM 형식(예: 04:00).",
+            "ota_time_invalid": "시간을 HH:MM 형식으로 입력하세요 (예: 04:00)",
+            "ota_disabled": "개발자가 OTA를 비활성화했습니다",
+            "ota_disabled_subtext": "업데이트를 일시적으로 쓸 수 없습니다. 저장소에서 직접 설치하세요.",
+            "ota_installed": "Prefixfy {version} 설치 완료. 다시 시작합니다…",
+            "ota_restart_manual": "Prefixfy {version} 설치 완료. 껐다 켜면 적용됩니다.",
+            "ota_modified_found": "변조 감지. 공식 빌드 {version}을(를) 설치합니다…",
+            "ota_failed": "업데이트 실패: {reason}",
+            "ota_busy": "이미 업데이트가 진행 중입니다",
+            "ota_check_note": "이 확인으로는 설치되지 않습니다. 알림 후 “업데이트 필요” 아래 “다운로드”를 누르세요.",
+            "ota_almost_ready": "거의 완료",
+            "ota_almost_ready_subtext": "버전 {version} 다운로드 완료. 다시 불러오기만 하면 됩니다.",
+            "ota_reload": "다시 불러오기",
+            "ota_reload_subtext": "업데이트를 적용하고 플러그인을 다시 시작합니다.",
+            "ota_staged": "Prefixfy {version} 다운로드 완료. “다시 불러오기”를 누르세요.",
+            "ota_download": "다운로드",
+            "check_update_found": "Prefixfy {version} 업데이트 발견. “업데이트 필요” 아래 “다운로드”를 누르세요.",
+            "ota_download_subtext": "버전 {version}. 먼저 상세 정보가 표시됩니다.",
+            "ota_dl_title": "Prefixfy 업데이트",
+            "ota_dl_size": "크기",
+            "ota_dl_confirm": "다운로드 및 설치",
+            "ota_dl_warning": "주의: 모바일 네트워크는 통신사 요금이 부과될 수 있습니다. Wi-Fi 권장.",
+            "ota_unit_kb": "KB",
+            "ota_unit_mb": "MB",
+            # О плагине, статусы и уведомления проверки
+            "gate_update_required": "업데이트 필요",
+            "gate_update_required_subtext": "공식 Prefixfy {version}을(를) 설치하세요. 그전까지 꾸미기는 꺼집니다.",
+            "gate_verify_required": "검증 실패",
+            "gate_verify_required_subtext": "이 빌드를 검증하지 못했습니다. 꾸미기가 꺼졌습니다. 연결을 확인하세요.",
+            "gate_account_blocked": "접근이 거부되었습니다",
+            "gate_account_blocked_subtext": "이 기기의 계정이 블랙리스트에 있습니다. 플러그인이 꺼졌습니다.",
+            "about_plugin": "플러그인 정보",
+            "about_plugin_subtext": "버전, 빌드, 검증 상태.",
+            "about_title": "Prefixfy 정보",
+            "about_version": "버전",
+            "about_build_date": "빌드 날짜",
+            "about_build_number": "당일 빌드 번호",
+            "about_serial": "시리얼",
+            "about_build_label": "전체 빌드 라벨",
+            "about_latest": "최신 공식 빌드",
+            "about_status": "검증",
+            "about_unknown": "알 수 없음",
+            "about_note": "값은 창을 열 때 이 파일의 빌드 라벨에서 읽습니다.",
+            "status_ok": "통과: 서명된 공식 릴리스와 일치",
+            "status_pending": "첫 번째 확인을 기다리는 중",
+            "status_soft": "확인 안 됨: 선택 기능 일시 중지",
+            "status_blacklisted": "거부됨: 계정이 블랙리스트에 있음",
+            "status_no_key": "실패: 이 빌드에는 업데이트 키가 없습니다",
+            "status_integrity": "확인 안 됨: 플러그인 파일을 읽을 수 없음",
+            "notice_ok": "확인",
+            "status_outdated": "실패: 오래된 빌드, 새 릴리스 있음",
+            "status_modified": "실패: 수정된 빌드",
+            "gate_modified": "수정된 빌드",
+            "gate_modified_subtext": "이 파일은 공식 릴리스 {version}과(와) 다릅니다. 공식 빌드를 자동으로 다시 설치하며, 그전까지 꾸미기는 꺼집니다.",
+            "notice_verify_body": "무슨 일: 유효한 업데이트 키가 없어 이 빌드의 서명된 매니페스트를 검증할 수 없습니다.\n\n의미: 보내는 메시지를 꾸미지 않습니다. 설정은 유지됩니다.\n\n해결: 저장소에서 공식 빌드를 설치하세요.",
+            "notice_soft_body": "무슨 일: 이 빌드가 공식인지 확인할 수 없습니다. 서명된 매니페스트 또는 블랙리스트 확인을 마치지 못했습니다(인터넷 없음, GitHub 접속 불가, 마지막 확인이 오래됨, 파일을 읽을 수 없음).\n\n중지된 기능: 모든 선택 기능(스타일, Markdown, 마스크 순환·조건부 마스크, 태그, 일정, 채팅별 구성, 미디어 첨부, Premium Emoji, 편집 처리, 구성 가져오기). 기본 마스크만 작동합니다.\n\n해결: 연결을 확인하고 “지금 확인”을 누르세요. 확인에 성공하면 자동으로 복구됩니다.",
+            "notice_account_body": "무슨 일: 이 기기의 Telegram 계정 중 하나가 Prefixfy 블랙리스트에 있습니다.\n\n의미: 이 기기에서 플러그인이 비활성화됩니다. 설정은 바뀌지 않습니다.\n\n오류라면 제작자에게 문의하세요.",
+            "gate_soft": "기능 일시 중지됨",
+            "gate_soft_subtext": "빌드를 확인할 수 없어 선택 기능이 꺼지고 기본 꾸미기만 작동합니다. 연결을 확인하세요. 확인되면 복구됩니다.",
+            "gate_bypass_note": "이 기능으로 차단을 우회할 수 없습니다.",
+            # Удаление данных и возобновление работы
+            "wipe_row": "데이터 삭제",
+            "wipe_row_subtext": "파일을 정리하거나 사용을 완전히 중단합니다.",
+            "wipe_title": "Prefixfy 데이터를 삭제할까요?",
+            "wipe_body": "플러그인의 모든 데이터(구성·계정별 프리셋, 설정, 첨부 미디어, 가져온 파일, 검증 캐시)를 삭제합니다. 플러그인이 다시 시작되고 처음 설치한 것처럼 설정 마법사부터 시작합니다.\n\n플러그인이 오래되었다면 먼저 최신 버전을 설치한 뒤 삭제합니다.\n\n“사용 중단”을 선택하면 플러그인이 휴면 상태가 되며 “다시 시작”만 남습니다. 업데이트는 받지 않습니다.",
+            "wipe_opt_out": "사용 중단",
+            "wipe_confirm_clean": "모든 파일과 설정을 삭제하고 플러그인을 여러 번 다시 시작해(정상입니다) 설정 마법사부터 시작합니다. 구성과 첨부 미디어는 영구적으로 사라집니다. 먼저 구성을 내보내세요.",
+            "wipe_confirm_title": "삭제 확인",
+            "wipe_confirm_out": "모든 파일과 설정을 삭제하고 플러그인을 끕니다. 되돌릴 수 없습니다.",
+            "wipe_confirm_btn": "삭제",
+            "wipe_started": "삭제를 준비하는 중…",
+            "wipe_started_multi": "삭제 준비 중… 플러그인이 여러 번 다시 시작됩니다.",
+            "wipe_halt": "삭제 중",
+            "wipe_halt_subtext": "곧 플러그인이 한 번 더 다시 시작되며 처음부터 시작합니다.",
+            "wipe_updating": "{version}(으)로 업데이트 후 데이터를 삭제합니다…",
+            "wipe_reinstalling": "{version}을(를) 재설치한 후 데이터를 삭제합니다…",
+            "wipe_update_failed": "업데이트 실패: {reason}. 삭제된 것은 없습니다.",
+            "wipe_restart_manual": "삭제를 마치려면 플러그인을 껐다 켜세요.",
+            "wipe_failed": "삭제를 준비하지 못했습니다. 삭제된 것은 없습니다.",
+            "wipe_done": "데이터를 삭제하고 다시 만들었습니다",
+            "resume_title": "다시 시작",
+            "resume_subtext": "Prefixfy가 꺼져 있고 아무것도 저장하지 않습니다. 눌러서 새로 시작.",
+            "resume_confirm_title": "다시 시작할까요?",
+            "resume_confirm_body": "방금 설치한 것처럼 기본 설정으로 시작합니다.",
+            "resume_btn": "다시 시작",
+            "resume_done": "Prefixfy를 시작했습니다",
+            "resume_failed": "시작하지 못했습니다. 껐다 켜세요.",
+            "wipe_auto_reset_done": "데이터가 손상되어 자동으로 초기화했습니다",
+            # Первая настройка и приветствие
+            "setup_step_1": "단계 1/3: 언어 선택",
+            "setup_step_2": "단계 2/3: 꾸미기 설정",
+            "setup_step_3": "단계 3/3: 업데이트 설정",
+            "setup_next": "다음",
+            "setup_next_subtext": "{step}/3단계로 이동합니다",
+            "setup_back": "이전",
+            "setup_back_subtext": "{step}/3단계로 돌아갑니다",
+            "setup_finish": "설정 완료",
+            "setup_finish_subtext": "업데이트를 확인하고 새 버전이 있으면 설치한 뒤 전체 설정을 엽니다.",
+            "setup_checking": "계정 확인 중…",
+            "setup_checking_subtext": "서버에서 차단 목록을 가져오는 중입니다. 몇 초 걸립니다.",
+            "setup_done": "초기 설정이 완료되었습니다",
+            "welcome_banner": "Prefixfy를 설치해 주셔서 감사합니다!",
+            "welcome_banner_subtext": "눌러서 기능과 시작 방법을 확인하세요.",
+            "welcome_title": "Prefixfy에 오신 것을 환영합니다",
+            "welcome_body": "Prefixfy를 설치해 주셔서 감사합니다! 이 플러그인은 메시지 앞뒤에 문구를 붙이고 꾸밈을 더해 줍니다.\n\n주요 기능:\n• Markdown, 글자 스타일, 구분자를 지원하는 마스크\n• 귀여운 효과: 이모티콘, UwU, 장식\n• 첨부 미디어\n• 예외: 플러그인을 쓰지 않을 채팅, 또는 그 채팅에서만 쓰기\n• 구성: 여러 설정 세트, 가져오기, 내보내기, 일정\n• 계정별 개별 설정\n\n시작하는 방법:\n1. “텍스트 꾸미기”에서 마스크를 설정하세요.\n2. “적용 범위”에서 꾸밀 대상을 고르세요.\n3. 채팅을 예외에 넣거나 빼려면 채팅 안의 메뉴 항목을 사용하세요.\n\n준비 끝. 이제 메시지를 보내기만 하면 됩니다.",
+            "welcome_ok": "확인",
         },
         "fr": {
-            "enable_plugin": "Activer le plugin",
-            "enable_plugin_subtext": "Activé : tous sauf la liste. Désactivé : liste seule.",
-            "language": "Langue",
-            "update_required": "Mise à jour requise",
-            "update_required_subtext": "Installez la version officielle {version}. Sans mise en forme d’ici là.",
-            "verify_required": "Échec de la vérification",
-            "verify_required_subtext": "Build non vérifié. Mise en forme désactivée ; vérifiez la connexion.",
-            "account_blocked": "Accès refusé",
-            "account_blocked_subtext": "Un compte de cet appareil est sur liste noire. Plugin désactivé.",
+            # Общие действия, ошибки, подсказки редакторов
+            "editor_empty_means_default": "Videz le champ et « Enregistrer » pour réinitialiser.",
+            "action_save": "Enregistrer",
+            "action_delete": "Supprimer",
+            "action_cancel": "Annuler",
+            "action_create": "Créer",
+            "action_apply": "Appliquer",
+            "action_next": "Suivant",
+            "error_operation_failed": "Échec de l’action",
+            # Заголовки разделов
             "section_scope": "Où ça s’applique",
-            "plugin_language": "Langue du plugin",
+            "section_language": "Langue du plugin",
+            "section_configurations": "Configurations",
+            "section_appearance": "Mise en forme du texte",
+            "section_general": "Général",
+            "section_about": "Informations",
+            "section_accounts": "Comptes",
+            "section_updates": "Mises à jour et vérification",
+            "section_cute": "Effets mignons",
+            # Плагин и язык
+            "plugin_enable": "Activer le plugin",
+            "plugin_enable_subtext": "Activé : tous sauf la liste. Désactivé : liste seule.",
+            "language": "Langue",
             "language_auto": "Détection automatique de la langue",
-            "about_section": "Informations",
             "language_auto_subtext": "Langue de Telegram. Désactivez pour choisir.",
-            "message": "Message",
-            "message_subtext": "Styliser les messages texte.",
-            "media": "Médias",
-            "media_subtext": "Utiliser le plugin pour les légendes des médias.",
-            "edit_message": "Modification des messages",
-            "edit_message_subtext": "Styliser à la modification. Le texte déjà stylisé reste.",
+            # Область применения, исключения по чатам, конфигурация чата
+            "scope_message": "Message",
+            "scope_message_subtext": "Styliser les messages texte.",
+            "scope_media": "Médias",
+            "scope_media_subtext": "Utiliser le plugin pour les légendes des médias.",
+            "scope_edit": "Modification des messages",
+            "scope_edit_subtext": "Styliser à la modification. Le texte déjà stylisé reste.",
+            "skip_once_expired": "« Ignorer une fois » a expiré : le prochain message sera stylisé",
+            "chat_config_menu": "Configuration de ce chat",
+            "chat_config_auto": "Principale (et planning)",
+            "chat_config_saved": "Configuration du chat enregistrée",
+            "chat_config_reset": "Ce chat utilise la configuration principale",
+            "skip_once_menu": "Ignorer le style une fois",
+            "skip_once_on": "Le prochain message sera envoyé sans style",
+            "skip_once_off": "« Ignorer une fois » annulé",
+            "chat_types": "Types de chats",
+            "chat_types_hint": "Style uniquement dans les types choisis.",
+            "chat_types_all": "Tous les chats",
+            "chat_types_none": "Choisissez au moins un type",
+            "chat_type_private": "Privés",
+            "chat_type_group": "Groupes",
+            "chat_type_channel": "Canaux",
+            "scope_edit_message": "Modification du texte",
+            "scope_edit_message_subtext": "Styliser les messages ordinaires à la modification.",
+            "scope_edit_media": "Modification des légendes",
+            "scope_edit_media_subtext": "Appliquer le style aux légendes des médias lors de leur modification.",
+            "scope_article": "Articles",
+            "scope_article_subtext": "Appliquer le style aux blocs de texte des articles à l’envoi.",
+            "scope_edit_article": "Modification des articles",
+            "scope_edit_article_subtext": "Appliquer le style aux articles lors de leur modification.",
+            "skip_once_on_edit": "« Ignorer une fois » à la modification",
+            "skip_once_on_edit_subtext": "Si « Ignorer une fois » est actif, la prochaine modification dans ce chat reste sans style.",
+            # Маска, Markdown, ротация и условные маски
             "mask": "Masque",
             "mask_text": "Texte du masque",
-            "text_style": "Style du texte",
-            "skip_once_expired": "Saut expiré : le prochain message sera stylisé",
-            "empty_means_default": "Videz le champ et « Enregistrer » pour réinitialiser.",
             "markdown_style": "Style Markdown",
             "markdown_style_subtext": "Marqueurs dans le masque ou mise en forme du masque entier",
             "markdown_style_pick": "Style",
@@ -1305,27 +2151,6 @@ class LocalizationManager:
             "md_strike": "Masque entier : barré",
             "md_spoiler": "Masque entier : spoiler",
             "md_mono": "Masque entier : monospace",
-            "chat_config_menu": "Configuration de ce chat",
-            "chat_config_auto": "Principale (et planning)",
-            "chat_config_saved": "Configuration du chat enregistrée",
-            "chat_config_reset": "Ce chat utilise la configuration principale",
-            "schedule": "Planning des configurations",
-            "schedule_empty": "Non défini",
-            "schedule_count": "Règles : {n}",
-            "schedule_message": "Une règle par ligne : [date] [HH:MM-HH:MM] [jours] = configuration.\nDate : YYYY-MM-DD, DD.MM.YYYY ou DD.MM (annuel) ; plage avec « .. ». Sans heure : toute la journée. Jours : mon-fri, sat,sun (vide = tous). Une règle datée prime sur les jours, sinon la première correspondance. Un chat avec sa configuration est ignoré. Moment de la journée possible : matin (05–12), après-midi (12–17), soir (17–23), nuit (23–05) ou « matin-soir ».",
-            "schedule_hint": "22:00-07:00 = Nuit\n09:00-18:00 mon-fri = Travail\n31.12 = Fête\n2026-12-28..2027-01-10 = Vacances\nmatin mon-fri = Travail\nnuit = Nuit",
-            "schedule_saved": "Planning enregistré",
-            "schedule_error": "Ligne {n} : {reason}",
-            "schedule_err_format": "format : [date] [HH:MM-HH:MM] [jours] = configuration",
-            "schedule_err_time": "heure invalide",
-            "schedule_err_days": "jours invalides",
-            "schedule_err_config": "configuration « {name} » introuvable",
-            "schedule_err_limit": "pas plus de {n} règles",
-            "skip_once_menu": "Ignorer le style une fois",
-            "skip_once_on": "Le prochain message sera envoyé sans style",
-            "skip_once_off": "Ignorance annulée",
-            "random_style": "Style aléatoire",
-            "random_style_subtext": "Style aléatoire par message (sauf à l’envers).",
             "mask_rotation": "Rotation des masques",
             "mask_rotation_subtext": "Masques de la liste au lieu du principal. Celui du chat prime.",
             "masks_list": "Liste des masques",
@@ -1334,29 +2159,92 @@ class LocalizationManager:
             "masks_list_hint": "Un masque par ligne, avec un seul [text].",
             "masks_list_invalid": "Chaque masque doit contenir exactement un [text]",
             "masks_list_limit": "{n} masques maximum",
-            "mask_tags_hint": "Balises : [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice].",
+            "mask_tags_hint": "Balises : [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice].\n[reply] — nom du destinataire de la réponse ; [chatcount] — numéro de votre message ; [battery] — batterie ; [moon] — phase de la lune ; [line] — ligne aléatoire de la liste ; [since:2026-12-31] / [until:2026-12-31] — jours écoulés / restants ; [quote] — début du message cité ; [countdown:2026-12-31 18:00] — temps restant ; [weather] / [weather:Paris] — température wttr.in (Internet).",
             "mask_rotation_mode": "Ordre de rotation",
-            "rotation_random": "Aléatoire",
-            "rotation_sequential": "À tour de rôle",
+            "mask_rotation_mode_random": "Aléatoire",
+            "mask_rotation_mode_sequential": "À tour de rôle",
+            "mask_editor_title": "Réglages du masque",
+            "mask_editor_hint": "Saisissez un masque. [text] = message, [text: lien] = lien.",
+            "mask_invalid": "Le masque doit contenir exactement un [text]",
+            "mask_too_long": "Le masque est trop long : {n} caractères maximum",
+            "mask_preview_sample": "Exemple de message",
+            "mask_preview_invalid": "Masque invalide : exactement un [text] est requis",
+            "conditional_masks": "Masques selon le contenu",
+            "conditional_masks_hint": "Une règle par ligne : regex => masque. Le masque de la première ligne correspondante s’applique. Un seul [text] par masque.",
+            "conditional_masks_count": "Règles : {n}",
+            "conditional_masks_empty": "Si le texte contient…",
+            "conditional_masks_format": "Ligne {n} : format attendu « expression => masque »",
+            "md_quote": "Masque entier : citation",
+            # Стиль текста, слова и строки для тегов
+            "text_style": "Style du texte",
+            "text_style_random": "Style aléatoire",
+            "text_style_random_subtext": "Style aléatoire par message (sauf à l’envers).",
+            "text_style_subtext": "Texte du message seul. Fancy, Bold, Gothic, Circled : latin ; L33T aussi cyrillique.",
+            "text_style_enable": "Activer le style du texte",
+            "text_style_translit": "Translittérer le cyrillique",
+            "text_style_translit_subtext": "Les styles latins fonctionneront aussi en russe et ukrainien.",
+            "style_words": "Appliquer le style à ces mots uniquement",
+            "style_words_hint": "Un mot par ligne. Vide : tout le texte.",
+            "style_words_count": "Mots : {n}",
+            "style_words_empty": "Tout le texte",
+            "style_words_limit": "{n} mots au maximum",
+            "tag_lines": "Lignes pour [line]",
+            "tag_lines_hint": "Une ligne par rangée. [line] en insère une au hasard (64 car. max).",
+            "tag_lines_count": "Lignes : {n}",
+            "tag_lines_empty": "Aucune ligne pour le moment",
+            "tag_lines_limit": "{n} lignes au maximum",
+            # Разделители
+            "separator": "Séparateur",
+            "separator_enable": "Activer le séparateur",
+            "separator_enable_subtext": "Ajouter vos séparateurs personnalisés entre les mots.",
+            "separator_set": "Jeu de séparateurs",
+            "separator_count": "Nombre de séparateurs entre les mots",
+            "separator_count_subtext": "Appuyez pour modifier.",
+            "separator_custom_title": "Personnalisé",
+            "separator_custom_message": "Saisissez les séparateurs séparés par des virgules, par exemple :\n•, ·, —, ~, |",
+            "separator_preview_sample": "Exemple de texte pour l’aperçu",
+            "separator_frequency": "Fréquence des séparateurs",
+            "separator_frequency_subtext": "Probabilité d’un séparateur entre deux mots. 100 % : chaque paire.",
+            "separator_spaces": "Activer les espaces",
+            "separator_spaces_subtext": "Désactivé, le séparateur colle aux mots : salutxcommentxcava.",
+            "separator_space_mode": "Emplacement des espaces",
+            "separator_space_both": "Des deux côtés",
+            "separator_space_left": "Gauche",
+            "separator_space_right": "Droite",
+            # Милые эффекты
+            "cute_enabled": "Activer les effets mignons",
+            "cute_enabled_subtext": "Kaomoji, UwU, actions et décorations. Liens, @mentions, #hashtags et code intacts.",
+            "cute_preview": "Aperçu",
+            "cute_preview_sample": "Salut ! Comment vas-tu ? Quelle belle journée.",
+            "cute_preview_none": "Activez au moins un effet. Touchez pour actualiser.",
+            "cute_preview_tap": "Touchez pour actualiser.",
+            "cute_sentence_frequency": "Fréquence des effets de phrase",
+            "cute_sentence_frequency_subtext": "Kaomoji, étincelles, ponctuation, suffixes et actions.",
+            "cute_word_frequency": "Fréquence des effets de mot",
+            "cute_word_frequency_subtext": "Bégaiement, voyelles étirées et signe mou.",
+            "cute_kaomoji": "Kaomoji en fin de phrase (◕‿◕)",
+            "cute_sparkles": "Étincelles autour de la phrase ✨",
+            "cute_exclamations": "Exclamations mignonnes (! → !✨)",
+            "cute_punctuation": "Ponctuation mignonne (. → .~, ? → ?✨)",
+            "cute_uwu_suffixes": "Suffixes UwU (nya~, owo)",
+            "cute_actions": "Actions mignonnes (*câlin*)",
+            "cute_actions_newline": "Actions sur une nouvelle ligne",
+            "cute_lowercase": "Minuscules uniquement",
+            "cute_uwu_speak": "Parler UwU (r/l → w)",
+            "cute_stutter": "Bégaiement (b-bonjour)",
+            "cute_stretch": "Étirer les voyelles (miiignon)",
+            "cute_stretch_max": "Longueur max. des voyelles étirées",
+            "cute_stretch_2x": "Double (x2)",
+            "cute_stretch_3x": "Triple (x3)",
+            "cute_soft_sign": "Signe mou en fin de mot (kotikь)",
+            "cute_soft_sign_subtext": "Uniquement pour les mots russes.",
+            # Исключения: списки, игнорирование, regex
             "regex_exceptions": "Exceptions regex",
             "regex_exceptions_hint": "Une regex par ligne. Les messages correspondants restent bruts.",
             "regex_exceptions_count": "Règles : {n}",
             "regex_exceptions_empty": "Pour utilisateurs avancés",
-            "regex_invalid": "Expression invalide : {error}",
-            "regex_limit": "{n} expressions maximum, {m} caractères chacune",
-            "chat_types": "Types de chats",
-            "chat_types_hint": "Style uniquement dans les types choisis.",
-            "chat_types_all": "Tous les chats",
-            "chat_types_none": "Choisissez au moins un type",
-            "chat_type_private": "Privés",
-            "chat_type_group": "Groupes",
-            "chat_type_channel": "Canaux",
-            "separator": "Séparateur",
-            "enable_separator": "Activer le séparateur",
-            "enable_separator_subtext": "Ajouter vos séparateurs personnalisés entre les mots.",
-            "separator_set": "Jeu de séparateurs",
-            "separator_count": "Nombre de séparateurs entre les mots",
-            "separator_count_subtext": "Appuyez pour modifier.",
+            "regex_exceptions_invalid": "Expression invalide : {error}",
+            "regex_exceptions_limit": "{n} expressions maximum, {m} caractères chacune",
             "exceptions": "Exceptions",
             "ignore_emoji_only": "Ignorer les messages composés uniquement d’émojis",
             "ignore_emoji_only_subtext": "Ignorer les messages composés uniquement d’émojis. Les légendes de médias sont toujours stylisées.",
@@ -1376,363 +2264,261 @@ class LocalizationManager:
             "ignore_segments": "Éléments à ignorer",
             "ignore_segments_hint": "Choisissez les parties du message à laisser intactes.",
             "ignore_segments_count": "Activé : {n} sur {total}",
-            "chat_menu": "Ajouter/retirer le chat à/de la liste d’exceptions",
-            "chat_added": "Chat ajouté à la liste d’exceptions",
-            "chat_removed": "Chat retiré de la liste d’exceptions",
-            "mask_editor_title": "Réglages du masque",
-            "mask_editor_hint": "Saisissez un masque. [text] = message, [text: lien] = lien.",
-            "custom_separator_title": "Personnalisé",
-            "custom_separator_message": "Saisissez les séparateurs séparés par des virgules, par exemple :\n•, ·, —, ~, |",
-            "save": "Enregistrer",
-            "delete": "Supprimer",
-            "cancel": "Annuler",
-            "capture_custom_emoji": "Capturer un émoji Premium",
-            "capture_enabled": "Capture Premium activée : envoyez un message avec un émoji Premium",
-            "capture_disabled": "Capture d’émoji Premium désactivée",
-            "custom_emoji_hint": "Émoji Premium : marqueur (id|🙂), 🙂 étant l’émoji de repli. Obtenez-le via « Capturer un émoji Premium » dans le menu du chat.",
-            "mask_invalid": "Le masque doit contenir exactement un [text]",
-            "mask_too_long": "Le masque est trop long : {n} caractères maximum",
-            "mask_preview_sample": "Exemple de message",
-            "mask_preview_invalid": "Masque invalide : exactement un [text] est requis",
-            "separator_preview_words": "Exemple de texte pour l’aperçu",
+            "exceptions_chat_menu": "Ajouter/retirer le chat à/de la liste d’exceptions",
+            "exceptions_chat_added": "Chat ajouté à la liste d’exceptions",
+            "exceptions_chat_removed": "Chat retiré de la liste d’exceptions",
             "exceptions_count": "Exceptions : {n}, chats : {m}",
-            "configuration_import_cancelled": "Importation annulée",
-            "import_configuration": "Importer",
-            "export_configuration": "Exporter",
-            "reset_configuration": "Restaurer les valeurs par défaut",
-            "reset_to_plugin_defaults": "Ignorer les valeurs importées : réglages par défaut",
-            "reset_to_plugin_defaults_unavailable": "Indisponible : créée par le plugin, la réinitialisation la remet à l’état initial.",
-            "configurations": "Configurations",
-            "active_configuration": "Configuration active",
-            "add_configuration": "Créer une nouvelle configuration",
-            "add_configuration_subtext": "Un jeu de réglages distinct, actif immédiatement.",
-            "configuration_name_hint": "Nom de la configuration",
-            "new_configuration_source_title": "Réglages de la nouvelle configuration",
-            "new_configuration_source_message": "Sur quelle base ? Rien de coché = réglages par défaut.",
-            "new_configuration_copy_current": "Copier les réglages de la configuration actuelle",
-            "create": "Créer",
-            "delete_configuration": "Supprimer la configuration",
-            "delete_configuration_confirm": "Supprimer la configuration « {name} » ?",
-            "no_inactive_configurations": "Aucune configuration inactive à supprimer",
-            "imported_configuration": "Configuration importée",
-            "rename_configuration": "Renommer la configuration",
-            "rename_configuration_subtext": "Modifier le nom de la configuration actuelle.",
-            "configuration_name_invalid": "Saisissez un nom de configuration unique.",
-            "configuration_name_taken": "Une configuration portant ce nom existe déjà.",
-            "configuration_deleted": "Configurations supprimées : {n}",
-            "delete_configurations": "Supprimer des configurations",
-            "delete_configurations_subtext": "Supprimer les configurations inactives ; l’active reste.",
-            "delete_configurations_select": "Choisissez les configurations inactives à supprimer.",
-            "import_new_configuration_name": "Nom de la nouvelle configuration",
-            "select_configuration": "Sélectionner la configuration",
-            "select_configuration_subtext": "Sélectionnez de 1 à {n} parties.",
-            "config_mask": "Masque",
-            "config_separator": "Séparateurs",
-            "config_exceptions": "Exceptions et chats",
-            "config_language": "Langue choisie",
-            "config_media": "Médias",
+            # Premium Emoji
+            "capture_custom_emoji": "Capturer un émoji Premium",
+            "capture_custom_emoji_enabled": "Capture Premium activée : envoyez un message avec un émoji Premium",
+            "capture_custom_emoji_disabled": "Capture d’émoji Premium désactivée",
+            "capture_custom_emoji_hint": "Émoji Premium : marqueur (id|🙂), 🙂 étant l’émoji de repli. Obtenez-le via « Capturer un émoji Premium » dans le menu du chat.",
+            # Расписание
+            "schedule": "Planning des configurations",
+            "schedule_empty": "Non défini",
+            "schedule_count": "Règles : {n}",
+            "schedule_message": "Une règle par ligne : [date] [HH:MM-HH:MM] [jours] = configuration.\nDate : YYYY-MM-DD, DD.MM.YYYY ou DD.MM (annuel) ; plage avec « .. ». Sans heure : toute la journée. Jours : mon-fri, sat,sun (vide = tous). Une règle datée prime sur les jours, sinon la première correspondance. Un chat avec sa configuration est ignoré. Moment de la journée possible : matin (05–12), après-midi (12–17), soir (17–23), nuit (23–05) ou « matin-soir ».",
+            "schedule_hint": "22:00-07:00 = Nuit\n09:00-18:00 mon-fri = Travail\n31.12 = Fête\n2026-12-28..2027-01-10 = Vacances\nmatin mon-fri = Travail\nnuit = Nuit",
+            "schedule_saved": "Planning enregistré",
+            "schedule_error": "Ligne {n} : {reason}",
+            "schedule_err_format": "format : [date] [HH:MM-HH:MM] [jours] = configuration",
+            "schedule_err_time": "heure invalide",
+            "schedule_err_days": "jours invalides",
+            "schedule_err_config": "configuration « {name} » introuvable",
+            "schedule_err_limit": "pas plus de {n} règles",
+            "schedule_err_date": "date invalide",
+            # Конфигурации
+            "config_import_cancelled": "Importation annulée",
+            "config_import": "Importer",
+            "config_export": "Exporter",
+            "config_reset": "Restaurer les valeurs par défaut",
+            "config_reset_to_plugin": "Ignorer les valeurs importées : réglages par défaut",
+            "config_reset_to_plugin_unavailable": "Indisponible : créée par le plugin, la réinitialisation la remet à l’état initial.",
+            "config_active": "Configuration active",
+            "config_new": "Créer une nouvelle configuration",
+            "config_new_subtext": "Un jeu de réglages distinct, actif immédiatement.",
+            "config_name_hint": "Nom de la configuration",
+            "config_new_source_title": "Réglages de la nouvelle configuration",
+            "config_new_source_message": "Sur quelle base ? Rien de coché = réglages par défaut.",
+            "config_new_copy_current": "Copier les réglages de la configuration actuelle",
+            "config_delete": "Supprimer la configuration",
+            "config_delete_confirm": "Supprimer la configuration « {name} » ?",
+            "config_delete_none": "Aucune configuration inactive à supprimer",
+            "config_imported_name": "Configuration importée",
+            "config_rename": "Renommer la configuration",
+            "config_rename_subtext": "Modifier le nom de la configuration actuelle.",
+            "config_name_invalid": "Saisissez un nom de configuration unique.",
+            "config_name_taken": "Une configuration portant ce nom existe déjà.",
+            "config_deleted": "Configurations supprimées : {n}",
+            "config_delete_multi": "Supprimer des configurations",
+            "config_delete_multi_subtext": "Supprimer les configurations inactives ; l’active reste.",
+            "config_delete_multi_select": "Choisissez les configurations inactives à supprimer.",
+            "config_import_new_name": "Nom de la nouvelle configuration",
+            "config_parts_title": "Sélectionner la configuration",
+            "config_parts_message": "Sélectionnez de 1 à {n} parties.",
+            "config_part_mask": "Masque",
+            "config_part_separator": "Séparateurs",
+            "config_part_exceptions": "Exceptions et chats",
+            "config_part_language": "Langue choisie",
+            "config_part_media": "Médias",
+            "config_import_done": "Configuration importée",
+            "config_import_failed": "Impossible d’importer la configuration",
+            "config_import_locked": "L’importation de configurations sera disponible après la configuration initiale.",
+            "config_save_failed": "Impossible d’enregistrer la configuration actuelle",
+            "config_export_done": "Configuration exportée",
+            "config_export_failed": "Impossible d’exporter la configuration",
+            "config_export_destination_title": "Où exporter ?",
+            "config_export_to_saved": "Messages enregistrés du compte actif",
+            "config_export_to_device": "Stockage de l’appareil",
+            "config_restored": "Valeurs sélectionnées restaurées",
+            "config_parts_none": "Sélectionnez au moins une partie de la configuration",
+            "config_export_select": "Choisir les configurations à exporter",
+            "config_export_select_subtext": "Sélectionnez jusqu’à {n} configurations. Un choix des parties s’ouvre ensuite pour chacune. Si plusieurs sont choisies, les fichiers partent directement dans les Messages enregistrés du compte actif.",
+            "config_export_include_name": "Inclure le nom de la configuration",
+            "config_shared_marker": "commune",
+            "config_export_parts_title": "Parties : {name}",
+            "config_export_parts_progress": "Configuration {i} sur {n}",
+            "config_export_limit": "Vous pouvez en choisir {n} au maximum",
+            "config_export_none": "Sélectionnez au moins une configuration",
+            "config_export_done_multi": "Configurations exportées : {n}",
+            "config_export_partial": "{ok} exportées sur {total}",
+            "config_import_found_title": "Configuration trouvée",
+            "config_import_found_contains": "Contient",
+            "config_import_as_new": "Importer comme nouvelle configuration",
+            "config_import_file_failed": "Impossible d’ouvrir le fichier de configuration",
+            "config_import_invalid": "Le fichier ne contient pas la configuration ou son format est invalide.",
+            "config_default_name": "Configuration par défaut",
+            "config_numbered_name": "Configuration {n}",
+            "config_actions_subtext": "Choisir les parties",
+            "config_part_schedule": "Liaisons de chats et planning",
+            "config_part_cute": "Effets mignons",
+            # Медиа
             "media_attachment": "Médias",
-            "enable_media_attachment": "Activer les médias",
-            "enable_media_attachment_subtext": "Joindre le fichier importé aux envois.",
+            "media_attachment_enable": "Activer les médias",
+            "media_attachment_enable_subtext": "Joindre le fichier importé aux envois.",
             "media_file": "Fichier choisi",
             "media_file_none": "Aucun fichier sélectionné",
-            "import_media": "Importer un média",
-            "delete_media": "Supprimer le média",
-            "delete_media_subtext": "Supprimer le fichier importé de Prefixfy.",
-            "delete_media_confirm": "Supprimer le média « {name} » ? Le fichier sera retiré de Prefixfy, cette action est irréversible.",
+            "media_import": "Importer un média",
+            "media_delete": "Supprimer le média",
+            "media_delete_subtext": "Supprimer le fichier importé de Prefixfy.",
+            "media_delete_confirm": "Supprimer le média « {name} » ? Le fichier sera retiré de Prefixfy, cette action est irréversible.",
             "media_imported": "Média importé",
             "media_deleted": "Média supprimé",
             "media_import_failed": "Impossible d’importer le média",
             "media_delete_failed": "Impossible de supprimer le média",
-            "apply": "Appliquer",
-            "configuration_imported": "Configuration importée",
-            "configuration_import_failed": "Impossible d’importer la configuration",
-            "import_locked_setup": "L’importation de configurations sera disponible après la configuration initiale.",
-            "configuration_save_failed": "Impossible d’enregistrer la configuration actuelle",
-            "configuration_exported": "Configuration exportée",
-            "configuration_export_failed": "Impossible d’exporter la configuration",
-            "configuration_export_destination_title": "Où exporter ?",
-            "configuration_export_to_saved": "Messages enregistrés du compte actif",
-            "configuration_export_to_device": "Stockage de l’appareil",
-            "configuration_restored": "Valeurs sélectionnées restaurées",
-            "configuration_nothing_selected": "Sélectionnez au moins une partie de la configuration",
-            "export_select_configs": "Choisir les configurations à exporter",
-            "export_select_configs_subtext": "Sélectionnez jusqu’à {n} configurations. Un choix des parties s’ouvre ensuite pour chacune. Si plusieurs sont choisies, les fichiers partent directement dans les Messages enregistrés du compte actif.",
-            "export_next": "Suivant",
-            "export_include_name": "Inclure le nom de la configuration",
-            "shared_configuration_marker": "commune",
-            "export_parts_title": "Parties : {name}",
-            "export_parts_progress": "Configuration {i} sur {n}",
-            "configuration_export_limit": "Vous pouvez en choisir {n} au maximum",
-            "configuration_export_none": "Sélectionnez au moins une configuration",
-            "configurations_exported": "Configurations exportées : {n}",
-            "configurations_export_partial": "{ok} exportées sur {total}",
-            "config_found_title": "Configuration trouvée",
-            "config_found_contains": "Contient",
-            "config_import_as_new": "Importer comme nouvelle configuration",
-            "config_found_import": "Importer",
-            "config_file_open_failed": "Impossible d’ouvrir le fichier de configuration",
-            "invalid_configuration": "Le fichier ne contient pas la configuration ou son format est invalide.",
-            "default_configuration_name": "Configuration par défaut",
-            "configuration_n": "Configuration {n}",
-            "operation_failed": "Échec de l’action",
-            "text_style_subtext": "Texte du message seul. Fancy, Bold, Gothic, Circled : latin ; L33T aussi cyrillique.",
-            "enable_text_style": "Activer le style du texte",
-            "configuration_short": "Choisir les parties",
-            "edit_text_toggle": "Modification du texte",
-            "edit_text_toggle_subtext": "Styliser les messages ordinaires à la modification.",
-            "edit_media_toggle": "Modification des légendes",
-            "edit_media_toggle_subtext": "Appliquer le style aux légendes des médias lors de leur modification.",
-            "article": "Articles",
-            "article_subtext": "Appliquer le style aux blocs de texte des articles à l’envoi.",
-            "edit_article_toggle": "Modification des articles",
-            "edit_article_toggle_subtext": "Appliquer le style aux articles lors de leur modification.",
-            "skip_once_on_edit": "« Ignorer une fois » à la modification",
-            "skip_once_on_edit_subtext": "Si le saut est actif, la prochaine modification reste brute.",
-            "conditional_masks": "Masques selon le contenu",
-            "conditional_masks_hint": "Une règle par ligne : regex => masque. Le masque de la première ligne correspondante s’applique. Un seul [text] par masque.",
-            "conditional_masks_count": "Règles : {n}",
-            "conditional_masks_empty": "Si le texte contient…",
-            "conditional_masks_format": "Ligne {n} : format attendu « expression => masque »",
-            "md_quote": "Masque entier : citation",
-            "config_schedule": "Liaisons de chats et planning",
-            "schedule_err_date": "date invalide",
-        },
-        "de": {
-            "enable_plugin": "Plugin aktivieren",
-            "enable_plugin_subtext": "Ein: alle außer Liste. Aus: nur Liste.",
-            "language": "Sprache",
-            "update_required": "Update erforderlich",
-            "update_required_subtext": "Installiere den offiziellen Prefixfy {version}. Bis dahin keine Formatierung.",
-            "verify_required": "Überprüfung fehlgeschlagen",
-            "verify_required_subtext": "Build nicht verifizierbar. Formatierung aus; prüfe die Verbindung.",
-            "account_blocked": "Zugriff verweigert",
-            "account_blocked_subtext": "Ein Konto auf diesem Gerät ist gesperrt. Plugin deaktiviert.",
-            "section_scope": "Wo es wirkt",
-            "plugin_language": "Plugin-Sprache",
-            "language_auto": "Sprache automatisch erkennen",
-            "about_section": "Informationen",
-            "language_auto_subtext": "Telegram-Sprache nutzen. Aus: manuell wählen.",
-            "message": "Nachricht",
-            "message_subtext": "Normale Textnachrichten gestalten.",
-            "media": "Medien",
-            "media_subtext": "Plugin für Medienbeschriftungen verwenden.",
-            "edit_message": "Nachrichten bearbeiten",
-            "edit_message_subtext": "Beim Bearbeiten gestalten. Fertiger Text bleibt.",
-            "mask": "Maske",
-            "mask_text": "Maskentext",
-            "text_style": "Textstil",
-            "skip_once_expired": "Überspringen abgelaufen: nächste Nachricht wird gestaltet",
-            "empty_means_default": "Feld leeren und „Speichern“ für Standard.",
-            "markdown_style": "Markdown-Stil",
-            "markdown_style_subtext": "Marker in der Maske oder Formatierung der ganzen Maske",
-            "markdown_style_pick": "Stil",
-            "md_manual": "Manuelle Marker",
-            "md_bold": "Ganze Maske: fett",
-            "md_italic": "Ganze Maske: kursiv",
-            "md_strike": "Ganze Maske: durchgestrichen",
-            "md_spoiler": "Ganze Maske: Spoiler",
-            "md_mono": "Ganze Maske: Monospace",
-            "chat_config_menu": "Konfiguration für diesen Chat",
-            "chat_config_auto": "Haupt (und Zeitplan)",
-            "chat_config_saved": "Chat-Konfiguration gespeichert",
-            "chat_config_reset": "Dieser Chat nutzt die Hauptkonfiguration",
-            "schedule": "Konfigurations-Zeitplan",
-            "schedule_empty": "Nicht festgelegt",
-            "schedule_count": "Regeln: {n}",
-            "schedule_message": "Eine Regel pro Zeile: [Datum] [HH:MM-HH:MM] [Tage] = Konfiguration.\nDatum: JJJJ-MM-TT, TT.MM.JJJJ oder TT.MM (jährlich); Bereich mit „..“. Ohne Uhrzeit: ganzer Tag. Tage: mon-fri, sat,sun (leer = täglich). Regeln mit Datum haben Vorrang, sonst gilt die erste passende. Chats mit eigener Konfiguration bleiben unberührt. Statt Uhrzeit: Morgen (05–12), Tag (12–17), Abend (17–23), Nacht (23–05) oder „morgen-abend“.",
-            "schedule_hint": "22:00-07:00 = Nacht\n09:00-18:00 mon-fri = Arbeit\n31.12 = Feiertag\n2026-12-28..2027-01-10 = Urlaub\nmorgen mon-fri = Arbeit\nnacht = Nacht",
-            "schedule_saved": "Zeitplan gespeichert",
-            "schedule_error": "Zeile {n}: {reason}",
-            "schedule_err_format": "Format: [Datum] [HH:MM-HH:MM] [Tage] = Konfiguration",
-            "schedule_err_time": "ungültige Zeit",
-            "schedule_err_days": "ungültige Tage",
-            "schedule_err_config": "Konfiguration „{name}“ nicht gefunden",
-            "schedule_err_limit": "höchstens {n} Regeln",
-            "skip_once_menu": "Formatierung einmal überspringen",
-            "skip_once_on": "Die nächste Nachricht wird ohne Formatierung gesendet",
-            "skip_once_off": "Überspringen abgebrochen",
-            "random_style": "Zufälliger Stil",
-            "random_style_subtext": "Zufälliger Stil pro Nachricht (außer kopfstehend).",
-            "mask_rotation": "Masken-Rotation",
-            "mask_rotation_subtext": "Masken aus der Liste statt der Hauptmaske. Chat-Maske hat Vorrang.",
-            "masks_list": "Maskenliste",
-            "masks_list_count": "Masken: {n}",
-            "masks_list_empty": "Eine Maske pro Zeile",
-            "masks_list_hint": "Eine Maske pro Zeile, je ein [text].",
-            "masks_list_invalid": "Jede Maske braucht genau ein [text]",
-            "masks_list_limit": "Höchstens {n} Masken",
-            "mask_tags_hint": "Tags: [date], [time], [datetime], [chat], [id], [weekday], [year], [month], [day], [username], [count], [random_emoji], [hour], [minute], [second], [time12], [ampm], [daypart], [week], [yearday], [monthname], [weekday_short], [year_short], [timestamp], [tz], [chattype], [dice].",
-            "mask_rotation_mode": "Reihenfolge der Rotation",
-            "rotation_random": "Zufällig",
-            "rotation_sequential": "Der Reihe nach",
-            "regex_exceptions": "Regex-Ausnahmen",
-            "regex_exceptions_hint": "Ein Regex pro Zeile. Treffer bleiben unformatiert.",
-            "regex_exceptions_count": "Regeln: {n}",
-            "regex_exceptions_empty": "Für fortgeschrittene Nutzer",
-            "regex_invalid": "Ungültiger Ausdruck: {error}",
-            "regex_limit": "Höchstens {n} Ausdrücke mit je {m} Zeichen",
-            "chat_types": "Chat-Typen",
-            "chat_types_hint": "Nur in den gewählten Chat-Typen.",
-            "chat_types_all": "Alle Chats",
-            "chat_types_none": "Wähle mindestens einen Typ",
-            "chat_type_private": "Private Chats",
-            "chat_type_group": "Gruppen",
-            "chat_type_channel": "Kanäle",
-            "separator": "Trennzeichen",
-            "enable_separator": "Trennzeichen aktivieren",
-            "enable_separator_subtext": "Eigene Trennzeichen zwischen Wörtern einfügen.",
-            "separator_set": "Trennzeichen-Set",
-            "separator_count": "Trennzeichen zwischen Wörtern",
-            "separator_count_subtext": "Zum Ändern tippen.",
-            "exceptions": "Ausnahmen",
-            "ignore_emoji_only": "Nachrichten nur aus Emojis ignorieren",
-            "ignore_emoji_only_subtext": "Nachrichten nur aus Emojis auslassen. Medienbeschriftungen werden immer gestaltet.",
-            "exceptions_hint": "Nachrichten mit diesem Anfang oder Ende bleiben unverändert. Ein Wert pro Zeile.",
-            "ignore_code": "Code auslassen",
-            "ignore_code_subtext": "Codeblöcke und `Inline-Code` bleiben unverändert.",
-            "ignore_commands": "Befehle auslassen",
-            "ignore_commands_subtext": "Befehle wie /start oder /help@bot bleiben unverändert; eine Nachricht, die mit einem Befehl beginnt, wird nicht verändert.",
-            "ignore_mentions": "@Erwähnungen auslassen",
-            "ignore_mentions_subtext": "@Benutzernamen bleiben unverändert; eine Nachricht, die mit einer Erwähnung beginnt, wird nicht verändert.",
-            "ignore_links": "Links auslassen",
-            "ignore_links_subtext": "URLs, E-Mails und Website-Adressen bleiben unverändert. Eine Nachricht nur aus einem Link wird nicht verändert.",
-            "ignore_hashtags": "#Hashtags auslassen",
-            "ignore_hashtags_subtext": "#Tags bleiben unverändert.",
-            "ignore_cashtags": "$Cashtags auslassen",
-            "ignore_cashtags_subtext": "$TON, $BTC und ähnliche bleiben unverändert.",
-            "ignore_segments": "Was auslassen",
-            "ignore_segments_hint": "Wähle, welche Teile der Nachricht unverändert bleiben.",
-            "ignore_segments_count": "Aktiv: {n} von {total}",
-            "chat_menu": "Chat zur Ausnahmeliste hinzufügen/entfernen",
-            "chat_added": "Chat zur Ausnahmeliste hinzugefügt",
-            "chat_removed": "Chat aus der Ausnahmeliste entfernt",
-            "mask_editor_title": "Maskeneinstellungen",
-            "mask_editor_hint": "Maske eingeben. [text] = Nachricht, [text: Link] = Hyperlink.",
-            "custom_separator_title": "Eigene",
-            "custom_separator_message": "Trennzeichen durch Kommas getrennt eingeben, zum Beispiel:\n•, ·, —, ~, |",
-            "save": "Speichern",
-            "delete": "Löschen",
-            "cancel": "Abbrechen",
-            "capture_custom_emoji": "Premium-Emoji erfassen",
-            "capture_enabled": "Premium-Emoji-Erfassung an: sende eine Nachricht damit",
-            "capture_disabled": "Premium-Emoji-Erfassung ist aus",
-            "custom_emoji_hint": "Premium-Emoji: Marker (id|🙂), 🙂 ist der Ersatz für andere. Erhältlich über „Premium-Emoji erfassen“ im Chat-Menü.",
-            "mask_invalid": "Die Maske muss genau einen [text] enthalten",
-            "mask_too_long": "Die Maske ist zu lang: höchstens {n} Zeichen",
-            "mask_preview_sample": "Beispielnachricht",
-            "mask_preview_invalid": "Maske ungültig: genau ein [text] erforderlich",
-            "separator_preview_words": "Beispieltext für die Vorschau",
-            "exceptions_count": "Ausnahmen: {n}, Chats: {m}",
-            "configuration_import_cancelled": "Import abgebrochen",
-            "import_configuration": "Importieren",
-            "export_configuration": "Exportieren",
-            "reset_configuration": "Standardwerte wiederherstellen",
-            "reset_to_plugin_defaults": "Importierte Werte ignorieren: Standard verwenden",
-            "reset_to_plugin_defaults_unavailable": "Nicht verfügbar: vom Plugin erstellt, Zurücksetzen stellt den Ausgangszustand her.",
-            "configurations": "Konfigurationen",
-            "active_configuration": "Aktive Konfiguration",
-            "add_configuration": "Neue Konfiguration erstellen",
-            "add_configuration_subtext": "Ein eigener Einstellungssatz, sofort aktiv.",
-            "configuration_name_hint": "Name der Konfiguration",
-            "new_configuration_source_title": "Einstellungen der neuen Konfiguration",
-            "new_configuration_source_message": "Wovon ausgehen? Ohne Auswahl: Standardeinstellungen.",
-            "new_configuration_copy_current": "Einstellungen der aktuellen Konfiguration kopieren",
-            "create": "Erstellen",
-            "delete_configuration": "Konfiguration löschen",
-            "delete_configuration_confirm": "Konfiguration „{name}“ löschen?",
-            "no_inactive_configurations": "Keine inaktiven Konfigurationen zum Löschen",
-            "imported_configuration": "Importierte Konfiguration",
-            "rename_configuration": "Konfiguration umbenennen",
-            "rename_configuration_subtext": "Den Namen der aktuellen Konfiguration ändern.",
-            "configuration_name_invalid": "Gib einen eindeutigen Konfigurationsnamen ein.",
-            "configuration_name_taken": "Eine Konfiguration mit diesem Namen existiert bereits.",
-            "configuration_deleted": "Gelöschte Konfigurationen: {n}",
-            "delete_configurations": "Konfigurationen löschen",
-            "delete_configurations_subtext": "Inaktive Konfigurationen löschen; die aktive bleibt.",
-            "delete_configurations_select": "Inaktive Konfigurationen zum Löschen wählen.",
-            "import_new_configuration_name": "Name der neuen Konfiguration",
-            "select_configuration": "Konfiguration auswählen",
-            "select_configuration_subtext": "Wähle 1 bis {n} Teile.",
-            "config_mask": "Maske",
-            "config_separator": "Trennzeichen",
-            "config_exceptions": "Ausnahmen und Chats",
-            "config_language": "Gewählte Sprache",
-            "config_media": "Medien",
-            "media_attachment": "Medien",
-            "enable_media_attachment": "Medien aktivieren",
-            "enable_media_attachment_subtext": "Importierte Datei an Nachrichten anhängen.",
-            "media_file": "Gewählte Datei",
-            "media_file_none": "Keine Datei ausgewählt",
-            "import_media": "Medien importieren",
-            "delete_media": "Medien löschen",
-            "delete_media_subtext": "Die importierte Datei aus Prefixfy löschen.",
-            "delete_media_confirm": "Das Medium „{name}“ löschen? Die Datei wird aus Prefixfy entfernt. Das lässt sich nicht rückgängig machen.",
-            "media_imported": "Medien importiert",
-            "media_deleted": "Medien gelöscht",
-            "media_import_failed": "Medien konnten nicht importiert werden",
-            "media_delete_failed": "Medien konnten nicht gelöscht werden",
-            "apply": "Anwenden",
-            "configuration_imported": "Konfiguration importiert",
-            "configuration_import_failed": "Konfiguration konnte nicht importiert werden",
-            "import_locked_setup": "Der Import von Konfigurationen ist nach der Ersteinrichtung verfügbar.",
-            "configuration_save_failed": "Die aktuelle Konfiguration konnte nicht gespeichert werden",
-            "configuration_exported": "Konfiguration exportiert",
-            "configuration_export_failed": "Konfiguration konnte nicht exportiert werden",
-            "configuration_export_destination_title": "Wohin exportieren?",
-            "configuration_export_to_saved": "Gespeicherte Nachrichten des aktiven Kontos",
-            "configuration_export_to_device": "Gerätespeicher",
-            "configuration_restored": "Ausgewählte Werte wiederhergestellt",
-            "configuration_nothing_selected": "Wähle mindestens einen Konfigurationsteil aus",
-            "export_select_configs": "Konfigurationen zum Export wählen",
-            "export_select_configs_subtext": "Wähle bis zu {n} Konfigurationen. Danach öffnet sich für jede die Auswahl der Teile. Bei mehreren Konfigurationen gehen die Dateien direkt in die Gespeicherten Nachrichten des aktiven Kontos.",
-            "export_next": "Weiter",
-            "export_include_name": "Konfigurationsnamen einbeziehen",
-            "shared_configuration_marker": "gemeinsam",
-            "export_parts_title": "Teile: {name}",
-            "export_parts_progress": "Konfiguration {i} von {n}",
-            "configuration_export_limit": "Es sind höchstens {n} Konfigurationen wählbar",
-            "configuration_export_none": "Wähle mindestens eine Konfiguration aus",
-            "configurations_exported": "Konfigurationen exportiert: {n}",
-            "configurations_export_partial": "{ok} von {total} exportiert",
-            "config_found_title": "Konfiguration gefunden",
-            "config_found_contains": "Enthält",
-            "config_import_as_new": "Als neue Konfiguration importieren",
-            "config_found_import": "Importieren",
-            "config_file_open_failed": "Konfigurationsdatei konnte nicht geöffnet werden",
-            "invalid_configuration": "Datei enthält die Konfiguration nicht oder hat ein ungültiges Format.",
-            "default_configuration_name": "Standardkonfiguration",
-            "configuration_n": "Konfiguration {n}",
-            "operation_failed": "Aktion fehlgeschlagen",
-            "text_style_subtext": "Nur der Nachrichtentext. Fancy, Bold, Gothic, Circled: nur Latein; L33T auch Kyrillisch.",
-            "enable_text_style": "Textstil aktivieren",
-            "configuration_short": "Konfigurationsteile wählen",
-            "edit_text_toggle": "Text bearbeiten",
-            "edit_text_toggle_subtext": "Normale Nachrichten beim Bearbeiten gestalten.",
-            "edit_media_toggle": "Beschriftungen bearbeiten",
-            "edit_media_toggle_subtext": "Medienbeschriftungen beim Bearbeiten gestalten.",
-            "article": "Artikel",
-            "article_subtext": "Textblöcke von Artikeln beim Senden gestalten.",
-            "edit_article_toggle": "Artikel bearbeiten",
-            "edit_article_toggle_subtext": "Artikel beim Bearbeiten gestalten.",
-            "skip_once_on_edit": "„Einmal überspringen“ beim Bearbeiten",
-            "skip_once_on_edit_subtext": "Bei aktivem Überspringen bleibt die nächste Bearbeitung unformatiert.",
-            "conditional_masks": "Masken nach Inhalt",
-            "conditional_masks_hint": "Eine Regel pro Zeile: Regex => Maske. Die erste passende Zeile gilt. Jede Maske braucht ein [text].",
-            "conditional_masks_count": "Regeln: {n}",
-            "conditional_masks_empty": "Wenn der Text … enthält",
-            "conditional_masks_format": "Zeile {n}: erwartet „Ausdruck => Maske“",
-            "md_quote": "Ganze Maske: Zitat",
-            "config_schedule": "Chat-Zuordnungen und Zeitplan",
-            "schedule_err_date": "ungültiges Datum",
+            # Аккаунты
+            "account_mode": "Réglages par compte",
+            "account_mode_subtext": "Réglages distincts par compte. Tant que rien ne change, ils sont communs.",
+            "account_target": "Compte à configurer",
+            "account_auto": "Auto (compte actuel)",
+            "account_common": "Communs (pour tous)",
+            "account_auto_now": "Auto affiche",
+            "account_editing": "Réglages ouverts pour",
+            "account_own": "réglages propres",
+            "account_shared": "réglages communs",
+            "account_common_hint": "réglages communs (pour les comptes sans réglages propres)",
+            "account_none": "compte non détecté",
+            "account_reset": "Revenir aux réglages communs",
+            "account_reset_subtext": "Supprimer les réglages propres de ce compte",
+            "account_reset_title": "Réinitialiser les réglages du compte",
+            "account_reset_confirm": "Supprimer les réglages de ce compte et ses configurations ? Il reprendra les réglages communs.",
+            "account_reset_button": "Réinitialiser",
+            "account_reset_done": "Réglages du compte ramenés aux réglages communs",
+            "account_import_title": "Appliquer la configuration à",
+            "account_import_all": "Tous les comptes",
+            "account_import_common": "Communs (comptes sans réglages propres)",
+            # Обновления и проверка
+            "check_now": "Vérifier maintenant",
+            "check_now_subtext": "Vérifier ce build du plugin.",
+            "check_started": "Effacement du cache et vérification…",
+            "check_confirm_title": "Vérifier ce build maintenant ?",
+            "check_confirm_body": "Ce que ça fait : supprime les données de vérification (manifeste, liste noire, profil de réglages), les retélécharge et vérifie que le build est officiel.\n\nQuand l’utiliser : build non vérifiable, fonctions suspendues, mise à jour ou réinstallation récente, ou état périmé.\n\nSûr ? Réglages et configurations intacts ; les numéros de série des vérifications sont conservés. Internet requis ; en cas d’échec, les fonctions restent suspendues jusqu’à une vérification réussie.",
+            "check_confirm_yes": "Vérifier",
+            "check_ok": "Vérification réussie",
+            "check_failed": "Échec de la vérification. Vérifiez la connexion et réessayez.",
+            "ota_auto": "Mise à jour automatique",
+            "ota_auto_subtext": "Télécharge et installe les mises à jour automatiquement. Signature et sommes de contrôle vérifiées.",
+            "ota_mode": "Mode de mise à jour automatique",
+            "ota_mode_available": "Dès que disponible",
+            "ota_mode_time": "À une heure choisie",
+            "ota_action": "Action de mise à jour automatique",
+            "ota_action_download": "Téléchargement seul",
+            "ota_action_install": "Téléchargement et installation",
+            "ota_time": "Heure de mise à jour",
+            "ota_time_subtext": "Heure de l’appareil, HH:MM (ex. 04:00).",
+            "ota_time_invalid": "Saisissez l’heure au format HH:MM, par exemple 04:00",
+            "ota_disabled": "OTA désactivé par le développeur",
+            "ota_disabled_subtext": "Mises à jour indisponibles. Installez la nouvelle version depuis le dépôt.",
+            "ota_installed": "Prefixfy {version} installé. Redémarrage…",
+            "ota_restart_manual": "Prefixfy {version} installé. Désactivez puis réactivez le plugin.",
+            "ota_modified_found": "Plugin modifié. Installation du build officiel {version}…",
+            "ota_failed": "Échec de la mise à jour : {reason}",
+            "ota_busy": "Une mise à jour est déjà en cours",
+            "ota_check_note": "Cette vérification n’installe rien : vous serez notifié, puis touchez « Télécharger » sous « Mise à jour requise ».",
+            "ota_almost_ready": "Presque prêt",
+            "ota_almost_ready_subtext": "Version {version} téléchargée. Il ne reste qu’à recharger.",
+            "ota_reload": "Recharger",
+            "ota_reload_subtext": "Appliquer la mise à jour et redémarrer le plugin.",
+            "ota_staged": "Prefixfy {version} téléchargé. Touchez « Recharger ».",
+            "ota_download": "Télécharger",
+            "check_update_found": "Mise à jour Prefixfy {version} trouvée. Touchez « Télécharger » sous « Mise à jour requise ».",
+            "ota_download_subtext": "Version {version}. Détails affichés d’abord.",
+            "ota_dl_title": "Mise à jour de Prefixfy",
+            "ota_dl_size": "Taille",
+            "ota_dl_confirm": "Télécharger et installer",
+            "ota_dl_warning": "Attention : le réseau mobile peut entraîner des frais. Wi-Fi recommandé.",
+            "ota_unit_kb": "Ko",
+            "ota_unit_mb": "Mo",
+            # О плагине, статусы и уведомления проверки
+            "gate_update_required": "Mise à jour requise",
+            "gate_update_required_subtext": "Installez la version officielle {version}. Sans mise en forme d’ici là.",
+            "gate_verify_required": "Échec de la vérification",
+            "gate_verify_required_subtext": "Build non vérifié. Mise en forme désactivée ; vérifiez la connexion.",
+            "gate_account_blocked": "Accès refusé",
+            "gate_account_blocked_subtext": "Un compte de cet appareil est sur liste noire. Plugin désactivé.",
+            "about_plugin": "À propos du plugin",
+            "about_plugin_subtext": "Version, build et état de la vérification.",
+            "about_title": "À propos de Prefixfy",
+            "about_version": "Version",
+            "about_build_date": "Date du build",
+            "about_build_number": "Numéro du build du jour",
+            "about_serial": "Numéro de série",
+            "about_build_label": "Libellé complet du build",
+            "about_latest": "Dernier build officiel",
+            "about_status": "Vérification",
+            "about_unknown": "inconnu",
+            "about_note": "Valeurs lues dans le libellé de build du fichier à l’ouverture.",
+            "status_ok": "réussie : conforme à la version officielle signée",
+            "status_pending": "en attente de la première vérification",
+            "status_soft": "non vérifié : fonctions facultatives suspendues",
+            "status_blacklisted": "refusée : compte sur liste noire",
+            "status_no_key": "échec : ce build ne contient aucune clé de mise à jour",
+            "status_integrity": "non vérifié : fichier du plugin illisible",
+            "notice_ok": "OK",
+            "status_outdated": "échec : build obsolète, version plus récente disponible",
+            "status_modified": "échec : build modifié",
+            "gate_modified": "Build modifié",
+            "gate_modified_subtext": "Ce fichier diffère de la version officielle {version}. Le plugin réinstalle le build officiel ; mise en forme désactivée d’ici là.",
+            "notice_verify_body": "Ce qui s’est passé : ce build n’a pas de clé de mise à jour valide, le manifeste signé est invérifiable.\n\nConséquence : les messages sortants ne sont pas mis en forme. Réglages conservés.\n\nQue faire : installez le build officiel depuis le dépôt.",
+            "notice_soft_body": "Ce qui s’est passé : Prefixfy ne peut pas confirmer que ce build est officiel : la vérification du manifeste signé ou de la liste noire n’a pas abouti (pas d’Internet, GitHub injoignable, dernière vérification trop ancienne ou fichier illisible).\n\nCe qui est suspendu : toutes les fonctions facultatives (styles, Markdown, rotation et masques conditionnels, balises, planification, configurations de chats, médias joints, Premium Emoji, traitement des modifications, import). Seul le masque de base fonctionne.\n\nQue faire : vérifiez la connexion et touchez « Vérifier maintenant ». Tout revient après une vérification réussie.",
+            "notice_account_body": "Ce qui s’est passé : un compte Telegram de cet appareil figure sur la liste noire de Prefixfy.\n\nConséquence : le plugin est désactivé sur cet appareil. Réglages inchangés.\n\nEn cas d’erreur, contactez l’auteur du plugin.",
+            "gate_soft": "Fonctions suspendues",
+            "gate_soft_subtext": "Build non vérifiable : fonctions facultatives désactivées, mise en forme de base seulement. Vérifiez la connexion ; tout revient après vérification.",
+            "gate_bypass_note": "Cette fonction ne contourne pas le blocage.",
+            # Удаление данных и возобновление работы
+            "wipe_row": "Supprimer les données",
+            "wipe_row_subtext": "Effacer les fichiers ou cesser de l’utiliser.",
+            "wipe_title": "Supprimer les données de Prefixfy ?",
+            "wipe_body": "Supprime toutes les données du plugin : configurations et préréglages de comptes, réglages, médias joints, fichiers importés et cache de vérification. Le plugin redémarre et commence par l’assistant de configuration, comme après une première installation.\n\nSi le plugin est obsolète, la dernière version est installée d’abord, puis les données sont supprimées.\n\n« Cesser d’utiliser le plugin » met en plus le plugin en veille : seul « Reprendre » reste. Aucune mise à jour n’est téléchargée.",
+            "wipe_opt_out": "Cesser d’utiliser le plugin",
+            "wipe_confirm_clean": "Tous les fichiers et réglages seront supprimés, puis le plugin redémarre plusieurs fois (c’est normal) et commence par l’assistant de configuration. Configurations et médias joints seront perdus définitivement. Exportez d’abord vos configurations.",
+            "wipe_confirm_title": "Confirmer la suppression",
+            "wipe_confirm_out": "Tous les fichiers et réglages seront supprimés, puis le plugin se désactivera. Irréversible.",
+            "wipe_confirm_btn": "Effacer",
+            "wipe_started": "Préparation de la suppression…",
+            "wipe_started_multi": "Préparation de la suppression… Le plugin redémarrera plusieurs fois.",
+            "wipe_halt": "Nettoyage en cours",
+            "wipe_halt_subtext": "Le plugin va redémarrer encore une fois et repartira de zéro.",
+            "wipe_updating": "Mise à jour vers {version}, puis suppression des données…",
+            "wipe_reinstalling": "Réinstallation de {version}, puis suppression des données…",
+            "wipe_update_failed": "Échec de la mise à jour : {reason}. Rien n’a été supprimé.",
+            "wipe_restart_manual": "Désactivez puis réactivez le plugin pour terminer.",
+            "wipe_failed": "Préparation impossible. Rien n’a été supprimé.",
+            "wipe_done": "Données effacées et recréées",
+            "resume_title": "Reprendre",
+            "resume_subtext": "Prefixfy est désactivé et ne stocke rien. Touchez pour repartir de zéro.",
+            "resume_confirm_title": "Reprendre le plugin ?",
+            "resume_confirm_body": "Le plugin démarre comme neuf, avec les réglages par défaut.",
+            "resume_btn": "Reprendre",
+            "resume_done": "Prefixfy est démarré",
+            "resume_failed": "Démarrage impossible. Désactivez puis réactivez.",
+            "wipe_auto_reset_done": "Données endommagées, plugin réinitialisé automatiquement",
+            # Первая настройка и приветствие
+            "setup_step_1": "Étape 1/3 : choisissez la langue",
+            "setup_step_2": "Étape 2/3 : réglez la mise en forme",
+            "setup_step_3": "Étape 3/3 : réglez les mises à jour",
+            "setup_next": "Suivant",
+            "setup_next_subtext": "Passer à l’étape {step}/3",
+            "setup_back": "Retour",
+            "setup_back_subtext": "Revenir à l’étape {step}/3",
+            "setup_finish": "Terminer la configuration",
+            "setup_finish_subtext": "Vérifie les mises à jour, les installe s’il y en a, puis ouvre tous les réglages.",
+            "setup_checking": "Vérification du compte…",
+            "setup_checking_subtext": "Demande de la liste de blocage au serveur. Quelques secondes.",
+            "setup_done": "Configuration initiale terminée",
+            "welcome_banner": "Merci d’avoir installé Prefixfy !",
+            "welcome_banner_subtext": "Touchez pour voir ce que fait le plugin et comment démarrer.",
+            "welcome_title": "Bienvenue dans Prefixfy",
+            "welcome_body": "Merci d’avoir installé Prefixfy ! Le plugin ajoute un masque à vos messages : texte avant ou après, mise en forme et décorations.\n\nCe qu’il sait faire :\n• un masque avec Markdown, styles de texte et séparateurs\n• effets mignons : kaomoji, UwU, décorations\n• média joint\n• exceptions : chats où le plugin est désactivé, ou seulement ceux-là\n• configurations : plusieurs jeux de réglages, import, export et planning\n• réglages distincts par compte\n\nPour commencer :\n1. Définissez votre masque dans « Mise en forme du texte ».\n2. Choisissez ce qui est mis en forme dans « Où ça s’applique ».\n3. Pour ajouter un chat aux exceptions ou l’en retirer, utilisez l’entrée de menu dans le chat.\n\nC’est tout : envoyez simplement des messages.",
+            "welcome_ok": "Compris",
         },
     }
 
-    SUPPORTED_AUTO = frozenset(("ru", "ja", "ko", "fr", "de", "en"))
+    SUPPORTED_AUTO = frozenset(("ru", "ja", "ko", "fr", "en"))
     LANGUAGE_ALIASES = {
         "jp": "ja", "kr": "ko",
         "russian": "ru", "english": "en", "japanese": "ja", "korean": "ko",
-        "french": "fr", "german": "de", "deutsch": "de",
+        "french": "fr",
     }
     RU_LIKE_CODES = frozenset(("ru", "uk", "be", "kk", "ky", "uz", "tg", "tk", "az", "hy", "ka", "tt", "ba", "cv", "os", "ce", "mo"))
     _ru_like = False
@@ -1825,1295 +2611,6 @@ class LocalizationManager:
         self._auto_checked = 0.0
 
 
-_NEW_STRINGS = {
-    "en": {
-        "section_appearance": "Text appearance",
-        "section_general": "General",
-        "style_translit": "Transliterate Cyrillic",
-        "style_translit_subtext": "Latin-only styles will work with Russian and Ukrainian too.",
-        "style_words": "Style only these words",
-        "style_words_hint": "One word per line. Empty = whole text.",
-        "style_words_count": "Words: {n}",
-        "style_words_empty": "Whole text",
-        "style_words_limit": "At most {n} words",
-        "tag_lines": "Lines for [line]",
-        "tag_lines_hint": "One line per row. [line] inserts a random one (max 64 chars).",
-        "tag_lines_count": "Lines: {n}",
-        "tag_lines_empty": "No lines yet",
-        "tag_lines_limit": "At most {n} lines",
-        "check_now": "Check now",
-        "check_now_subtext": "Check this plugin build.",
-        "check_started": "Clearing cache and checking…",
-        "check_confirm_title": "Check this build now?",
-        "check_confirm_body": "What it does: deletes saved check data (manifest, blacklist, settings profile), downloads it again and verifies the build is official.\n\nWhen to use: the build can’t be verified, features are paused, you just updated or reinstalled, or the status looks stale.\n\nSafe? Settings and configurations are untouched; check serial numbers are kept. Internet required; if it fails, features stay paused until a later check succeeds.",
-        "check_confirm_yes": "Check",
-        "about_plugin": "About plugin",
-        "about_section": "Details",
-        "about_plugin_subtext": "Version, build and verification status.",
-        "about_title": "About Prefixfy",
-        "about_version": "Version",
-        "about_build_date": "Build date",
-        "about_build_number": "Build number of the day",
-        "about_serial": "Serial",
-        "about_build_label": "Full build label",
-        "about_latest": "Latest official build",
-        "about_status": "Verification",
-        "about_unknown": "unknown",
-        "about_note": "Values are read from this file’s build label when the window opens.",
-        "status_ok": "passed: matches the signed official release",
-        "status_pending": "waiting for the first check",
-        "status_soft": "not verified: optional features paused",
-        "status_blacklisted": "denied: an account is blacklisted",
-        "status_no_key": "failed: this build contains no update key",
-        "status_integrity": "not verified: plugin file unreadable",
-        "notice_ok": "OK",
-        "status_outdated": "failed: outdated, a newer release exists",
-        "status_modified": "failed: build modified, differs from official",
-        "modified_build": "Modified build",
-        "modified_required_subtext": "This file differs from official release {version}. The plugin is reinstalling the official build; formatting is off until then.",
-        "notice_verify_body": "What happened: this build can’t be verified — it has no valid update key for the signed manifest.\n\nWhat it means: outgoing messages aren’t formatted. Settings are kept.\n\nWhat to do: install the official build from the repository.",
-        "notice_soft_body": "What happened: Prefixfy can’t confirm this build is official: the signed manifest or blacklist check didn’t finish (no internet, GitHub unreachable, last check too old, or the plugin file is unreadable).\n\nWhat’s paused: all optional features (text styles, Markdown, mask rotation and conditional masks, tags, schedule, chat configurations, media attachment, Premium Emoji, edit processing, configuration import). Only the basic mask works.\n\nWhat to do: check your connection and tap “Check now”. Everything returns after a successful check.",
-        "notice_account_body": "What happened: a Telegram account on this device is on the Prefixfy blacklist.\n\nWhat it means: the plugin is disabled on this device. Settings are unchanged.\n\nIf this is a mistake, contact the plugin author.",
-        "check_ok": "Verification passed",
-        "check_failed": "Verification failed. Check your connection and retry.",
-        "verify_soft": "Features paused",
-        "verify_soft_subtext": "Can’t verify this build now: optional features are off, basic formatting only. Check your connection; everything returns after verification.",
-        "tags_more": "[reply] — name of who you reply to; [chatcount] — your message number in the chat; [battery] — battery level; [moon] — moon phase; [line] — random line from your list; [since:2026-12-31] / [until:2026-12-31] — days passed / left; [quote] — start of the replied message; [countdown:2026-12-31 18:00] — time left; [weather] / [weather:Paris] — temperature from wttr.in (online).",
-    },
-    "ru": {
-        "section_appearance": "Оформление текста",
-        "section_general": "Основное",
-        "style_translit": "Транслитерировать кириллицу",
-        "style_translit_subtext": "Латинские стили заработают и с русским, и с украинским.",
-        "style_words": "Стиль только для слов",
-        "style_words_hint": "Одно слово в строке. Пусто — стиль для всего текста.",
-        "style_words_count": "Слов: {n}",
-        "style_words_empty": "Весь текст",
-        "style_words_limit": "Не больше {n} слов",
-        "tag_lines": "Строки для [line]",
-        "tag_lines_hint": "Одна строка в ряд. Тег [line] подставит случайную (до 64 символов).",
-        "tag_lines_count": "Строк: {n}",
-        "tag_lines_empty": "Строк пока нет",
-        "tag_lines_limit": "Не больше {n} строк",
-        "check_now": "Проверить сейчас",
-        "check_now_subtext": "Проверить сборку плагина.",
-        "check_started": "Очищаю кэш и проверяю…",
-        "check_confirm_title": "Проверить сборку сейчас?",
-        "check_confirm_body": "Что делает: удаляет сохранённые данные проверки (манифест, чёрный список, профиль настроек), скачивает их заново и проверяет, что сборка официальная.\n\nКогда нужно: если сборку не удалось подтвердить, функции приостановлены, вы только что обновили или переустановили плагин либо статус устарел.\n\nБезопасно ли: настройки и конфигурации не затрагиваются, серийные номера проверок сохраняются. Нужен интернет; при неудаче функции остаются приостановленными до следующей успешной проверки.",
-        "check_confirm_yes": "Проверить",
-        "about_plugin": "О плагине",
-        "about_section": "Сведения",
-        "about_plugin_subtext": "Версия, сборка и статус проверки.",
-        "about_title": "О Prefixfy",
-        "about_version": "Версия",
-        "about_build_date": "Дата сборки",
-        "about_build_number": "Номер сборки за день",
-        "about_serial": "Серийный номер",
-        "about_build_label": "Полная метка сборки",
-        "about_latest": "Последняя официальная сборка",
-        "about_status": "Проверка",
-        "about_unknown": "неизвестно",
-        "about_note": "Значения читаются из метки сборки файла при открытии окна.",
-        "status_ok": "пройдена: сборка совпадает с официальным релизом",
-        "status_pending": "ожидание первой проверки",
-        "status_soft": "не подтверждена: доп. функции приостановлены",
-        "status_blacklisted": "отказано: аккаунт в чёрном списке",
-        "status_no_key": "не пройдена: в этой сборке нет ключа обновлений",
-        "status_integrity": "не подтверждена: файл плагина не прочитан",
-        "notice_ok": "OK",
-        "status_outdated": "не пройдена: сборка устарела, есть новый релиз",
-        "status_modified": "не пройдена: сборка изменена",
-        "modified_build": "Изменённая сборка",
-        "modified_required_subtext": "Файл Prefixfy отличается от официального релиза {version}. Плагин сам переустановит официальную сборку; до этого оформление отключено.",
-        "notice_verify_body": "Что произошло: эту сборку невозможно проверить — нет действующего ключа обновлений для подписанного манифеста.\n\nЧто это значит: плагин не оформляет исходящие сообщения. Настройки сохранены.\n\nЧто делать: установите официальную сборку из репозитория.",
-        "notice_soft_body": "Что произошло: Prefixfy не может подтвердить, что сборка официальная: не удалось завершить проверку подписанного манифеста или чёрного списка (нет интернета, GitHub недоступен, последняя проверка слишком старая или файл плагина не читается).\n\nЧто приостановлено: все дополнительные функции (стили, Markdown, ротация и условные маски, теги, расписание, конфигурации чатов, вложение медиа, Premium Emoji, оформление при редактировании, импорт). Работает только базовая маска.\n\nЧто делать: проверьте интернет и нажмите «Проверить сейчас». После успешной проверки всё вернётся само.",
-        "notice_account_body": "Что произошло: один из аккаунтов Telegram на этом устройстве в чёрном списке Prefixfy.\n\nЧто это значит: плагин отключён на этом устройстве. Настройки не меняются.\n\nЕсли это ошибка, свяжитесь с автором плагина.",
-        "check_ok": "Проверка пройдена",
-        "check_failed": "Проверка не пройдена. Проверьте интернет и повторите.",
-        "verify_soft": "Функции приостановлены",
-        "verify_soft_subtext": "Сборку сейчас не удаётся проверить: дополнительные функции отключены, работает только базовое оформление. Проверьте интернет — после успешной проверки всё вернётся.",
-        "tags_more": "[reply] — имя адресата ответа; [chatcount] — номер вашего сообщения в чате; [battery] — заряд; [moon] — фаза луны; [line] — случайная строка из списка; [since:2026-12-31] / [until:2026-12-31] — дней прошло / осталось; [quote] — начало цитируемого сообщения; [countdown:2026-12-31 18:00] — сколько осталось; [weather] / [weather:Париж] — температура с wttr.in (нужен интернет).",
-    },
-    "ja": {
-        "section_appearance": "テキストの装飾",
-        "section_general": "基本",
-        "style_translit": "キリル文字を音訳",
-        "style_translit_subtext": "ラテン文字専用スタイルがロシア語・ウクライナ語でも使えます。",
-        "style_words": "指定した単語のみにスタイルを適用",
-        "style_words_hint": "1行1単語。空なら全文に適用。",
-        "style_words_count": "単語数: {n}",
-        "style_words_empty": "テキスト全体",
-        "style_words_limit": "最大 {n} 単語まで",
-        "tag_lines": "[line] 用の行",
-        "tag_lines_hint": "1行1項目。[line] でランダムに挿入（各64文字まで）。",
-        "tag_lines_count": "行数: {n}",
-        "tag_lines_empty": "行がまだありません",
-        "tag_lines_limit": "最大 {n} 行まで",
-        "check_now": "今すぐ確認",
-        "check_now_subtext": "このビルドを確認します。",
-        "check_started": "キャッシュを消去して確認中…",
-        "check_confirm_title": "今すぐこのビルドを確認しますか？",
-        "check_confirm_body": "動作: 保存された確認データ（マニフェスト、ブラックリスト、設定プロファイル）を削除して再取得し、公式ビルドか再確認します。\n\n用途: ビルドを確認できない、機能が停止中、更新・再インストール直後、ステータスが古いときに。\n\n安全性: 設定と構成は影響を受けず、確認のシリアル番号も保持されます。通信が必要です。失敗すると次回成功まで機能は停止したままです。",
-        "check_confirm_yes": "確認する",
-        "about_plugin": "プラグインについて",
-        "about_plugin_subtext": "バージョン、ビルド、検証ステータス。",
-        "about_title": "Prefixfy について",
-        "about_version": "バージョン",
-        "about_build_date": "ビルド日",
-        "about_build_number": "その日のビルド番号",
-        "about_serial": "シリアル",
-        "about_build_label": "完全なビルドラベル",
-        "about_latest": "最新の公式ビルド",
-        "about_status": "検証",
-        "about_unknown": "不明",
-        "about_note": "値はウィンドウを開いた時点でこのファイルのビルドラベルから読み取ります。",
-        "status_ok": "合格: 署名済み公式リリースと一致",
-        "status_pending": "最初の確認を待っています",
-        "status_soft": "未確認: オプション機能は停止中",
-        "status_blacklisted": "拒否: アカウントがブラックリスト入り",
-        "status_no_key": "不合格: このビルドには更新キーが含まれていません",
-        "status_integrity": "未確認: プラグインファイルを読み取れません",
-        "notice_ok": "OK",
-        "status_outdated": "不合格: 古いビルド、新しい公式リリースあり",
-        "status_modified": "不合格: 改変されたビルド",
-        "modified_build": "改変されたビルド",
-        "modified_required_subtext": "このファイルは公式リリース {version} と異なります。公式ビルドを自動で再インストールします。それまで装飾は無効です。",
-        "notice_verify_body": "状況: このビルドは有効な更新キーがなく、署名済みマニフェストを確認できません。\n\n影響: 送信メッセージは装飾されません。設定は保持されます。\n\n対処: リポジトリから公式ビルドをインストールしてください。",
-        "notice_soft_body": "状況: このビルドが公式か確認できません。署名済みマニフェストまたはブラックリストの確認が完了しませんでした（未接続、GitHub に到達不可、前回の確認が古い、ファイルを読み取れない）。\n\n停止中: すべてのオプション機能（スタイル、Markdown、マスクのローテーション・条件付きマスク、タグ、スケジュール、チャット別設定、メディア添付、Premium Emoji、編集時処理、設定のインポート）。基本のマスクのみ動作します。\n\n対処: 接続を確認し「今すぐ確認」をタップしてください。確認に成功すれば自動で元に戻ります。",
-        "notice_account_body": "状況: この端末の Telegram アカウントの1つが Prefixfy のブラックリストに登録されています。\n\n影響: この端末ではプラグインが無効です。設定は変更されません。\n\n誤りの場合は作者に連絡してください。",
-        "check_ok": "確認に成功しました",
-        "check_failed": "確認に失敗しました。接続を確認して再試行してください。",
-        "verify_soft": "機能を一時停止中",
-        "verify_soft_subtext": "ビルドを確認できないため、オプション機能はオフで基本の装飾のみ動作します。接続を確認してください。確認後に元に戻ります。",
-        "tags_more": "[reply] — 返信先の名前; [chatcount] — チャットでのメッセージ番号; [battery] — バッテリー残量; [moon] — 月齢; [line] — リストからランダムな1行; [since:2026-12-31] / [until:2026-12-31] — 経過 / 残り日数; [quote] — 返信先の冒頭; [countdown:2026-12-31 18:00] — 残り時間; [weather] / [weather:東京] — wttr.in の気温（要ネット）。",
-    },
-    "ko": {
-        "section_appearance": "텍스트 꾸미기",
-        "section_general": "일반",
-        "style_translit": "키릴 문자 음역",
-        "style_translit_subtext": "라틴 전용 스타일을 러시아어·우크라이나어에도 사용합니다.",
-        "style_words": "지정한 단어에만 스타일 적용",
-        "style_words_hint": "한 줄에 한 단어. 비우면 전체 텍스트.",
-        "style_words_count": "단어: {n}",
-        "style_words_empty": "전체 텍스트",
-        "style_words_limit": "최대 {n}개 단어",
-        "tag_lines": "[line]용 문구",
-        "tag_lines_hint": "한 줄에 하나. [line]은 무작위로 하나 삽입(각 64자까지).",
-        "tag_lines_count": "문구: {n}",
-        "tag_lines_empty": "아직 문구가 없습니다",
-        "tag_lines_limit": "최대 {n}줄",
-        "check_now": "지금 확인",
-        "check_now_subtext": "이 빌드를 확인합니다.",
-        "check_started": "캐시를 지우고 확인 중…",
-        "check_confirm_title": "지금 이 빌드를 확인할까요?",
-        "check_confirm_body": "동작: 저장된 확인 데이터(매니페스트, 블랙리스트, 설정 프로필)를 삭제하고 다시 받아 공식 빌드인지 확인합니다.\n\n용도: 빌드를 확인할 수 없거나, 기능이 중지되었거나, 방금 업데이트·재설치했거나, 상태가 오래되었을 때.\n\n안전성: 설정과 구성은 그대로이며 확인 일련번호도 유지됩니다. 인터넷이 필요하며, 실패하면 다음 성공까지 기능이 중지된 상태로 남습니다.",
-        "check_confirm_yes": "확인",
-        "about_plugin": "플러그인 정보",
-        "about_plugin_subtext": "버전, 빌드, 검증 상태.",
-        "about_title": "Prefixfy 정보",
-        "about_version": "버전",
-        "about_build_date": "빌드 날짜",
-        "about_build_number": "당일 빌드 번호",
-        "about_serial": "시리얼",
-        "about_build_label": "전체 빌드 라벨",
-        "about_latest": "최신 공식 빌드",
-        "about_status": "검증",
-        "about_unknown": "알 수 없음",
-        "about_note": "값은 창을 열 때 이 파일의 빌드 라벨에서 읽습니다.",
-        "status_ok": "통과: 서명된 공식 릴리스와 일치",
-        "status_pending": "첫 번째 확인을 기다리는 중",
-        "status_soft": "확인 안 됨: 선택 기능 일시 중지",
-        "status_blacklisted": "거부됨: 계정이 블랙리스트에 있음",
-        "status_no_key": "실패: 이 빌드에는 업데이트 키가 없습니다",
-        "status_integrity": "확인 안 됨: 플러그인 파일을 읽을 수 없음",
-        "notice_ok": "확인",
-        "status_outdated": "실패: 오래된 빌드, 새 릴리스 있음",
-        "status_modified": "실패: 수정된 빌드",
-        "modified_build": "수정된 빌드",
-        "modified_required_subtext": "이 파일은 공식 릴리스 {version}과(와) 다릅니다. 공식 빌드를 자동으로 다시 설치하며, 그전까지 꾸미기는 꺼집니다.",
-        "notice_verify_body": "무슨 일: 유효한 업데이트 키가 없어 이 빌드의 서명된 매니페스트를 검증할 수 없습니다.\n\n의미: 보내는 메시지를 꾸미지 않습니다. 설정은 유지됩니다.\n\n해결: 저장소에서 공식 빌드를 설치하세요.",
-        "notice_soft_body": "무슨 일: 이 빌드가 공식인지 확인할 수 없습니다. 서명된 매니페스트 또는 블랙리스트 확인을 마치지 못했습니다(인터넷 없음, GitHub 접속 불가, 마지막 확인이 오래됨, 파일을 읽을 수 없음).\n\n중지된 기능: 모든 선택 기능(스타일, Markdown, 마스크 순환·조건부 마스크, 태그, 일정, 채팅별 구성, 미디어 첨부, Premium Emoji, 편집 처리, 구성 가져오기). 기본 마스크만 작동합니다.\n\n해결: 연결을 확인하고 “지금 확인”을 누르세요. 확인에 성공하면 자동으로 복구됩니다.",
-        "notice_account_body": "무슨 일: 이 기기의 Telegram 계정 중 하나가 Prefixfy 블랙리스트에 있습니다.\n\n의미: 이 기기에서 플러그인이 비활성화됩니다. 설정은 바뀌지 않습니다.\n\n오류라면 제작자에게 문의하세요.",
-        "check_ok": "확인에 성공했습니다",
-        "check_failed": "확인 실패. 연결을 확인하고 다시 시도하세요.",
-        "verify_soft": "기능 일시 중지됨",
-        "verify_soft_subtext": "빌드를 확인할 수 없어 선택 기능이 꺼지고 기본 꾸미기만 작동합니다. 연결을 확인하세요. 확인되면 복구됩니다.",
-        "tags_more": "[reply] — 답장 대상 이름; [chatcount] — 채팅에서의 내 메시지 번호; [battery] — 배터리 잔량; [moon] — 달의 위상; [line] — 목록의 무작위 한 줄; [since:2026-12-31] / [until:2026-12-31] — 경과 / 남은 일수; [quote] — 답장 대상 메시지의 시작; [countdown:2026-12-31 18:00] — 남은 시간; [weather] / [weather:서울] — wttr.in 기온(인터넷 필요).",
-    },
-    "fr": {
-        "section_appearance": "Mise en forme du texte",
-        "section_general": "Général",
-        "style_translit": "Translittérer le cyrillique",
-        "style_translit_subtext": "Les styles latins fonctionneront aussi en russe et ukrainien.",
-        "style_words": "Appliquer le style à ces mots uniquement",
-        "style_words_hint": "Un mot par ligne. Vide : tout le texte.",
-        "style_words_count": "Mots : {n}",
-        "style_words_empty": "Tout le texte",
-        "style_words_limit": "{n} mots au maximum",
-        "tag_lines": "Lignes pour [line]",
-        "tag_lines_hint": "Une ligne par rangée. [line] en insère une au hasard (64 car. max).",
-        "tag_lines_count": "Lignes : {n}",
-        "tag_lines_empty": "Aucune ligne pour le moment",
-        "tag_lines_limit": "{n} lignes au maximum",
-        "check_now": "Vérifier maintenant",
-        "check_now_subtext": "Vérifier ce build du plugin.",
-        "check_started": "Effacement du cache et vérification…",
-        "check_confirm_title": "Vérifier ce build maintenant ?",
-        "check_confirm_body": "Ce que ça fait : supprime les données de vérification (manifeste, liste noire, profil de réglages), les retélécharge et vérifie que le build est officiel.\n\nQuand l’utiliser : build non vérifiable, fonctions suspendues, mise à jour ou réinstallation récente, ou état périmé.\n\nSûr ? Réglages et configurations intacts ; les numéros de série des vérifications sont conservés. Internet requis ; en cas d’échec, les fonctions restent suspendues jusqu’à une vérification réussie.",
-        "check_confirm_yes": "Vérifier",
-        "about_plugin": "À propos du plugin",
-        "about_plugin_subtext": "Version, build et état de la vérification.",
-        "about_title": "À propos de Prefixfy",
-        "about_version": "Version",
-        "about_build_date": "Date du build",
-        "about_build_number": "Numéro du build du jour",
-        "about_serial": "Numéro de série",
-        "about_build_label": "Libellé complet du build",
-        "about_latest": "Dernier build officiel",
-        "about_status": "Vérification",
-        "about_unknown": "inconnu",
-        "about_note": "Valeurs lues dans le libellé de build du fichier à l’ouverture.",
-        "status_ok": "réussie : conforme à la version officielle signée",
-        "status_pending": "en attente de la première vérification",
-        "status_soft": "non vérifié : fonctions facultatives suspendues",
-        "status_blacklisted": "refusée : compte sur liste noire",
-        "status_no_key": "échec : ce build ne contient aucune clé de mise à jour",
-        "status_integrity": "non vérifié : fichier du plugin illisible",
-        "notice_ok": "OK",
-        "status_outdated": "échec : build obsolète, version plus récente disponible",
-        "status_modified": "échec : build modifié",
-        "modified_build": "Build modifié",
-        "modified_required_subtext": "Ce fichier diffère de la version officielle {version}. Le plugin réinstalle le build officiel ; mise en forme désactivée d’ici là.",
-        "notice_verify_body": "Ce qui s’est passé : ce build n’a pas de clé de mise à jour valide, le manifeste signé est invérifiable.\n\nConséquence : les messages sortants ne sont pas mis en forme. Réglages conservés.\n\nQue faire : installez le build officiel depuis le dépôt.",
-        "notice_soft_body": "Ce qui s’est passé : Prefixfy ne peut pas confirmer que ce build est officiel : la vérification du manifeste signé ou de la liste noire n’a pas abouti (pas d’Internet, GitHub injoignable, dernière vérification trop ancienne ou fichier illisible).\n\nCe qui est suspendu : toutes les fonctions facultatives (styles, Markdown, rotation et masques conditionnels, balises, planification, configurations de chats, médias joints, Premium Emoji, traitement des modifications, import). Seul le masque de base fonctionne.\n\nQue faire : vérifiez la connexion et touchez « Vérifier maintenant ». Tout revient après une vérification réussie.",
-        "notice_account_body": "Ce qui s’est passé : un compte Telegram de cet appareil figure sur la liste noire de Prefixfy.\n\nConséquence : le plugin est désactivé sur cet appareil. Réglages inchangés.\n\nEn cas d’erreur, contactez l’auteur du plugin.",
-        "check_ok": "Vérification réussie",
-        "check_failed": "Échec de la vérification. Vérifiez la connexion et réessayez.",
-        "verify_soft": "Fonctions suspendues",
-        "verify_soft_subtext": "Build non vérifiable : fonctions facultatives désactivées, mise en forme de base seulement. Vérifiez la connexion ; tout revient après vérification.",
-        "tags_more": "[reply] — nom du destinataire de la réponse ; [chatcount] — numéro de votre message ; [battery] — batterie ; [moon] — phase de la lune ; [line] — ligne aléatoire de la liste ; [since:2026-12-31] / [until:2026-12-31] — jours écoulés / restants ; [quote] — début du message cité ; [countdown:2026-12-31 18:00] — temps restant ; [weather] / [weather:Paris] — température wttr.in (Internet).",
-    },
-    "de": {
-        "section_appearance": "Textgestaltung",
-        "section_general": "Allgemein",
-        "style_translit": "Kyrillisch transliterieren",
-        "style_translit_subtext": "Lateinische Stile funktionieren auch mit Russisch und Ukrainisch.",
-        "style_words": "Stil nur auf diese Wörter anwenden",
-        "style_words_hint": "Ein Wort pro Zeile. Leer: gesamter Text.",
-        "style_words_count": "Wörter: {n}",
-        "style_words_empty": "Gesamter Text",
-        "style_words_limit": "Höchstens {n} Wörter",
-        "tag_lines": "Zeilen für [line]",
-        "tag_lines_hint": "Eine Zeile pro Eintrag. [line] fügt eine zufällige ein (max. 64 Zeichen).",
-        "tag_lines_count": "Zeilen: {n}",
-        "tag_lines_empty": "Noch keine Zeilen",
-        "tag_lines_limit": "Höchstens {n} Zeilen",
-        "check_now": "Jetzt prüfen",
-        "check_now_subtext": "Build des Plugins prüfen.",
-        "check_started": "Cache wird gelöscht, Prüfung läuft…",
-        "check_confirm_title": "Diesen Build jetzt prüfen?",
-        "check_confirm_body": "Was es tut: löscht gespeicherte Prüfdaten (Manifest, Sperrliste, Einstellungsprofil), lädt sie neu und prüft, ob der Build offiziell ist.\n\nWann nutzen: Build nicht verifizierbar, Funktionen pausiert, gerade aktualisiert oder neu installiert oder Status veraltet.\n\nSicher? Einstellungen und Konfigurationen bleiben unberührt; Seriennummern der Prüfungen bleiben erhalten. Internet nötig; bei Fehlschlag bleiben Funktionen pausiert, bis eine Prüfung gelingt.",
-        "check_confirm_yes": "Prüfen",
-        "about_plugin": "Über das Plugin",
-        "about_plugin_subtext": "Version, Build und Verifizierungsstatus.",
-        "about_title": "Über Prefixfy",
-        "about_version": "Version",
-        "about_build_date": "Build-Datum",
-        "about_build_number": "Build-Nummer des Tages",
-        "about_serial": "Seriennummer",
-        "about_build_label": "Vollständige Build-Bezeichnung",
-        "about_latest": "Neuester offizieller Build",
-        "about_status": "Verifizierung",
-        "about_unknown": "unbekannt",
-        "about_note": "Werte werden beim Öffnen aus der Build-Bezeichnung gelesen.",
-        "status_ok": "bestanden: entspricht dem signierten Release",
-        "status_pending": "wartet auf die erste Prüfung",
-        "status_soft": "nicht verifiziert: optionale Funktionen pausiert",
-        "status_blacklisted": "abgelehnt: Konto gesperrt",
-        "status_no_key": "fehlgeschlagen: Dieser Build enthält keinen Update-Schlüssel",
-        "status_integrity": "nicht verifiziert: Plugin-Datei nicht lesbar",
-        "notice_ok": "OK",
-        "status_outdated": "fehlgeschlagen: veraltet, neueres Release verfügbar",
-        "status_modified": "fehlgeschlagen: Build verändert",
-        "modified_build": "Veränderter Build",
-        "modified_required_subtext": "Diese Datei weicht vom offiziellen Release {version} ab. Das Plugin installiert den offiziellen Build neu; bis dahin keine Formatierung.",
-        "notice_verify_body": "Was passiert ist: Dieser Build hat keinen gültigen Update-Schlüssel, das signierte Manifest lässt sich nicht prüfen.\n\nFolge: Ausgehende Nachrichten werden nicht formatiert. Einstellungen bleiben erhalten.\n\nWas tun: Installiere den offiziellen Build aus dem Repository.",
-        "notice_soft_body": "Was passiert ist: Prefixfy kann nicht bestätigen, dass dieser Build offiziell ist: Die Prüfung des signierten Manifests oder der Sperrliste ist nicht abgeschlossen (kein Internet, GitHub nicht erreichbar, letzte Prüfung zu alt oder Plugin-Datei nicht lesbar).\n\nWas pausiert: alle optionalen Funktionen (Stile, Markdown, Masken-Rotation und bedingte Masken, Tags, Zeitplan, Chat-Konfigurationen, Medienanhang, Premium Emoji, Bearbeitungsverarbeitung, Konfigurationsimport). Nur die Basismaske funktioniert.\n\nWas tun: Verbindung prüfen und auf „Jetzt prüfen“ tippen. Nach erfolgreicher Prüfung kehrt alles zurück.",
-        "notice_account_body": "Was passiert ist: Ein Telegram-Konto auf diesem Gerät steht auf der Prefixfy-Sperrliste.\n\nFolge: Das Plugin ist auf diesem Gerät deaktiviert. Einstellungen bleiben unverändert.\n\nBei einem Irrtum wende dich an den Plugin-Autor.",
-        "check_ok": "Verifizierung bestanden",
-        "check_failed": "Verifizierung fehlgeschlagen. Prüfe die Verbindung und versuche es erneut.",
-        "verify_soft": "Funktionen pausiert",
-        "verify_soft_subtext": "Build derzeit nicht verifizierbar: optionale Funktionen aus, nur Grundformatierung. Prüfe die Verbindung; nach der Verifizierung ist alles zurück.",
-        "tags_more": "[reply] — Name des Antwortempfängers; [chatcount] — Nummer deiner Nachricht im Chat; [battery] — Akkustand; [moon] — Mondphase; [line] — zufällige Zeile aus der Liste; [since:2026-12-31] / [until:2026-12-31] — vergangene / verbleibende Tage; [quote] — Anfang der zitierten Nachricht; [countdown:2026-12-31 18:00] — verbleibende Zeit; [weather] / [weather:Berlin] — Temperatur von wttr.in (Internet).",
-    },
-}
-for _code, _table in LocalizationManager.STRINGS.items():
-    _extra = _NEW_STRINGS.get(_code, _NEW_STRINGS["ru"])
-    _base = _NEW_STRINGS["ru"]
-    for _key, _value in _base.items():
-        _table.setdefault(_key, _extra.get(_key, _value))
-    if _table.get("mask_tags_hint"):
-        _table["mask_tags_hint"] = _table["mask_tags_hint"] + "\n" + _extra.get("tags_more", _base["tags_more"])
-
-
-_ACCOUNT_STRINGS = {
-    "ru": {
-        "acct_header": "Аккаунты",
-        "acct_mode": "Настройки по аккаунтам",
-        "acct_mode_subtext": "Отдельные настройки для каждого аккаунта. Пока вы ничего не меняли, они общие.",
-        "acct_target": "Аккаунт для настройки",
-        "acct_auto": "Авто (текущий аккаунт)",
-        "acct_common": "Общие (для всех)",
-        "acct_auto_now": "Авто показывает",
-        "acct_editing": "Открыты настройки",
-        "acct_own": "свои настройки",
-        "acct_shared": "общие настройки",
-        "acct_common_hint": "общие настройки (для аккаунтов без своих)",
-        "acct_none": "аккаунт не определён",
-        "acct_reset": "Сбросить к общим настройкам",
-        "acct_reset_subtext": "Удалить свои настройки этого аккаунта",
-        "acct_reset_title": "Сброс настроек аккаунта",
-        "acct_reset_confirm": "Удалить настройки этого аккаунта со всеми конфигурациями? Он снова будет использовать общие.",
-        "acct_reset_btn": "Сбросить",
-        "acct_reset_done": "Настройки аккаунта сброшены к общим",
-        "acct_import_title": "Куда применить конфигурацию?",
-        "acct_import_all": "Все аккаунты",
-        "acct_import_common": "Общие (аккаунты без своих настроек)",
-    },
-    "en": {
-        "acct_header": "Accounts",
-        "acct_mode": "Per-account settings",
-        "acct_mode_subtext": "Separate settings per account. Until you change something, all share the same.",
-        "acct_target": "Account to configure",
-        "acct_auto": "Auto (current account)",
-        "acct_common": "Common (for all)",
-        "acct_auto_now": "Auto is showing",
-        "acct_editing": "Settings open for",
-        "acct_own": "own settings",
-        "acct_shared": "common settings",
-        "acct_common_hint": "common settings (for accounts without their own)",
-        "acct_none": "account not detected",
-        "acct_reset": "Reset to common settings",
-        "acct_reset_subtext": "Remove this account's own settings",
-        "acct_reset_title": "Reset account settings",
-        "acct_reset_confirm": "Remove this account’s settings and all its configurations? It will use the common settings again.",
-        "acct_reset_btn": "Reset",
-        "acct_reset_done": "Account settings reset to common",
-        "acct_import_title": "Apply the configuration to",
-        "acct_import_all": "All accounts",
-        "acct_import_common": "Common (accounts without their own settings)",
-    },
-    "ja": {
-        "acct_header": "アカウント",
-        "acct_mode": "アカウント別の設定",
-        "acct_mode_subtext": "アカウントごとに個別設定。変更するまでは共通の設定を使います。",
-        "acct_target": "設定するアカウント",
-        "acct_auto": "自動（現在のアカウント）",
-        "acct_common": "共通（全アカウント）",
-        "acct_auto_now": "自動で表示中",
-        "acct_editing": "開いている設定",
-        "acct_own": "個別の設定",
-        "acct_shared": "共通の設定",
-        "acct_common_hint": "共通の設定（個別設定のないアカウント用）",
-        "acct_none": "アカウントを特定できません",
-        "acct_reset": "共通の設定に戻す",
-        "acct_reset_subtext": "このアカウントの個別設定を削除します",
-        "acct_reset_title": "アカウント設定のリセット",
-        "acct_reset_confirm": "このアカウントの個別設定を全構成ごと削除しますか？共通設定に戻ります。",
-        "acct_reset_btn": "リセット",
-        "acct_reset_done": "アカウントの設定を共通に戻しました",
-        "acct_import_title": "設定の適用先",
-        "acct_import_all": "すべてのアカウント",
-        "acct_import_common": "共通（個別設定のないアカウント）",
-    },
-    "ko": {
-        "acct_header": "계정",
-        "acct_mode": "계정별 설정",
-        "acct_mode_subtext": "계정별 개별 설정. 변경 전까지는 모두 같은 설정을 씁니다.",
-        "acct_target": "설정할 계정",
-        "acct_auto": "자동(현재 계정)",
-        "acct_common": "공통(모든 계정)",
-        "acct_auto_now": "자동으로 표시 중",
-        "acct_editing": "열려 있는 설정",
-        "acct_own": "개별 설정",
-        "acct_shared": "공통 설정",
-        "acct_common_hint": "공통 설정(개별 설정이 없는 계정용)",
-        "acct_none": "계정을 확인할 수 없음",
-        "acct_reset": "공통 설정으로 되돌리기",
-        "acct_reset_subtext": "이 계정의 개별 설정을 삭제합니다",
-        "acct_reset_title": "계정 설정 초기화",
-        "acct_reset_confirm": "이 계정의 설정을 모든 구성과 함께 삭제할까요? 공통 설정으로 돌아갑니다.",
-        "acct_reset_btn": "초기화",
-        "acct_reset_done": "계정 설정을 공통으로 되돌렸습니다",
-        "acct_import_title": "구성을 적용할 대상",
-        "acct_import_all": "모든 계정",
-        "acct_import_common": "공통(개별 설정이 없는 계정)",
-    },
-    "fr": {
-        "acct_header": "Comptes",
-        "acct_mode": "Réglages par compte",
-        "acct_mode_subtext": "Réglages distincts par compte. Tant que rien ne change, ils sont communs.",
-        "acct_target": "Compte à configurer",
-        "acct_auto": "Auto (compte actuel)",
-        "acct_common": "Communs (pour tous)",
-        "acct_auto_now": "Auto affiche",
-        "acct_editing": "Réglages ouverts pour",
-        "acct_own": "réglages propres",
-        "acct_shared": "réglages communs",
-        "acct_common_hint": "réglages communs (pour les comptes sans réglages propres)",
-        "acct_none": "compte non détecté",
-        "acct_reset": "Revenir aux réglages communs",
-        "acct_reset_subtext": "Supprimer les réglages propres de ce compte",
-        "acct_reset_title": "Réinitialiser les réglages du compte",
-        "acct_reset_confirm": "Supprimer les réglages de ce compte et ses configurations ? Il reprendra les réglages communs.",
-        "acct_reset_btn": "Réinitialiser",
-        "acct_reset_done": "Réglages du compte ramenés aux réglages communs",
-        "acct_import_title": "Appliquer la configuration à",
-        "acct_import_all": "Tous les comptes",
-        "acct_import_common": "Communs (comptes sans réglages propres)",
-    },
-    "de": {
-        "acct_header": "Konten",
-        "acct_mode": "Einstellungen pro Konto",
-        "acct_mode_subtext": "Eigene Einstellungen pro Konto. Bis zur Änderung teilen alle dieselben.",
-        "acct_target": "Konto zum Konfigurieren",
-        "acct_auto": "Auto (aktuelles Konto)",
-        "acct_common": "Gemeinsam (für alle)",
-        "acct_auto_now": "Auto zeigt",
-        "acct_editing": "Geöffnete Einstellungen für",
-        "acct_own": "eigene Einstellungen",
-        "acct_shared": "gemeinsame Einstellungen",
-        "acct_common_hint": "gemeinsame Einstellungen (für Konten ohne eigene)",
-        "acct_none": "Konto nicht erkannt",
-        "acct_reset": "Auf gemeinsame Einstellungen zurücksetzen",
-        "acct_reset_subtext": "Eigene Einstellungen dieses Kontos entfernen",
-        "acct_reset_title": "Kontoeinstellungen zurücksetzen",
-        "acct_reset_confirm": "Einstellungen dieses Kontos samt Konfigurationen entfernen? Es nutzt wieder die gemeinsamen.",
-        "acct_reset_btn": "Zurücksetzen",
-        "acct_reset_done": "Kontoeinstellungen auf gemeinsame zurückgesetzt",
-        "acct_import_title": "Konfiguration anwenden auf",
-        "acct_import_all": "Alle Konten",
-        "acct_import_common": "Gemeinsam (Konten ohne eigene Einstellungen)",
-    },
-}
-for _code, _table in LocalizationManager.STRINGS.items():
-    _acct_extra = _ACCOUNT_STRINGS.get(_code, _ACCOUNT_STRINGS["en"])
-    for _key, _value in _ACCOUNT_STRINGS["ru"].items():
-        _table[_key] = _acct_extra.get(_key, _ACCOUNT_STRINGS["en"].get(_key, _value))
-
-
-_OTA_STRINGS = {
-    "ru": {
-        "ota_section": "Обновления и проверка",
-        "ota_auto": "Автообновление",
-        "ota_auto_subtext": "Скачивает и ставит обновления сам. Подпись и контрольные суммы проверяются.",
-        "ota_mode": "Режим автообновления",
-        "ota_mode_available": "По мере выхода",
-        "ota_mode_time": "В выбранное время",
-        "ota_action": "Действие при автообновлении",
-        "ota_action_download": "Только загрузка",
-        "ota_action_install": "Загрузка и установка",
-        "ota_time": "Время обновления",
-        "ota_time_subtext": "Системное время устройства, ЧЧ:ММ (например 04:00).",
-        "ota_time_invalid": "Введите время в формате ЧЧ:ММ, например 04:00",
-        "ota_disabled": "OTA отключён разработчиком",
-        "ota_disabled_subtext": "Обновления временно недоступны. Ставьте новую версию вручную из репозитория.",
-        "ota_installed": "Prefixfy {version} установлен. Перезапуск…",
-        "ota_restart_manual": "Prefixfy {version} установлен. Выключите и включите плагин, чтобы применить.",
-        "ota_modified_found": "Плагин изменён. Ставлю официальную сборку {version}…",
-        "ota_failed": "Не удалось обновить: {reason}",
-        "ota_busy": "Обновление уже выполняется",
-        "ota_check_note": "Новую версию эта проверка не установит: придёт уведомление, а установить можно кнопкой «Скачать» под «Требуется обновление».",
-        "ota_almost_ready": "Почти готово",
-        "ota_almost_ready_subtext": "Версия {version} скачана. Осталось перезагрузить плагин.",
-        "ota_reload": "Перезагрузить",
-        "ota_reload_subtext": "Применить обновление и перезапустить плагин.",
-        "ota_staged": "Prefixfy {version} скачан. Нажмите «Перезагрузить».",
-    },
-    "en": {
-        "ota_section": "Updates & verification",
-        "ota_auto": "Auto-update",
-        "ota_auto_subtext": "Downloads and installs updates automatically. Signature and checksums are verified.",
-        "ota_mode": "Auto-update mode",
-        "ota_mode_available": "As soon as available",
-        "ota_mode_time": "At a chosen time",
-        "ota_action": "Auto-update action",
-        "ota_action_download": "Download only",
-        "ota_action_install": "Download and install",
-        "ota_time": "Update time",
-        "ota_time_subtext": "Device time, HH:MM (e.g. 04:00).",
-        "ota_time_invalid": "Enter the time as HH:MM, for example 04:00",
-        "ota_disabled": "OTA is disabled by the developer",
-        "ota_disabled_subtext": "Updates are temporarily off. Install new versions manually from the repository.",
-        "ota_installed": "Prefixfy {version} installed. Restarting…",
-        "ota_restart_manual": "Prefixfy {version} installed. Turn the plugin off and on to apply.",
-        "ota_modified_found": "Plugin modified. Installing official build {version}…",
-        "ota_failed": "Update failed: {reason}",
-        "ota_busy": "An update is already in progress",
-        "ota_check_note": "This check won’t install a new version: you’ll get a notice, then tap “Download” under “Update required”.",
-        "ota_almost_ready": "Almost ready",
-        "ota_almost_ready_subtext": "Version {version} downloaded. Just reload the plugin.",
-        "ota_reload": "Reload",
-        "ota_reload_subtext": "Apply the update and restart the plugin.",
-        "ota_staged": "Prefixfy {version} downloaded. Tap “Reload”.",
-    },
-    "ja": {
-        "ota_section": "アップデートと検証",
-        "ota_auto": "自動アップデート",
-        "ota_auto_subtext": "新しい公式バージョンを自動で取得・インストール。署名とチェックサムを検証します。",
-        "ota_mode": "自動アップデートのモード",
-        "ota_mode_available": "公開され次第",
-        "ota_mode_time": "指定した時刻",
-        "ota_action": "自動アップデートの動作",
-        "ota_action_download": "ダウンロードのみ",
-        "ota_action_install": "ダウンロードとインストール",
-        "ota_time": "アップデート時刻",
-        "ota_time_subtext": "端末の時刻、HH:MM 形式（例: 04:00）。",
-        "ota_time_invalid": "時刻を HH:MM 形式で入力してください（例: 04:00）",
-        "ota_disabled": "OTA は開発者により無効化されています",
-        "ota_disabled_subtext": "アップデートは一時停止中です。リポジトリから手動でインストールしてください。",
-        "ota_installed": "Prefixfy {version} をインストールしました。再起動します…",
-        "ota_restart_manual": "Prefixfy {version} をインストールしました。オフ→オンで適用します。",
-        "ota_modified_found": "改変を検出。公式ビルド {version} をインストールします…",
-        "ota_failed": "更新に失敗しました: {reason}",
-        "ota_busy": "更新はすでに実行中です",
-        "ota_check_note": "この確認では新バージョンはインストールされません。通知後、「アップデートが必要です」の下の「ダウンロード」で更新します。",
-        "ota_almost_ready": "もうすぐ完了",
-        "ota_almost_ready_subtext": "バージョン {version} はダウンロード済み。再読み込みのみです。",
-        "ota_reload": "再読み込み",
-        "ota_reload_subtext": "アップデートを適用してプラグインを再起動します。",
-        "ota_staged": "Prefixfy {version} をダウンロードしました。「再読み込み」をタップ。",
-    },
-    "ko": {
-        "ota_section": "업데이트 및 확인",
-        "ota_auto": "자동 업데이트",
-        "ota_auto_subtext": "새 공식 버전을 자동으로 내려받아 설치. 서명과 체크섬을 검증합니다.",
-        "ota_mode": "자동 업데이트 모드",
-        "ota_mode_available": "배포되는 즉시",
-        "ota_mode_time": "지정한 시간",
-        "ota_action": "자동 업데이트 동작",
-        "ota_action_download": "다운로드만",
-        "ota_action_install": "다운로드 및 설치",
-        "ota_time": "업데이트 시간",
-        "ota_time_subtext": "기기 시간, HH:MM 형식(예: 04:00).",
-        "ota_time_invalid": "시간을 HH:MM 형식으로 입력하세요 (예: 04:00)",
-        "ota_disabled": "개발자가 OTA를 비활성화했습니다",
-        "ota_disabled_subtext": "업데이트를 일시적으로 쓸 수 없습니다. 저장소에서 직접 설치하세요.",
-        "ota_installed": "Prefixfy {version} 설치 완료. 다시 시작합니다…",
-        "ota_restart_manual": "Prefixfy {version} 설치 완료. 껐다 켜면 적용됩니다.",
-        "ota_modified_found": "변조 감지. 공식 빌드 {version}을(를) 설치합니다…",
-        "ota_failed": "업데이트 실패: {reason}",
-        "ota_busy": "이미 업데이트가 진행 중입니다",
-        "ota_check_note": "이 확인으로는 설치되지 않습니다. 알림 후 '업데이트 필요' 아래 '다운로드'를 누르세요.",
-        "ota_almost_ready": "거의 완료",
-        "ota_almost_ready_subtext": "버전 {version} 다운로드 완료. 다시 불러오기만 하면 됩니다.",
-        "ota_reload": "다시 불러오기",
-        "ota_reload_subtext": "업데이트를 적용하고 플러그인을 다시 시작합니다.",
-        "ota_staged": "Prefixfy {version} 다운로드 완료. '다시 불러오기'를 누르세요.",
-    },
-    "fr": {
-        "ota_section": "Mises à jour et vérification",
-        "ota_auto": "Mise à jour automatique",
-        "ota_auto_subtext": "Télécharge et installe les mises à jour automatiquement. Signature et sommes de contrôle vérifiées.",
-        "ota_mode": "Mode de mise à jour automatique",
-        "ota_mode_available": "Dès que disponible",
-        "ota_mode_time": "À une heure choisie",
-        "ota_action": "Action de mise à jour automatique",
-        "ota_action_download": "Téléchargement seul",
-        "ota_action_install": "Téléchargement et installation",
-        "ota_time": "Heure de mise à jour",
-        "ota_time_subtext": "Heure de l’appareil, HH:MM (ex. 04:00).",
-        "ota_time_invalid": "Saisissez l’heure au format HH:MM, par exemple 04:00",
-        "ota_disabled": "OTA désactivé par le développeur",
-        "ota_disabled_subtext": "Mises à jour indisponibles. Installez la nouvelle version depuis le dépôt.",
-        "ota_installed": "Prefixfy {version} installé. Redémarrage…",
-        "ota_restart_manual": "Prefixfy {version} installé. Désactivez puis réactivez le plugin.",
-        "ota_modified_found": "Plugin modifié. Installation du build officiel {version}…",
-        "ota_failed": "Échec de la mise à jour : {reason}",
-        "ota_busy": "Une mise à jour est déjà en cours",
-        "ota_check_note": "Cette vérification n’installe rien : vous serez notifié, puis touchez « Télécharger » sous « Mise à jour requise ».",
-        "ota_almost_ready": "Presque prêt",
-        "ota_almost_ready_subtext": "Version {version} téléchargée. Il ne reste qu’à recharger.",
-        "ota_reload": "Recharger",
-        "ota_reload_subtext": "Appliquer la mise à jour et redémarrer le plugin.",
-        "ota_staged": "Prefixfy {version} téléchargé. Touchez « Recharger ».",
-    },
-    "de": {
-        "ota_section": "Updates und Prüfung",
-        "ota_auto": "Automatische Updates",
-        "ota_auto_subtext": "Lädt Updates automatisch und installiert sie. Signatur und Prüfsummen werden geprüft.",
-        "ota_mode": "Modus der automatischen Updates",
-        "ota_mode_available": "Sobald verfügbar",
-        "ota_mode_time": "Zu einer gewählten Uhrzeit",
-        "ota_action": "Aktion bei automatischen Updates",
-        "ota_action_download": "Nur herunterladen",
-        "ota_action_install": "Herunterladen und installieren",
-        "ota_time": "Update-Zeit",
-        "ota_time_subtext": "Gerätezeit, HH:MM (z. B. 04:00).",
-        "ota_time_invalid": "Zeit im Format HH:MM eingeben, zum Beispiel 04:00",
-        "ota_disabled": "OTA vom Entwickler deaktiviert",
-        "ota_disabled_subtext": "Updates vorübergehend nicht verfügbar. Installiere manuell aus dem Repository.",
-        "ota_installed": "Prefixfy {version} installiert. Neustart…",
-        "ota_restart_manual": "Prefixfy {version} installiert. Plugin aus- und wieder einschalten.",
-        "ota_modified_found": "Plugin verändert. Offizieller Build {version} wird installiert…",
-        "ota_failed": "Update fehlgeschlagen: {reason}",
-        "ota_busy": "Ein Update läuft bereits",
-        "ota_check_note": "Diese Prüfung installiert nichts: Du erhältst einen Hinweis, dann „Herunterladen“ unter „Update erforderlich“.",
-        "ota_almost_ready": "Fast fertig",
-        "ota_almost_ready_subtext": "Version {version} geladen. Nur noch neu laden.",
-        "ota_reload": "Neu laden",
-        "ota_reload_subtext": "Update anwenden und das Plugin neu starten.",
-        "ota_staged": "Prefixfy {version} geladen. Tippe auf „Neu laden“.",
-    },
-}
-for _code, _table in LocalizationManager.STRINGS.items():
-    _ota_extra = _OTA_STRINGS.get(_code, _OTA_STRINGS["en"])
-    for _key, _value in _OTA_STRINGS["ru"].items():
-        _table[_key] = _ota_extra.get(_key, _OTA_STRINGS["en"].get(_key, _value))
-    if _table.get("check_confirm_body"):
-        _table["check_confirm_body"] = _table["check_confirm_body"] + "\n\n" + _table["ota_check_note"]
-
-
-_OTA_DL_STRINGS = {
-    "ru": {
-        "ota_download": "Скачать",
-        "check_update_found": "Найдено обновление Prefixfy {version}. Нажмите «Скачать» под «Требуется обновление».",
-        "ota_download_subtext": "Версия {version}. Сначала — сведения об обновлении.",
-        "ota_dl_title": "Обновление Prefixfy",
-        "ota_dl_size": "Размер",
-        "ota_dl_confirm": "Скачать и установить",
-        "ota_dl_warning": "Внимание: через мобильную сеть оператор может взять плату за трафик. Лучше Wi-Fi.",
-        "ota_unit_kb": "КБ", "ota_unit_mb": "МБ",
-    },
-    "en": {
-        "ota_download": "Download",
-        "check_update_found": "Prefixfy {version} update found. Tap “Download” under “Update required”.",
-        "ota_download_subtext": "Version {version}. Details are shown first.",
-        "ota_dl_title": "Prefixfy update",
-        "ota_dl_size": "Size",
-        "ota_dl_confirm": "Download and install",
-        "ota_dl_warning": "Warning: mobile data may incur carrier charges. Wi-Fi is recommended.",
-        "ota_unit_kb": "KB", "ota_unit_mb": "MB",
-    },
-    "ja": {
-        "ota_download": "ダウンロード",
-        "check_update_found": "Prefixfy {version} が見つかりました。「アップデートが必要です」の下の「ダウンロード」をタップ。",
-        "ota_download_subtext": "バージョン {version}。最初に詳細を表示します。",
-        "ota_dl_title": "Prefixfy のアップデート",
-        "ota_dl_size": "サイズ",
-        "ota_dl_confirm": "ダウンロードしてインストール",
-        "ota_dl_warning": "注意: モバイル回線では通信料が発生する場合があります。Wi-Fi 推奨。",
-        "ota_unit_kb": "KB", "ota_unit_mb": "MB",
-    },
-    "ko": {
-        "ota_download": "다운로드",
-        "check_update_found": "Prefixfy {version} 업데이트 발견. '업데이트 필요' 아래 '다운로드'를 누르세요.",
-        "ota_download_subtext": "버전 {version}. 먼저 상세 정보가 표시됩니다.",
-        "ota_dl_title": "Prefixfy 업데이트",
-        "ota_dl_size": "크기",
-        "ota_dl_confirm": "다운로드 및 설치",
-        "ota_dl_warning": "주의: 모바일 네트워크는 통신사 요금이 부과될 수 있습니다. Wi-Fi 권장.",
-        "ota_unit_kb": "KB", "ota_unit_mb": "MB",
-    },
-    "fr": {
-        "ota_download": "Télécharger",
-        "check_update_found": "Mise à jour Prefixfy {version} trouvée. Touchez « Télécharger » sous « Mise à jour requise ».",
-        "ota_download_subtext": "Version {version}. Détails affichés d’abord.",
-        "ota_dl_title": "Mise à jour de Prefixfy",
-        "ota_dl_size": "Taille",
-        "ota_dl_confirm": "Télécharger et installer",
-        "ota_dl_warning": "Attention : le réseau mobile peut entraîner des frais. Wi-Fi recommandé.",
-        "ota_unit_kb": "Ko", "ota_unit_mb": "Mo",
-    },
-    "de": {
-        "ota_download": "Herunterladen",
-        "check_update_found": "Update Prefixfy {version} gefunden. Tippe unter „Update erforderlich“ auf „Herunterladen“.",
-        "ota_download_subtext": "Version {version}. Zuerst die Details.",
-        "ota_dl_title": "Prefixfy-Update",
-        "ota_dl_size": "Größe",
-        "ota_dl_confirm": "Herunterladen und installieren",
-        "ota_dl_warning": "Achtung: Mobilfunk kann Kosten verursachen. WLAN empfohlen.",
-        "ota_unit_kb": "KB", "ota_unit_mb": "MB",
-    },
-}
-for _code, _table in LocalizationManager.STRINGS.items():
-    _dl_extra = _OTA_DL_STRINGS.get(_code, _OTA_DL_STRINGS["en"])
-    for _key, _value in _OTA_DL_STRINGS["ru"].items():
-        _table[_key] = _dl_extra.get(_key, _OTA_DL_STRINGS["en"].get(_key, _value))
-
-
-_CUTE_STRINGS = {
-    "ru": {
-        "separator_frequency": "Частота разделителей",
-        "separator_frequency_subtext": "Вероятность разделителя между двумя словами. 100% — между каждой парой.",
-        "cute_header": "Милые эффекты",
-        "cute_enabled": "Включить милые эффекты",
-        "cute_enabled_subtext": "Каомодзи, UwU, действия и украшения. Ссылки, @упоминания, #теги и код не трогаются.",
-        "cute_preview": "Предпросмотр",
-        "cute_preview_sample": "Привет! Как дела? Сегодня отличный день.",
-        "cute_preview_none": "Включите хотя бы один эффект. Нажмите, чтобы обновить.",
-        "cute_preview_tap": "Нажмите, чтобы обновить.",
-        "cute_sentence_frequency": "Частота эффектов предложений",
-        "cute_sentence_frequency_subtext": "Каомодзи, спарклы, пунктуация, суффиксы и действия.",
-        "cute_word_frequency": "Частота эффектов слов",
-        "cute_word_frequency_subtext": "Заикание, растягивание гласных и мягкий знак.",
-        "cute_kaomoji": "Каомодзи в конце предложения (◕‿◕)",
-        "cute_sparkles": "Звёздочки вокруг предложения ✨",
-        "cute_exclamations": "Милые восклицания (! → !✨)",
-        "cute_punctuation": "Милая пунктуация (. → .~, ? → ?✨)",
-        "cute_uwu_suffixes": "UwU-суффиксы (nya~, owo)",
-        "cute_actions": "Милые действия (*обнимает*)",
-        "cute_actions_newline": "Действия на новой строке",
-        "cute_lowercase": "Только строчные буквы",
-        "cute_uwu_speak": "UwU-речь (р/л → в, r/l → w)",
-        "cute_stutter": "Заикание (п-привет)",
-        "cute_stretch": "Растягивать гласные (милооо)",
-        "cute_stretch_max": "Макс. длина растянутой гласной",
-        "cute_stretch_2x": "Двойная (x2)",
-        "cute_stretch_3x": "Тройная (x3)",
-        "cute_soft_sign": "Мягкий знак в конце слов (котикь)",
-        "cute_soft_sign_subtext": "Только для русских слов.",
-        "config_cute": "Милые эффекты",
-    },
-    "en": {
-        "separator_frequency": "Separator frequency",
-        "separator_frequency_subtext": "Chance of a separator between two words. 100% = every pair.",
-        "cute_header": "Cute effects",
-        "cute_enabled": "Enable cute effects",
-        "cute_enabled_subtext": "Kaomoji, UwU, actions and decorations. Links, @mentions, #tags and code stay intact.",
-        "cute_preview": "Preview",
-        "cute_preview_sample": "Hello! How are you? It is a lovely day.",
-        "cute_preview_none": "Turn on at least one effect. Tap to refresh.",
-        "cute_preview_tap": "Tap to refresh.",
-        "cute_sentence_frequency": "Sentence effects frequency",
-        "cute_sentence_frequency_subtext": "Kaomoji, sparkles, punctuation, suffixes and actions.",
-        "cute_word_frequency": "Word effects frequency",
-        "cute_word_frequency_subtext": "Stuttering, vowel stretching and the soft sign.",
-        "cute_kaomoji": "Kaomoji at the end of a sentence (◕‿◕)",
-        "cute_sparkles": "Sparkles around a sentence ✨",
-        "cute_exclamations": "Cute exclamations (! → !✨)",
-        "cute_punctuation": "Cute punctuation (. → .~, ? → ?✨)",
-        "cute_uwu_suffixes": "UwU suffixes (nya~, owo)",
-        "cute_actions": "Cute actions (*hugs*)",
-        "cute_actions_newline": "Actions on a new line",
-        "cute_lowercase": "Lowercase only",
-        "cute_uwu_speak": "UwU-speak (r/l → w)",
-        "cute_stutter": "Stuttering (h-hello)",
-        "cute_stretch": "Stretch vowels (cuuute)",
-        "cute_stretch_max": "Max stretched vowel length",
-        "cute_stretch_2x": "Double (x2)",
-        "cute_stretch_3x": "Triple (x3)",
-        "cute_soft_sign": "Soft sign at word ends (kotikь)",
-        "cute_soft_sign_subtext": "Russian words only.",
-        "config_cute": "Cute effects",
-    },
-    "ja": {
-        "separator_frequency": "区切り文字の頻度",
-        "separator_frequency_subtext": "2単語の間に区切り文字を入れる確率。100%で毎回。",
-        "cute_header": "かわいい効果",
-        "cute_enabled": "かわいい効果を有効にする",
-        "cute_enabled_subtext": "顔文字、UwU、アクションなどの装飾。リンク、@メンション、#タグ、コードはそのまま。",
-        "cute_preview": "プレビュー",
-        "cute_preview_sample": "こんにちは！元気ですか？今日はいい天気です。",
-        "cute_preview_none": "効果を1つ以上オンに。タップで更新。",
-        "cute_preview_tap": "タップで更新します。",
-        "cute_sentence_frequency": "文の効果の頻度",
-        "cute_sentence_frequency_subtext": "顔文字、きらきら、句読点、語尾、アクション。",
-        "cute_word_frequency": "単語の効果の頻度",
-        "cute_word_frequency_subtext": "どもり、母音の引き伸ばし、軟音記号。",
-        "cute_kaomoji": "文末に顔文字 (◕‿◕)",
-        "cute_sparkles": "文をきらきらで囲む ✨",
-        "cute_exclamations": "かわいい感嘆符 (! → !✨)",
-        "cute_punctuation": "かわいい句読点 (. → .~, ? → ?✨)",
-        "cute_uwu_suffixes": "UwU語尾 (nya~, owo)",
-        "cute_actions": "かわいいアクション (*ぎゅっ*)",
-        "cute_actions_newline": "アクションを改行して表示",
-        "cute_lowercase": "小文字のみ",
-        "cute_uwu_speak": "UwU話法 (r/l → w)",
-        "cute_stutter": "どもり (h-hello)",
-        "cute_stretch": "母音を伸ばす (cuuute)",
-        "cute_stretch_max": "母音の最大の長さ",
-        "cute_stretch_2x": "2倍 (x2)",
-        "cute_stretch_3x": "3倍 (x3)",
-        "cute_soft_sign": "語末に軟音記号 (kotikь)",
-        "cute_soft_sign_subtext": "ロシア語の単語のみ。",
-        "config_cute": "かわいい効果",
-    },
-    "ko": {
-        "separator_frequency": "구분자 빈도",
-        "separator_frequency_subtext": "두 단어 사이에 구분자가 들어갈 확률. 100%면 매번.",
-        "cute_header": "귀여운 효과",
-        "cute_enabled": "귀여운 효과 켜기",
-        "cute_enabled_subtext": "이모티콘, UwU, 행동 묘사 등 장식. 링크, @멘션, #태그, 코드는 그대로.",
-        "cute_preview": "미리보기",
-        "cute_preview_sample": "안녕! 잘 지내? 오늘은 정말 좋은 날이야.",
-        "cute_preview_none": "효과를 하나 이상 켜세요. 눌러서 새로고침.",
-        "cute_preview_tap": "눌러서 새로고침합니다.",
-        "cute_sentence_frequency": "문장 효과 빈도",
-        "cute_sentence_frequency_subtext": "이모티콘, 반짝이, 문장부호, 어미, 행동 묘사.",
-        "cute_word_frequency": "단어 효과 빈도",
-        "cute_word_frequency_subtext": "말더듬, 모음 늘이기, 연음 부호.",
-        "cute_kaomoji": "문장 끝에 이모티콘 (◕‿◕)",
-        "cute_sparkles": "문장을 반짝이로 감싸기 ✨",
-        "cute_exclamations": "귀여운 느낌표 (! → !✨)",
-        "cute_punctuation": "귀여운 문장부호 (. → .~, ? → ?✨)",
-        "cute_uwu_suffixes": "UwU 어미 (nya~, owo)",
-        "cute_actions": "귀여운 행동 묘사 (*꼬옥 안아줌*)",
-        "cute_actions_newline": "행동 묘사를 새 줄에",
-        "cute_lowercase": "소문자만 사용",
-        "cute_uwu_speak": "UwU 말투 (r/l → w)",
-        "cute_stutter": "말더듬 (h-hello)",
-        "cute_stretch": "모음 늘이기 (cuuute)",
-        "cute_stretch_max": "늘인 모음의 최대 길이",
-        "cute_stretch_2x": "2배 (x2)",
-        "cute_stretch_3x": "3배 (x3)",
-        "cute_soft_sign": "단어 끝에 연음 부호 (kotikь)",
-        "cute_soft_sign_subtext": "러시아어 단어에만 적용됩니다.",
-        "config_cute": "귀여운 효과",
-    },
-    "fr": {
-        "separator_frequency": "Fréquence des séparateurs",
-        "separator_frequency_subtext": "Probabilité d’un séparateur entre deux mots. 100 % : chaque paire.",
-        "cute_header": "Effets mignons",
-        "cute_enabled": "Activer les effets mignons",
-        "cute_enabled_subtext": "Kaomoji, UwU, actions et décorations. Liens, @mentions, #hashtags et code intacts.",
-        "cute_preview": "Aperçu",
-        "cute_preview_sample": "Salut ! Comment vas-tu ? Quelle belle journée.",
-        "cute_preview_none": "Activez au moins un effet. Touchez pour actualiser.",
-        "cute_preview_tap": "Touchez pour actualiser.",
-        "cute_sentence_frequency": "Fréquence des effets de phrase",
-        "cute_sentence_frequency_subtext": "Kaomoji, étincelles, ponctuation, suffixes et actions.",
-        "cute_word_frequency": "Fréquence des effets de mot",
-        "cute_word_frequency_subtext": "Bégaiement, voyelles étirées et signe mou.",
-        "cute_kaomoji": "Kaomoji en fin de phrase (◕‿◕)",
-        "cute_sparkles": "Étincelles autour de la phrase ✨",
-        "cute_exclamations": "Exclamations mignonnes (! → !✨)",
-        "cute_punctuation": "Ponctuation mignonne (. → .~, ? → ?✨)",
-        "cute_uwu_suffixes": "Suffixes UwU (nya~, owo)",
-        "cute_actions": "Actions mignonnes (*câlin*)",
-        "cute_actions_newline": "Actions sur une nouvelle ligne",
-        "cute_lowercase": "Minuscules uniquement",
-        "cute_uwu_speak": "Parler UwU (r/l → w)",
-        "cute_stutter": "Bégaiement (b-bonjour)",
-        "cute_stretch": "Étirer les voyelles (miiignon)",
-        "cute_stretch_max": "Longueur max. des voyelles étirées",
-        "cute_stretch_2x": "Double (x2)",
-        "cute_stretch_3x": "Triple (x3)",
-        "cute_soft_sign": "Signe mou en fin de mot (kotikь)",
-        "cute_soft_sign_subtext": "Uniquement pour les mots russes.",
-        "config_cute": "Effets mignons",
-    },
-    "de": {
-        "separator_frequency": "Häufigkeit der Trennzeichen",
-        "separator_frequency_subtext": "Wahrscheinlichkeit eines Trennzeichens zwischen zwei Wörtern. 100 %: jedes Paar.",
-        "cute_header": "Süße Effekte",
-        "cute_enabled": "Süße Effekte aktivieren",
-        "cute_enabled_subtext": "Kaomoji, UwU, Aktionen und Verzierungen. Links, @Erwähnungen, #Tags und Code bleiben.",
-        "cute_preview": "Vorschau",
-        "cute_preview_sample": "Hallo! Wie geht es dir? Heute ist ein schöner Tag.",
-        "cute_preview_none": "Mindestens einen Effekt aktivieren. Tippen zum Aktualisieren.",
-        "cute_preview_tap": "Zum Aktualisieren tippen.",
-        "cute_sentence_frequency": "Häufigkeit der Satzeffekte",
-        "cute_sentence_frequency_subtext": "Kaomoji, Glitzer, Satzzeichen, Endungen und Aktionen.",
-        "cute_word_frequency": "Häufigkeit der Worteffekte",
-        "cute_word_frequency_subtext": "Stottern, gedehnte Vokale und Weichheitszeichen.",
-        "cute_kaomoji": "Kaomoji am Satzende (◕‿◕)",
-        "cute_sparkles": "Glitzer um den Satz ✨",
-        "cute_exclamations": "Süße Ausrufe (! → !✨)",
-        "cute_punctuation": "Süße Satzzeichen (. → .~, ? → ?✨)",
-        "cute_uwu_suffixes": "UwU-Endungen (nya~, owo)",
-        "cute_actions": "Süße Aktionen (*umarmt*)",
-        "cute_actions_newline": "Aktionen in einer neuen Zeile",
-        "cute_lowercase": "Nur Kleinbuchstaben",
-        "cute_uwu_speak": "UwU-Sprache (r/l → w)",
-        "cute_stutter": "Stottern (h-hallo)",
-        "cute_stretch": "Vokale dehnen (süüüß)",
-        "cute_stretch_max": "Max. Länge gedehnter Vokale",
-        "cute_stretch_2x": "Doppelt (x2)",
-        "cute_stretch_3x": "Dreifach (x3)",
-        "cute_soft_sign": "Weichheitszeichen am Wortende (kotikь)",
-        "cute_soft_sign_subtext": "Nur für russische Wörter.",
-        "config_cute": "Süße Effekte",
-    },
-}
-for _code, _table in LocalizationManager.STRINGS.items():
-    _cute_extra = _CUTE_STRINGS.get(_code, _CUTE_STRINGS["en"])
-    for _key, _value in _CUTE_STRINGS["ru"].items():
-        _table[_key] = _cute_extra.get(_key, _CUTE_STRINGS["en"].get(_key, _value))
-
-
-_WIPE_STRINGS = {
-    "ru": {
-        "block_bypass_note": "Эта функция не поможет обойти блокировку.",
-        "wipe_row": "Удалить данные",
-        "wipe_row_subtext": "Очистить файлы плагина или полностью отказаться от него.",
-        "wipe_title": "Удалить данные Prefixfy?",
-        "wipe_body": "Удалит все данные плагина: конфигурации и пресеты аккаунтов, настройки, медиа, импортированные файлы и кэш проверок. Плагин перезапустится и начнёт с мастера настройки, как после первой установки.\n\nЕсли плагин устарел, сначала установится последняя версия, затем данные удалятся.\n\n«Отказаться от использования» дополнительно отключает плагин: останется только «Возобновить работу». Обновление не скачивается.",
-        "wipe_opt_out": "Отказаться от использования",
-        "wipe_confirm_clean": "Все файлы и настройки плагина будут удалены, плагин перезапустится несколько раз (это нормально) и начнёт с мастера настройки. Конфигурации и медиа пропадут безвозвратно. Сначала экспортируйте конфигурации.",
-        "wipe_next": "Далее",
-        "wipe_confirm_title": "Подтвердите удаление",
-        "wipe_confirm_out": "Все файлы и настройки плагина будут удалены, затем плагин отключится. Отменить нельзя.",
-        "wipe_confirm_btn": "Очистить",
-        "wipe_started": "Готовлю удаление…",
-        "wipe_started_multi": "Готовлю удаление… Плагин перезапустится несколько раз.",
-        "wipe_halt": "Идёт очистка",
-        "wipe_halt_subtext": "Плагин скоро перезапустится ещё раз и начнёт с нуля.",
-        "wipe_updating": "Обновление до {version}, затем удаление данных…",
-        "wipe_reinstalling": "Переустановка сборки {version}, затем удаление данных…",
-        "wipe_update_failed": "Не удалось обновить плагин: {reason}. Ничего не удалено.",
-        "wipe_restart_manual": "Выключите и включите плагин, чтобы завершить удаление.",
-        "wipe_failed": "Удаление не подготовлено. Ничего не удалено.",
-        "wipe_done": "Данные очищены и созданы заново",
-        "resume_title": "Возобновить работу",
-        "resume_subtext": "Prefixfy отключён и ничего не хранит. Нажмите, чтобы начать с нуля.",
-        "resume_confirm_title": "Возобновить работу?",
-        "resume_confirm_body": "Плагин запустится как при первой установке, с настройками по умолчанию.",
-        "resume_btn": "Возобновить",
-        "resume_done": "Prefixfy запущен",
-        "resume_failed": "Не удалось запустить плагин. Выключите и включите его.",
-    },
-    "en": {
-        "block_bypass_note": "This function won’t help bypass the block.",
-        "wipe_row": "Delete data",
-        "wipe_row_subtext": "Clear plugin files or stop using it entirely.",
-        "wipe_title": "Delete Prefixfy data?",
-        "wipe_body": "Deletes all plugin data: configurations and account presets, settings, attached media, imported files and the verification cache. The plugin restarts and begins with the setup wizard, as after a first install.\n\nIf the plugin is outdated, the latest version is installed first, then the data is deleted.\n\n“Stop using the plugin” also puts the plugin to sleep: only “Resume” remains. No update is downloaded.",
-        "wipe_opt_out": "Stop using the plugin",
-        "wipe_confirm_clean": "All plugin files and settings will be deleted, then the plugin restarts several times (this is normal) and begins with the setup wizard. Configurations and attached media are lost for good. Export your configurations first.",
-        "wipe_next": "Next",
-        "wipe_confirm_title": "Confirm deletion",
-        "wipe_confirm_out": "All plugin files and settings will be deleted and the plugin switched off. This can’t be undone.",
-        "wipe_confirm_btn": "Clear",
-        "wipe_started": "Preparing deletion…",
-        "wipe_started_multi": "Preparing deletion… The plugin will restart several times.",
-        "wipe_halt": "Cleaning in progress",
-        "wipe_halt_subtext": "The plugin will restart once more shortly and start fresh.",
-        "wipe_updating": "Updating to {version}, then deleting data…",
-        "wipe_reinstalling": "Reinstalling {version}, then deleting data…",
-        "wipe_update_failed": "Update failed: {reason}. Nothing was deleted.",
-        "wipe_restart_manual": "Turn the plugin off and on to finish the deletion.",
-        "wipe_failed": "Couldn’t prepare deletion. Nothing was deleted.",
-        "wipe_done": "Data cleared and recreated",
-        "resume_title": "Resume",
-        "resume_subtext": "Prefixfy is off and stores nothing. Tap to start fresh.",
-        "resume_confirm_title": "Resume the plugin?",
-        "resume_confirm_body": "The plugin starts as if freshly installed, with default settings.",
-        "resume_btn": "Resume",
-        "resume_done": "Prefixfy started",
-        "resume_failed": "Couldn’t start the plugin. Turn it off and on.",
-    },
-    "ja": {
-        "block_bypass_note": "この機能ではブロックを回避できません。",
-        "wipe_row": "データを削除",
-        "wipe_row_subtext": "ファイルを消去、または使用を完全にやめます。",
-        "wipe_title": "Prefixfyのデータを削除しますか？",
-        "wipe_body": "プラグインの全データ（構成・アカウント別プリセット、設定、添付メディア、インポートファイル、検証キャッシュ）を削除します。プラグインは再起動し、初回インストール時のように設定ウィザードから始まります。\n\nプラグインが古い場合は、先に最新版をインストールしてから削除します。\n\n「使用をやめる」にチェックすると、さらにプラグインを休止状態にし、「再開」だけが残ります。更新は取得しません。",
-        "wipe_opt_out": "使用をやめる",
-        "wipe_confirm_clean": "すべてのファイルと設定を削除し、プラグインを複数回再起動して（正常な動作です）設定ウィザードから始めます。構成と添付メディアは完全に失われます。先に構成をエクスポートしてください。",
-        "wipe_next": "次へ",
-        "wipe_confirm_title": "削除の確認",
-        "wipe_confirm_out": "すべてのファイルと設定を削除し、プラグインを停止します。元に戻せません。",
-        "wipe_confirm_btn": "消去",
-        "wipe_started": "削除の準備中…",
-        "wipe_started_multi": "削除の準備中… プラグインは複数回再起動します。",
-        "wipe_halt": "消去中",
-        "wipe_halt_subtext": "まもなくプラグインがもう一度再起動し、最初から始まります。",
-        "wipe_updating": "{version} に更新後、データを削除します…",
-        "wipe_reinstalling": "{version} を再インストール後、データを削除します…",
-        "wipe_update_failed": "更新に失敗: {reason}。何も削除していません。",
-        "wipe_restart_manual": "削除を完了するには、プラグインをオフ→オンにしてください。",
-        "wipe_failed": "削除を準備できませんでした。何も削除していません。",
-        "wipe_done": "データを消去して再作成しました",
-        "resume_title": "再開",
-        "resume_subtext": "Prefixfy は停止中で何も保存していません。タップでやり直し。",
-        "resume_confirm_title": "再開しますか？",
-        "resume_confirm_body": "初めてインストールしたように、初期設定で起動します。",
-        "resume_btn": "再開",
-        "resume_done": "Prefixfyを起動しました",
-        "resume_failed": "起動できませんでした。オフ→オンにしてください。",
-    },
-    "ko": {
-        "block_bypass_note": "이 기능으로 차단을 우회할 수 없습니다.",
-        "wipe_row": "데이터 삭제",
-        "wipe_row_subtext": "파일을 정리하거나 사용을 완전히 중단합니다.",
-        "wipe_title": "Prefixfy 데이터를 삭제할까요?",
-        "wipe_body": "플러그인의 모든 데이터(구성·계정별 프리셋, 설정, 첨부 미디어, 가져온 파일, 검증 캐시)를 삭제합니다. 플러그인이 다시 시작되고 처음 설치한 것처럼 설정 마법사부터 시작합니다.\n\n플러그인이 오래되었다면 먼저 최신 버전을 설치한 뒤 삭제합니다.\n\n「사용 중단」을 선택하면 플러그인이 휴면 상태가 되며 「다시 시작」만 남습니다. 업데이트는 받지 않습니다.",
-        "wipe_opt_out": "사용 중단",
-        "wipe_confirm_clean": "모든 파일과 설정을 삭제하고 플러그인을 여러 번 다시 시작해(정상입니다) 설정 마법사부터 시작합니다. 구성과 첨부 미디어는 영구적으로 사라집니다. 먼저 구성을 내보내세요.",
-        "wipe_next": "다음",
-        "wipe_confirm_title": "삭제 확인",
-        "wipe_confirm_out": "모든 파일과 설정을 삭제하고 플러그인을 끕니다. 되돌릴 수 없습니다.",
-        "wipe_confirm_btn": "삭제",
-        "wipe_started": "삭제를 준비하는 중…",
-        "wipe_started_multi": "삭제 준비 중… 플러그인이 여러 번 다시 시작됩니다.",
-        "wipe_halt": "삭제 중",
-        "wipe_halt_subtext": "곧 플러그인이 한 번 더 다시 시작되며 처음부터 시작합니다.",
-        "wipe_updating": "{version}(으)로 업데이트 후 데이터를 삭제합니다…",
-        "wipe_reinstalling": "{version}을(를) 재설치한 후 데이터를 삭제합니다…",
-        "wipe_update_failed": "업데이트 실패: {reason}. 삭제된 것은 없습니다.",
-        "wipe_restart_manual": "삭제를 마치려면 플러그인을 껐다 켜세요.",
-        "wipe_failed": "삭제를 준비하지 못했습니다. 삭제된 것은 없습니다.",
-        "wipe_done": "데이터를 삭제하고 다시 만들었습니다",
-        "resume_title": "다시 시작",
-        "resume_subtext": "Prefixfy가 꺼져 있고 아무것도 저장하지 않습니다. 눌러서 새로 시작.",
-        "resume_confirm_title": "다시 시작할까요?",
-        "resume_confirm_body": "방금 설치한 것처럼 기본 설정으로 시작합니다.",
-        "resume_btn": "다시 시작",
-        "resume_done": "Prefixfy를 시작했습니다",
-        "resume_failed": "시작하지 못했습니다. 껐다 켜세요.",
-    },
-    "fr": {
-        "block_bypass_note": "Cette fonction ne contourne pas le blocage.",
-        "wipe_row": "Supprimer les données",
-        "wipe_row_subtext": "Effacer les fichiers ou cesser de l’utiliser.",
-        "wipe_title": "Supprimer les données de Prefixfy ?",
-        "wipe_body": "Supprime toutes les données du plugin : configurations et préréglages de comptes, réglages, médias joints, fichiers importés et cache de vérification. Le plugin redémarre et commence par l’assistant de configuration, comme après une première installation.\n\nSi le plugin est obsolète, la dernière version est installée d’abord, puis les données sont supprimées.\n\n« Cesser d’utiliser le plugin » met en plus le plugin en veille : seul « Reprendre » reste. Aucune mise à jour n’est téléchargée.",
-        "wipe_opt_out": "Cesser d’utiliser le plugin",
-        "wipe_confirm_clean": "Tous les fichiers et réglages seront supprimés, puis le plugin redémarre plusieurs fois (c’est normal) et commence par l’assistant de configuration. Configurations et médias joints seront perdus définitivement. Exportez d’abord vos configurations.",
-        "wipe_next": "Suivant",
-        "wipe_confirm_title": "Confirmer la suppression",
-        "wipe_confirm_out": "Tous les fichiers et réglages seront supprimés, puis le plugin se désactivera. Irréversible.",
-        "wipe_confirm_btn": "Effacer",
-        "wipe_started": "Préparation de la suppression…",
-        "wipe_started_multi": "Préparation de la suppression… Le plugin redémarrera plusieurs fois.",
-        "wipe_halt": "Nettoyage en cours",
-        "wipe_halt_subtext": "Le plugin va redémarrer encore une fois et repartira de zéro.",
-        "wipe_updating": "Mise à jour vers {version}, puis suppression des données…",
-        "wipe_reinstalling": "Réinstallation de {version}, puis suppression des données…",
-        "wipe_update_failed": "Échec de la mise à jour : {reason}. Rien n’a été supprimé.",
-        "wipe_restart_manual": "Désactivez puis réactivez le plugin pour terminer.",
-        "wipe_failed": "Préparation impossible. Rien n’a été supprimé.",
-        "wipe_done": "Données effacées et recréées",
-        "resume_title": "Reprendre",
-        "resume_subtext": "Prefixfy est désactivé et ne stocke rien. Touchez pour repartir de zéro.",
-        "resume_confirm_title": "Reprendre le plugin ?",
-        "resume_confirm_body": "Le plugin démarre comme neuf, avec les réglages par défaut.",
-        "resume_btn": "Reprendre",
-        "resume_done": "Prefixfy est démarré",
-        "resume_failed": "Démarrage impossible. Désactivez puis réactivez.",
-    },
-    "de": {
-        "block_bypass_note": "Diese Funktion umgeht die Sperre nicht.",
-        "wipe_row": "Daten löschen",
-        "wipe_row_subtext": "Dateien bereinigen oder Plugin ganz aufgeben.",
-        "wipe_title": "Prefixfy-Daten löschen?",
-        "wipe_body": "Löscht alle Plugin-Daten: Konfigurationen und Konto-Presets, Einstellungen, angehängte Medien, importierte Dateien und den Prüfcache. Das Plugin startet neu und beginnt mit dem Einrichtungsassistenten, wie nach einer Erstinstallation.\n\nIst das Plugin veraltet, wird zuerst die neueste Version installiert, dann werden die Daten gelöscht.\n\n„Nutzung aufgeben“ versetzt das Plugin zusätzlich in den Ruhezustand: nur „Fortsetzen“ bleibt. Es wird kein Update geladen.",
-        "wipe_opt_out": "Nutzung aufgeben",
-        "wipe_confirm_clean": "Alle Plugin-Dateien und Einstellungen werden gelöscht, dann startet das Plugin mehrmals neu (das ist normal) und beginnt mit dem Einrichtungsassistenten. Konfigurationen und Medien gehen unwiderruflich verloren. Exportiere zuerst deine Konfigurationen.",
-        "wipe_next": "Weiter",
-        "wipe_confirm_title": "Löschen bestätigen",
-        "wipe_confirm_out": "Alle Dateien und Einstellungen werden gelöscht, dann schaltet sich das Plugin ab. Nicht rückgängig zu machen.",
-        "wipe_confirm_btn": "Löschen",
-        "wipe_started": "Löschen wird vorbereitet…",
-        "wipe_started_multi": "Löschung wird vorbereitet… Das Plugin startet mehrmals neu.",
-        "wipe_halt": "Bereinigung läuft",
-        "wipe_halt_subtext": "Das Plugin startet gleich noch einmal neu und beginnt von vorn.",
-        "wipe_updating": "Update auf {version}, danach Daten löschen…",
-        "wipe_reinstalling": "{version} neu installieren, danach Daten löschen…",
-        "wipe_update_failed": "Update fehlgeschlagen: {reason}. Nichts gelöscht.",
-        "wipe_restart_manual": "Plugin aus- und einschalten, um das Löschen abzuschließen.",
-        "wipe_failed": "Löschen nicht vorbereitet. Nichts gelöscht.",
-        "wipe_done": "Daten gelöscht und neu angelegt",
-        "resume_title": "Fortsetzen",
-        "resume_subtext": "Prefixfy ist aus und speichert nichts. Tippe für einen Neustart.",
-        "resume_confirm_title": "Plugin fortsetzen?",
-        "resume_confirm_body": "Das Plugin startet wie neu installiert, mit Standardeinstellungen.",
-        "resume_btn": "Fortsetzen",
-        "resume_done": "Prefixfy gestartet",
-        "resume_failed": "Start fehlgeschlagen. Aus- und wieder einschalten.",
-    },
-}
-for _code, _table in LocalizationManager.STRINGS.items():
-    _wipe_extra = _WIPE_STRINGS.get(_code, _WIPE_STRINGS["en"])
-    for _key, _value in _WIPE_STRINGS["ru"].items():
-        _table[_key] = _wipe_extra.get(_key, _WIPE_STRINGS["en"].get(_key, _value))
-
-
-_SEPARATOR_SPACE_STRINGS = {
-    "ru": {
-        "separator_spaces": "Включить пробелы",
-        "separator_spaces_subtext": "Если выключено, разделитель ставится вплотную к словам: приветякакядела.",
-        "separator_space_mode": "Где ставить пробелы",
-        "separator_space_both": "С обеих сторон",
-        "separator_space_left": "Слева",
-        "separator_space_right": "Справа",
-        "auto_reset_done": "Данные повреждены, плагин сброшен автоматически",
-    },
-    "en": {
-        "separator_spaces": "Enable spaces",
-        "separator_spaces_subtext": "When off, the separator sits right against the words: hixtherexyou.",
-        "separator_space_mode": "Where to put spaces",
-        "separator_space_both": "Both sides",
-        "separator_space_left": "Left",
-        "separator_space_right": "Right",
-        "auto_reset_done": "Data was damaged, plugin reset automatically",
-    },
-    "ja": {
-        "separator_spaces": "スペースを有効にする",
-        "separator_spaces_subtext": "オフの場合、区切り文字は単語にくっつきます：приветякакядела。",
-        "separator_space_mode": "スペースの位置",
-        "separator_space_both": "両側",
-        "separator_space_left": "左",
-        "separator_space_right": "右",
-        "auto_reset_done": "データが破損したため自動でリセットしました",
-    },
-    "ko": {
-        "separator_spaces": "공백 사용",
-        "separator_spaces_subtext": "끄면 구분자가 단어에 붙어서 들어갑니다: приветякакядела.",
-        "separator_space_mode": "공백 위치",
-        "separator_space_both": "양쪽",
-        "separator_space_left": "왼쪽",
-        "separator_space_right": "오른쪽",
-        "auto_reset_done": "데이터가 손상되어 자동으로 초기화했습니다",
-    },
-    "fr": {
-        "separator_spaces": "Activer les espaces",
-        "separator_spaces_subtext": "Désactivé, le séparateur colle aux mots : приветякакядела.",
-        "separator_space_mode": "Emplacement des espaces",
-        "separator_space_both": "Des deux côtés",
-        "separator_space_left": "Gauche",
-        "separator_space_right": "Droite",
-        "auto_reset_done": "Données endommagées, plugin réinitialisé automatiquement",
-    },
-    "de": {
-        "separator_spaces": "Leerzeichen aktivieren",
-        "separator_spaces_subtext": "Ausgeschaltet sitzt das Trennzeichen direkt an den Wörtern: приветякакядела.",
-        "separator_space_mode": "Wo Leerzeichen stehen",
-        "separator_space_both": "Beidseitig",
-        "separator_space_left": "Links",
-        "separator_space_right": "Rechts",
-        "auto_reset_done": "Daten beschädigt, Plugin automatisch zurückgesetzt",
-    },
-}
-for _code, _table in LocalizationManager.STRINGS.items():
-    _sp_extra = _SEPARATOR_SPACE_STRINGS.get(_code, _SEPARATOR_SPACE_STRINGS["en"])
-    for _key, _value in _SEPARATOR_SPACE_STRINGS["ru"].items():
-        _table[_key] = _sp_extra.get(_key, _SEPARATOR_SPACE_STRINGS["en"].get(_key, _value))
-
-
-_SETUP_STRINGS = {
-    "ru": {
-        "setup_header_1": "Этап 1/3: выберите язык",
-        "setup_header_2": "Этап 2/3: настройте оформление",
-        "setup_header_3": "Этап 3/3: настройте обновление",
-        "setup_next": "Далее",
-        "setup_next_subtext": "Перейти к этапу {step} из 3",
-        "setup_back": "Назад",
-        "setup_back_subtext": "Вернуться к этапу {step} из 3",
-        "setup_finish": "Завершить настройку",
-        "setup_finish_subtext": "Проверит обновления и установит их, если они есть, затем откроет все настройки.",
-        "setup_checking": "Проверка аккаунта…",
-        "setup_checking_subtext": "Запрашиваю у сервера список блокировок. Это займёт несколько секунд.",
-        "setup_done": "Начальная настройка завершена",
-        "welcome_banner": "Спасибо за установку Prefixfy!",
-        "welcome_banner_subtext": "Нажмите, чтобы узнать, что умеет плагин и как начать.",
-        "welcome_title": "Добро пожаловать в Prefixfy",
-        "welcome_body": "Спасибо, что установили Prefixfy! Плагин добавляет к вашим сообщениям маску: текст до или после, оформление и украшения.\n\nЧто умеет:\n• маска с Markdown, стилями текста и разделителями\n• милые эффекты: каомодзи, UwU, украшения\n• прикреплённое медиа\n• исключения: чаты, где плагин не работает, или только они\n• конфигурации: несколько наборов настроек, импорт, экспорт и расписание\n• отдельные настройки для каждого аккаунта\n\nКак начать:\n1. В разделе «Оформление текста» задайте маску.\n2. В разделе «Где работает» выберите, что оформлять.\n3. Чтобы добавить чат в исключения или убрать из них, используйте пункт меню в самом чате.\n\nГотово — просто пишите сообщения.",
-        "welcome_ok": "Понятно",
-    },
-    "en": {
-        "setup_header_1": "Step 1/3: choose a language",
-        "setup_header_2": "Step 2/3: set up the appearance",
-        "setup_header_3": "Step 3/3: set up updates",
-        "setup_next": "Next",
-        "setup_next_subtext": "Go to step {step} of 3",
-        "setup_back": "Back",
-        "setup_back_subtext": "Back to step {step} of 3",
-        "setup_finish": "Finish setup",
-        "setup_finish_subtext": "Checks for updates and installs them if found, then opens all settings.",
-        "setup_checking": "Checking account…",
-        "setup_checking_subtext": "Requesting the block list from the server. This takes a few seconds.",
-        "setup_done": "Initial setup complete",
-        "welcome_banner": "Thanks for installing Prefixfy!",
-        "welcome_banner_subtext": "Tap to see what the plugin does and how to get started.",
-        "welcome_title": "Welcome to Prefixfy",
-        "welcome_body": "Thanks for installing Prefixfy! The plugin adds a mask to your messages: text before or after, styling and decorations.\n\nWhat it does:\n• a mask with Markdown, text styles and separators\n• cute effects: kaomoji, UwU, decorations\n• attached media\n• exceptions: chats where the plugin is off, or only those\n• configurations: several sets of settings, import, export and a schedule\n• separate settings for each account\n\nGetting started:\n1. Set your mask in “Text appearance”.\n2. Choose what to style in “Where it works”.\n3. To add a chat to the exceptions or remove it, use the menu item inside the chat.\n\nThat’s it — just send messages.",
-        "welcome_ok": "Got it",
-    },
-    "ja": {
-        "setup_header_1": "ステップ 1/3: 言語を選択",
-        "setup_header_2": "ステップ 2/3: 外観を設定",
-        "setup_header_3": "ステップ 3/3: アップデートを設定",
-        "setup_next": "次へ",
-        "setup_next_subtext": "ステップ {step}/3 へ進みます",
-        "setup_back": "戻る",
-        "setup_back_subtext": "ステップ {step}/3 に戻ります",
-        "setup_finish": "設定を完了",
-        "setup_finish_subtext": "アップデートを確認し、新しい版があればインストールしてから、すべての設定を開きます。",
-        "setup_checking": "アカウントを確認中…",
-        "setup_checking_subtext": "サーバーからブロックリストを取得しています。数秒かかります。",
-        "setup_done": "初期設定が完了しました",
-        "welcome_banner": "Prefixfyをインストールいただきありがとうございます！",
-        "welcome_banner_subtext": "タップして、機能と使い始め方を確認できます。",
-        "welcome_title": "Prefixfyへようこそ",
-        "welcome_body": "Prefixfyをインストールいただきありがとうございます！このプラグインは、メッセージの前後に文字を付けたり、装飾を加えたりします。\n\n主な機能:\n• Markdown、文字スタイル、区切りに対応したマスク\n• かわいい効果: 顔文字、UwU、装飾\n• 添付メディア\n• 例外設定: プラグインを使わないチャット、またはそのチャットだけで使う設定\n• 構成: 複数の設定セット、インポート、エクスポート、スケジュール\n• アカウントごとの個別設定\n\n使い始めるには:\n1. 「テキストの装飾」でマスクを設定します。\n2. 「適用範囲」で装飾する対象を選びます。\n3. チャットを例外に追加・削除するには、チャット内のメニュー項目を使います。\n\n準備は完了です。あとはメッセージを送るだけ。",
-        "welcome_ok": "了解",
-    },
-    "ko": {
-        "setup_header_1": "단계 1/3: 언어 선택",
-        "setup_header_2": "단계 2/3: 꾸미기 설정",
-        "setup_header_3": "단계 3/3: 업데이트 설정",
-        "setup_next": "다음",
-        "setup_next_subtext": "{step}/3단계로 이동합니다",
-        "setup_back": "이전",
-        "setup_back_subtext": "{step}/3단계로 돌아갑니다",
-        "setup_finish": "설정 완료",
-        "setup_finish_subtext": "업데이트를 확인하고 새 버전이 있으면 설치한 뒤 전체 설정을 엽니다.",
-        "setup_checking": "계정 확인 중…",
-        "setup_checking_subtext": "서버에서 차단 목록을 가져오는 중입니다. 몇 초 걸립니다.",
-        "setup_done": "초기 설정이 완료되었습니다",
-        "welcome_banner": "Prefixfy를 설치해 주셔서 감사합니다!",
-        "welcome_banner_subtext": "눌러서 기능과 시작 방법을 확인하세요.",
-        "welcome_title": "Prefixfy에 오신 것을 환영합니다",
-        "welcome_body": "Prefixfy를 설치해 주셔서 감사합니다! 이 플러그인은 메시지 앞뒤에 문구를 붙이고 꾸밈을 더해 줍니다.\n\n주요 기능:\n• Markdown, 글자 스타일, 구분자를 지원하는 마스크\n• 귀여운 효과: 이모티콘, UwU, 장식\n• 첨부 미디어\n• 예외: 플러그인을 쓰지 않을 채팅, 또는 그 채팅에서만 쓰기\n• 구성: 여러 설정 세트, 가져오기, 내보내기, 일정\n• 계정별 개별 설정\n\n시작하는 방법:\n1. 「텍스트 꾸미기」에서 마스크를 설정하세요.\n2. 「적용 범위」에서 꾸밀 대상을 고르세요.\n3. 채팅을 예외에 넣거나 빼려면 채팅 안의 메뉴 항목을 사용하세요.\n\n준비 끝. 이제 메시지를 보내기만 하면 됩니다.",
-        "welcome_ok": "확인",
-    },
-    "fr": {
-        "setup_header_1": "Étape 1/3 : choisissez la langue",
-        "setup_header_2": "Étape 2/3 : réglez la mise en forme",
-        "setup_header_3": "Étape 3/3 : réglez les mises à jour",
-        "setup_next": "Suivant",
-        "setup_next_subtext": "Passer à l’étape {step}/3",
-        "setup_back": "Retour",
-        "setup_back_subtext": "Revenir à l’étape {step}/3",
-        "setup_finish": "Terminer la configuration",
-        "setup_finish_subtext": "Vérifie les mises à jour, les installe s’il y en a, puis ouvre tous les réglages.",
-        "setup_checking": "Vérification du compte…",
-        "setup_checking_subtext": "Demande de la liste de blocage au serveur. Quelques secondes.",
-        "setup_done": "Configuration initiale terminée",
-        "welcome_banner": "Merci d’avoir installé Prefixfy !",
-        "welcome_banner_subtext": "Touchez pour voir ce que fait le plugin et comment démarrer.",
-        "welcome_title": "Bienvenue dans Prefixfy",
-        "welcome_body": "Merci d’avoir installé Prefixfy ! Le plugin ajoute un masque à vos messages : texte avant ou après, mise en forme et décorations.\n\nCe qu’il sait faire :\n• un masque avec Markdown, styles de texte et séparateurs\n• effets mignons : kaomoji, UwU, décorations\n• média joint\n• exceptions : chats où le plugin est désactivé, ou seulement ceux-là\n• configurations : plusieurs jeux de réglages, import, export et planning\n• réglages distincts par compte\n\nPour commencer :\n1. Définissez votre masque dans « Mise en forme du texte ».\n2. Choisissez ce qui est mis en forme dans « Où ça s’applique ».\n3. Pour ajouter un chat aux exceptions ou l’en retirer, utilisez l’entrée de menu dans le chat.\n\nC’est tout : envoyez simplement des messages.",
-        "welcome_ok": "Compris",
-    },
-    "de": {
-        "setup_header_1": "Schritt 1/3: Sprache wählen",
-        "setup_header_2": "Schritt 2/3: Darstellung einstellen",
-        "setup_header_3": "Schritt 3/3: Updates einstellen",
-        "setup_next": "Weiter",
-        "setup_next_subtext": "Weiter zu Schritt {step}/3",
-        "setup_back": "Zurück",
-        "setup_back_subtext": "Zurück zu Schritt {step}/3",
-        "setup_finish": "Einrichtung abschließen",
-        "setup_finish_subtext": "Sucht nach Updates, installiert sie bei Bedarf und öffnet dann alle Einstellungen.",
-        "setup_checking": "Konto wird geprüft…",
-        "setup_checking_subtext": "Sperrliste wird vom Server abgerufen. Das dauert einige Sekunden.",
-        "setup_done": "Einrichtung abgeschlossen",
-        "welcome_banner": "Danke für die Installation von Prefixfy!",
-        "welcome_banner_subtext": "Tippe, um zu sehen, was das Plugin kann und wie du startest.",
-        "welcome_title": "Willkommen bei Prefixfy",
-        "welcome_body": "Danke für die Installation von Prefixfy! Das Plugin versieht deine Nachrichten mit einer Maske: Text davor oder danach, Formatierung und Verzierungen.\n\nDas kann es:\n• eine Maske mit Markdown, Textstilen und Trennern\n• süße Effekte: Kaomoji, UwU, Verzierungen\n• angehängte Medien\n• Ausnahmen: Chats ohne Plugin oder nur diese\n• Konfigurationen: mehrere Einstellungssätze, Import, Export und Zeitplan\n• eigene Einstellungen pro Konto\n\nSo startest du:\n1. Lege deine Maske unter „Textgestaltung“ fest.\n2. Wähle unter „Wo es wirkt“, was formatiert wird.\n3. Um einen Chat zu den Ausnahmen hinzuzufügen oder zu entfernen, nutze den Menüpunkt im Chat.\n\nFertig – schreib einfach Nachrichten.",
-        "welcome_ok": "Verstanden",
-    },
-}
-for _code, _table in LocalizationManager.STRINGS.items():
-    _setup_extra = _SETUP_STRINGS.get(_code, _SETUP_STRINGS["en"])
-    for _key, _value in _SETUP_STRINGS["ru"].items():
-        _table[_key] = _setup_extra.get(_key, _SETUP_STRINGS["en"].get(_key, _value))
-
-
 _SYNODIC_MONTH = 29.530588853
 
 
@@ -3135,7 +2632,7 @@ def days_tag_value(tag: str, today) -> str:
 
 COUNTDOWN_UNITS = {
     "ru": ("д", "ч", "м"), "en": ("d", "h", "m"), "ja": ("日", "時間", "分"),
-    "ko": ("일", "시간", "분"), "fr": ("j", "h", "min"), "de": ("T", "Std", "Min"),
+    "ko": ("일", "시간", "분"), "fr": ("j", "h", "min"),
 }
 
 
@@ -4673,7 +4170,6 @@ FEATURE_FLAGS: Dict[str, bool] = {
     "lang_ja": True,
     "lang_ko": True,
     "lang_fr": True,
-    "lang_de": True,
 }
 MASK_TAG_NAMES = ("date", "time", "datetime", "time12", "chat", "id", "weekday", "weekday_short", "year", "year_short", "month", "monthname", "day", "week", "yearday", "hour", "minute", "second", "ampm", "daypart", "timestamp", "tz", "chattype", "username", "count", "dice", "random_emoji", "emoji", "reply", "chatcount", "battery", "moon", "line", "since", "until", "quote", "countdown", "weather")
 APPEARANCE_FLAGS: Dict[str, bool] = {
@@ -4971,11 +4467,25 @@ def enabled_language_indices() -> List[int]:
     return [index for index in range(1, len(LANGUAGE_MODES)) if language_enabled(LANGUAGE_MODES[index])]
 
 
+def language_index_value(value) -> int:
+    """48.0.0: индекс языка из настроек. Вне раскладки (например, сохранённый «de» = 6) — это автоопределение."""
+    index = clamp_int(value, 0, -(2 ** 31), 2 ** 31)
+    return index if 0 <= index < len(LANGUAGE_MODES) else 0
+
+
 def migrate_language_index(value) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or not 0 <= value < len(LEGACY_LANGUAGE_MODES):
         return 0
     code = LEGACY_LANGUAGE_MODES[value]
+    if code == "de":
+        code = "en"  # немецкий удалён: сидевшие на нём переходят на английский
     return LANGUAGE_MODES.index(code) if code in LANGUAGE_MODES else 0
+
+
+def removed_german_index(value) -> bool:
+    """True для сохранённого индекса удалённого немецкого (пока этот индекс не занят другим языком)."""
+    return (len(LANGUAGE_MODES) <= GERMAN_LEGACY_INDEX and isinstance(value, int)
+            and not isinstance(value, bool) and value == GERMAN_LEGACY_INDEX)
 
 
 def language_layout_pending(plugin) -> bool:
@@ -5050,8 +4560,6 @@ CUTE_ACTIONS = {
            "*꼬리 살랑살랑*", "*눈 반짝반짝*", "*볼 비비기*"),
     "fr": ("*câlin*", "*caresse la tête*", "*glousse*", "*ronronne*", "*sourit*", "*fait un clin d’œil*", "*rougit*",
            "*saute de joie*", "*remue la queue*", "*fait les yeux doux*", "*frotte son nez*"),
-    "de": ("*umarmt*", "*streichelt den Kopf*", "*kichert*", "*schnurrt*", "*lächelt*", "*zwinkert*", "*wird rot*",
-           "*hüpft vor Freude*", "*wedelt mit dem Schwanz*", "*macht große Augen*", "*stupst die Nase an*"),
 }
 CUTE_VOWELS = {
     "ru": "аеёиоуыэюяАЕЁИОУЫЭЮЯ",
@@ -5114,7 +4622,7 @@ class RuntimeSettings:
         def get(key):
             return raw.get(key, setting_default(raw, key))
 
-        self.language = clamp_int(get("language"), 0, 0, len(LANGUAGE_MODES) - 1)
+        self.language = language_index_value(get("language"))
         self.chat_scope_enabled = bool(get("chat_scope_enabled"))
         self.process_message = bool(get("process_message"))
         self.process_media = bool(get("process_media"))
@@ -5212,7 +4720,7 @@ class PrefixfySettings:
         return RuntimeSettings(self.raw())
 
     def language_index(self) -> int:
-        return clamp_int(self.get("language"), 0, 0, len(LANGUAGE_MODES) - 1)
+        return language_index_value(self.get("language"))
 
     def separator_count(self) -> int:
         return clamp_int(self.get("emoji_count"), 1, 1, MAX_SEPARATOR_COUNT)
@@ -5489,7 +4997,6 @@ class CuteTransformation(Transformation):
     _JAPANESE_RE = re.compile("[\u3040-\u30ff\u4e00-\u9fff]")
     _KOREAN_RE = re.compile("[\uac00-\ud7af]")
     _LATIN_RE = re.compile("[A-Za-z\u00c0-\u00ff\u0152\u0153\u0178]")
-    _GERMAN_RE = re.compile("[\u00e4\u00f6\u00fc\u00df\u00c4\u00d6\u00dc]")
     _FRENCH_RE = re.compile("[\u00e0\u00e2\u00e7\u00e8\u00e9\u00ea\u00eb\u00ee\u00ef\u00f4\u00f9\u00fb\u0153]")
 
     def __init__(self, settings: "RuntimeSettings"):
@@ -5518,11 +5025,9 @@ class CuteTransformation(Transformation):
             code = self.options.language
         elif best != "latin":
             code = best
-        elif self._GERMAN_RE.search(visible):
-            code = "de"
         elif self._FRENCH_RE.search(visible):
             code = "fr"
-        elif self.options.language in ("fr", "de"):
+        elif self.options.language == "fr":
             code = self.options.language
         else:
             code = "en"
@@ -6741,6 +6246,12 @@ def extract_component(data: dict, component: str):
         value = section.get("value")
         if _is_int(value) and 0 <= value < len(LEGACY_LANGUAGE_MODES):
             section = {**section, "value": migrate_language_index(value)}
+    if component == "language" and isinstance(section, dict):
+        value = section.get("value")
+        if removed_german_index(value):
+            section = {**section, "value": ENGLISH_INDEX}  # 48.0.0: «de» из старых файлов -> английский
+        elif _is_int(value) and value >= len(LANGUAGE_MODES):
+            section = {**section, "value": 0}
     return section
 
 
@@ -7084,7 +6595,7 @@ class ConfigTransfer:
             done = False
         if done:
             return False
-        self._toast("import_locked_setup", fragment)
+        self._toast("config_import_locked", fragment)
         return True
 
     def request_media_import(self, view=None):
@@ -7141,7 +6652,7 @@ class ConfigTransfer:
         return tuple(c for c in COMPONENTS if c not in hidden)
 
     def _component_label(self, component):
-        return self._tr("config_" + component)
+        return self._tr("config_part_" + component)
 
     def request_import(self, view=None):
         self._show_selection("import")
@@ -7164,19 +6675,19 @@ class ConfigTransfer:
         available = tuple(c for c in self.visible_components() if operation != "reset" or COMPONENT_KEYS.get(c))
         rows = [(self._component_label(component), True, True) for component in available]
         extra = None
-        message = self._tr("select_configuration_subtext", n=len(available))
+        message = self._tr("config_parts_message", n=len(available))
         imported = False
         if operation == "import":
             extra = (self._tr("config_import_as_new"), False)
         elif operation == "reset":
             imported = self.plugin.configurations.is_imported()
-            extra = (self._tr("reset_to_plugin_defaults"), False, imported)
+            extra = (self._tr("config_reset_to_plugin"), False, imported)
             if not imported:
-                message += "\n\n" + self._tr("reset_to_plugin_defaults_unavailable")
+                message += "\n\n" + self._tr("config_reset_to_plugin_unavailable")
 
         def confirm(selected, extra_checked):
             if not selected:
-                self._toast("configuration_nothing_selected", fragment)
+                self._toast("config_parts_none", fragment)
                 return False
             components = tuple(available[index] for index in selected)
             if operation == "import":
@@ -7188,9 +6699,9 @@ class ConfigTransfer:
             return True
 
         self.plugin.show_checklist(
-            self._tr("select_configuration"), rows, confirm,
+            self._tr("config_parts_title"), rows, confirm,
             message=message,
-            extra=extra, positive=self._tr("apply"), fragment=fragment,
+            extra=extra, positive=self._tr("action_apply"), fragment=fragment,
         )
 
     def _request_import(self, components, as_new=False):
@@ -7330,7 +6841,7 @@ class ConfigTransfer:
             def confirm(selected, as_new):
                 chosen = tuple(visible[i] for i in selected if visible[i] in detected)
                 if not chosen:
-                    self._toast("configuration_nothing_selected", fragment)
+                    self._toast("config_parts_none", fragment)
                     return False
                 self._import_opened_data(data, fragment, chosen, as_new)
                 return True
@@ -7339,17 +6850,17 @@ class ConfigTransfer:
                 self.discard_container_media(data)
 
             shown = self.plugin.show_checklist(
-                self._tr("config_found_title"), rows, confirm,
-                message=self._tr("config_found_contains"),
+                self._tr("config_import_found_title"), rows, confirm,
+                message=self._tr("config_import_found_contains"),
                 extra=(self._tr("config_import_as_new"), False),
-                positive=self._tr("config_found_import"), fragment=fragment,
+                positive=self._tr("config_import"), fragment=fragment,
                 on_cancel=on_dismiss_without_import,
             )
             handed_over = bool(shown)
         except Exception as exc:
             self.plugin.log(f"Prefixfy file open failed: {exc}")
             if fragment:
-                self._toast("config_file_open_failed", fragment)
+                self._toast("config_import_file_failed", fragment)
         finally:
             if data is not None and not handed_over:
                 self.discard_container_media(data)
@@ -7368,7 +6879,7 @@ class ConfigTransfer:
                 if not asked:
                     self.plugin.log("Prefixfy import cancelled: the account picker could not be shown")
                     self.discard_container_media(data)
-                    self._toast("configuration_import_failed", fragment)
+                    self._toast("config_import_failed", fragment)
                 return
             self._prompt_import_name(data, fragment, components)
             return
@@ -7378,7 +6889,7 @@ class ConfigTransfer:
         """46.3.0: имя из файла (если оно есть) подставляется в диалог имени; изменить его по-прежнему можно."""
         raw = data.get("name") if isinstance(data, dict) else None
         name = ConfigurationsManager.normalize_name(raw) if isinstance(raw, str) else ""
-        return name[:MAX_CONFIG_NAME_LENGTH - 4].strip() or self._tr("imported_configuration")
+        return name[:MAX_CONFIG_NAME_LENGTH - 4].strip() or self._tr("config_imported_name")
 
     def _prompt_import_name(self, data, fragment, components, target=None):
         configurations = self.plugin.configurations
@@ -7396,16 +6907,16 @@ class ConfigTransfer:
 
         def cancelled():
             self.discard_container_media(data)
-            self._toast("configuration_import_cancelled", fragment)
+            self._toast("config_import_cancelled", fragment)
 
         if not self.plugin.show_text_dialog(
-            self._tr("import_new_configuration_name"), confirm,
+            self._tr("config_import_new_name"), confirm,
             text=unique_name(
                 self._imported_name_base(data),
                 configurations.scope_names(uid) if scoped else configurations.selector_items(),
             ),
-            hint=self._tr("configuration_name_hint"),
-            positive=self._tr("config_found_import"), fragment=fragment, on_cancel=cancelled,
+            hint=self._tr("config_name_hint"),
+            positive=self._tr("config_import"), fragment=fragment, on_cancel=cancelled,
         ):
             self.discard_container_media(data)
 
@@ -7417,12 +6928,12 @@ class ConfigTransfer:
         configs = plugin.configurations
         accounts = plugin._accounts()
         choices: List[Any] = ([] if as_new else [ACCT_ALL]) + [ACCT_COMMON] + list(accounts.values())
-        labels = ([] if as_new else [self._tr("acct_import_all")]) + [self._tr("acct_import_common")]
+        labels = ([] if as_new else [self._tr("account_import_all")]) + [self._tr("account_import_common")]
         labels += [plugin._acct_label(slot, uid, mark=True) for slot, uid in accounts.items()]
         current = ACCT_COMMON if configs.edit_uid is None else configs.edit_uid
         labels = [("✓ " if choice == current else "") + label for choice, label in zip(choices, labels)]
         builder = AlertDialogBuilder(activity)
-        builder.set_title(self._tr("acct_import_title"))
+        builder.set_title(self._tr("account_import_title"))
 
         def picked(bld, which):
             bld.dismiss()
@@ -7437,10 +6948,10 @@ class ConfigTransfer:
         def cancelled(bld, which):
             bld.dismiss()
             self.discard_container_media(data)
-            self._toast("configuration_import_cancelled", fragment)
+            self._toast("config_import_cancelled", fragment)
 
         builder.set_items(labels, picked)
-        builder.set_negative_button(self._tr("cancel"), cancelled)
+        builder.set_negative_button(self._tr("action_cancel"), cancelled)
         return bool(plugin._show_builder(builder))
 
     def _finish_import(self, data, components, as_new, name, fragment, target=None):
@@ -7458,7 +6969,7 @@ class ConfigTransfer:
                     return
                 self.plugin.log("Prefixfy import cancelled: the account picker could not be shown")
                 self.discard_container_media(data)
-                self._toast("configuration_import_failed", fragment)
+                self._toast("config_import_failed", fragment)
                 return
             self.plugin.log(
                 f"Prefixfy import: account picker skipped (account mode is off or fewer than 2 accounts: "
@@ -7472,16 +6983,16 @@ class ConfigTransfer:
             else:
                 self.plugin.configurations.import_to_accounts(data, components, target)
             self.plugin.reload_settings_ui()
-            self._toast("configuration_imported", fragment)
+            self._toast("config_import_done", fragment)
         except ConfigurationError as exc:
             self.plugin.log(f"Prefixfy import rejected: {exc}")
-            self._toast("invalid_configuration", fragment)
+            self._toast("config_import_invalid", fragment)
         except ConfigurationSaveError as exc:
             self.plugin.log(f"Prefixfy import aborted: {exc}")
-            self._toast("configuration_save_failed", fragment)
+            self._toast("config_save_failed", fragment)
         except Exception as exc:
             self.plugin.log(f"Prefixfy import failed: {exc}")
-            self._toast("configuration_import_failed", fragment)
+            self._toast("config_import_failed", fragment)
         finally:
             self.discard_container_media(data)
 
@@ -7591,18 +7102,18 @@ class ConfigTransfer:
 
         def confirm(selected, extra_checked):
             if not selected:
-                self._toast("configuration_export_none", fragment)
+                self._toast("config_export_none", fragment)
                 return False
             if len(selected) > limit:
-                self._toast("configuration_export_limit", fragment, n=limit)
+                self._toast("config_export_limit", fragment, n=limit)
                 return False
             self._export_ask_parts([candidates[index] for index in selected], 0, [], available)
             return True
 
         self.plugin.show_checklist(
-            self._tr("export_select_configs"), rows, confirm,
-            message=self._tr("export_select_configs_subtext", n=limit),
-            positive=self._tr("export_next"), fragment=fragment,
+            self._tr("config_export_select"), rows, confirm,
+            message=self._tr("config_export_select_subtext", n=limit),
+            positive=self._tr("action_next"), fragment=fragment,
         )
 
     def _export_ask_parts(self, chosen, index, picked, available):
@@ -7613,15 +7124,15 @@ class ConfigTransfer:
         total = len(chosen)
         last = index + 1 >= total
         rows = [(self._component_label(component), True, True) for component in available]
-        message = self._tr("select_configuration_subtext", n=len(available))
-        title = self._tr("select_configuration")
+        message = self._tr("config_parts_message", n=len(available))
+        title = self._tr("config_parts_title")
         if total > 1:
-            title = self._tr("export_parts_title", name=label)
-            message = self._tr("export_parts_progress", i=index + 1, n=total) + "\n\n" + message
+            title = self._tr("config_export_parts_title", name=label)
+            message = self._tr("config_export_parts_progress", i=index + 1, n=total) + "\n\n" + message
 
         def confirm(selected, extra_checked):
             if not selected:
-                self._toast("configuration_nothing_selected", fragment)
+                self._toast("config_parts_none", fragment)
                 return False
             components = tuple(available[position] for position in selected)
             done = picked + [(config_id, name, components, bool(extra_checked and name))]
@@ -7633,8 +7144,8 @@ class ConfigTransfer:
 
         self.plugin.show_checklist(
             title, rows, confirm, message=message,
-            extra=(self._tr("export_include_name"), True) if as_text(name) else None,
-            positive=self._tr("apply") if last else self._tr("export_next"), fragment=fragment,
+            extra=(self._tr("config_export_include_name"), True) if as_text(name) else None,
+            positive=self._tr("action_apply") if last else self._tr("action_next"), fragment=fragment,
         )
 
     def _export_deliver(self, items):
@@ -7653,12 +7164,12 @@ class ConfigTransfer:
         if not activity or not components:
             return
         builder = AlertDialogBuilder(activity)
-        builder.set_title(self._tr("configuration_export_destination_title"))
+        builder.set_title(self._tr("config_export_destination_title"))
         builder.set_items(
-            [self._tr("configuration_export_to_saved"), self._tr("configuration_export_to_device")],
+            [self._tr("config_export_to_saved"), self._tr("config_export_to_device")],
             lambda bld, which: self._on_export_destination(bld, which, tuple(components), config_id, name, include_name),
         )
-        builder.set_negative_button(self._tr("cancel"), lambda bld, which: bld.dismiss())
+        builder.set_negative_button(self._tr("action_cancel"), lambda bld, which: bld.dismiss())
         self.plugin._show_builder(builder)
 
     def _on_export_destination(self, builder, which, components, config_id=None, name="", include_name=False):
@@ -7704,10 +7215,10 @@ class ConfigTransfer:
             account, user_id = self._saved_messages_target()
             path = self.build_config_file(components, temp_dir("exports"), config_id=config_id, name=name, include_name=include_name)
             send_document(user_id, path, caption="", account=account)
-            self._toast("configuration_exported", fragment)
+            self._toast("config_export_done", fragment)
         except Exception as exc:
             self.plugin.log(f"Saved Messages export failed: {exc}")
-            self._toast("configuration_export_failed", fragment)
+            self._toast("config_export_failed", fragment)
 
     def _export_many_to_saved(self, items):
         fragment, _ = self._activity()
@@ -7715,7 +7226,7 @@ class ConfigTransfer:
             account, user_id = self._saved_messages_target()
         except Exception as exc:
             self.plugin.log(f"Saved Messages export failed: {exc}")
-            self._toast("configuration_export_failed", fragment)
+            self._toast("config_export_failed", fragment)
             return
         sent = 0
         for config_id, name, components, include_name in items:
@@ -7726,11 +7237,11 @@ class ConfigTransfer:
             except Exception as exc:
                 self.plugin.log(f"Saved Messages export of {config_id} failed: {exc}")
         if sent == len(items):
-            self._toast("configurations_exported", fragment, n=sent)
+            self._toast("config_export_done_multi", fragment, n=sent)
         elif sent:
-            self._toast("configurations_export_partial", fragment, ok=sent, total=len(items))
+            self._toast("config_export_partial", fragment, ok=sent, total=len(items))
         else:
-            self._toast("configuration_export_failed", fragment)
+            self._toast("config_export_failed", fragment)
 
     def _export_source(self, config_id):
         """None — живые настройки (активный конфиг), иначе сохранённые значения выбранного конфига."""
@@ -7906,10 +7417,10 @@ class ConfigTransfer:
             try:
                 path = self.build_config_file(components, temp_dir("exports"), config_id=export_id, name=export_name, include_name=export_include)
                 self._write_file_to_uri(uri, path)
-                self._toast("configuration_exported", fragment)
+                self._toast("config_export_done", fragment)
             except Exception as exc:
                 self.plugin.log(f"Configuration export failed: {exc}")
-                self._toast("configuration_export_failed", fragment)
+                self._toast("config_export_failed", fragment)
             finally:
                 if path and os.path.isfile(path):
                     delete_file(path)
@@ -7920,7 +7431,7 @@ class ConfigTransfer:
                 parsed = self.read_container(temp_path)
             except Exception as exc:
                 self.plugin.log(f"Configuration read failed: {exc}")
-                self._toast("invalid_configuration" if isinstance(exc, ConfigurationError) else "configuration_import_failed", fragment)
+                self._toast("config_import_invalid" if isinstance(exc, ConfigurationError) else "config_import_failed", fragment)
                 return True
             finally:
                 if temp_path and os.path.isfile(temp_path):
@@ -7933,7 +7444,7 @@ class ConfigTransfer:
             except Exception as exc:
                 self.discard_container_media(parsed)
                 self.plugin.log(f"Configuration import dialog failed: {exc}")
-                self._toast("configuration_import_failed", fragment)
+                self._toast("config_import_failed", fragment)
         return True
 
 
@@ -7981,10 +7492,11 @@ class ConfigurationsManager:
             self._migrate_legacy_setting()
         self.accounts.load()
         self._migrate_language_layout()
+        self._migrate_removed_german()
         if not self.configurations:
             baseline = self._snapshot_with_media("default", "baseline")
             self._store_record("default", {
-                "name": plugin._tr("default_configuration_name"),
+                "name": plugin._tr("config_default_name"),
                 "current": self._clone_with_media(baseline, "default", "current"),
                 "baseline": baseline,
             })
@@ -8364,6 +7876,15 @@ class ConfigurationsManager:
                     marks.add(mark)
                     self._save_migrated_marks(marks)
 
+    def _migrate_removed_german(self):
+        """48.0.0: в наборах (общих и по аккаунтам) немецкий заменяется английским. Иначе индекс вышел бы за список
+        и молча стал автоопределением. Повторный запуск безвреден: после замены индекса 6 нигде не остаётся."""
+        for config_id, record in self._all_records():
+            for role in ("current", "baseline"):
+                params = record.get(role) or {}
+                if removed_german_index(params.get("language")):
+                    self._sync_params(config_id, role, {**params, "language": ENGLISH_INDEX})
+
     MAX_LEGACY_RECORDS = 200
 
     def _migrate_legacy_setting(self):
@@ -8407,7 +7928,7 @@ class ConfigurationsManager:
     def _dedupe_bucket(self, bucket: Dict[str, dict]):
         seen: List[str] = []
         for config_id, record in list(bucket.items()):
-            base = self.normalize_name(record.get("name")) or self.plugin._tr("default_configuration_name")
+            base = self.normalize_name(record.get("name")) or self.plugin._tr("config_default_name")
             name = unique_name(base, seen)
             if name != record.get("name"):
                 record["name"] = name
@@ -8567,7 +8088,7 @@ class ConfigurationsManager:
         taken = list(avoid) + [as_text(item.get("name")) for item in list(self.accounts.bucket(uid).values())]
         base_name = as_text((self._record(pinned) or {}).get("name")) if pinned else ""
         record = {
-            "name": unique_name(base_name or self.plugin._tr("default_configuration_name"), taken),
+            "name": unique_name(base_name or self.plugin._tr("config_default_name"), taken),
             "current": self._snapshot_with_media(config_id, "current"),
             "baseline": self._clone_with_media(self._shared_baseline(pinned), config_id, "baseline"),
         }
@@ -8585,7 +8106,7 @@ class ConfigurationsManager:
         config_id = self._new_id(uid)
         base_id = self.active_id if self.active_id in self.configurations else next(iter(self.configurations), "")
         record = {
-            "name": self.plugin._tr("default_configuration_name"),
+            "name": self.plugin._tr("config_default_name"),
             "current": self._clone_with_media(params, config_id, "current"),
             "baseline": self._clone_with_media(self._shared_baseline(), config_id, "baseline"),
         }
@@ -8718,7 +8239,7 @@ class ConfigurationsManager:
     def selector_label(self, config_id: str) -> str:
         name = as_text((self._record(config_id) or {}).get("name", config_id))
         if self.edit_uid is not None and self._owner_of(config_id) is None:
-            return f"{name} • {self.plugin._tr('shared_configuration_marker')}"
+            return f"{name} • {self.plugin._tr('config_shared_marker')}"
         return name
 
     def selector_display_items(self) -> List[str]:
@@ -8763,7 +8284,7 @@ class ConfigurationsManager:
             if not _is_int(index) or not 0 <= index < len(keys) or keys[index] == self.effective_selected_id():
                 return
             if not self._save_active_checked():
-                self.plugin._toast("configuration_save_failed")
+                self.plugin._toast("config_save_failed")
                 self._refresh_ui()
                 return
             target = keys[index]
@@ -8812,9 +8333,9 @@ class ConfigurationsManager:
     def name_error(self, name, ignore_id=None) -> Optional[str]:
         name = self.normalize_name(name)
         if not name:
-            return "configuration_name_invalid"
+            return "config_name_invalid"
         if self.is_name_taken(name, ignore_id):
-            return "configuration_name_taken"
+            return "config_name_taken"
         return None
 
     def add(self, name: str, copy_current: bool = False):
@@ -8827,7 +8348,7 @@ class ConfigurationsManager:
             self._ensure_account_preset(uid, avoid=[name] if name else [])
             taken = self.selector_items()
             if not name:
-                name = unique_name(self.plugin._tr("configuration_n", n=len(taken) + 1), taken)
+                name = unique_name(self.plugin._tr("config_numbered_name", n=len(taken) + 1), taken)
             config_id = self._new_id(uid)
             if copy_current:
                 source = self._current(self.scope_active_id())
@@ -8864,7 +8385,7 @@ class ConfigurationsManager:
             self._require_saved()
             self._ensure_account_preset(uid, avoid=[name] if name else [])
             if not name:
-                name = unique_name(self.plugin._tr("imported_configuration"), self.selector_items())
+                name = unique_name(self.plugin._tr("config_imported_name"), self.selector_items())
             previous = self._snapshot()
             try:
                 self._load_snapshot(SETTING_DEFAULTS)
@@ -8977,7 +8498,7 @@ class ConfigurationsManager:
             self.accounts.invalidate()
             self.plugin.prune_chat_bindings()
         self._refresh_ui()
-        self.plugin._toast("configuration_deleted", n=len(selected))
+        self.plugin._toast("config_deleted", n=len(selected))
         return len(selected)
 
     def reset_active_components(self, components, plugin_defaults: bool = False):
@@ -9013,11 +8534,11 @@ class ConfigurationsManager:
                     self._retry_later()
                 self._load_snapshot(current)
         if failed:
-            self.plugin._toast("configuration_save_failed")
+            self.plugin._toast("config_save_failed")
             return
         self.plugin.refresh_chat_menu_item()
         self._refresh_ui()
-        self.plugin._toast("configuration_restored")
+        self.plugin._toast("config_restored")
 
     @property
     def acct_selector_key(self) -> str:
@@ -9157,7 +8678,7 @@ class ConfigurationsManager:
         self.plugin.prune_chat_bindings()
         self.plugin.refresh_chat_menu_item()
         self._refresh_ui()
-        self.plugin._toast("configuration_save_failed" if failed else "acct_reset_done")
+        self.plugin._toast("config_save_failed" if failed else "account_reset_done")
 
     def _import_into(self, uid: Optional[int], data, components):
         self._switch_live(uid)
@@ -9271,8 +8792,8 @@ class ConfigurationsManager:
             return True
 
         self.plugin.show_text_dialog(
-            self.plugin._tr("add_configuration"), confirm,
-            hint=self.plugin._tr("configuration_name_hint"),
+            self.plugin._tr("config_new"), confirm,
+            hint=self.plugin._tr("config_name_hint"),
         )
 
     def _ask_add_source(self, name: str):
@@ -9281,10 +8802,10 @@ class ConfigurationsManager:
             return True
 
         shown = self.plugin.show_checklist(
-            self.plugin._tr("new_configuration_source_title"), [], confirm,
-            message=self.plugin._tr("new_configuration_source_message"),
-            extra=(self.plugin._tr("new_configuration_copy_current"), False),
-            positive=self.plugin._tr("create"),
+            self.plugin._tr("config_new_source_title"), [], confirm,
+            message=self.plugin._tr("config_new_source_message"),
+            extra=(self.plugin._tr("config_new_copy_current"), False),
+            positive=self.plugin._tr("action_create"),
         )
         if not shown:
             self._create(name, False)
@@ -9294,10 +8815,10 @@ class ConfigurationsManager:
             self.add(name, copy_current)
         except ConfigurationSaveError as exc:
             self.plugin.log(f"Configuration creation aborted: {exc}")
-            self.plugin._toast("configuration_save_failed")
+            self.plugin._toast("config_save_failed")
         except Exception as exc:
             self.plugin.log(f"Configuration creation failed: {exc}")
-            self.plugin._toast("operation_failed")
+            self.plugin._toast("error_operation_failed")
 
     def request_rename(self, view=None):
         config_id = self.scope_active_id()
@@ -9315,17 +8836,17 @@ class ConfigurationsManager:
                 return False
             if self.rename(config_id, value):
                 return True
-            editor.setError(self.plugin._tr("configuration_save_failed"))
+            editor.setError(self.plugin._tr("config_save_failed"))
             return False
 
         self.plugin.show_text_dialog(
-            self.plugin._tr("rename_configuration"), confirm, text=current_name,
+            self.plugin._tr("config_rename"), confirm, text=current_name,
         )
 
     def request_delete(self, view=None):
         ids = self.inactive_ids()
         if not ids:
-            self.plugin._toast("no_inactive_configurations")
+            self.plugin._toast("config_delete_none")
             return
         if len(ids) == 1:
             self._confirm_delete_single(ids[0])
@@ -9335,14 +8856,14 @@ class ConfigurationsManager:
         def confirm(selected, _extra):
             chosen = [ids[index] for index in selected]
             if not chosen:
-                self.plugin._toast("configuration_nothing_selected")
+                self.plugin._toast("config_parts_none")
                 return False
             self.delete_many(chosen)
             return True
 
         self.plugin.show_checklist(
-            self.plugin._tr("delete_configurations"), rows, confirm,
-            message=self.plugin._tr("delete_configurations_select"), positive=self.plugin._tr("delete"),
+            self.plugin._tr("config_delete_multi"), rows, confirm,
+            message=self.plugin._tr("config_delete_multi_select"), positive=self.plugin._tr("action_delete"),
         )
 
     def _confirm_delete_single(self, config_id: str):
@@ -9351,21 +8872,21 @@ class ConfigurationsManager:
             return
         name = (self._record(config_id) or {}).get("name", config_id)
         builder = AlertDialogBuilder(activity)
-        builder.set_title(self.plugin._tr("delete_configuration"))
-        builder.set_message(self.plugin._tr("delete_configuration_confirm", name=name))
+        builder.set_title(self.plugin._tr("config_delete"))
+        builder.set_message(self.plugin._tr("config_delete_confirm", name=name))
 
         def confirm(bld, which):
             bld.dismiss()
             self.delete_many([config_id])
 
-        builder.set_positive_button(self.plugin._tr("delete"), confirm)
-        builder.set_negative_button(self.plugin._tr("cancel"), lambda b, w: b.dismiss())
+        builder.set_positive_button(self.plugin._tr("action_delete"), confirm)
+        builder.set_negative_button(self.plugin._tr("action_cancel"), lambda b, w: b.dismiss())
         self.plugin._show_builder(builder)
 
     def append_settings(self, settings: list):
         tr = self.plugin._tr
         uid = self.edit_uid
-        title = tr("configurations")
+        title = tr("section_configurations")
         if uid is not None:
             slot = next((s for s, u in self.plugin._accounts().items() if u == uid), None)
             title += " • " + self.plugin._acct_label(slot, uid)
@@ -9382,29 +8903,29 @@ class ConfigurationsManager:
                 self.plugin.log(f"Prefixfy configuration selector state failed: {exc}")
             settings.append(Selector(
                 key=selector_key,
-                text=tr("active_configuration"),
+                text=tr("config_active"),
                 default=selector_index,
                 items=self.selector_display_items(),
                 icon="msg_settings",
                 on_change=self.switch,
             ))
         settings.append(Text(
-            text=tr("add_configuration"),
-            subtext=tr("add_configuration_subtext"),
+            text=tr("config_new"),
+            subtext=tr("config_new_subtext"),
             icon="msg_add",
             on_click=self.request_add,
         ))
         if has_own:
             settings.append(Text(
-                text=tr("rename_configuration"),
-                subtext=tr("rename_configuration_subtext"),
+                text=tr("config_rename"),
+                subtext=tr("config_rename_subtext"),
                 icon="msg_edit",
                 on_click=self.request_rename,
             ))
         if self.inactive_ids():
             settings.append(Text(
-                text=tr("delete_configurations"),
-                subtext=tr("delete_configurations_subtext"),
+                text=tr("config_delete_multi"),
+                subtext=tr("config_delete_multi_subtext"),
                 icon="msg_delete",
                 on_click=self.request_delete,
             ))
@@ -11500,12 +11021,12 @@ class RemoteControl:
 
     def notice(self) -> Tuple[str, Dict[str, Any]]:
         if self.enabled and self.blacklisted():
-            return "account_blocked_subtext", {}
+            return "gate_account_blocked_subtext", {}
         if self._field("version", ()) and self.mismatched():
             if self.mismatch_reason() == "outdated":
-                return "update_required_subtext", {"version": self.required_version()}
-            return "modified_required_subtext", {"version": self.required_version()}
-        return "verify_required_subtext", {}
+                return "gate_update_required_subtext", {"version": self.required_version()}
+            return "gate_modified_subtext", {"version": self.required_version()}
+        return "gate_verify_required_subtext", {}
 
     def _ota_cfg(self) -> Tuple[bool, int, Optional[Tuple[int, int]]]:
         settings = self.plugin.settings
@@ -11875,9 +11396,9 @@ class RemoteControl:
             self._notified = True
             try:
                 key, kwargs = self.notice()
-                if key == "update_required_subtext":
+                if key == "gate_update_required_subtext":
                     return
-                if key == "modified_required_subtext" and self.ota_candidate() is not None:
+                if key == "gate_modified_subtext" and self.ota_candidate() is not None:
                     return
                 self.plugin._toast(key, **kwargs)
             except Exception as exc:
@@ -11893,7 +11414,7 @@ class RemoteControl:
             return
         self._soft_notified = True
         try:
-            self.plugin._toast("verify_soft_subtext")
+            self.plugin._toast("gate_soft_subtext")
         except Exception as exc:
             self.plugin.log(f"Prefixfy remote notice failed: {exc}")
 
@@ -12266,7 +11787,7 @@ class PrefixfyPlugin(BasePlugin):
         except Exception as exc:
             self.log(f"Prefixfy OTA confirm failed: {exc}")
         if self._wiped_clean or self._auto_reset_done:
-            notice = "auto_reset_done" if self._auto_reset_done else "wipe_done"
+            notice = "wipe_auto_reset_done" if self._auto_reset_done else "wipe_done"
             self._wiped_clean = False
             self._auto_reset_done = False
             try:
@@ -12491,6 +12012,8 @@ class PrefixfyPlugin(BasePlugin):
         if language_layout_pending(self) and not live_done:
             self.set_setting("language", migrate_language_index(self.get_setting("language", 0)))
             self.set_setting(LANGUAGE_LIVE_KEY, LANGUAGE_LAYOUT_VERSION)
+        if removed_german_index(self.get_setting("language", 0)):
+            self.set_setting("language", ENGLISH_INDEX)  # 48.0.0: сидевшие на немецком переходят на английский
 
     def _migrate_ignore_split(self):
         """45.6.0: старый тумблер «ignore_special» разбит на шесть; выключенный раньше остаётся выключенным."""
@@ -12701,7 +12224,7 @@ class PrefixfyPlugin(BasePlugin):
                 except Exception as exc:
                     self.log(f"Prefixfy: neutral button failed ({exc}), using the empty-field fallback")
         if neutral and not neutral_ready:
-            message = f"{message}\n\n{self._tr('empty_means_default')}" if message else self._tr("empty_means_default")
+            message = f"{message}\n\n{self._tr('editor_empty_means_default')}" if message else self._tr("editor_empty_means_default")
         if message:
             builder.set_message(message)
         builder.set_view(editor)
@@ -12720,8 +12243,8 @@ class PrefixfyPlugin(BasePlugin):
             if on_cancel:
                 on_cancel()
 
-        builder.set_positive_button(positive or self._tr("save"), ok)
-        builder.set_negative_button(self._tr("cancel"), cancel)
+        builder.set_positive_button(positive or self._tr("action_save"), ok)
+        builder.set_negative_button(self._tr("action_cancel"), cancel)
         return self._show_builder(builder)
 
     def show_checklist(self, title, rows, on_confirm, *, message=None, extra=None, positive=None,
@@ -12754,7 +12277,7 @@ class PrefixfyPlugin(BasePlugin):
             builder.set_message(message)
         builder.set_view(layout)
 
-        label = positive or self._tr("save")
+        label = positive or self._tr("action_save")
         shown_at = time.monotonic()
 
         def ok(bld, which):
@@ -12771,7 +12294,7 @@ class PrefixfyPlugin(BasePlugin):
                 on_cancel()
 
         builder.set_positive_button(f"{label} ({cooldown})" if cooldown else label, ok)
-        builder.set_negative_button(self._tr("cancel"), cancel)
+        builder.set_negative_button(self._tr("action_cancel"), cancel)
         shown = self._show_builder(builder)
         if shown and red:
             self._paint_button_red(builder, "positive")
@@ -12835,7 +12358,7 @@ class PrefixfyPlugin(BasePlugin):
 
     def _chat_menu_entries(self):
         return (
-            ("_chat_toggle_menu_id", "chat_menu", self._toggle_chat_from_menu, True),
+            ("_chat_toggle_menu_id", "exceptions_chat_menu", self._toggle_chat_from_menu, True),
             ("_capture_menu_id", "capture_custom_emoji", self._enable_capture_from_menu, FEATURES.on("premium_emoji")),
             ("_chat_config_menu_id", "chat_config_menu", self._show_chat_config_picker, FEATURES.on("chat_configs")),
             ("_skip_message_menu_id", "skip_once_menu", self._skip_one_message, True),
@@ -12876,7 +12399,7 @@ class PrefixfyPlugin(BasePlugin):
         except Exception as exc:
             self.log(f"Prefixfy capture toggle failed: {exc}")
             return
-        BulletinHelper.show_info(self._tr("capture_enabled" if enable else "capture_disabled"), fragment)
+        BulletinHelper.show_info(self._tr("capture_custom_emoji_enabled" if enable else "capture_custom_emoji_disabled"), fragment)
 
     def _chat_bindings(self) -> Dict[str, str]:
         raw = as_text(self.get_setting(CHAT_CONFIGS_KEY, "{}"))
@@ -13020,7 +12543,7 @@ class PrefixfyPlugin(BasePlugin):
     def _settings_general(self) -> List[Any]:
         return [
             Header(text=self._tr("section_general")),
-            self._switch("chat_scope_enabled", self._tr("enable_plugin"), self._tr("enable_plugin_subtext"), "msg_settings"),
+            self._switch("chat_scope_enabled", self._tr("plugin_enable"), self._tr("plugin_enable_subtext"), "msg_settings"),
         ] + self._section_body(self._settings_accounts())
 
     def _settings_appearance(self) -> List[Any]:
@@ -13041,8 +12564,8 @@ class PrefixfyPlugin(BasePlugin):
         tr = self._tr
         icon = self._icon("msg_contacts", "msg_info")
         items: List[Any] = [
-            Header(text=tr("acct_header")),
-            Switch(key=ACCT_MODE_KEY, text=tr("acct_mode"), default=False, subtext=tr("acct_mode_subtext"),
+            Header(text=tr("section_accounts")),
+            Switch(key=ACCT_MODE_KEY, text=tr("account_mode"), default=False, subtext=tr("account_mode_subtext"),
                    icon=icon, on_change=self._on_acct_mode),
         ]
         if not bool(self.get_setting(ACCT_MODE_KEY, False)):
@@ -13057,19 +12580,19 @@ class PrefixfyPlugin(BasePlugin):
             index = 2 + uids.index(int(target))
         else:
             index = 1
-        names = [tr("acct_auto"), tr("acct_common")] + [self._acct_label(s, u, mark=True) for s, u in accounts.items()]
+        names = [tr("account_auto"), tr("account_common")] + [self._acct_label(s, u, mark=True) for s, u in accounts.items()]
         key = configs.acct_selector_key
         try:
             self.set_setting(key, index)
         except Exception as exc:
             self.log(f"Prefixfy account selector state failed: {exc}")
-        items.append(Selector(key=key, text=tr("acct_target"), default=index, items=names, icon=icon,
+        items.append(Selector(key=key, text=tr("account_target"), default=index, items=names, icon=icon,
                               on_change=self._on_acct_target))
         shown = configs.edit_uid
         if shown is None:
             configs._acct_reset_visible = None
         elif configs.account_reset_available(shown):
-            items.append(Text(text=tr("acct_reset"), subtext=tr("acct_reset_subtext"), icon=self._icon("msg_retry"),
+            items.append(Text(text=tr("account_reset"), subtext=tr("account_reset_subtext"), icon=self._icon("msg_retry"),
                               on_click=self._confirm_reset_account))
         return items
 
@@ -13102,15 +12625,15 @@ class PrefixfyPlugin(BasePlugin):
         if not activity:
             return
         builder = AlertDialogBuilder(activity)
-        builder.set_title(self._tr("acct_reset_title"))
-        builder.set_message(self._tr("acct_reset_confirm"))
+        builder.set_title(self._tr("account_reset_title"))
+        builder.set_message(self._tr("account_reset_confirm"))
 
         def confirmed(bld, which):
             bld.dismiss()
             self.configurations.reset_account()
 
-        builder.set_positive_button(self._tr("acct_reset_btn"), confirmed)
-        builder.set_negative_button(self._tr("cancel"), lambda bld, which: bld.dismiss())
+        builder.set_positive_button(self._tr("account_reset_button"), confirmed)
+        builder.set_negative_button(self._tr("action_cancel"), lambda bld, which: bld.dismiss())
         self._show_builder(builder)
 
     def _chat_account_uid(self, account) -> Optional[int]:
@@ -13194,7 +12717,7 @@ class PrefixfyPlugin(BasePlugin):
             self._toast("chat_config_reset" if which == 0 else "chat_config_saved", fragment)
 
         builder.set_items(items, selected)
-        builder.set_negative_button(self._tr("cancel"), lambda bld, which: bld.dismiss())
+        builder.set_negative_button(self._tr("action_cancel"), lambda bld, which: bld.dismiss())
         self._show_builder(builder)
 
     def _show_schedule_editor(self, view=None):
@@ -13293,10 +12816,10 @@ class PrefixfyPlugin(BasePlugin):
         ids = self.settings.disabled_chat_ids()
         if dialog_id in ids:
             ids.discard(dialog_id)
-            message = "chat_removed"
+            message = "exceptions_chat_removed"
         else:
             ids.add(dialog_id)
-            message = "chat_added"
+            message = "exceptions_chat_added"
         self.settings.set_disabled_chat_ids(ids)
         BulletinHelper.show_info(self._tr(message), fragment)
 
@@ -13383,15 +12906,15 @@ class PrefixfyPlugin(BasePlugin):
             return
         name = as_text(self.settings.get("attached_media_name")) or os.path.basename(self.transfer.media_path())
         builder = AlertDialogBuilder(activity)
-        builder.set_title(self._tr("delete_media"))
-        builder.set_message(self._tr("delete_media_confirm", name=name))
+        builder.set_title(self._tr("media_delete"))
+        builder.set_message(self._tr("media_delete_confirm", name=name))
 
         def confirmed(bld, which):
             bld.dismiss()
             self._do_delete_imported_media()
 
-        builder.set_positive_button(self._tr("delete"), confirmed)
-        builder.set_negative_button(self._tr("cancel"), lambda bld, which: bld.dismiss())
+        builder.set_positive_button(self._tr("action_delete"), confirmed)
+        builder.set_negative_button(self._tr("action_cancel"), lambda bld, which: bld.dismiss())
         self._show_builder(builder)
 
     def _do_delete_imported_media(self):
@@ -13426,7 +12949,7 @@ class PrefixfyPlugin(BasePlugin):
     def _with_emoji_hint(self, text: str, first: bool = False) -> str:
         if not FEATURES.on("premium_emoji"):
             return text
-        hint = self._tr("custom_emoji_hint")
+        hint = self._tr("capture_custom_emoji_hint")
         return f"{text}\n\n{hint}" if first else f"{hint}\n\n{text}"
 
     def _show_separator_editor(self, view=None):
@@ -13436,8 +12959,8 @@ class PrefixfyPlugin(BasePlugin):
 
         current = as_text(self.settings.get("custom_emojis"))
         self.show_text_dialog(
-            self._tr("custom_separator_title"), save,
-            message=self._with_emoji_hint(self._tr('custom_separator_message'), first=True),
+            self._tr("separator_custom_title"), save,
+            message=self._with_emoji_hint(self._tr('separator_custom_message'), first=True),
             text=current if current.strip() else DEFAULT_SEPARATORS, hint=DEFAULT_SEPARATORS,
         )
 
@@ -13471,11 +12994,11 @@ class PrefixfyPlugin(BasePlugin):
             if errors:
                 number, code = errors[0]
                 if code == "limit":
-                    editor.setError(self._tr("regex_limit", n=MAX_CONDITIONAL_MASKS, m=MAX_REGEX_LENGTH))
+                    editor.setError(self._tr("regex_exceptions_limit", n=MAX_CONDITIONAL_MASKS, m=MAX_REGEX_LENGTH))
                 elif code == "format":
                     editor.setError(self._tr("conditional_masks_format", n=number))
                 else:
-                    reason = self._tr("masks_list_invalid") if code == "mask" else self._tr("regex_invalid", error=code[len("regex:"):])
+                    reason = self._tr("masks_list_invalid") if code == "mask" else self._tr("regex_exceptions_invalid", error=code[len("regex:"):])
                     editor.setError(self._tr("schedule_error", n=number, reason=reason))
                 return False
             cleaned = "\n".join(line.strip() for line in as_text(value).splitlines() if line.strip())
@@ -13495,16 +13018,16 @@ class PrefixfyPlugin(BasePlugin):
         def save(value, editor):
             lines = parse_lines(value)
             if len(lines) > MAX_REGEX_EXCEPTIONS or any(len(line) > MAX_REGEX_LENGTH for line in lines):
-                editor.setError(self._tr("regex_limit", n=MAX_REGEX_EXCEPTIONS, m=MAX_REGEX_LENGTH))
+                editor.setError(self._tr("regex_exceptions_limit", n=MAX_REGEX_EXCEPTIONS, m=MAX_REGEX_LENGTH))
                 return False
             for line in lines:
                 try:
                     re.compile(line)
                 except re.error as exc:
-                    editor.setError(self._tr("regex_invalid", error=str(exc)))
+                    editor.setError(self._tr("regex_exceptions_invalid", error=str(exc)))
                     return False
                 if not regex_is_safe(line):
-                    editor.setError(self._tr("regex_invalid", error=REGEX_UNSAFE_REASON))
+                    editor.setError(self._tr("regex_exceptions_invalid", error=REGEX_UNSAFE_REASON))
                     return False
             self.settings.set("regex_exceptions", "\n".join(lines), reload_settings=True)
 
@@ -13613,7 +13136,7 @@ class PrefixfyPlugin(BasePlugin):
     def _separator_preview_text(self) -> str:
         separators = parse_separators(self.settings.get("custom_emojis"))
         count = self.settings.separator_count()
-        words = self._tr("separator_preview_words").split()
+        words = self._tr("separator_preview_sample").split()
         if len(words) < 2:
             words = ["Hello", "world"]
         snapshot = self.settings.snapshot()
@@ -13703,12 +13226,12 @@ class PrefixfyPlugin(BasePlugin):
         tr, transfer = self._tr, self.transfer
         items: List[Any] = []
         self.configurations.append_settings(items)
-        short = tr("configuration_short")
+        short = tr("config_actions_subtext")
         if FEATURES.on("config_import"):
-            items.append(Text(text=tr("import_configuration"), subtext=short, icon="msg_download", on_click=transfer.request_import))
+            items.append(Text(text=tr("config_import"), subtext=short, icon="msg_download", on_click=transfer.request_import))
         items += [
-            Text(text=tr("export_configuration"), subtext=short, icon=self._icon("msg_upload", "msg_document"), on_click=transfer.request_export),
-            Text(text=tr("reset_configuration"), subtext=short, icon=self._icon("msg_retry"), on_click=transfer.request_reset),
+            Text(text=tr("config_export"), subtext=short, icon=self._icon("msg_upload", "msg_document"), on_click=transfer.request_export),
+            Text(text=tr("config_reset"), subtext=short, icon=self._icon("msg_retry"), on_click=transfer.request_reset),
         ]
         if FEATURES.on("schedule"):
             items.append(Text(text=tr("schedule"), subtext=self._schedule_subtext(), icon=self._icon("msg_calendar", "msg_recent"), on_click=self._show_schedule_editor))
@@ -13718,22 +13241,22 @@ class PrefixfyPlugin(BasePlugin):
         tr = self._tr
         items: List[Any] = [
             Header(text=tr("section_scope")),
-            self._switch("process_message", tr("message"), tr("message_subtext"), "msg_text"),
-            self._switch("process_media", tr("media"), tr("media_subtext"), "msg_image"),
+            self._switch("process_message", tr("scope_message"), tr("scope_message_subtext"), "msg_text"),
+            self._switch("process_media", tr("scope_media"), tr("scope_media_subtext"), "msg_image"),
         ]
         articles_on = FEATURES.on("articles")
         if articles_on:
-            items.append(self._switch("process_article", tr("article"), tr("article_subtext"), "msg_text"))
+            items.append(self._switch("process_article", tr("scope_article"), tr("scope_article_subtext"), "msg_text"))
         edit_on = FEATURES.on("edit_processing")
         if edit_on:
-            items.append(self._switch("process_edit", tr("edit_message"), tr("edit_message_subtext"), "msg_edit", True))
+            items.append(self._switch("process_edit", tr("scope_edit"), tr("scope_edit_subtext"), "msg_edit", True))
         if edit_on and self.settings.get("process_edit"):
             items += [
-                self._switch("process_edit_message", tr("edit_text_toggle"), tr("edit_text_toggle_subtext"), "msg_text"),
-                self._switch("process_edit_media", tr("edit_media_toggle"), tr("edit_media_toggle_subtext"), "msg_image"),
+                self._switch("process_edit_message", tr("scope_edit_message"), tr("scope_edit_message_subtext"), "msg_text"),
+                self._switch("process_edit_media", tr("scope_edit_media"), tr("scope_edit_media_subtext"), "msg_image"),
             ]
             if articles_on:
-                items.append(self._switch("process_edit_article", tr("edit_article_toggle"), tr("edit_article_toggle_subtext"), "msg_text"))
+                items.append(self._switch("process_edit_article", tr("scope_edit_article"), tr("scope_edit_article_subtext"), "msg_text"))
             items += [
                 self._switch("skip_once_on_edit", tr("skip_once_on_edit"), tr("skip_once_on_edit_subtext"), "msg_edit"),
             ]
@@ -13778,7 +13301,7 @@ class PrefixfyPlugin(BasePlugin):
                 Selector(
                     key="mask_rotation_mode", text=tr("mask_rotation_mode"),
                     default=clamp_int(self.settings.get("mask_rotation_mode"), 0, 0, 1),
-                    items=[tr("rotation_random"), tr("rotation_sequential")], icon="msg_edit",
+                    items=[tr("mask_rotation_mode_random"), tr("mask_rotation_mode_sequential")], icon="msg_edit",
                     on_change=self._on_rotation_mode_change,
                 ),
             ]
@@ -13790,10 +13313,10 @@ class PrefixfyPlugin(BasePlugin):
         tr = self._tr
         items: List[Any] = [
             Header(text=tr("text_style")),
-            self._switch("text_style_enabled", tr("enable_text_style"), tr("text_style_subtext"), "msg_palette", True),
+            self._switch("text_style_enabled", tr("text_style_enable"), tr("text_style_subtext"), "msg_palette", True),
         ]
         if self.settings.get("text_style_enabled"):
-            items.append(self._switch("text_style_random", tr("random_style"), tr("random_style_subtext"), "msg_palette", True))
+            items.append(self._switch("text_style_random", tr("text_style_random"), tr("text_style_random_subtext"), "msg_palette", True))
             values = available_styles()
             if not self.settings.get("text_style_random") and values:
                 self._style_pick_values = values
@@ -13808,7 +13331,7 @@ class PrefixfyPlugin(BasePlugin):
                     items=[TEXT_STYLE_ITEMS[style] for style in values], icon="msg_palette",
                     on_change=self._on_text_style_change,
                 ))
-            items.append(self._switch("text_style_translit", tr("style_translit"), tr("style_translit_subtext"), "msg_text", True))
+            items.append(self._switch("text_style_translit", tr("text_style_translit"), tr("text_style_translit_subtext"), "msg_text", True))
             items.append(Text(text=tr("style_words"), subtext=self._style_words_subtext(), icon="msg_edit", on_click=self._show_style_words_editor))
         return items
 
@@ -13851,7 +13374,7 @@ class PrefixfyPlugin(BasePlugin):
             return []
         tr, get = self._tr, self.settings.get
         items: List[Any] = [
-            Header(text=tr("cute_header")),
+            Header(text=tr("section_cute")),
             self._cute_switch("cute_enabled", tr("cute_enabled"), tr("cute_enabled_subtext"),
                               self._icon("menu_premium_effects", "msg_palette"), True),
         ]
@@ -13893,7 +13416,7 @@ class PrefixfyPlugin(BasePlugin):
         tr = self._tr
         items: List[Any] = [
             Header(text=tr("separator")),
-            self._switch("separator_enabled", tr("enable_separator"), tr("enable_separator_subtext"), "msg_palette", True),
+            self._switch("separator_enabled", tr("separator_enable"), tr("separator_enable_subtext"), "msg_palette", True),
         ]
         if self.settings.get("separator_enabled"):
             items += [
@@ -13937,18 +13460,18 @@ class PrefixfyPlugin(BasePlugin):
         tr, transfer = self._tr, self.transfer
         items: List[Any] = [Header(text=tr("media_attachment"))]
         if not transfer.media_exists():
-            items.append(Text(text=tr("import_media"), subtext=tr("media_file_none"), icon="msg_download", on_click=transfer.request_media_import))
+            items.append(Text(text=tr("media_import"), subtext=tr("media_file_none"), icon="msg_download", on_click=transfer.request_media_import))
             return items
         name = as_text(self.settings.get("attached_media_name")) or os.path.basename(transfer.media_path())
         items += [
             Switch(
-                key="attached_media_enabled", text=tr("enable_media_attachment"),
+                key="attached_media_enabled", text=tr("media_attachment_enable"),
                 default=PrefixfySettings.DEFAULTS["attached_media_enabled"],
-                subtext=tr("enable_media_attachment_subtext"), icon="msg_image",
+                subtext=tr("media_attachment_enable_subtext"), icon="msg_image",
                 on_change=self._on_media_enabled_change,
             ),
             Text(text=tr("media_file"), subtext=name or tr("media_file_none"), icon="msg_document", on_click=transfer.request_media_import),
-            Text(text=tr("delete_media"), subtext=tr("delete_media_subtext"), icon="msg_delete", on_click=self._delete_imported_media),
+            Text(text=tr("media_delete"), subtext=tr("media_delete_subtext"), icon="msg_delete", on_click=self._delete_imported_media),
         ]
         return items
 
@@ -13965,7 +13488,7 @@ class PrefixfyPlugin(BasePlugin):
         ui_state = (language_index, tuple(enabled), auto_on)
         if ui_state != getattr(self, "_language_ui_index", None):
             self._language_ui_index = ui_state
-            self._language_ui_revision = getattr(self, "_language_ui_revision", 0) + 1
+            self._language_ui_revision = self._next_language_ui_revision()
         auto_value = language_index == 0
         for attempt in range(2):
             revision = self._language_ui_revision
@@ -13976,7 +13499,7 @@ class PrefixfyPlugin(BasePlugin):
             # 47.1.0: значение переключателя не записалось (или хост держит старое). Берём новый ключ,
             # чтобы хост создал виджет заново и показал верное состояние, а не прежнее «выключено».
             if attempt == 0:
-                self._language_ui_revision += 1
+                self._language_ui_revision = self._next_language_ui_revision()
         icon = self._icon("msg_language")
         items: List[Any] = [
             Header(text=tr("language")),
@@ -13988,11 +13511,16 @@ class PrefixfyPlugin(BasePlugin):
             ))
         if language_index != 0:
             items.append(Selector(
-                key=select_key, text=tr("plugin_language"), default=position,
+                key=select_key, text=tr("section_language"), default=position,
                 items=self.localization.language_items(), icon=icon,
                 on_change=self._on_language_select_change,
             ))
         return items
+
+    def _next_language_ui_revision(self) -> int:
+        """48.0.0: ключи виджетов языка не повторяются между запусками. Раньше счётчик после перезапуска (а сброс данных
+        перезапускает плагин) шёл с единицы и брал уже занятые ключи, где оставалось прежнее «выключено»."""
+        return max(int(time.time()), getattr(self, "_language_ui_revision", 0) + 1)
 
     def _write_language_widgets(self, auto_key: str, auto_value: bool, select_key: str, position: int) -> bool:
         """Пишет состояние виджетов языка и сразу проверяет, что оно прочиталось. False — не совпало."""
@@ -14053,9 +13581,9 @@ class PrefixfyPlugin(BasePlugin):
             return []
         tr = self._tr
         return [
-            Header(text=tr("configurations")),
+            Header(text=tr("section_configurations")),
             Text(
-                text=tr("export_configuration"), subtext=tr("configuration_short"),
+                text=tr("config_export"), subtext=tr("config_actions_subtext"),
                 icon=self._icon("msg_upload", "msg_document"), on_click=self.transfer.request_export,
             ),
         ]
@@ -14070,13 +13598,13 @@ class PrefixfyPlugin(BasePlugin):
             key, kwargs = remote.notice()
             subtext = tr(key, **kwargs)
             checksum = remote.latest_checksum()
-            if checksum and key in ("update_required_subtext", "modified_required_subtext"):
+            if checksum and key in ("gate_update_required_subtext", "gate_modified_subtext"):
                 subtext += f"\nSHA-256 {checksum[:12]}…"
-            if key == "account_blocked_subtext":
-                return [Text(text=tr("account_blocked"), subtext=subtext, icon=icon,
+            if key == "gate_account_blocked_subtext":
+                return [Text(text=tr("gate_account_blocked"), subtext=subtext, icon=icon,
                              on_click=lambda *_: self._show_notice_dialog("account"))]
-            if key == "modified_required_subtext":
-                rows = [Text(text=tr("modified_build"), subtext=subtext, icon=icon)]
+            if key == "gate_modified_subtext":
+                rows = [Text(text=tr("gate_modified"), subtext=subtext, icon=icon)]
                 candidate = remote.ota_candidate()
                 if candidate is not None:
                     rows.append(Text(
@@ -14085,7 +13613,7 @@ class PrefixfyPlugin(BasePlugin):
                         icon=self._icon("msg_download", "msg_retry"), on_click=self._show_ota_download_dialog,
                     ))
                 return rows
-            if key == "update_required_subtext":
+            if key == "gate_update_required_subtext":
                 staged = remote.staged_ready()
                 if staged is not None:
                     return [Text(
@@ -14096,7 +13624,7 @@ class PrefixfyPlugin(BasePlugin):
                         text=tr("ota_reload"), subtext=tr("ota_reload_subtext"),
                         icon=self._icon("msg_retry", "msg_download"), on_click=self._ota_reload_now,
                     )]
-                rows = [Text(text=tr("update_required"), subtext=subtext, icon=icon)]
+                rows = [Text(text=tr("gate_update_required"), subtext=subtext, icon=icon)]
                 candidate = remote.ota_candidate()
                 if candidate is not None:
                     rows.append(Text(
@@ -14105,11 +13633,11 @@ class PrefixfyPlugin(BasePlugin):
                         icon=self._icon("msg_download", "msg_retry"), on_click=self._show_ota_download_dialog,
                     ))
                 return rows
-            return [Text(text=tr("verify_required"), subtext=subtext, icon=icon,
+            return [Text(text=tr("gate_verify_required"), subtext=subtext, icon=icon,
                          on_click=lambda *_: self._show_notice_dialog("verify"))]
         if remote.suspended(False):
             return [
-                Text(text=tr("verify_soft"), subtext=tr("verify_soft_subtext"), icon=icon,
+                Text(text=tr("gate_soft"), subtext=tr("gate_soft_subtext"), icon=icon,
                      on_click=lambda *_: self._show_notice_dialog("soft")),
             ]
         return []
@@ -14129,9 +13657,9 @@ class PrefixfyPlugin(BasePlugin):
         activity = self._dialog_activity()
         if not activity:
             return
-        titles = {"verify": "verify_required", "soft": "verify_soft", "account": "account_blocked"}
+        titles = {"verify": "gate_verify_required", "soft": "gate_soft", "account": "gate_account_blocked"}
         builder = AlertDialogBuilder(activity)
-        builder.set_title(tr(titles.get(kind, "verify_required")))
+        builder.set_title(tr(titles.get(kind, "gate_verify_required")))
         try:
             message = self._notice_dialog_text(kind)
         except Exception as exc:
@@ -14209,7 +13737,7 @@ class PrefixfyPlugin(BasePlugin):
 
     def _settings_about(self) -> List[Any]:
         return [
-            Header(text=self._tr("about_section")),
+            Header(text=self._tr("section_about")),
             Text(
                 text=self._tr("about_plugin"), subtext=self._tr("about_plugin_subtext"),
                 icon=self._icon("msg_info"), on_click=self._show_about,
@@ -14221,7 +13749,7 @@ class PrefixfyPlugin(BasePlugin):
         remote = getattr(self, "remote", None)
         try:
             if remote is not None and remote.enabled and remote.blacklisted():
-                return "\n\n" + self._tr("block_bypass_note")
+                return "\n\n" + self._tr("gate_bypass_note")
         except Exception as exc:
             self.log(f"Prefixfy bypass note failed: {exc}")
         return ""
@@ -14237,7 +13765,7 @@ class PrefixfyPlugin(BasePlugin):
 
         self.show_checklist(
             tr("wipe_title"), [], next_step, message=tr("wipe_body"),
-            extra=(tr("wipe_opt_out"), False, True), positive=tr("wipe_next"),
+            extra=(tr("wipe_opt_out"), False, True), positive=tr("action_next"),
             cooldown=WIPE_COOLDOWN_SEC, red=True,
         )
 
@@ -14260,7 +13788,7 @@ class PrefixfyPlugin(BasePlugin):
             self._start_wipe(opt_out)
 
         builder.set_positive_button(f"{label} ({WIPE_COOLDOWN_SEC})", confirm)
-        builder.set_negative_button(tr("cancel"), lambda bld, which: bld.dismiss())
+        builder.set_negative_button(tr("action_cancel"), lambda bld, which: bld.dismiss())
         if self._show_builder(builder):
             self._paint_button_red(builder, "positive")
             self._run_wipe_countdown(builder, label, shown_at)
@@ -14440,7 +13968,7 @@ class PrefixfyPlugin(BasePlugin):
             self._resume_now()
 
         builder.set_positive_button(tr("resume_btn"), confirm)
-        builder.set_negative_button(tr("cancel"), lambda bld, which: bld.dismiss())
+        builder.set_negative_button(tr("action_cancel"), lambda bld, which: bld.dismiss())
         self._show_builder(builder)
 
     def _resume_now(self):
@@ -14493,7 +14021,7 @@ class PrefixfyPlugin(BasePlugin):
         if not isinstance(size, int) or isinstance(size, bool) or size <= 0:
             return tr("about_unknown")
         value = f"{size / 1048576:.1f} {tr('ota_unit_mb')}" if size >= 1048576 else f"{max(1, round(size / 1024))} {tr('ota_unit_kb')}"
-        return value.replace(".", ",") if self.localization.language() in ("ru", "fr", "de") else value
+        return value.replace(".", ",") if self.localization.language() in ("ru", "fr") else value
 
     def _ota_info_text(self, state) -> str:
         tr = self._tr
@@ -14537,7 +14065,7 @@ class PrefixfyPlugin(BasePlugin):
             self._ota_update_now()
 
         builder.set_positive_button(tr("ota_dl_confirm"), confirm)
-        builder.set_negative_button(tr("cancel"), lambda bld, which: bld.dismiss())
+        builder.set_negative_button(tr("action_cancel"), lambda bld, which: bld.dismiss())
         self._show_builder(builder)
 
     def _ota_update_now(self, *_):
@@ -14567,7 +14095,7 @@ class PrefixfyPlugin(BasePlugin):
         threading.Thread(target=work, name="PrefixfyOTAReload", daemon=True).start()
 
     def _settings_ota(self) -> List[Any]:
-        return [Header(text=self._tr("ota_section"))] + self._ota_auto_items() + self._check_items()
+        return [Header(text=self._tr("section_updates"))] + self._ota_auto_items() + self._check_items()
 
     def _ota_auto_items(self) -> List[Any]:
         tr = self._tr
@@ -14619,7 +14147,7 @@ class PrefixfyPlugin(BasePlugin):
             self._run_check()
 
         builder.set_positive_button(tr("check_confirm_yes"), start)
-        builder.set_negative_button(tr("cancel"), lambda bld, which: bld.dismiss())
+        builder.set_negative_button(tr("action_cancel"), lambda bld, which: bld.dismiss())
         self._show_builder(builder)
 
     def _ota_on_check(self) -> bool:
@@ -14899,7 +14427,7 @@ class PrefixfyPlugin(BasePlugin):
             body = self._section_body(self._settings_appearance())
         else:
             body = self._ota_auto_items()
-        items: List[Any] = [Header(text=tr(f"setup_header_{stage}"))] + list(body) + [Divider()]
+        items: List[Any] = [Header(text=tr(f"setup_step_{stage}"))] + list(body) + [Divider()]
         forward = self._icon("msg_arrowright", self._icon("msg_forward", "msg_retry"))
         backward = self._icon("msg_back", self._icon("msg_go_up", "msg_retry"))
         if stage < SETUP_STAGE_COUNT:
@@ -14932,7 +14460,7 @@ class PrefixfyPlugin(BasePlugin):
         notice = self._remote_notice()
         if notice and self.remote.blocked():
             if self.remote.blacklisted():
-                return notice + [Header(text=self._tr("ota_section"))] + self._check_items()[:1] + self._settings_about()
+                return notice + [Header(text=self._tr("section_updates"))] + self._check_items()[:1] + self._settings_about()
             return notice + self._settings_export_blocked() + self._settings_ota() + self._settings_about()
         if self._setup_stage() < SETUP_DONE:
             wizard = self._settings_setup(self._setup_stage())
