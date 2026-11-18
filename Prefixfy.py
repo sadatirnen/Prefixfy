@@ -12,6 +12,7 @@ import shutil
 import threading
 import time
 import types
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -73,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "46.3.0"
-__build__ = "46.3.0_20261117.6_84"
+__version__ = "47.0.0"
+__build__ = "47.0.0_20261118.1_85"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -513,7 +514,7 @@ class LocalizationManager:
             "delete_configurations_select": "Выберите неактивные конфигурации для удаления.",
             "import_new_configuration_name": "Название новой конфигурации",
             "select_configuration": "Выберите конфигурацию",
-            "select_configuration_subtext": "Выберите от одной до семи частей конфигурации.",
+            "select_configuration_subtext": "Выберите части конфигурации: от 1 до {n}.",
             "config_mask": "Маска",
             "config_separator": "Разделители",
             "config_exceptions": "Исключения и чаты",
@@ -548,6 +549,7 @@ class LocalizationManager:
             "export_select_configs_subtext": "Выберите до {n} конфигураций. Для каждой дальше откроется выбор частей. Если выбрано несколько, файлы сразу уйдут в Избранное активного аккаунта.",
             "export_next": "Далее",
             "export_include_name": "Включить имя конфигурации",
+            "shared_configuration_marker": "общая",
             "export_parts_title": "Части: {name}",
             "export_parts_progress": "Конфиг {i} из {n}",
             "configuration_export_limit": "Можно выбрать не более {n} конфигураций",
@@ -739,7 +741,7 @@ class LocalizationManager:
             "delete_configurations_select": "Select inactive configurations to delete.",
             "import_new_configuration_name": "New configuration name",
             "select_configuration": "Select configuration",
-            "select_configuration_subtext": "Select one to seven parts.",
+            "select_configuration_subtext": "Select 1 to {n} parts.",
             "config_mask": "Mask",
             "config_separator": "Separators",
             "config_exceptions": "Exceptions and chats",
@@ -774,6 +776,7 @@ class LocalizationManager:
             "export_select_configs_subtext": "Select up to {n} configurations. A parts picker opens for each one next. If several are selected, the files go straight to the active account's Saved Messages.",
             "export_next": "Next",
             "export_include_name": "Include configuration name",
+            "shared_configuration_marker": "shared",
             "export_parts_title": "Parts: {name}",
             "export_parts_progress": "Configuration {i} of {n}",
             "configuration_export_limit": "You can select at most {n} configurations",
@@ -966,7 +969,7 @@ class LocalizationManager:
             "delete_configurations_select": "削除する非アクティブな設定を選択。",
             "import_new_configuration_name": "新しい設定の名前",
             "select_configuration": "設定を選択",
-            "select_configuration_subtext": "1〜7項目を選択できます。",
+            "select_configuration_subtext": "1〜{n}項目を選択できます。",
             "config_mask": "マスク",
             "config_separator": "区切り文字",
             "config_exceptions": "例外とチャット",
@@ -1001,6 +1004,7 @@ class LocalizationManager:
             "export_select_configs_subtext": "最大{n}件まで選択できます。続いて各設定の項目を選びます。複数選択した場合、ファイルはアクティブなアカウントの保存メッセージに直接送られます。",
             "export_next": "次へ",
             "export_include_name": "設定名を含める",
+            "shared_configuration_marker": "共通",
             "export_parts_title": "項目: {name}",
             "export_parts_progress": "設定 {i} / {n}",
             "configuration_export_limit": "選択できるのは最大{n}件です",
@@ -1193,7 +1197,7 @@ class LocalizationManager:
             "delete_configurations_select": "삭제할 비활성 구성을 선택하세요.",
             "import_new_configuration_name": "새 구성 이름",
             "select_configuration": "구성 선택",
-            "select_configuration_subtext": "항목을 1~7개 선택하세요.",
+            "select_configuration_subtext": "항목을 1~{n}개 선택하세요.",
             "config_mask": "마스크",
             "config_separator": "구분자",
             "config_exceptions": "예외 및 채팅",
@@ -1228,6 +1232,7 @@ class LocalizationManager:
             "export_select_configs_subtext": "최대 {n}개까지 선택할 수 있습니다. 이어서 각 구성의 항목을 고릅니다. 여러 개를 선택하면 파일이 활성 계정의 저장된 메시지로 바로 전송됩니다.",
             "export_next": "다음",
             "export_include_name": "구성 이름 포함",
+            "shared_configuration_marker": "공통",
             "export_parts_title": "항목: {name}",
             "export_parts_progress": "구성 {i} / {n}",
             "configuration_export_limit": "최대 {n}개까지 선택할 수 있습니다",
@@ -1420,7 +1425,7 @@ class LocalizationManager:
             "delete_configurations_select": "Choisissez les configurations inactives à supprimer.",
             "import_new_configuration_name": "Nom de la nouvelle configuration",
             "select_configuration": "Sélectionner la configuration",
-            "select_configuration_subtext": "Sélectionnez de une à sept parties.",
+            "select_configuration_subtext": "Sélectionnez de 1 à {n} parties.",
             "config_mask": "Masque",
             "config_separator": "Séparateurs",
             "config_exceptions": "Exceptions et chats",
@@ -1455,6 +1460,7 @@ class LocalizationManager:
             "export_select_configs_subtext": "Sélectionnez jusqu’à {n} configurations. Un choix des parties s’ouvre ensuite pour chacune. Si plusieurs sont choisies, les fichiers partent directement dans les Messages enregistrés du compte actif.",
             "export_next": "Suivant",
             "export_include_name": "Inclure le nom de la configuration",
+            "shared_configuration_marker": "commune",
             "export_parts_title": "Parties : {name}",
             "export_parts_progress": "Configuration {i} sur {n}",
             "configuration_export_limit": "Vous pouvez en choisir {n} au maximum",
@@ -1647,7 +1653,7 @@ class LocalizationManager:
             "delete_configurations_select": "Inaktive Konfigurationen zum Löschen wählen.",
             "import_new_configuration_name": "Name der neuen Konfiguration",
             "select_configuration": "Konfiguration auswählen",
-            "select_configuration_subtext": "Wähle ein bis sieben Teile.",
+            "select_configuration_subtext": "Wähle 1 bis {n} Teile.",
             "config_mask": "Maske",
             "config_separator": "Trennzeichen",
             "config_exceptions": "Ausnahmen und Chats",
@@ -1682,6 +1688,7 @@ class LocalizationManager:
             "export_select_configs_subtext": "Wähle bis zu {n} Konfigurationen. Danach öffnet sich für jede die Auswahl der Teile. Bei mehreren Konfigurationen gehen die Dateien direkt in die Gespeicherten Nachrichten des aktiven Kontos.",
             "export_next": "Weiter",
             "export_include_name": "Konfigurationsnamen einbeziehen",
+            "shared_configuration_marker": "gemeinsam",
             "export_parts_title": "Teile: {name}",
             "export_parts_progress": "Konfiguration {i} von {n}",
             "configuration_export_limit": "Es sind höchstens {n} Konfigurationen wählbar",
@@ -3997,6 +4004,7 @@ SCHEDULE_KEY = "Prefixfy_schedule"
 ACCT_MODE_KEY = "Prefixfy_acct_mode"
 ACCT_TARGET_KEY = "Prefixfy_acct_target"
 ACCT_LIVE_KEY = "Prefixfy_acct_live"
+ACCT_PINS_KEY = "Prefixfy_acct_shared_pins"  # 46.5.0: {uid: id общей конфигурации, выбранной аккаунтом}
 ACCT_SELECTOR_KEY = "Prefixfy_acct_selector"
 ACCT_AUTO = "auto"
 ACCT_COMMON = "common"
@@ -7156,7 +7164,7 @@ class ConfigTransfer:
         available = tuple(c for c in self.visible_components() if operation != "reset" or COMPONENT_KEYS.get(c))
         rows = [(self._component_label(component), True, True) for component in available]
         extra = None
-        message = self._tr("select_configuration_subtext")
+        message = self._tr("select_configuration_subtext", n=len(available))
         imported = False
         if operation == "import":
             extra = (self._tr("config_import_as_new"), False)
@@ -7564,7 +7572,7 @@ class ConfigTransfer:
         """Конфигурации открытой области (общий набор или пресеты аккаунта): [(id, имя)]."""
         configurations = self.plugin.configurations
         with configurations._lock:
-            found = [(cid, as_text(record.get("name", cid)) or cid) for cid, record in configurations.scope_records().items()]
+            found = [(cid, configurations.selector_label(cid) or cid) for cid in configurations.selector_ids()]
         return found or [(None, "")]
 
     def _show_export_selection(self):
@@ -7577,7 +7585,7 @@ class ConfigTransfer:
         if len(candidates) <= 1:
             self._export_ask_parts(list(candidates), 0, [], available)
             return
-        active = self.plugin.configurations.scope_active_id()
+        active = self.plugin.configurations.effective_selected_id()
         rows = [(name, cid == active, True) for cid, name in candidates]
         limit = self.EXPORT_MAX_CONFIGS
 
@@ -7599,14 +7607,16 @@ class ConfigTransfer:
 
     def _export_ask_parts(self, chosen, index, picked, available):
         fragment, _ = self._activity()
-        config_id, name = chosen[index]
+        config_id, label = chosen[index]
+        # В списке у общих конфигураций аккаунта есть пометка; в файл и в имя файла идёт настоящее имя.
+        name = as_text((self.plugin.configurations._record(config_id) or {}).get("name")) or label
         total = len(chosen)
         last = index + 1 >= total
         rows = [(self._component_label(component), True, True) for component in available]
-        message = self._tr("select_configuration_subtext")
+        message = self._tr("select_configuration_subtext", n=len(available))
         title = self._tr("select_configuration")
         if total > 1:
-            title = self._tr("export_parts_title", name=name)
+            title = self._tr("export_parts_title", name=label)
             message = self._tr("export_parts_progress", i=index + 1, n=total) + "\n\n" + message
 
         def confirm(selected, extra_checked):
@@ -8042,7 +8052,9 @@ class ConfigurationsManager:
 
     def scope_active_id(self) -> Optional[str]:
         """Активная конфигурация открытой области. У аккаунта без своих пресетов её нет: он идёт за общим набором."""
-        return self.active_id if self.edit_uid is None else self.accounts.active_id(self.edit_uid)
+        if self.edit_uid is None:
+            return self.active_id
+        return self.accounts.pin(self.edit_uid) or self.accounts.active_id(self.edit_uid)
 
     def _set_active(self, uid: Optional[int], config_id: Optional[str]):
         if uid is None:
@@ -8050,8 +8062,12 @@ class ConfigurationsManager:
         elif config_id:
             self.accounts.set_active(uid, config_id)
 
-    def _shared_baseline(self) -> dict:
-        record = self.configurations.get(self.active_id) or next(iter(self.configurations.values()), None)
+    def _shared_baseline(self, config_id: Optional[str] = None) -> dict:
+        record = (
+            (self.configurations.get(config_id) if config_id else None)
+            or self.configurations.get(self.active_id)
+            or next(iter(self.configurations.values()), None)
+        )
         return dict((record or {}).get("baseline") or SETTING_DEFAULTS)
 
     def _param_path(self, config_id: str, role: str, key: str) -> str:
@@ -8531,6 +8547,11 @@ class ConfigurationsManager:
 
     def _save_account(self, uid: int) -> bool:
         """Живые настройки — в активный пресет аккаунта. Пока пресетов нет и настройки совпадают с общими, ничего не пишем."""
+        pinned = self.accounts.pin(uid)
+        if pinned:
+            if self._same_as_shared(self._snapshot(), pinned):
+                return True
+            return self._fork_account(uid) is not None
         config_id = self.accounts.active_id(uid)
         if config_id is None:
             if self._same_as_shared(self._snapshot()):
@@ -8541,16 +8562,21 @@ class ConfigurationsManager:
     def _fork_account(self, uid: int, avoid=()) -> Optional[str]:
         """Первый собственный пресет аккаунта: копия живых настроек. Baseline — как у активной общей конфигурации,
         чтобы «сброс» возвращал то, что аккаунт получил от общего набора. avoid — имена, которые нельзя занять."""
+        pinned = self.accounts.pin(uid)
         config_id = self._new_id(uid)
+        taken = list(avoid) + [as_text(item.get("name")) for item in list(self.accounts.bucket(uid).values())]
+        base_name = as_text((self._record(pinned) or {}).get("name")) if pinned else ""
         record = {
-            "name": unique_name(self.plugin._tr("default_configuration_name"), list(avoid)),
+            "name": unique_name(base_name or self.plugin._tr("default_configuration_name"), taken),
             "current": self._snapshot_with_media(config_id, "current"),
-            "baseline": self._clone_with_media(self._shared_baseline(), config_id, "baseline"),
+            "baseline": self._clone_with_media(self._shared_baseline(pinned), config_id, "baseline"),
         }
         if not self._store_record(config_id, record):
             self._discard_record(config_id)
             return None
         self.accounts.set_active(uid, config_id)
+        if pinned:
+            self.accounts.set_pin(uid, None)
         self._write_index(uid)
         return config_id
 
@@ -8682,16 +8708,48 @@ class ConfigurationsManager:
         active = self.scope_active_id()
         return keys.index(active) if active in keys else 0
 
+    def selector_ids(self) -> List[str]:
+        """46.5.0: что показывает выбор конфигурации. В общем наборе — он сам, у аккаунта — общие конфигурации и его пресеты."""
+        shared = list(self.configurations)
+        if self.edit_uid is None:
+            return shared
+        return shared + list(self.accounts.bucket(self.edit_uid))
+
+    def selector_label(self, config_id: str) -> str:
+        name = as_text((self._record(config_id) or {}).get("name", config_id))
+        if self.edit_uid is not None and self._owner_of(config_id) is None:
+            return f"{name} • {self.plugin._tr('shared_configuration_marker')}"
+        return name
+
+    def selector_display_items(self) -> List[str]:
+        return [self.selector_label(config_id) for config_id in self.selector_ids()]
+
+    def effective_selected_id(self) -> str:
+        """Что выбрано в списке: у аккаунта без своих пресетов и выбора — активная общая конфигурация."""
+        if self.edit_uid is None:
+            return self.active_id
+        return self.accounts.pin(self.edit_uid) or self.accounts.active_id(self.edit_uid) or self.active_id
+
+    def selector_display_index(self) -> int:
+        ids = self.selector_ids()
+        selected = self.effective_selected_id()
+        return ids.index(selected) if selected in ids else 0
+
     def _activate(self, config_id: str):
         with self._lock:
             uid = self.edit_uid
-            previous = self.scope_active_id()
+            previous = self.active_id if uid is None else self.accounts.active_id(uid)
+            previous_pin = self.accounts.pin(uid) if uid is not None else None
             self._autosave_dirty = False
+            if previous_pin:
+                self.accounts.set_pin(uid, None)
             self._set_active(uid, config_id)
             try:
                 self._load_snapshot(self._target_snapshot())
             except Exception:
                 self._set_active(uid, previous)
+                if previous_pin:
+                    self.accounts.set_pin(uid, previous_pin)
                 self._restore_live(self._target_snapshot())
                 raise
             self._write_index(uid)
@@ -8701,14 +8759,33 @@ class ConfigurationsManager:
 
     def switch(self, index):
         with self._lock:
-            keys = list(self.scope_records())
-            if not _is_int(index) or not 0 <= index < len(keys) or keys[index] == self.scope_active_id():
+            keys = self.selector_ids()
+            if not _is_int(index) or not 0 <= index < len(keys) or keys[index] == self.effective_selected_id():
                 return
             if not self._save_active_checked():
                 self.plugin._toast("configuration_save_failed")
                 self._refresh_ui()
                 return
-            self._activate(keys[index])
+            target = keys[index]
+            uid = self.edit_uid
+            if uid is not None and self._owner_of(target) is None:
+                self._pin_shared(uid, target)
+            else:
+                self._activate(target)
+
+    def _pin_shared(self, uid: int, config_id: str):
+        """46.5.0: аккаунт переходит на общую конфигурацию по ссылке; первая его правка сделает собственную копию."""
+        previous_pin = self.accounts.pin(uid)
+        self._autosave_dirty = False
+        self.accounts.set_pin(uid, config_id)
+        try:
+            self._load_snapshot(self._target_snapshot())
+        except Exception:
+            self.accounts.set_pin(uid, previous_pin)
+            self._restore_live(self._target_snapshot())
+            raise
+        self.plugin.refresh_chat_menu_item()
+        self._refresh_ui()
 
     def _new_id(self, owner: Optional[int] = None) -> str:
         prefix = "config_" if owner is None else f"acc{int(owner)}_"
@@ -8770,8 +8847,11 @@ class ConfigurationsManager:
         """Перед добавлением новой конфигурации аккаунту без своих пресетов нужен первый: то, что он использует сейчас."""
         if uid is None:
             return
-        if self.accounts.active_id(uid) is None and self._fork_account(uid, avoid) is None:
-            raise ConfigurationSaveError("account configuration could not be stored")
+        if self.accounts.active_id(uid) is None or self.accounts.pin(uid):
+            if len(self.accounts.ids(uid)) >= MAX_ACCOUNT_PRESETS:
+                raise ConfigurationError("too many configurations for the account")
+            if self._fork_account(uid, avoid) is None:
+                raise ConfigurationSaveError("account configuration could not be stored")
         if len(self.accounts.ids(uid)) >= MAX_ACCOUNT_PRESETS:
             raise ConfigurationError("too many configurations for the account")
 
@@ -8847,6 +8927,8 @@ class ConfigurationsManager:
         with self._lock:
             config_id = str(config_id)
             record = self._record(config_id)
+            if self.edit_uid is not None and self._owner_of(config_id) != self.edit_uid:
+                return False  # 46.5.0: общую конфигурацию из набора аккаунта не переименовать
             if record is None or self.name_error(name, ignore_id=config_id):
                 return False
             old_name = as_text(record.get("name"))
@@ -8904,7 +8986,7 @@ class ConfigurationsManager:
             if not failed:
                 uid = self.edit_uid
                 config_id = self.scope_active_id()
-                if uid is not None and config_id is None:
+                if uid is not None and (config_id is None or self._owner_of(config_id) != uid):
                     config_id = self._fork_account(uid)
                     failed = config_id is None
             if not failed:
@@ -8944,7 +9026,7 @@ class ConfigurationsManager:
     def live_config_id(self) -> str:
         if self.edit_uid is None:
             return self.active_id
-        return self.accounts.active_id(self.edit_uid) or f"acc_{self.edit_uid}"
+        return self.accounts.pin(self.edit_uid) or self.accounts.active_id(self.edit_uid) or f"acc_{self.edit_uid}"
 
     def _stored_live_uid(self) -> Optional[int]:
         try:
@@ -8965,6 +9047,9 @@ class ConfigurationsManager:
     def _target_snapshot(self) -> dict:
         """Что должно лежать в живых настройках: активный пресет открытого аккаунта, а без него — активная общая конфигурация."""
         if self.edit_uid is not None:
+            pinned = self.accounts.pin(self.edit_uid)
+            if pinned:
+                return self._current(pinned)
             record = self.accounts.active_record(self.edit_uid)
             if record is not None:
                 return record.get("current") or {}
@@ -8986,6 +9071,8 @@ class ConfigurationsManager:
         if uid is None:
             return False
         with self._lock:
+            if self.accounts.pin(uid):
+                return True
             own_ids = self.accounts.ids(uid)
             if not own_ids:
                 return False
@@ -9016,8 +9103,8 @@ class ConfigurationsManager:
         self._acct_reset_visible = available
         return available
 
-    def _same_as_shared(self, snapshot: dict) -> bool:
-        shared = self._current(self.active_id)
+    def _same_as_shared(self, snapshot: dict, config_id: Optional[str] = None) -> bool:
+        shared = self._current(config_id or self.active_id)
         return all(
             snapshot.get(key) == self._coerce(key, shared.get(key, setting_default(shared, key)))
             for key in self.CONFIG_KEYS
@@ -9064,7 +9151,7 @@ class ConfigurationsManager:
             if uid is None:
                 return
             self._autosave_dirty = False
-            if self.accounts.has(uid) and not self.accounts.delete(uid):
+            if (self.accounts.has(uid) or self.accounts.pin(uid)) and not self.accounts.delete(uid):
                 failed = True
             self._load_snapshot(self._target_snapshot())
         self.plugin.prune_chat_bindings()
@@ -9214,7 +9301,7 @@ class ConfigurationsManager:
 
     def request_rename(self, view=None):
         config_id = self.scope_active_id()
-        if not config_id:
+        if not config_id or (self.edit_uid is not None and self._owner_of(config_id) != self.edit_uid):
             return
         current = self._record(config_id) or {}
         current_name = as_text(current.get("name", config_id))
@@ -9284,10 +9371,11 @@ class ConfigurationsManager:
             title += " • " + self.plugin._acct_label(slot, uid)
         settings.append(Header(text=title))
         count = len(self.scope_records())
-        has_own = uid is None or count >= 1
-        has_several = count >= 2
+        pinned = uid is not None and self.accounts.pin(uid) is not None
+        has_own = uid is None or (count >= 1 and not pinned)
+        has_several = len(self.selector_ids()) >= 2
         if has_several:
-            selector_key, selector_index = self.selector_key, self.selector_index()
+            selector_key, selector_index = self.selector_key, self.selector_display_index()
             try:
                 self.plugin.set_setting(selector_key, selector_index)
             except Exception as exc:
@@ -9296,7 +9384,7 @@ class ConfigurationsManager:
                 key=selector_key,
                 text=tr("active_configuration"),
                 default=selector_index,
-                items=self.selector_items(),
+                items=self.selector_display_items(),
                 icon="msg_settings",
                 on_change=self.switch,
             ))
@@ -9313,7 +9401,7 @@ class ConfigurationsManager:
                 icon="msg_edit",
                 on_click=self.request_rename,
             ))
-        if has_several:
+        if self.inactive_ids():
             settings.append(Text(
                 text=tr("delete_configurations"),
                 subtext=tr("delete_configurations_subtext"),
@@ -9679,6 +9767,7 @@ class AccountProfiles:
         self._active: Dict[int, str] = {}
         self._runtimes: Dict[int, Tuple[int, "Runtime"]] = {}
         self._preset_runtimes: Dict[str, Tuple[int, "Runtime"]] = {}
+        self._pins: Dict[int, str] = {}
         self.degraded = False
 
     def _path(self, uid) -> str:
@@ -9747,6 +9836,51 @@ class AccountProfiles:
                 manager.plugin.log(f"Prefixfy accounts: cannot convert {os.path.basename(path)}: {exc}")
                 continue
             discard_file(path)
+        self._load_pins()
+
+    def _load_pins(self):
+        """46.5.0: общие конфигурации, выбранные аккаунтами (ссылкой, без копирования)."""
+        manager = self.manager
+        try:
+            raw = as_text(manager.plugin.get_setting(ACCT_PINS_KEY, "")).strip()
+            data = json.loads(raw) if raw else {}
+        except Exception as exc:
+            manager.plugin.log(f"Prefixfy accounts: pins unreadable: {exc}")
+            return
+        if not isinstance(data, dict):
+            return
+        with self._lock:
+            for key, value in data.items():
+                uid = self._canonical_uid(key)
+                if uid is not None and ConfigurationsManager._valid_id(value) and ConfigurationsManager._owner_of(value) is None:
+                    self._pins[uid] = value
+
+    def _save_pins(self):
+        with self._lock:
+            payload = json.dumps({str(uid): cid for uid, cid in self._pins.items()}, separators=(",", ":"))
+        try:
+            self.manager.plugin.set_setting(ACCT_PINS_KEY, payload, reload_settings=False)
+        except Exception as exc:
+            self.manager.plugin.log(f"Prefixfy accounts: pins save failed: {exc}")
+
+    def pin(self, uid) -> Optional[str]:
+        """Общая конфигурация, которую использует аккаунт. None — не выбрана или уже удалена."""
+        if uid is None:
+            return None
+        with self._lock:
+            pinned = self._pins.get(int(uid))
+        return pinned if pinned and pinned in self.manager.configurations else None
+
+    def set_pin(self, uid, config_id: Optional[str]):
+        uid = int(uid)
+        with self._lock:
+            if config_id:
+                self._pins[uid] = config_id
+            else:
+                self._pins.pop(uid, None)
+            self._runtimes.pop(uid, None)
+            self.generation += 1
+        self._save_pins()
 
     def invalidate(self):
         with self._lock:
@@ -9827,7 +9961,10 @@ class AccountProfiles:
             removed = self._presets.pop(uid, None) or {}
             self._active.pop(uid, None)
             self._runtimes.pop(uid, None)
+            had_pin = self._pins.pop(uid, None) is not None
             self.generation += 1
+        if had_pin:
+            self._save_pins()
         shutil.rmtree(tomb, ignore_errors=True)
         manager._failed_writes = {m for m in manager._failed_writes if m[0] not in removed}
         for record in list(removed.values()):
@@ -9838,6 +9975,9 @@ class AccountProfiles:
         if uid is None:
             return None
         uid = int(uid)
+        pinned = self.pin(uid)
+        if pinned:
+            return self.manager.runtime_for(pinned)
         with self._lock:
             cached = self._runtimes.get(uid)
             if cached is not None and cached[0] == self.generation:
@@ -10266,7 +10406,7 @@ _WIPE_INTERNAL_KEYS = {
     LANGUAGE_LAYOUT_KEY: 1, LANGUAGE_LIVE_KEY: 1, LANGUAGE_MIGRATED_KEY: "", CHAT_COUNTS_KEY: "", COUNTER_KEY: 0,
     SETUP_STAGE_KEY: 1, SETUP_SEEN_KEY: 1, WELCOME_UNTIL_KEY: 0, IGNORE_SPLIT_KEY: 1,
     "Prefixfy_markdown_style_pick": 0, "Prefixfy_text_style_pick": 0,
-    CHAT_CONFIGS_KEY: "{}", SCHEDULE_KEY: "", ACCT_MODE_KEY: False, ACCT_TARGET_KEY: ACCT_AUTO, ACCT_LIVE_KEY: "",
+    CHAT_CONFIGS_KEY: "{}", SCHEDULE_KEY: "", ACCT_MODE_KEY: False, ACCT_TARGET_KEY: ACCT_AUTO, ACCT_LIVE_KEY: "", ACCT_PINS_KEY: "",
     ConfigurationsManager.LEGACY_SETTING_KEY: "", ConfigurationsManager.LEGACY_ACTIVE_KEY: "",
 }
 
@@ -11935,6 +12075,172 @@ def article_concat_node(children: list):
             pass
     node.texts = texts
     return node
+
+
+_FRAME_NOISE_RE = re.compile("[\u200b-\u200d\u2060\ufeff\u00ad\ufe0e\ufe0f]")
+
+
+def frame_key(text) -> str:
+    """46.6.0: вид текста для сравнения префикса/суффикса. Без невидимых символов и служебных меток разметки,
+    в NFC, а пробелы и переводы строк схлопнуты в один пробел: редактор статей мог обрезать или поменять пробелы."""
+    cleaned = _FRAME_NOISE_RE.sub("", _MD_SENTINEL_RE.sub("", as_text(text)))
+    return " ".join(unicodedata.normalize("NFC", cleaned).split())
+
+
+def frame_has_head(key: str, head: str) -> bool:
+    """Блок начинается с префикса маски. Граница слова учитывается: префикс «A» не найдётся в слове «Apple»."""
+    if not head or not key.startswith(head):
+        return False
+    if len(key) == len(head):
+        return True
+    return not (head[-1].isalnum() and key[len(head)].isalnum())
+
+
+def frame_has_tail(key: str, tail: str) -> bool:
+    """Блок заканчивается суффиксом маски (с той же границей слова)."""
+    if not tail or not key.endswith(tail):
+        return False
+    if len(key) == len(tail):
+        return True
+    return not (tail[0].isalnum() and key[-len(tail) - 1].isalnum())
+
+
+def article_frame_plan(texts, left: str, right: str) -> List[bool]:
+    """46.6.0: какие текстовые блоки статьи уже оформлены маской и трогать их не нужно (True = оставить как есть).
+    left/right — то, что маска ставит над [text] и под [text]. texts — тексты блоков по порядку (None — блок, который
+    не разобрать). Готовым считается блок, если:
+      1) он сам и есть префикс или суффикс (блок-обрамление над или под текстом);
+      2) внутри него стоит префикс в начале или суффикс в конце: хотя бы одна из сторон, остальное не дописывается;
+      3) прямо над ним блок-префикс или прямо под ним блок-суффикс.
+    Найденное считается целостным: ничего не дополняется, даже если маска задаёт обе стороны, а найдена одна."""
+    count = len(texts)
+    keep = [False] * count
+    head, tail = frame_key(left), frame_key(right)
+    if not head and not tail:
+        return keep
+    keys = [frame_key(text) if isinstance(text, str) else None for text in texts]
+    roles: List[Optional[str]] = [None] * count
+    opened = False
+    for index, key in enumerate(keys):
+        if key is None:
+            continue
+        is_head, is_tail = bool(head) and key == head, bool(tail) and key == tail
+        if is_head and is_tail:  # маска симметрична: первый такой блок открывает рамку, следующий закрывает
+            is_head, is_tail = (False, True) if opened else (True, False)
+        if is_head:
+            roles[index], opened = "H", True
+        elif is_tail:
+            roles[index], opened = "T", False
+    for index, key in enumerate(keys):
+        if key is None:
+            continue
+        if roles[index] is not None or frame_has_head(key, head) or frame_has_tail(key, tail):
+            keep[index] = True
+    for index, role in enumerate(roles):
+        if role == "T" and index > 0 and keys[index - 1] is not None:
+            keep[index - 1] = True  # блок-суффикс стоит прямо под текстом
+        elif role == "H":
+            closing = next((k for k in range(index + 1, count) if roles[k] == "T"), None)
+            reopening = next((k for k in range(index + 1, count) if roles[k] == "H"), count)
+            end = closing if closing is not None and closing < reopening else index + 2
+            for k in range(index + 1, min(end, count)):
+                if keys[k] is not None:
+                    keep[k] = True
+    return keep
+
+
+_FALLBACK_NOISE = frozenset("\ufe0e\ufe0f\u200b\u200c\u2060\ufeff")
+
+
+def _fallback_skippable(char: str) -> bool:
+    return char.isspace() or char in _FALLBACK_NOISE
+
+
+def mask_side_units(side: str, table) -> List[Tuple[str, int]]:
+    """46.7.0: сторона скомпилированной маски как список кусков [(видимый текст, document_id)].
+    document_id == 0 — обычный текст, иначе запасной эмодзи Premium Emoji."""
+    units: List[Tuple[str, int]] = []
+    plain: List[str] = []
+    emoji: List[str] = []
+    document = 0
+    limit = _MD_BASE + 2 * len(table)
+    for char in side:
+        code = ord(char)
+        if _MD_BASE <= code < limit:
+            entity_id, closing = divmod(code - _MD_BASE, 2)
+            if table[entity_id][0] != "CustomEmoji":
+                continue
+            if not closing:
+                if plain:
+                    units.append(("".join(plain), 0))
+                    plain = []
+                try:
+                    document = int(table[entity_id][1])
+                except (TypeError, ValueError):
+                    document = 0
+                emoji = []
+            else:
+                if document and emoji:
+                    units.append(("".join(emoji), document))
+                document, emoji = 0, []
+            continue
+        if _MD_SENTINEL_RE.match(char):
+            continue
+        (emoji if document else plain).append(char)
+    if plain:
+        units.append(("".join(plain), 0))
+    return units
+
+
+def fallback_side_spans(side: str, table, text: str, from_end: bool = False) -> Optional[List[Tuple[int, int, int]]]:
+    """46.7.0: распознаёт сторону маски, которая лежит в тексте запасными эмодзи (Premium Emoji потерялись:
+    правка, повторная отправка, пересланный или вставленный текст). Возвращает [(начало, конец, document_id)]
+    по индексам строки text или None, если сторона не найдена целиком.
+    Сравнение терпимо к пробелам и переводам строк (их может не быть или быть больше), к селекторам вариантов
+    эмодзи (U+FE0E/FE0F) и невидимым символам. from_end=True — сторона должна стоять в конце текста."""
+    units = mask_side_units(side, table)
+    if not any(document for _, document in units):
+        return None
+    count = len(text)
+    step = -1 if from_end else 1
+    pos = count if from_end else 0
+    if from_end:
+        units = units[::-1]
+
+    def at() -> str:
+        index = pos - 1 if from_end else pos
+        return text[index] if 0 <= index < count else ""
+
+    while at() and _fallback_skippable(at()):  # пробелы и переводы строк по краю текста не мешают
+        pos += step
+    spans: List[Tuple[int, int, int]] = []
+    for chunk, document in units:
+        chars = chunk[::-1] if from_end else chunk
+        entry = pos
+        for char in chars:
+            if char in _FALLBACK_NOISE:
+                continue
+            if char.isspace():
+                while at() and _fallback_skippable(at()):
+                    pos += step
+                continue
+            while at() and at() in _FALLBACK_NOISE:
+                pos += step
+            if at() != char:
+                return None
+            pos += step
+        if document:
+            if not from_end:
+                while at() and at() in _FALLBACK_NOISE:
+                    pos += step
+            spans.append((pos, entry, document) if from_end else (entry, pos, document))
+    if from_end:
+        spans.reverse()
+    return spans
+
+
+def fallback_emoji_entities(text: str, spans) -> List[Tuple[str, int, int, str]]:
+    return [("CustomEmoji", utf16_length(text[:start]), utf16_length(text[start:end]), str(document)) for start, end, document in spans]
 
 
 class PrefixfyPlugin(BasePlugin):
@@ -15376,10 +15682,30 @@ class PrefixfyPlugin(BasePlugin):
         except Exception as exc:
             self.log(f"Prefixfy article blocks lookup failed: {exc}")
             return HookResult()
+        leaves = []
         for block in targets:
+            try:
+                leaves.append(article_text_leaf(block))
+            except Exception:
+                leaves.append(None)
+        keep = [False] * len(targets)
+        mask = pipeline._mask()
+        if mask is not None:
+            try:
+                # 46.6.0: блоки, где префикс/суффикс уже стоит над и под [text], считаются готовыми и не дополняются.
+                keep = article_frame_plan([leaf[2] if leaf else None for leaf in leaves], mask.left, mask.right)
+            except Exception as exc:
+                self.log(f"Prefixfy article frame check failed: {exc}")
+        for block, leaf, ready in zip(targets, leaves, keep):
+            if ready:
+                if leaf is not None and mask is not None and mask.table:
+                    try:
+                        self._article_restore_emoji(runtime, account, leaf)
+                    except Exception as exc:
+                        self.log(f"Prefixfy article fallback emoji failed: {exc}")
+                continue
             # Каждый блок независим: исключение, пропуск или сбой одного блока не отменяют остальные.
             try:
-                leaf = article_text_leaf(block)
                 if leaf is None:
                     continue
                 holder, field, text, parent = leaf
@@ -15432,35 +15758,39 @@ class PrefixfyPlugin(BasePlugin):
             spans = sorted((item for item in entities if item[0] == "CustomEmoji"), key=lambda item: item[1])
             if not spans:
                 return False
-            kind = article_emoji_kind()
-            if kind is None:
-                if not _ARTICLE_EMOJI["warned"]:
-                    _ARTICLE_EMOJI["warned"] = True
-                    self.log("Prefixfy articles: no Premium Emoji node in TL_iv " + ", ".join(_article_emoji_kinds()))
-                return False
-            children = []
-            emoji_nodes = 0
-            pos = 0
-            for _, offset, length, document_id in spans:
-                start = _utf16_index(transformed, offset)
-                end = _utf16_index(transformed, offset + length)
-                if start < pos or end <= start:
-                    continue
-                if start > pos:
-                    children.append(article_plain_node(transformed[pos:start]))
-                children.append(article_emoji_node(kind, int(document_id), transformed[start:end]))
-                emoji_nodes += 1
-                pos = end
-            if not emoji_nodes:
-                return False
-            if pos < len(transformed):
-                children.append(article_plain_node(transformed[pos:]))
-            parent.text = article_concat_node(children)
-            return True
+            return self._article_emoji_concat(parent, transformed, spans)
         except Exception as exc:
             import traceback
             self.log(f"Prefixfy article Premium Emoji failed, using plain text: {exc}\n{traceback.format_exc()}")
             return False
+
+    def _article_emoji_concat(self, parent, text: str, spans) -> bool:
+        """parent.text = textConcat: обычный текст + узлы Premium Emoji по spans [(CustomEmoji, смещение, длина, id)]."""
+        kind = article_emoji_kind()
+        if kind is None:
+            if not _ARTICLE_EMOJI["warned"]:
+                _ARTICLE_EMOJI["warned"] = True
+                self.log("Prefixfy articles: no Premium Emoji node in TL_iv " + ", ".join(_article_emoji_kinds()))
+            return False
+        children = []
+        emoji_nodes = 0
+        pos = 0
+        for _, offset, length, document_id in spans:
+            start = _utf16_index(text, offset)
+            end = _utf16_index(text, offset + length)
+            if start < pos or end <= start:
+                continue
+            if start > pos:
+                children.append(article_plain_node(text[pos:start]))
+            children.append(article_emoji_node(kind, int(document_id), text[start:end]))
+            emoji_nodes += 1
+            pos = end
+        if not emoji_nodes:
+            return False
+        if pos < len(text):
+            children.append(article_plain_node(text[pos:]))
+        parent.text = article_concat_node(children)
+        return True
 
     def _decorate_text(self, runtime: Runtime, account: int, params, text: str, is_caption: bool, rotation_next) -> Optional[str]:
         transformed, entities, body_offset = self._transform_text(runtime, text)
@@ -15509,7 +15839,9 @@ class PrefixfyPlugin(BasePlugin):
         return found
 
     def _resend_mask_match(self, runtime: Runtime, text: str):
-        """Маска с Premium Emoji уже стоит в тексте (повторная отправка неудавшегося сообщения)."""
+        """46.7.0: маска с Premium Emoji уже стоит в тексте запасными эмодзи. Возвращает описания Premium Emoji
+        [(CustomEmoji, смещение, длина, document_id)] для найденных сторон или None, если маски в тексте нет.
+        Найденная сторона считается целостной: вторая сторона не дописывается."""
         settings = runtime.settings
         masks = [settings.mask]
         if settings.mask_rotation_enabled:
@@ -15522,55 +15854,84 @@ class PrefixfyPlugin(BasePlugin):
                 probe = runtime if mask == settings.mask else runtime.derived(mask, settings.text_style)
                 part = probe.pipeline._mask()
             except Exception as exc:
-                self.log(f"Prefixfy resend: mask check failed: {exc}")
+                self.log(f"Prefixfy fallback emoji: mask check failed: {exc}")
                 continue
             if part is None or not part.table:
                 continue
-            left = _MD_SENTINEL_RE.sub("", part.left)
-            right = _MD_SENTINEL_RE.sub("", part.right)
-            has_left = bool(left) and part._has_custom_emoji(part.left) and text.startswith(left)
-            has_right = bool(right) and part._has_custom_emoji(part.right) and text.endswith(right)
-            if has_left or has_right:
-                return part, has_left, has_right, right
+            left = fallback_side_spans(part.left, part.table, text, False) if part._has_custom_emoji(part.left) else None
+            right = fallback_side_spans(part.right, part.table, text, True) if part._has_custom_emoji(part.right) else None
+            if left and right and left[-1][1] > right[0][0]:
+                right = None
+            spans = (left or []) + (right or [])
+            if spans:
+                return fallback_emoji_entities(text, spans)
         return None
 
-    def _handle_resend(self, runtime: Runtime, account: int, params, text: str) -> Optional[HookResult]:
-        """Повторная отправка: маска уже нанесена, второй раз её не добавляем, а Premium Emoji возвращаем."""
-        existing = getattr(params, "entities", None)
+    @staticmethod
+    def _custom_emoji_have(existing) -> set:
         have = set()
-        if existing is not None:
-            for entity in _iter_entities(existing):
-                if _is_custom_emoji_entity(entity):
-                    try:
-                        have.add((int(entity.offset), _entity_document_id(entity)))
-                    except Exception:
-                        continue
-        try:
-            retry = getattr(params, "retryMessageObject", None) is not None
-        except Exception:
-            retry = False
-        if not retry and not have:
-            return None
-        match = self._resend_mask_match(runtime, text)
-        if match is None:
-            return None
-        part, has_left, has_right, right = match
-        wanted: List[Tuple[str, int, int, str]] = []
-        if has_left:
-            wanted += custom_emoji_spans(part.left, part.table, 0)
-        if has_right:
-            wanted += custom_emoji_spans(part.right, part.table, utf16_length(text) - utf16_length(right))
+        for entity in _iter_entities(existing):
+            if _is_custom_emoji_entity(entity):
+                try:
+                    have.add((int(entity.offset), _entity_document_id(entity)))
+                except Exception:
+                    continue
+        return have
+
+    def _missing_mask_emoji(self, account: int, params, wanted) -> list:
+        """Какие Premium Emoji маски ещё нужно добавить (пусто, если Premium недоступен или всё уже на месте)."""
         if not wanted or not FEATURES.on("premium_emoji") or not self._account_is_premium(account):
-            return HookResult()
+            return []
+        have = self._custom_emoji_have(getattr(params, "entities", None))
         missing = [item for item in wanted if (item[1], int(item[3])) not in have]
+        return limit_custom_emoji(missing, self._existing_entity_count(params)) if missing else []
+
+    def _handle_resend(self, runtime: Runtime, account: int, params, text: str) -> Optional[HookResult]:
+        """Маска уже нанесена (повторная отправка, вставленный или пересланный текст с запасными эмодзи):
+        второй раз её не добавляем, а запасные эмодзи маски превращаем в Premium Emoji."""
+        wanted = self._resend_mask_match(runtime, text)
+        if wanted is None:
+            return None
+        missing = self._missing_mask_emoji(account, params, wanted)
         if not missing:
             return HookResult()
         try:
-            params.entities = _make_tg_entities(missing, existing, 0)
+            params.entities = _make_tg_entities(missing, getattr(params, "entities", None), 0)
         except Exception as exc:
             self.log(f"Prefixfy resend: Premium Emoji restore failed: {exc}")
             return HookResult()
         return HookResult(strategy=HookStrategy.MODIFY, params=params)
+
+    def _edit_restore_mask_emoji(self, runtime: Runtime, account: int, request, text: str) -> bool:
+        """46.7.0: при правке запасные эмодзи маски возвращаются в Premium Emoji. True — маска уже в тексте."""
+        try:
+            wanted = self._resend_mask_match(runtime, text)
+        except Exception as exc:
+            self.log(f"Prefixfy edit: fallback emoji check failed: {exc}")
+            return False
+        if wanted is None:
+            return False
+        missing = self._missing_mask_emoji(account, request, wanted)
+        if missing:
+            try:
+                request.entities = _make_tg_entities(missing, getattr(request, "entities", None), 0)
+                request.flags = int(request.flags) | self.EDIT_FLAG_ENTITIES
+            except Exception as exc:
+                self.log(f"Prefixfy edit: Premium Emoji restore failed: {exc}")
+        return True
+
+    def _article_restore_emoji(self, runtime: Runtime, account: int, leaf) -> None:
+        """46.7.0: в готовом блоке статьи запасные эмодзи маски становятся Premium Emoji."""
+        holder, field, text, parent = leaf
+        wanted = self._resend_mask_match(runtime, text)
+        if not wanted or not FEATURES.on("premium_emoji") or not self._account_is_premium(account):
+            return
+        if article_holder_supports_entities(holder):
+            missing = self._missing_mask_emoji(account, holder, wanted)
+            if missing:
+                holder.entities = _make_tg_entities(missing, getattr(holder, "entities", None), 0)
+        elif parent is not None:
+            self._article_emoji_concat(parent, text, sorted(wanted, key=lambda item: item[1]))
 
     def _edit_is_decorated(self, runtime: Runtime, text: str) -> bool:
         settings = runtime.settings
@@ -15699,6 +16060,8 @@ class PrefixfyPlugin(BasePlugin):
         if caption:
             runtime = runtime.for_caption()
             settings = runtime.settings
+        if self._edit_restore_mask_emoji(runtime, account, request, text):
+            return
         if runtime.pipeline.ignores(text) or self._edit_is_decorated(runtime, text):
             return
         if settings.skip_once_on_edit and self._skip_once is not None and self._consume_skip_once(dialog_id):
