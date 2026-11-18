@@ -74,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 6 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "47.0.0"
-__build__ = "47.0.0_20261118.1_85"
+__version__ = "47.1.0"
+__build__ = "47.1.0_20261118.2_86"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -10565,6 +10565,10 @@ def _wipe_settings(plugin, opt_out: bool):
             plugin.set_setting(SETUP_STAGE_KEY, 1)
         except Exception as exc:
             plugin.log(f"Prefixfy wipe: setup stage was not restored: {exc}")
+    try:
+        plugin._language_ui_invalidate()  # 47.1.0: после сброса переключатель языка создаётся заново
+    except Exception:
+        pass
 
 
 def wipe_blacklist_data(plugin):
@@ -13958,18 +13962,21 @@ class PrefixfyPlugin(BasePlugin):
         if (language_index == 0 and not auto_on) or (language_index != 0 and language_index not in enabled):
             language_index = LANGUAGE_MODES.index("ru")
         position = enabled.index(language_index) if language_index in enabled else 0
-        ui_state = (language_index, tuple(enabled))
+        ui_state = (language_index, tuple(enabled), auto_on)
         if ui_state != getattr(self, "_language_ui_index", None):
             self._language_ui_index = ui_state
             self._language_ui_revision = getattr(self, "_language_ui_revision", 0) + 1
-        revision = self._language_ui_revision
-        auto_key = f"Prefixfy_language_auto_{revision}"
-        select_key = f"Prefixfy_language_select_{revision}"
-        for key, value in ((auto_key, language_index == 0), (select_key, position)):
-            try:
-                self.set_setting(key, value)
-            except Exception as exc:
-                self.log(f"Prefixfy language widget state failed: {exc}")
+        auto_value = language_index == 0
+        for attempt in range(2):
+            revision = self._language_ui_revision
+            auto_key = f"Prefixfy_language_auto_{revision}"
+            select_key = f"Prefixfy_language_select_{revision}"
+            if self._write_language_widgets(auto_key, auto_value, select_key, position):
+                break
+            # 47.1.0: значение переключателя не записалось (или хост держит старое). Берём новый ключ,
+            # чтобы хост создал виджет заново и показал верное состояние, а не прежнее «выключено».
+            if attempt == 0:
+                self._language_ui_revision += 1
         icon = self._icon("msg_language")
         items: List[Any] = [
             Header(text=tr("language")),
@@ -13987,7 +13994,26 @@ class PrefixfyPlugin(BasePlugin):
             ))
         return items
 
+    def _write_language_widgets(self, auto_key: str, auto_value: bool, select_key: str, position: int) -> bool:
+        """Пишет состояние виджетов языка и сразу проверяет, что оно прочиталось. False — не совпало."""
+        verified = True
+        for key, value in ((auto_key, auto_value), (select_key, position)):
+            try:
+                self.set_setting(key, value)
+                stored = self.get_setting(key, None)
+                if stored is None or (bool(stored) != bool(value) if isinstance(value, bool) else stored != value):
+                    verified = False
+            except Exception as exc:
+                self.log(f"Prefixfy language widget state failed: {exc}")
+                verified = False
+        return verified
+
+    def _language_ui_invalidate(self):
+        """47.1.0: следующая отрисовка раздела языка берёт новые ключи виджетов (сброс, смена этапа мастера, флаги)."""
+        self._language_ui_index = None
+
     def _on_features_changed(self):
+        self._language_ui_invalidate()
         configurations = getattr(self, "configurations", None)
         if configurations is not None:
             try:
@@ -14686,6 +14712,7 @@ class PrefixfyPlugin(BasePlugin):
             raw = None
         if not self._setup_valid_stage(raw):
             self._setup_gate_state = ""
+            self._language_ui_invalidate()
             try:
                 self.set_setting(SETUP_STAGE_KEY, 1, reload_settings=False)
             except Exception as exc:
@@ -14717,6 +14744,7 @@ class PrefixfyPlugin(BasePlugin):
                 self.log(f"Prefixfy setup account check failed: {exc}")
             finally:
                 self._setup_gate_state = "done"
+                self._language_ui_invalidate()
                 try:
                     self.reload_settings_ui()
                 except Exception as exc:
@@ -14777,6 +14805,7 @@ class PrefixfyPlugin(BasePlugin):
         return Text(text=text, subtext=subtext, icon=icon, on_click=on_click)
 
     def _setup_go(self, stage: int):
+        self._language_ui_invalidate()
         if self._setup_busy:
             return
         try:
