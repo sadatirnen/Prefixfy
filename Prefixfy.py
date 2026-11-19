@@ -74,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "49.0.0"
-__build__ = "49.0.0_20261119.1_89"
+__version__ = "49.1.0"
+__build__ = "49.1.0_20261119.2_90"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -113,6 +113,18 @@ BLACKLIST_KEY = "/yADUrDk9+uuX6ilxfB4WFqZpglH2kwVmN+LN07pNHE="
 DEVICE_RECHECK_INTERVAL = 15.0
 _ACCOUNT_ID_RE = re.compile(r"[0-9]{1,16}")
 UPDATE_ALLOWED_HOSTS = ("raw.githubusercontent.com",)
+# 49.1.0: запасное зеркало того же репозитория. Используется, только если GitHub не ответил после повторов.
+# Это безопасно: манифест, ЧС и профиль подписаны, а файл обновления сверяется с хешем из подписанного манифеста,
+# так что зеркало не может подсунуть чужое содержимое. Ответ 404 от зеркала не считается «файла нет».
+# Чтобы отключить зеркало, оставьте кортеж пустым.
+UPDATE_MIRRORS: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
+    ("https://cdn.jsdelivr.net/gh/sadatirnen/Prefixfy@main/", ("cdn.jsdelivr.net", "fastly.jsdelivr.net")),
+)
+REMOTE_FORCE_WAIT = 300       # сколько «Проверить сейчас» ждёт фоновую проверку, которая уже идёт
+REMOTE_ATTEMPTS = 3          # попыток к основному серверу на один файл
+REMOTE_RETRY_PAUSE = 1.5     # пауза перед повтором, затем вдвое больше
+OTA_TOTAL_TIMEOUT = 180      # на скачивание файла обновления (медленная мобильная сеть)
+OTA_VERIFY_ATTEMPTS = 3      # сколько раз перекачивать файл обновления при несовпадении хеша (кэш CDN)
 UPDATE_PUBLIC_KEYS: Tuple[str, ...] = (
     "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAnCpVgdegnDqZoaOi5H5EOpHiwY8jhprNdIT3jGVauC0Nijz2L/iauWaVxnEOwDT2tqp1tJQ6CrdQxOS/PKV/7QLtGtAseKdpo/4tZjHgx2N9TAPMVb+zK3oWYk+0+OcLFIUoczCa1aZuwaScBqQchmgTj4sQwIbhWDhquE2EtyiF1+6S6GCgV5KyJrqylt2pAcif5z3ixUV27MPzaPbQmuyU+3amsIXDxGcdTFwlHMg/ThFVz77bwV5fkfaNdJrZGDp3+FKSIfjN68v2scL6O9oYHhkDg4AEPUYQkJmNTMnqc0ABFSW9MGuGsMTa0MKNDMaBY5iP2aQmfzLddorBP4ovfOZRzZguFVltFGd44xVOE1w5ceL1WVH+pW+4HX0Ck5FWnHbttaQiLoxXuiIK+F927LLM0yCmKLZC9tcIfMdBXgcaHp1ZaKGOIVvRs8SRaVnQ2z51v3NtjHbakGKwcXit2JlgyKvrHPG2AQj8ci7tApB6BWYffsNkFM4bCBIlAgMBAAE=",
 )
@@ -123,8 +135,8 @@ REMOTE_RETRY_MAX = 30 * 60.0
 REMOTE_IDLE_WAIT = 24 * 3600.0
 REMOTE_MANUAL_COOLDOWN = 10.0
 OTA_SLOT_TTL = 120.0
-REMOTE_TIMEOUT = 10
-REMOTE_TOTAL_TIMEOUT = 20
+REMOTE_TIMEOUT = 15
+REMOTE_TOTAL_TIMEOUT = 30
 REMOTE_MAX_BYTES = 64 * 1024
 OTA_STATE_FILE = ".pfx_ota"
 OTA_LEGACY_PREV_FILE = ".pfx_prev"
@@ -586,7 +598,7 @@ class LocalizationManager:
             "config_name_invalid": "Введите название, которого ещё нет.",
             "config_name_taken": "Конфигурация с таким названием уже есть.",
             "config_deleted": "Удалено конфигураций: {n}",
-            "config_delete_multi": "Удалить несколько конфигураций",
+            "config_delete_multi": "Удалить конфигурации",
             "config_delete_multi_subtext": "Удалить неактивные конфигурации. Активная останется.",
             "config_delete_multi_select": "Выберите неактивные конфигурации для удаления.",
             "config_import_new_name": "Название новой конфигурации",
@@ -670,9 +682,9 @@ class LocalizationManager:
             # Обновления и проверка
             "check_now": "Проверить сейчас",
             "check_now_subtext": "Проверить, что сборка плагина официальная.",
-            "check_started": "Очищаю кэш и проверяю…",
+            "check_started": "Проверяю…",
             "check_confirm_title": "Проверить сборку?",
-            "check_confirm_body": "Что произойдёт: плагин удалит сохранённые данные проверки (манифест, чёрный список, профиль настроек), скачает их заново и убедится, что сборка официальная.\n\nКогда это нужно: сборку не удалось подтвердить и функции приостановлены, вы только что обновили или переустановили плагин, или статус выглядит устаревшим.\n\nЭто безопасно: настройки и конфигурации не затрагиваются. Нужен интернет. Если проверка не пройдёт, функции останутся приостановленными до следующей успешной.",
+            "check_confirm_body": "Что произойдёт: плагин заново скачает данные проверки (манифест, чёрный список, профиль настроек) в обход кэша и убедится, что сборка официальная. Сохранённые данные заменяются только после успешной проверки.\n\nКогда это нужно: сборку не удалось подтвердить и функции приостановлены, вы только что обновили или переустановили плагин, или статус выглядит устаревшим.\n\nЭто безопасно: настройки и конфигурации не затрагиваются. Нужен интернет. Если GitHub не отвечает, плагин повторит запрос и попробует зеркало. Если проверка всё же не пройдёт, всё останется как было.",
             "check_confirm_yes": "Проверить",
             "check_ok": "Проверка пройдена",
             "check_failed": "Проверка не пройдена. Проверьте интернет и попробуйте ещё раз.",
@@ -1021,7 +1033,7 @@ class LocalizationManager:
             "config_name_invalid": "Enter a name that isn’t used yet.",
             "config_name_taken": "A configuration with this name already exists.",
             "config_deleted": "Configurations deleted: {n}",
-            "config_delete_multi": "Delete several configurations",
+            "config_delete_multi": "Delete configurations",
             "config_delete_multi_subtext": "Delete inactive configurations. The active one stays.",
             "config_delete_multi_select": "Select the inactive configurations to delete.",
             "config_import_new_name": "Name of the new configuration",
@@ -1105,9 +1117,9 @@ class LocalizationManager:
             # Обновления и проверка
             "check_now": "Check now",
             "check_now_subtext": "Make sure the plugin build is official.",
-            "check_started": "Clearing the cache and checking…",
+            "check_started": "Checking…",
             "check_confirm_title": "Check the build?",
-            "check_confirm_body": "What happens: the plugin deletes the saved verification data (manifest, blacklist, settings profile), downloads it again and makes sure the build is official.\n\nWhen you need it: the build couldn’t be confirmed and features are paused, you have just updated or reinstalled the plugin, or the status looks out of date.\n\nIt’s safe: settings and configurations are not touched. Internet is required. If the check fails, features stay paused until the next successful one.",
+            "check_confirm_body": "What happens: the plugin downloads the verification data (manifest, blacklist, settings profile) again, bypassing the cache, and makes sure the build is official. Saved data is replaced only after a successful check.\n\nWhen you need it: the build couldn’t be confirmed and features are paused, you have just updated or reinstalled the plugin, or the status looks out of date.\n\nIt’s safe: settings and configurations are not touched. Internet is required. If GitHub doesn’t respond, the plugin retries and tries a mirror. If the check still fails, everything stays as it was.",
             "check_confirm_yes": "Check",
             "check_ok": "Check passed",
             "check_failed": "Check failed. Check your connection and try again.",
@@ -1456,7 +1468,7 @@ class LocalizationManager:
             "config_name_invalid": "まだ使われていない名前を入力してください。",
             "config_name_taken": "同じ名前の設定セットがすでにあります。",
             "config_deleted": "削除した設定セット：{n}",
-            "config_delete_multi": "複数の設定セットを削除",
+            "config_delete_multi": "設定セットを削除（複数）",
             "config_delete_multi_subtext": "未使用の設定セットを削除します。使用中のものは残ります。",
             "config_delete_multi_select": "削除する未使用の設定セットを選んでください。",
             "config_import_new_name": "新しい設定セットの名前",
@@ -1540,9 +1552,9 @@ class LocalizationManager:
             # Обновления и проверка
             "check_now": "今すぐ確認",
             "check_now_subtext": "プラグインが公式ビルドかを確認します。",
-            "check_started": "キャッシュを消去して確認しています…",
+            "check_started": "確認しています…",
             "check_confirm_title": "ビルドを確認しますか？",
-            "check_confirm_body": "内容：保存されている検証データ（マニフェスト、ブラックリスト、設定プロファイル）を削除して再ダウンロードし、公式ビルドかを確認します。\n\n使う場面：ビルドを確認できず機能が停止しているとき、プラグインを更新・再インストールした直後、または状態が古いと感じたとき。\n\n安全性：設定と設定セットには影響しません。インターネットが必要です。失敗した場合、次に成功するまで機能は停止したままです。",
+            "check_confirm_body": "内容：検証データ（マニフェスト、ブラックリスト、設定プロファイル）をキャッシュを使わずに再ダウンロードし、公式ビルドかを確認します。保存済みのデータは、確認に成功したときだけ置き換えられます。\n\n使う場面：ビルドを確認できず機能が停止しているとき、プラグインを更新・再インストールした直後、または状態が古いと感じたとき。\n\n安全性：設定と設定セットには影響しません。インターネットが必要です。GitHub が応答しない場合は再試行し、ミラーも試します。それでも失敗した場合は、何も変わりません。",
             "check_confirm_yes": "確認",
             "check_ok": "確認に成功しました",
             "check_failed": "確認に失敗しました。接続を確認してもう一度お試しください。",
@@ -1891,7 +1903,7 @@ class LocalizationManager:
             "config_name_invalid": "아직 쓰이지 않은 이름을 입력하세요.",
             "config_name_taken": "같은 이름의 구성이 이미 있습니다.",
             "config_deleted": "삭제한 구성: {n}개",
-            "config_delete_multi": "여러 구성 삭제",
+            "config_delete_multi": "구성 삭제 (여러 개)",
             "config_delete_multi_subtext": "비활성 구성을 삭제합니다. 사용 중인 구성은 남습니다.",
             "config_delete_multi_select": "삭제할 비활성 구성을 선택하세요.",
             "config_import_new_name": "새 구성 이름",
@@ -1975,9 +1987,9 @@ class LocalizationManager:
             # Обновления и проверка
             "check_now": "지금 확인",
             "check_now_subtext": "플러그인이 공식 빌드인지 확인합니다.",
-            "check_started": "캐시를 지우고 확인하는 중…",
+            "check_started": "확인하는 중…",
             "check_confirm_title": "빌드를 확인할까요?",
-            "check_confirm_body": "하는 일: 저장된 검증 데이터(매니페스트, 블랙리스트, 설정 프로필)를 지우고 다시 내려받아 공식 빌드인지 확인합니다.\n\n필요한 경우: 빌드를 확인하지 못해 기능이 중지되었을 때, 플러그인을 방금 업데이트하거나 다시 설치했을 때, 상태가 오래된 것처럼 보일 때.\n\n안전한가요: 설정과 구성은 건드리지 않습니다. 인터넷이 필요합니다. 실패하면 다음에 성공할 때까지 기능은 중지된 상태로 남습니다.",
+            "check_confirm_body": "하는 일: 검증 데이터(매니페스트, 블랙리스트, 설정 프로필)를 캐시를 거치지 않고 다시 내려받아 공식 빌드인지 확인합니다. 저장된 데이터는 확인에 성공했을 때만 바뀝니다.\n\n필요한 경우: 빌드를 확인하지 못해 기능이 중지되었을 때, 플러그인을 방금 업데이트하거나 다시 설치했을 때, 상태가 오래된 것처럼 보일 때.\n\n안전한가요: 설정과 구성은 건드리지 않습니다. 인터넷이 필요합니다. GitHub가 응답하지 않으면 다시 시도하고 미러도 사용해 봅니다. 그래도 실패하면 아무것도 바뀌지 않습니다.",
             "check_confirm_yes": "확인",
             "check_ok": "확인 완료",
             "check_failed": "확인하지 못했습니다. 인터넷 연결을 확인하고 다시 시도하세요.",
@@ -2326,7 +2338,7 @@ class LocalizationManager:
             "config_name_invalid": "Saisissez un nom qui n’est pas encore utilisé.",
             "config_name_taken": "Une configuration porte déjà ce nom.",
             "config_deleted": "Configurations supprimées : {n}",
-            "config_delete_multi": "Supprimer plusieurs configurations",
+            "config_delete_multi": "Supprimer des configurations",
             "config_delete_multi_subtext": "Supprimer les configurations inactives. L’active est conservée.",
             "config_delete_multi_select": "Choisissez les configurations inactives à supprimer.",
             "config_import_new_name": "Nom de la nouvelle configuration",
@@ -2410,9 +2422,9 @@ class LocalizationManager:
             # Обновления и проверка
             "check_now": "Vérifier maintenant",
             "check_now_subtext": "S’assurer que la version du plugin est officielle.",
-            "check_started": "Vidage du cache et vérification…",
+            "check_started": "Vérification…",
             "check_confirm_title": "Vérifier la version ?",
-            "check_confirm_body": "Ce qui se passe : le plugin supprime les données de vérification enregistrées (manifeste, liste noire, profil de réglages), les télécharge à nouveau et s’assure que la version est officielle.\n\nQuand l’utiliser : la version n’a pas pu être confirmée et les fonctions sont suspendues, vous venez de mettre à jour ou de réinstaller le plugin, ou le statut semble périmé.\n\nC’est sans risque : les réglages et configurations ne sont pas touchés. Internet est requis. En cas d’échec, les fonctions restent suspendues jusqu’à la prochaine vérification réussie.",
+            "check_confirm_body": "Ce qui se passe : le plugin télécharge à nouveau les données de vérification (manifeste, liste noire, profil de réglages) sans passer par le cache et s’assure que le build est officiel. Les données enregistrées ne sont remplacées qu’après une vérification réussie.\n\nQuand l’utiliser : le build n’a pas pu être confirmé et les fonctions sont suspendues, vous venez de mettre à jour ou de réinstaller le plugin, ou le statut semble périmé.\n\nC’est sans risque : les réglages et configurations ne sont pas touchés. Internet est requis. Si GitHub ne répond pas, le plugin réessaie puis essaie un miroir. Si la vérification échoue malgré tout, rien ne change.",
             "check_confirm_yes": "Vérifier",
             "check_ok": "Vérification réussie",
             "check_failed": "Échec de la vérification. Vérifiez votre connexion et réessayez.",
@@ -10648,13 +10660,11 @@ class RemoteControl:
             self._kick_force()
 
     @staticmethod
-    def _download(name: str, limit: int = REMOTE_MAX_BYTES, etag: str = "", bust: bool = True,
-                  meta: Optional[Dict[str, str]] = None) -> bytes:
-        """bust=True - как раньше: адрес с меткой и запрет кэша (принудительная проверка, файлы OTA).
-        bust=False - обычный адрес с If-None-Match: если файл не менялся, сервер отвечает 304 без тела (_NotModified)."""
+    def _download_once(base: str, hosts, name: str, limit: int, etag: str, bust: bool,
+                       meta: Optional[Dict[str, str]], total_timeout: float) -> bytes:
         import ssl
-        url = f"{UPDATE_BASE_URL}{name}"
-        headers = {"User-Agent": f"Prefixfy/{__build__}"}
+        url = f"{base}{name}"
+        headers = {"User-Agent": f"Prefixfy/{__build__}", "Accept-Encoding": "identity"}
         if bust:
             url += f"?t={int(time.time())}&n={uuid.uuid4().hex[:8]}"
             headers.update({"Cache-Control": "no-cache, no-store", "Pragma": "no-cache"})
@@ -10663,33 +10673,90 @@ class RemoteControl:
         request = urllib.request.Request(url, headers=headers)
         opener = urllib.request.build_opener(
             urllib.request.HTTPSHandler(context=ssl.create_default_context()),
-            _SameHostRedirect(),
+            _SameHostRedirect(hosts),
         )
-        deadline = time.monotonic() + REMOTE_TOTAL_TIMEOUT
+        deadline = time.monotonic() + total_timeout
         chunks: List[bytes] = []
         total = 0
         try:
             with opener.open(request, timeout=REMOTE_TIMEOUT) as response:
                 final = urllib.parse.urlsplit(response.geturl())
-                if final.scheme != "https" or (final.hostname or "").lower() not in UPDATE_ALLOWED_HOSTS:
+                if final.scheme != "https" or (final.hostname or "").lower() not in hosts:
                     raise ValueError("unexpected final host")
+                declared = as_text(response.headers.get("Content-Length") or "").strip()
+                expected = int(declared) if declared.isdigit() else None
+                if expected is not None and expected > limit:
+                    raise ValueError(f"{name} is too large")
                 if meta is not None:
                     meta["etag"] = as_text(response.headers.get("ETag") or "")[:200]
                 while True:
                     if time.monotonic() > deadline:
                         raise TimeoutError(f"{name} download took too long")
-                    chunk = response.read(8192)
+                    chunk = response.read(64 * 1024)
                     if not chunk:
                         break
                     total += len(chunk)
                     if total > limit:
                         raise ValueError(f"{name} is too large")
                     chunks.append(chunk)
+                if expected is not None and total != expected:
+                    # 49.1.0: оборванная передача раньше могла дать «неверную подпись» вместо понятного повтора.
+                    raise ConnectionError(f"{name} download was cut short ({total} of {expected} bytes)")
         except urllib.error.HTTPError as exc:
             if exc.code == 304 and etag and not bust:
                 raise _NotModified() from None
             raise
         return b"".join(chunks)
+
+    @staticmethod
+    def _transient(exc: BaseException) -> bool:
+        """Сбой, который имеет смысл повторить: сеть, таймаут, обрыв, перегрузка сервера. 404/304 и ошибки
+        проверки содержимого не повторяются."""
+        if isinstance(exc, urllib.error.HTTPError):
+            return exc.code in (408, 425, 429) or exc.code >= 500
+        return isinstance(exc, (urllib.error.URLError, TimeoutError, ConnectionError, OSError))
+
+    @classmethod
+    def _download(cls, name: str, limit: int = REMOTE_MAX_BYTES, etag: str = "", bust: bool = True,
+                  meta: Optional[Dict[str, str]] = None, total_timeout: float = REMOTE_TOTAL_TIMEOUT,
+                  stop: Optional[threading.Event] = None) -> bytes:
+        """bust=True - адрес с меткой и запрет кэша (принудительная проверка, файлы OTA).
+        bust=False - обычный адрес с If-None-Match: если файл не менялся, сервер отвечает 304 без тела (_NotModified).
+
+        49.1.0: временные сбои повторяются (до REMOTE_ATTEMPTS раз с растущей паузой), после чего файл берётся с
+        зеркала. 404 и 304 основного сервера возвращаются сразу: это ответ, а не сбой."""
+        last: Optional[BaseException] = None
+        pause = REMOTE_RETRY_PAUSE
+        for attempt in range(REMOTE_ATTEMPTS):
+            try:
+                return cls._download_once(UPDATE_BASE_URL, UPDATE_ALLOWED_HOSTS, name, limit,
+                                          etag, bust or attempt > 0, meta, total_timeout)
+            except _NotModified:
+                raise
+            except Exception as exc:
+                if not cls._transient(exc):
+                    raise
+                last = exc
+            if attempt + 1 < REMOTE_ATTEMPTS:
+                if stop is not None and stop.wait(pause):
+                    break
+                if stop is None:
+                    time.sleep(pause)
+                pause *= 2
+        for base, hosts in UPDATE_MIRRORS:
+            if stop is not None and stop.is_set():
+                break
+            try:
+                if meta is not None:
+                    meta.pop("etag", None)  # ETag зеркала к основному серверу не относится
+                data = cls._download_once(base, hosts, name, limit, "", True, None, total_timeout)
+                return data
+            except Exception as exc:
+                if isinstance(exc, urllib.error.HTTPError) and exc.code == 404:
+                    exc = urllib.error.URLError(f"mirror has no {name}")
+                last = exc
+        assert last is not None
+        raise last
 
     def _touch(self, path: str):
         """Файл кэша подтверждён сервером (304): обновляем время, от него считается свежесть после перезапуска."""
@@ -10710,10 +10777,13 @@ class RemoteControl:
         if not self.enabled:
             return False
         if force:
-            if not self._busy.acquire(timeout=REMOTE_TOTAL_TIMEOUT * 3 + 5):
+            if not self._busy.acquire(timeout=REMOTE_FORCE_WAIT):
                 return False
             try:
-                self._invalidate_cache()
+                # 49.1.0: «Проверить сейчас» больше не стирает кэш заранее. Раньше без сети это сразу
+                # приостанавливало функции до следующей удачной проверки. Теперь файлы качаются в обход кэша,
+                # а сохранённое состояние заменяется только проверенным новым.
+                self._prepare_forced()
                 self._poll_devices(force=True)
                 try:
                     return self._refresh(fresh=True)
@@ -10776,6 +10846,12 @@ class RemoteControl:
             return None
         return {"serial": entry["serial"], "version": tuple(entry["version"]), "digest": entry["digest"]}
 
+    def _prepare_forced(self):
+        self._etags.clear()
+        self._dev_checked = float("-inf")
+        self._note_success()
+        self.plugin.log("Prefixfy: forced check, cached remote state kept until a verified one arrives")
+
     def _invalidate_cache(self):
         legacy = os.path.join(get_plugins_dir(), FLAGS_CACHE_LEGACY_FILE)
         # 48.2.0: подписанный кэш ЧС не удаляется: иначе «Проверить сейчас» без сети с последующим перезапуском
@@ -10816,7 +10892,17 @@ class RemoteControl:
                     self._etags.pop("m", None)
                     raw = self._download(MANIFEST_FILE, bust=bust, meta=meta)
             if raw is not None:
-                state = verify_manifest(raw)
+                try:
+                    state = verify_manifest(raw)
+                    self._check_manifest_order(state)
+                except ValueError as first:
+                    if bust:
+                        raise
+                    # 49.1.0: кэш CDN мог отдать копию из середины публикации. Один повтор в обход кэша.
+                    self.plugin.log(f"Prefixfy manifest rejected ({first}), fetching it again without cache")
+                    bust = True
+                    raw = self._download(MANIFEST_FILE, bust=True, meta=meta)
+                    state = verify_manifest(raw)
                 with self._lock:
                     known = self._state or self._manifest_floor()
                 if known is not None:
@@ -10867,6 +10953,17 @@ class RemoteControl:
         self._kick_force()
         return True
 
+    def _check_manifest_order(self, state: Dict[str, Any]):
+        """Те же проверки отката, что и ниже; нужны заранее, чтобы решить, стоит ли перекачать файл без кэша."""
+        with self._lock:
+            known = self._state or self._manifest_floor()
+        if known is None:
+            return
+        if state["serial"] < known["serial"]:
+            raise ValueError(f"manifest rollback rejected ({state['serial']} < {known['serial']})")
+        if state["serial"] == known["serial"] and state["digest"] != known["digest"]:
+            raise ValueError(f"manifest serial {state['serial']} reused with different content")
+
     def _refresh_flags(self, fresh: bool = False, bust: bool = False):
         meta: Dict[str, str] = {}
         try:
@@ -10875,7 +10972,14 @@ class RemoteControl:
             except _NotModified:
                 self._flags_ok = time.monotonic()
                 return
-            state = verify_flags(raw)
+            try:
+                state = verify_flags(raw)
+            except ValueError as exc:
+                if bust:
+                    raise
+                self.plugin.log(f"Prefixfy profile rejected ({exc}), fetching it again without cache")
+                raw = self._download(FLAGS_FILE, FLAGS_MAX_BYTES, bust=True, meta=meta)
+                state = verify_flags(raw)
             if build_in_range(state["min_build"], state["max_build"]):
                 values, accounts = state["flags"], state["accounts"]
             else:
@@ -10989,11 +11093,21 @@ class RemoteControl:
                 self._bl_last_ok = self._bl_net_ok = time.monotonic()
                 self._touch(self._bl_path)
                 return True
-            state = verify_blacklist(raw)
-            if state["serial"] < self._bl_serial:
-                raise ValueError(f"blacklist rollback rejected ({state['serial']} < {self._bl_serial})")
-            if state["serial"] == self._bl_serial and self._bl_digest and state["digest"] != self._bl_digest:
-                raise ValueError(f"blacklist serial {state['serial']} reused with different content")
+            for again in (False, True):
+                try:
+                    state = verify_blacklist(raw)
+                    if state["serial"] < self._bl_serial:
+                        raise ValueError(f"blacklist rollback rejected ({state['serial']} < {self._bl_serial})")
+                    if state["serial"] == self._bl_serial and self._bl_digest and state["digest"] != self._bl_digest:
+                        raise ValueError(f"blacklist serial {state['serial']} reused with different content")
+                    break
+                except ValueError as exc:
+                    if again or bust:
+                        raise
+                    # 49.1.0: копия из кэша CDN не прошла проверку: один повтор в обход кэша.
+                    self.plugin.log(f"Prefixfy blacklist rejected ({exc}), fetching it again without cache")
+                    bust = True
+                    raw = self._download(BLACKLIST_FILE, BLACKLIST_MAX_BYTES, bust=True, meta=meta)
         except urllib.error.HTTPError as exc:
             if exc.code == 404:
                 self._etags.pop("b", None)
@@ -11288,14 +11402,28 @@ class RemoteControl:
     def _ota_fetch(self, state: Dict[str, Any], force: bool = False) -> bytes:
         name = state["file"] or OTA_DEFAULT_FILE
         size = state["size"]
-        data = self._download(name, size or MANIFEST_MAX_FILE_SIZE)
-        if size and len(data) != size:
-            raise ValueError("size mismatch")
-        if not hmac.compare_digest(hashlib.sha256(data).hexdigest(), state["sha256"]):
-            raise ValueError("sha256 mismatch")
-        if state["sha512"] and not hmac.compare_digest(hashlib.sha512(data).hexdigest(), state["sha512"]):
-            raise ValueError("sha512 mismatch")
-        source = data.decode("utf-8")
+        data = b""
+        for attempt in range(OTA_VERIFY_ATTEMPTS):
+            # 49.1.0: файл качается с запасом времени для медленной сети, а при несовпадении размера или хеша
+            # (CDN ещё отдаёт прошлую версию сразу после публикации) перекачивается с паузой.
+            data = self._download(name, size or MANIFEST_MAX_FILE_SIZE, total_timeout=OTA_TOTAL_TIMEOUT,
+                                  stop=self._unloaded)
+            problem = ""
+            if size and len(data) != size:
+                problem = "size mismatch"
+            elif not hmac.compare_digest(hashlib.sha256(data).hexdigest(), state["sha256"]):
+                problem = "sha256 mismatch"
+            elif state["sha512"] and not hmac.compare_digest(hashlib.sha512(data).hexdigest(), state["sha512"]):
+                problem = "sha512 mismatch"
+            if not problem:
+                break
+            if attempt + 1 >= OTA_VERIFY_ATTEMPTS or self._unloaded.wait(5.0 * (attempt + 1)):
+                raise ValueError(problem)
+            self.plugin.log(f"Prefixfy OTA: {problem}, downloading again (attempt {attempt + 2})")
+        try:
+            source = data.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError("update file is not text") from exc
         match = re.search(r'^__build__\s*=\s*"([^"]+)"', source, re.MULTILINE)
         if match is None or parse_version(match.group(1)) != state["version"]:
             raise ValueError("build label differs from the manifest")
@@ -14415,6 +14543,11 @@ class PrefixfyPlugin(BasePlugin):
                 self.reload_settings_ui()
             except Exception as exc:
                 self.log(f"Prefixfy manual check failed: {exc}")
+                self._toast("check_failed")  # 49.1.0: раньше при сбое пользователь не получал никакого ответа
+                try:
+                    self.reload_settings_ui()
+                except Exception:
+                    pass
             finally:
                 self._check_running = False
 
