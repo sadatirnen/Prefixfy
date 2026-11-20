@@ -74,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "49.1.0"
-__build__ = "49.1.0_20261119.2_90"
+__version__ = "49.2.0"
+__build__ = "49.2.0_20261120.1_91"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -2707,15 +2707,33 @@ MASK_TOKEN_RE = re.compile(r"\[text(?:[ \t]*:[ \t]*([^\[\]\r\n]*?))?[ \t]*\]")
 _LINK_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:(?://|[^\s/])")
 
 
+_LINK_SCHEME_PREFIX_RE = re.compile(r"^([A-Za-z][A-Za-z0-9+\-]*):")
+_LINK_SAFE_SCHEMES = frozenset(("http", "https", "tg", "mailto", "ton"))
+_LINK_BLOCKED_SCHEMES = frozenset(("javascript", "vbscript", "data", "file", "content", "intent", "blob", "about"))
+
+
 def normalize_link(raw) -> Optional[str]:
+    """49.2.0: ссылка из [text: …]. Разрешены http(s), tg, mailto и ton; javascript:, data:, file:, intent: и подобные
+    отбрасываются (маска может прийти из чужого файла конфигурации). «site.com:8080/x» и «localhost:3000» раньше
+    принимались за схему и уходили без https://, то есть нерабочей ссылкой."""
     link = as_text(raw).strip()
-    if not link or any(ch.isspace() for ch in link):
+    if not link or any(ch.isspace() for ch in link) or len(link) > 2048:
         return None
     if link.startswith("@") and len(link) > 1:
-        return "https://t.me/" + link[1:]
-    if not _LINK_SCHEME_RE.match(link):
-        link = "https://" + link
-    return link
+        name = link[1:]
+        return "https://t.me/" + name if re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{3,31}", name) else None
+    found = _LINK_SCHEME_PREFIX_RE.match(link)
+    scheme = found.group(1).lower() if found else ""
+    if scheme in _LINK_SAFE_SCHEMES:
+        rest = link[found.end():]
+        if scheme in ("http", "https") and not rest.startswith("//"):
+            return None
+        return link if rest else None
+    if scheme in _LINK_BLOCKED_SCHEMES:
+        return None
+    if link.startswith("//"):
+        link = link[2:]
+    return "https://" + link
 
 
 def mask_tokens(mask) -> list:
@@ -4639,6 +4657,21 @@ assert all(SETTING_DEFAULTS[_key] is False for _key in ("cute_enabled",) + CUTE_
 assert all(SETTING_DEFAULTS[_key] == _spec[0] for _key, _spec in CUTE_INT_KEYS.items())
 
 
+CUTE_SIGNATURES = tuple(sorted(
+    set(CUTE_KAOMOJIS)
+    | {action for actions in CUTE_ACTIONS.values() for action in actions}
+    | {item for item in CUTE_SPARKLES if len(item) >= 2 and item != "☆彡"}
+    | {item.strip() for item in CUTE_UWU_SUFFIXES if len(item.strip()) >= 4},
+    key=len, reverse=True,
+))
+
+
+def cute_already_applied(text: str) -> bool:
+    """49.2.0: в тексте уже есть каомодзи, «*действие*» или другая метка милых эффектов. Используется при
+    правке: иначе каждое редактирование добавляло ещё по каомодзи и действию в каждое предложение."""
+    return any(signature in text for signature in CUTE_SIGNATURES)
+
+
 class CuteOptions:
     """Настройки «милых» эффектов, разобранные один раз при сборке RuntimeSettings."""
     __slots__ = ("enabled", "active", "sentence_p", "word_p", "stretch_max", "language") + tuple(k[5:] for k in CUTE_BOOL_KEYS)
@@ -4884,6 +4917,7 @@ class MaskTransformation(Transformation):
             if wrap_kind and len(self.table) < _MD_MAX_ENTITIES and not (wrap_kind in _MD_CODE_KINDS and self.table):
                 self.wrap_id = len(self.table)
                 self.table.append((wrap_kind, ""))
+        self.separator: Optional["SeparatorTransformation"] = None  # 49.2.0: разделители ставятся только в тексте сообщения
         self.left_plain = "" if self._has_custom_emoji(self.left) else _MD_SENTINEL_RE.sub("", self.left)
         self.right_plain = "" if self._has_custom_emoji(self.right) else _MD_SENTINEL_RE.sub("", self.right)
         self.left_visible = _MD_SENTINEL_RE.sub("", self.left)
@@ -4907,8 +4941,15 @@ class MaskTransformation(Transformation):
         has_right = bool(self.right_plain) and text.endswith(self.right_plain)
         prefix = "" if has_left else self.left
         suffix = "" if has_right else self.right
+        # 49.2.0: если маска уже стоит в тексте, её части не стилизуются и не получают разделители повторно.
+        head = self.left_plain if has_left else ""
+        tail = self.right_plain if has_right and len(text) >= len(head) + len(self.right_plain) else ""
+        middle = text[len(head):len(text) - len(tail)] if (head or tail) else text
         if self.text_style_enabled:
-            text = apply_text_style(text, self.text_style, self.text_style_translit, self.style_only)
+            middle = apply_text_style(middle, self.text_style, self.text_style_translit, self.style_only)
+        if self.separator is not None:
+            middle = self.separator.transform(middle)
+        text = head + middle + tail
         if self.table:
             body = _MD_BODY_START + text + _MD_BODY_END
             if self.link_id is not None:
@@ -4934,6 +4975,22 @@ class SeparatorTransformation(Transformation):
         self.spaces = settings.separator_spaces
         self.space_mode = settings.separator_space_mode
         self._gap = self._WORD_GAP if settings.text_style_enabled and settings.text_style == STYLE_VAPORWAVE else self._WHITESPACE
+        self._marks = tuple(sorted({_MD_SENTINEL_RE.sub("", item) for item in self.separators} - {""}, key=len, reverse=True))
+
+    def _is_mark(self, token: str) -> bool:
+        return _MD_SENTINEL_RE.sub("", token) in self._marks
+
+    def _beside_mark(self, before: str, after: str) -> bool:
+        """49.2.0: промежуток рядом с уже стоящим разделителем не трогаем. Так повторная обработка (правка,
+        пересылка своего же сообщения) не удваивает разделители, а обычное тире «Москва — столица» не обрастает ими."""
+        if self._is_mark(before) or self._is_mark(after):
+            return True
+        clean_before, clean_after = _MD_SENTINEL_RE.sub("", before), _MD_SENTINEL_RE.sub("", after)
+        if self.spaces and self.space_mode == 1:
+            return clean_after.startswith(self._marks)
+        if self.spaces and self.space_mode == 2:
+            return clean_before.endswith(self._marks)
+        return False
 
     @staticmethod
     def _glue_invisible(tokens: List[str]) -> List[str]:
@@ -4966,7 +5023,8 @@ class SeparatorTransformation(Transformation):
             parts = [tokens[0]]
             for index in range(1, len(tokens), 2):
                 gap, word = tokens[index], tokens[index + 1]
-                if self.chance < 1.0 and random.random() >= self.chance:
+                if self._beside_mark(tokens[index - 1], word) or (
+                        self.chance < 1.0 and random.random() >= self.chance):
                     parts.append(gap)
                     parts.append(word)
                     continue
@@ -5143,9 +5201,13 @@ class CuteTransformation(Transformation):
                     out.extend(char * random.randint(1, limit - streak))
         return "".join(out)
 
-    @staticmethod
-    def _soften(word: str) -> str:
-        if len(word) >= 3 and not word.isupper() and word[-1].lower() in CUTE_SOFT_SIGN_CONSONANTS:
+    _CYRILLIC_WORD_RE = re.compile("[\u0400-\u04ff]+(?:-[\u0400-\u04ff]+)*")
+
+    @classmethod
+    def _soften(cls, word: str) -> str:
+        # 49.2.0: только слова из кириллицы. Раньше «100р» или «Ivanов» тоже получали мягкий знак.
+        if (len(word) >= 3 and not word.isupper() and cls._CYRILLIC_WORD_RE.fullmatch(word)
+                and word[-1].lower() in CUTE_SOFT_SIGN_CONSONANTS):
             return word + "ь"
         return word
 
@@ -5303,7 +5365,14 @@ class TransformationPipeline:
             self.markdown_table = mask.table
             self.styling = mask.text_style_enabled
         if settings.separator_enabled:
-            self.transformations.append(SeparatorTransformation(settings, self.markdown_table))
+            separator = SeparatorTransformation(settings, self.markdown_table)
+            mask_part = self._mask()
+            if mask_part is not None:
+                # 49.2.0: раньше разделители вставлялись и между словами маски («От • Васи: • привет»), а после
+                # этого правка сообщения не узнавала маску и добавляла её второй раз.
+                mask_part.separator = separator
+            else:
+                self.transformations.append(separator)
 
     def _mask(self) -> Optional["MaskTransformation"]:
         for transformation in self.transformations:
@@ -15861,6 +15930,8 @@ class PrefixfyPlugin(BasePlugin):
 
     def _edit_is_decorated(self, runtime: Runtime, text: str) -> bool:
         settings = runtime.settings
+        if settings.cute.active and cute_already_applied(text):
+            return True
         masks = [settings.mask]
         if settings.mask_rotation_enabled:
             masks.extend(settings.masks_list)
