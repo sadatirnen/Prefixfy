@@ -74,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "49.3.0"
-__build__ = "49.3.0_20261120.2_92"
+__version__ = "49.4.0"
+__build__ = "49.4.0_20261121.1_93"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -14233,10 +14233,12 @@ class PrefixfyPlugin(BasePlugin):
             f"{tr('about_build_label')}: {__build__ or unknown}",
         ]
         remote = getattr(self, "remote", None)
-        latest = remote.latest_version() if remote is not None else ""
+        status_key = self._about_status_key()
+        # 49.3.0: «последняя официальная сборка» показывается только когда нужно обновить плагин.
+        latest = remote.latest_version() if remote is not None and status_key == "status_outdated" else ""
         if latest:
             lines.append(f"{tr('about_latest')}: {latest}")
-        lines.append(f"{tr('about_status')}: {tr(self._about_status_key())}")
+        lines.append(f"{tr('about_status')}: {tr(status_key)}")
         return "\n".join(lines) + "\n\n" + tr("about_note")
 
     def _show_about(self, *_):
