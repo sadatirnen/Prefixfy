@@ -74,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "49.5.0"
-__build__ = "49.5.0_20261121.2_94"
+__version__ = "49.6.0"
+__build__ = "49.6.0_20261122.1_95"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -454,6 +454,7 @@ class LocalizationManager:
             "mask_editor_title": "Маска",
             "mask_editor_hint": "[text] — текст сообщения, [text: ссылка] — текст сообщения со ссылкой.",
             "mask_invalid": "В маске должен быть ровно один [text]",
+            "zalgo_rejected": "Текст в стиле Zalgo (стопки комбинирующих знаков) не принимается",
             "mask_too_long": "Маска слишком длинная: не больше {n} символов",
             "mask_preview_sample": "Пример сообщения",
             "mask_preview_invalid": "Маска повреждена: нужен ровно один [text]",
@@ -891,6 +892,7 @@ class LocalizationManager:
             "mask_editor_title": "Mask",
             "mask_editor_hint": "[text] is your message, [text: link] is your message with a link.",
             "mask_invalid": "The mask needs exactly one [text]",
+            "zalgo_rejected": "Zalgo text (stacked combining marks) isn’t accepted",
             "mask_too_long": "The mask is too long: {n} characters max",
             "mask_preview_sample": "Sample message",
             "mask_preview_invalid": "The mask is broken: it needs exactly one [text]",
@@ -1328,6 +1330,7 @@ class LocalizationManager:
             "mask_editor_title": "マスク",
             "mask_editor_hint": "[text] はメッセージ本文、[text: リンク] はリンク付きの本文です。",
             "mask_invalid": "マスクには [text] がちょうど 1 つ必要です",
+            "zalgo_rejected": "Zalgo テキスト（結合文字の積み重ね）は使用できません",
             "mask_too_long": "マスクが長すぎます（{n} 文字まで）",
             "mask_preview_sample": "メッセージの例",
             "mask_preview_invalid": "マスクが壊れています。[text] がちょうど 1 つ必要です",
@@ -1765,6 +1768,7 @@ class LocalizationManager:
             "mask_editor_title": "마스크",
             "mask_editor_hint": "[text]는 메시지 본문, [text: 링크]는 링크가 걸린 본문입니다.",
             "mask_invalid": "마스크에 [text]가 정확히 하나 있어야 합니다",
+            "zalgo_rejected": "Zalgo 텍스트(결합 문자 중첩)는 사용할 수 없습니다",
             "mask_too_long": "마스크가 너무 깁니다 (최대 {n}자)",
             "mask_preview_sample": "메시지 예시",
             "mask_preview_invalid": "마스크가 손상되었습니다. [text]가 정확히 하나 필요합니다",
@@ -2202,6 +2206,7 @@ class LocalizationManager:
             "mask_editor_title": "Masque",
             "mask_editor_hint": "[text] est votre message, [text: lien] est votre message avec un lien.",
             "mask_invalid": "Le masque doit contenir exactement un [text]",
+            "zalgo_rejected": "Le texte Zalgo (diacritiques empilés) n’est pas accepté",
             "mask_too_long": "Masque trop long : {n} caractères au maximum",
             "mask_preview_sample": "Exemple de message",
             "mask_preview_invalid": "Masque endommagé : il faut exactement un [text]",
@@ -2711,6 +2716,61 @@ def as_text(value) -> str:
     if isinstance(value, str):
         return value
     return "" if value is None else str(value)
+
+
+# 49.6.0: защита от Zalgo. Zalgo — это стопки комбинирующих знаков на одной букве: такой текст вылезает за строку,
+# ломает вёрстку клиента и раздувает сообщение. Подряд идущие комбинирующие знаки (Mn/Me) сверх ZALGO_MAX_RUN считаются Zalgo.
+# Обычные диакритики (é, ё, й, вьетнамский, огласовки иврита и арабского) укладываются в лимит. Невидимые символы
+# формата (Cf: ZWJ, ZWNJ, ZWSP…) не прерывают стопку, иначе их можно вставлять между знаками и обходить проверку.
+ZALGO_MAX_RUN = 4
+_ZALGO_MARKS = frozenset(("Mn", "Me"))
+_unicode_category = unicodedata.category
+
+
+def _zalgo_spans(text) -> List[Tuple[int, int]]:
+    """Границы стопок комбинирующих знаков длиннее ZALGO_MAX_RUN: [(начало, конец), ...]."""
+    if not isinstance(text, str) or len(text) <= ZALGO_MAX_RUN or max(text) < "\u0300":
+        return []
+    spans: List[Tuple[int, int]] = []
+    first = None
+    count = last = 0
+    for index, char in enumerate(text):
+        if char >= "\u0300":
+            category = _unicode_category(char)
+            if category in _ZALGO_MARKS:
+                if first is None:
+                    first, count = index, 0
+                count += 1
+                last = index + 1
+                continue
+            if category == "Cf" and first is not None:
+                continue
+        if first is not None:
+            if count > ZALGO_MAX_RUN:
+                spans.append((first, last))
+            first = None
+    if first is not None and count > ZALGO_MAX_RUN:
+        spans.append((first, last))
+    return spans
+
+
+def has_zalgo(text) -> bool:
+    return bool(_zalgo_spans(text))
+
+
+def strip_zalgo(text):
+    """Убирает комбинирующие знаки из каждой стопки длиннее лимита; остальной текст не меняется. Не строки возвращаются как есть."""
+    spans = _zalgo_spans(text)
+    if not spans:
+        return text
+    out: List[str] = []
+    position = 0
+    for start, end in spans:
+        out.append(text[position:start])
+        out.append("".join(ch for ch in text[start:end] if _unicode_category(ch) not in _ZALGO_MARKS))
+        position = end
+    out.append(text[position:])
+    return "".join(out)
 
 
 MASK_TOKEN_RE = re.compile(r"\[text(?:[ \t]*:[ \t]*([^\[\]\r\n]*?))?[ \t]*\]")
@@ -3552,7 +3612,7 @@ def parse_conditional_masks(raw):
 
 
 def sanitize_tag_value(value) -> str:
-    cleaned = _TAG_INVISIBLE_RE.sub("", as_text(value))
+    cleaned = strip_zalgo(_TAG_INVISIBLE_RE.sub("", as_text(value)))
     return _TAG_UNSAFE_RE.sub(" ", cleaned).strip()[:TAG_VALUE_LIMIT]
 
 
@@ -4721,7 +4781,8 @@ class RuntimeSettings:
         self.raw = dict(raw)
 
         def get(key):
-            return raw.get(key, setting_default(raw, key))
+            value = raw.get(key, setting_default(raw, key))
+            return strip_zalgo(value) if isinstance(value, str) else value
 
         self.language = language_index_value(get("language"))
         self.chat_scope_enabled = bool(get("chat_scope_enabled"))
@@ -4808,14 +4869,16 @@ class PrefixfySettings:
     def get(self, key, default=None):
         if default is None:
             default = self.DEFAULTS.get(key)
-        return self.plugin.get_setting(key, default)
+        value = self.plugin.get_setting(key, default)
+        return strip_zalgo(value) if isinstance(value, str) else value
 
     def set(self, key, value, reload_settings=False):
         self.plugin.set_setting(key, value, reload_settings=reload_settings)
         self.plugin.handle_setting_changed(key)
 
     def raw(self) -> Dict[str, Any]:
-        return {key: self.plugin.get_setting(key, default) for key, default in SETTING_DEFAULTS.items()}
+        values = {key: self.plugin.get_setting(key, default) for key, default in SETTING_DEFAULTS.items()}
+        return {key: strip_zalgo(value) if isinstance(value, str) else value for key, value in values.items()}
 
     def snapshot(self) -> RuntimeSettings:
         return RuntimeSettings(self.raw())
@@ -4851,7 +4914,8 @@ class _SnapshotSettings:
 
     def get(self, key, default=None):
         if key in self._values:
-            return self._values[key]
+            value = self._values[key]
+            return strip_zalgo(value) if isinstance(value, str) else value
         return PrefixfySettings.DEFAULTS.get(key) if default is None else default
 
     language_index = PrefixfySettings.language_index
@@ -5485,7 +5549,14 @@ class TransformationPipeline:
             except Exception as exc:
                 if self.logger:
                     self.logger(f"Prefixfy transformation failed: {exc}")
-        return restore_special(protected, spans)
+        result = restore_special(protected, spans)
+        # 49.6.0: если из чистого текста получился Zalgo, сообщение уходит без оформления.
+        probe = _MD_SENTINEL_RE.sub("", result) if self.markdown_table else result
+        if has_zalgo(probe) and not has_zalgo(text):
+            if self.logger:
+                self.logger("Prefixfy: decoration would produce Zalgo, message left as is")
+            return text
+        return result
 
 
 _MD_BASE = 0xE100
@@ -6416,13 +6487,13 @@ def _texts_within_limit(section, depth: int = 0) -> bool:
         return False
     for value in section.values():
         if isinstance(value, str):
-            if len(value) > MAX_SETTING_TEXT:
+            if len(value) > MAX_SETTING_TEXT or has_zalgo(value):
                 return False
         elif isinstance(value, dict):
             if not _texts_within_limit(value, depth + 1):
                 return False
         elif isinstance(value, list):
-            if len(value) > 4096 or any(isinstance(item, str) and len(item) > MAX_SETTING_TEXT for item in value):
+            if len(value) > 4096 or any(isinstance(item, str) and (len(item) > MAX_SETTING_TEXT or has_zalgo(item)) for item in value):
                 return False
     return True
 
@@ -8328,7 +8399,7 @@ class ConfigurationsManager:
             return value if isinstance(value, bool) else default
         if isinstance(default, int):
             return clamp_int(value, default, -2 ** 31, 2 ** 31 - 1)
-        return value if isinstance(value, str) and len(value) <= MAX_SETTING_TEXT else default
+        return strip_zalgo(value) if isinstance(value, str) and len(value) <= MAX_SETTING_TEXT else default
 
     def _snapshot(self) -> Dict[str, Any]:
         return {key: self._coerce(key, self.settings.get(key, SETTING_DEFAULTS[key])) for key in self.CONFIG_KEYS}
@@ -8673,7 +8744,7 @@ class ConfigurationsManager:
 
     @staticmethod
     def normalize_name(name) -> str:
-        return " ".join(as_text(name).split())[:MAX_CONFIG_NAME_LENGTH].strip()
+        return " ".join(strip_zalgo(as_text(name)).split())[:MAX_CONFIG_NAME_LENGTH].strip()
 
     def is_name_taken(self, name, ignore_id=None) -> bool:
         """Имена уникальны в пределах области: общего набора или пресетов одного аккаунта."""
@@ -12782,6 +12853,10 @@ class PrefixfyPlugin(BasePlugin):
             if neutral and not neutral_ready and not value.strip():
                 if neutral[1](editor) is not False:
                     bld.dismiss()
+                return
+            if has_zalgo(value):
+                editor.setError(self._tr("zalgo_rejected"))
+                self._toast("zalgo_rejected", fragment)
                 return
             if on_confirm(value, editor) is not False:
                 bld.dismiss()
