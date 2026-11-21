@@ -74,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "49.4.0"
-__build__ = "49.4.0_20261121.1_93"
+__version__ = "49.5.0"
+__build__ = "49.5.0_20261121.2_94"
 __icon__ = "http_Prefixfy_by_fStikBot/2"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -7257,9 +7257,19 @@ class ConfigTransfer:
         return bool(self.plugin._show_builder(builder))
 
     def _apply_import_rename(self, plan, fragment=None):
-        uid, config_id, imported, _current = plan
+        uid, _planned_id, imported, _current = plan
+        configs = self.plugin.configurations
         try:
-            if not self.plugin.configurations.rename_imported(uid, config_id, imported):
+            # 49.3.0: после импорта аккаунт, шедший по общей конфигурации, получает собственную копию, и переименовать
+            # нужно её. Общую конфигурацию из набора аккаунта переименовать нельзя, раньше это давало ложное «не сохранено».
+            with configs._lock:
+                if uid is None:
+                    config_id = configs.active_id
+                else:
+                    config_id = None if configs.accounts.pin(uid) else configs.accounts.active_id(uid)
+            if not config_id:
+                return  # импорт ничего не изменил: аккаунт по-прежнему идёт за общей конфигурацией
+            if not configs.rename_imported(uid, config_id, imported):
                 self._toast("config_save_failed", fragment)
         except Exception as exc:
             self.plugin.log(f"Prefixfy import rename failed: {exc}")
@@ -8733,20 +8743,24 @@ class ConfigurationsManager:
             if not name:
                 name = unique_name(self.plugin._tr("config_imported_name"), self.selector_items())
             previous = self._snapshot()
+            config_id = None
             try:
                 self._load_snapshot(SETTING_DEFAULTS)
                 self.plugin.transfer.apply_components(data, components)
+                config_id = self._new_id(uid)
+                baseline = self._snapshot_with_media(config_id, "baseline")
+                stored = self._store_record(config_id, {
+                    "name": name,
+                    "current": self._clone_with_media(baseline, config_id, "current"),
+                    "baseline": baseline,
+                    "origin": self.ORIGIN_IMPORTED,
+                })
             except Exception:
+                # 49.3.0: раньше сбой после загрузки значений по умолчанию оставлял живые настройки импортированными.
+                if config_id:
+                    self._discard_record(config_id)
                 self._restore_live(previous)
                 raise
-            config_id = self._new_id(uid)
-            baseline = self._snapshot_with_media(config_id, "baseline")
-            stored = self._store_record(config_id, {
-                "name": name,
-                "current": self._clone_with_media(baseline, config_id, "current"),
-                "baseline": baseline,
-                "origin": self.ORIGIN_IMPORTED,
-            })
             if not stored:
                 self._discard_record(config_id)
                 self._restore_live(previous)
@@ -8876,6 +8890,7 @@ class ConfigurationsManager:
             if not failed:
                 config = self._record(config_id)
                 if not config:
+                    self.plugin._toast("config_save_failed")
                     return
                 baseline = config.get("baseline", {})
                 if plugin_defaults and self.is_imported(config_id):
