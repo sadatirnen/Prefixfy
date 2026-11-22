@@ -74,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "50.1.0"
-__build__ = "50.1.0_20261122.3_97"
+__version__ = "50.2.0"
+__build__ = "50.2.0_20261122.4_98"
 __icon__ = "http_Prefixfy_by_fStikBot/3"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -7836,7 +7836,10 @@ class ConfigTransfer:
         builder = AlertDialogBuilder(activity)
         builder.set_title(self._tr("account_import_title"))
 
+        guard = DismissGuard(lambda: (self.discard_container_media(data), self._toast("config_import_cancelled", fragment)))
+
         def picked(bld, which):
+            guard.mark()
             bld.dismiss()
             if 0 <= which < len(choices):
                 if as_new:
@@ -7847,13 +7850,14 @@ class ConfigTransfer:
                 self.discard_container_media(data)
 
         def cancelled(bld, which):
+            guard.mark()
             bld.dismiss()
             self.discard_container_media(data)
             self._toast("config_import_cancelled", fragment)
 
         builder.set_items(labels, picked)
         builder.set_negative_button(self._tr("action_cancel"), cancelled)
-        return bool(plugin._show_builder(builder))
+        return bool(plugin._show_builder(builder, guard))
 
     @staticmethod
     def _file_config_name(data) -> str:
@@ -12816,6 +12820,78 @@ def fallback_emoji_entities(text: str, spans) -> List[Tuple[str, int, int, str]]
     return [("CustomEmoji", utf16_length(text[:start]), utf16_length(text[start:end]), str(document)) for start, end, document in spans]
 
 
+class DismissGuard:
+    """50.2.0: замечает, что диалог закрыт не его кнопкой, а «назад» или касанием за окном.
+
+    Кнопки диалога вызывают mark() до dismiss(); если окно закрылось, а mark() не звали, вызывается on_unanswered.
+    Срабатывает не больше одного раза. Слушатель ставится на сам диалог (OnDismissListener), поэтому событие приходит
+    при любом закрытии, а флаг отличает ответ пользователя от отмены.
+    """
+
+    def __init__(self, on_unanswered=None):
+        self.on_unanswered = on_unanswered
+        self.answered = False
+        self.fired = False
+
+    def mark(self):
+        self.answered = True
+
+    def _dismissed(self, log):
+        if self.answered or self.fired:
+            return
+        self.fired = True
+        if self.on_unanswered is None:
+            return
+        try:
+            self.on_unanswered()
+        except Exception as exc:
+            log(f"Prefixfy: dialog dismissal handler failed: {exc}")
+
+    def attach(self, builder, log) -> bool:
+        """Ставит слушатель закрытия на диалог builder. False, если ни один способ не подошёл."""
+        guard = self
+        try:
+            from java import dynamic_proxy
+            from android.content import DialogInterface
+
+            class _Listener(dynamic_proxy(DialogInterface.OnDismissListener)):
+                def onDismiss(self, dialog):
+                    run_on_ui_thread(lambda: guard._dismissed(log))
+
+            listener = _Listener()
+        except Exception as exc:
+            log(f"Prefixfy: dismiss listener unavailable: {exc}")
+            return False
+        for name in ("set_on_dismiss_listener", "setOnDismissListener"):
+            setter = getattr(builder, name, None)
+            if callable(setter):
+                try:
+                    setter(listener)
+                    return True
+                except Exception:
+                    continue
+        dialog = None
+        for name in ("get_dialog", "getDialog"):
+            getter = getattr(builder, name, None)
+            if callable(getter):
+                try:
+                    dialog = getter()
+                except Exception:
+                    dialog = None
+                if dialog is not None:
+                    break
+        if dialog is None:
+            dialog = getattr(builder, "dialog", None) or getattr(builder, "_dialog", None)
+        setter = getattr(dialog, "setOnDismissListener", None) if dialog is not None else None
+        if callable(setter):
+            try:
+                setter(listener)
+                return True
+            except Exception as exc:
+                log(f"Prefixfy: setOnDismissListener failed: {exc}")
+        return False
+
+
 class PrefixfyPlugin(BasePlugin):
     def on_plugin_load(self):
         try:
@@ -13220,9 +13296,11 @@ class PrefixfyPlugin(BasePlugin):
                 return activity
         return None
 
-    def _show_builder(self, builder) -> bool:
+    def _show_builder(self, builder, guard: Optional[DismissGuard] = None) -> bool:
         try:
             builder.show()
+            if guard is not None and not guard.attach(builder, self.log):
+                self.log("Prefixfy: closing by back/outside tap cannot be detected for this dialog")
             return True
         except Exception as exc:
             self.log(f"Prefixfy dialog show failed: {exc}")
@@ -13267,10 +13345,13 @@ class PrefixfyPlugin(BasePlugin):
             builder.set_message(message)
         builder.set_view(editor)
 
+        guard = DismissGuard(on_cancel)
+
         def ok(bld, which):
             value = editor.getText().toString()
             if neutral and not neutral_ready and not value.strip():
                 if neutral[1](editor) is not False:
+                    guard.mark()
                     bld.dismiss()
                 return
             if has_unsafe_text(value):
@@ -13278,16 +13359,18 @@ class PrefixfyPlugin(BasePlugin):
                 self._toast("unsafe_text_rejected", fragment)
                 return
             if on_confirm(value, editor) is not False:
+                guard.mark()
                 bld.dismiss()
 
         def cancel(bld, which):
+            guard.mark()
             bld.dismiss()
             if on_cancel:
                 on_cancel()
 
         builder.set_positive_button(positive or self._tr("action_save"), ok)
         builder.set_negative_button(self._tr("action_cancel"), cancel)
-        return self._show_builder(builder)
+        return self._show_builder(builder, guard if on_cancel else None)
 
     def show_checklist(self, title, rows, on_confirm, *, message=None, extra=None, positive=None,
                        fragment=None, on_cancel=None, cooldown: int = 0, red: bool = False) -> bool:
@@ -13321,6 +13404,7 @@ class PrefixfyPlugin(BasePlugin):
 
         label = positive or self._tr("action_save")
         shown_at = time.monotonic()
+        guard = DismissGuard(on_cancel)
 
         def ok(bld, which):
             if cooldown and cooldown - (time.monotonic() - shown_at) > 0:
@@ -13328,16 +13412,18 @@ class PrefixfyPlugin(BasePlugin):
             selected = [i for i, box in enumerate(boxes) if box.isChecked() and rows[i][2]]
             extra_checked = bool(extra_box and extra_box.isEnabled() and extra_box.isChecked())
             if on_confirm(selected, extra_checked) is not False:
+                guard.mark()
                 bld.dismiss()
 
         def cancel(bld, which):
+            guard.mark()
             bld.dismiss()
             if on_cancel:
                 on_cancel()
 
         builder.set_positive_button(f"{label} ({cooldown})" if cooldown else label, ok)
         builder.set_negative_button(self._tr("action_cancel"), cancel)
-        shown = self._show_builder(builder)
+        shown = self._show_builder(builder, guard if on_cancel else None)
         if shown and red:
             self._paint_button_red(builder, "positive")
         if shown and cooldown:
