@@ -74,9 +74,9 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "49.6.0"
-__build__ = "49.6.0_20261122.1_95"
-__icon__ = "http_Prefixfy_by_fStikBot/2"
+__version__ = "50.0.0"
+__build__ = "50.0.0_20261122.2_96"
+__icon__ = "http_Prefixfy_by_fStikBot/3"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
 
@@ -90,7 +90,6 @@ FLAGS_FILE = "flags.json"
 FLAGS_FORMAT = 1
 FLAGS_DOMAIN = b"Prefixfy-flags-v1\n"
 FLAGS_CACHE_FILE = ".pfx_profile"
-FLAGS_CACHE_LEGACY_FILE = "Prefixfy_flags.json"
 SERIALS_FILE = ".pfx_serials"
 KNOWN_BUILDS_FILE = ".pfx_known"
 STORE_KEY_FILE = ".pfx_store_key"
@@ -139,7 +138,6 @@ REMOTE_TIMEOUT = 15
 REMOTE_TOTAL_TIMEOUT = 30
 REMOTE_MAX_BYTES = 64 * 1024
 OTA_STATE_FILE = ".pfx_ota"
-OTA_LEGACY_PREV_FILE = ".pfx_prev"
 OTA_SLOT_DIR = ".pfx_slot"
 OTA_SLOT_FILE = "plugin.py"
 OTA_SLOT_META = "slot.json"
@@ -163,17 +161,8 @@ OTA_TIME_RE = re.compile(r"\s*([01]?[0-9]|2[0-3])\s*:\s*([0-5][0-9])\s*")
 MASK_PLACEHOLDER = "[text]"
 IGNORE_KINDS = ("code", "commands", "mentions", "links", "hashtags", "cashtags")
 IGNORE_KEYS = tuple(f"ignore_{kind}" for kind in IGNORE_KINDS)
-IGNORE_LEGACY_KEY = "ignore_special"
-IGNORE_SPLIT_KEY = "Prefixfy_ignore_split"
 DEFAULT_SEPARATORS = "•, ·, —, ~, |"
-LANGUAGE_MODES = (None, "ru", "en", "ja", "ko", "fr")  # 48.0.0: немецкий удалён (он был последним в списке, индексы остальных не сдвинулись)
-LEGACY_LANGUAGE_MODES = (None, "ru", "en", "ja", "ko", "ar", "fr", "pl", "de", "uk")
-GERMAN_LEGACY_INDEX = 6  # место «de» в раскладке до удаления немецкого: LANGUAGE_MODES + ("de",)
-ENGLISH_INDEX = LANGUAGE_MODES.index("en")
-LANGUAGE_LAYOUT_KEY = "Prefixfy_language_layout"
-LANGUAGE_LAYOUT_VERSION = 2
-LANGUAGE_MIGRATED_KEY = "Prefixfy_language_migrated"
-LANGUAGE_LIVE_KEY = "Prefixfy_language_live_layout"
+LANGUAGE_MODES = (None, "ru", "en", "ja", "ko", "fr")  # индекс в настройке «language»; None — язык Telegram
 SETUP_STAGE_KEY = "Prefixfy_setup_stage"
 SETUP_SEEN_KEY = "Prefixfy_setup_seen"
 WELCOME_UNTIL_KEY = "Prefixfy_welcome_until"
@@ -223,7 +212,6 @@ MASK_TAG_RE = re.compile(
     re.IGNORECASE,
 )
 _TAG_UNSAFE_RE = re.compile(r"[\[\]*_~|`\\\uE000-\uF8FF\s]+")
-_TAG_INVISIBLE_RE = re.compile(r"[\x00-\x08\x0e-\x1f\x7f-\x9f\u200b\u200e\u200f\u202a-\u202e\u2060-\u2064\u2066-\u206f\ufeff]")
 WEEKDAY_NAMES = {
     "ru": ("Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"),
     "en": ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"),
@@ -454,7 +442,7 @@ class LocalizationManager:
             "mask_editor_title": "Маска",
             "mask_editor_hint": "[text] — текст сообщения, [text: ссылка] — текст сообщения со ссылкой.",
             "mask_invalid": "В маске должен быть ровно один [text]",
-            "zalgo_rejected": "Текст в стиле Zalgo (стопки комбинирующих знаков) не принимается",
+            "unsafe_text_rejected": "Текст с подменой направления (RTL), невидимыми или управляющими символами, Zalgo или слишком длинной цепочкой эмодзи не принимается",
             "mask_too_long": "Маска слишком длинная: не больше {n} символов",
             "mask_preview_sample": "Пример сообщения",
             "mask_preview_invalid": "Маска повреждена: нужен ровно один [text]",
@@ -553,6 +541,10 @@ class LocalizationManager:
             "ignore_segments": "Что не трогать",
             "ignore_segments_hint": "Отметьте части сообщения, которые нужно оставлять как есть.",
             "ignore_segments_count": "Включено: {n} из {total}",
+            "scope_targets": "Что оформлять",
+            "scope_targets_hint": "Отметьте, где плагин применяет оформление.",
+            "scope_edit_targets": "Настройки правки",
+            "scope_edit_targets_hint": "Отметьте, что оформлять при редактировании сообщения.",
             "exceptions_chat_menu": "Исключения: добавить или убрать чат",
             "exceptions_chat_added": "Чат добавлен в исключения",
             "exceptions_chat_removed": "Чат убран из исключений",
@@ -608,6 +600,7 @@ class LocalizationManager:
             "config_part_mask": "Маска",
             "config_part_separator": "Разделители",
             "config_part_exceptions": "Исключения и чаты",
+            "config_part_exceptions_reset": "Исключения, чаты и область работы",
             "config_part_language": "Язык плагина",
             "config_part_media": "Медиа",
             "config_import_done": "Конфигурация импортирована",
@@ -892,7 +885,7 @@ class LocalizationManager:
             "mask_editor_title": "Mask",
             "mask_editor_hint": "[text] is your message, [text: link] is your message with a link.",
             "mask_invalid": "The mask needs exactly one [text]",
-            "zalgo_rejected": "Zalgo text (stacked combining marks) isn’t accepted",
+            "unsafe_text_rejected": "Text with direction overrides (RTL), invisible or control characters, Zalgo or an overly long emoji chain isn’t accepted",
             "mask_too_long": "The mask is too long: {n} characters max",
             "mask_preview_sample": "Sample message",
             "mask_preview_invalid": "The mask is broken: it needs exactly one [text]",
@@ -991,6 +984,10 @@ class LocalizationManager:
             "ignore_segments": "What to leave alone",
             "ignore_segments_hint": "Select the parts of a message that should stay as they are.",
             "ignore_segments_count": "On: {n} of {total}",
+            "scope_targets": "What to style",
+            "scope_targets_hint": "Select where the plugin applies styling.",
+            "scope_edit_targets": "Edit settings",
+            "scope_edit_targets_hint": "Select what to style when a message is edited.",
             "exceptions_chat_menu": "Exceptions: add or remove chat",
             "exceptions_chat_added": "Chat added to exceptions",
             "exceptions_chat_removed": "Chat removed from exceptions",
@@ -1046,6 +1043,7 @@ class LocalizationManager:
             "config_part_mask": "Mask",
             "config_part_separator": "Separators",
             "config_part_exceptions": "Exceptions and chats",
+            "config_part_exceptions_reset": "Exceptions, chats and scope",
             "config_part_language": "Plugin language",
             "config_part_media": "Media",
             "config_import_done": "Configuration imported",
@@ -1330,7 +1328,7 @@ class LocalizationManager:
             "mask_editor_title": "マスク",
             "mask_editor_hint": "[text] はメッセージ本文、[text: リンク] はリンク付きの本文です。",
             "mask_invalid": "マスクには [text] がちょうど 1 つ必要です",
-            "zalgo_rejected": "Zalgo テキスト（結合文字の積み重ね）は使用できません",
+            "unsafe_text_rejected": "文字方向の上書き（RTL）、不可視文字・制御文字、Zalgo、極端に長い絵文字の連なりを含むテキストは使用できません",
             "mask_too_long": "マスクが長すぎます（{n} 文字まで）",
             "mask_preview_sample": "メッセージの例",
             "mask_preview_invalid": "マスクが壊れています。[text] がちょうど 1 つ必要です",
@@ -1429,6 +1427,10 @@ class LocalizationManager:
             "ignore_segments": "そのまま残すもの",
             "ignore_segments_hint": "メッセージのうち、変更しない部分を選んでください。",
             "ignore_segments_count": "オン：{total} 個中 {n} 個",
+            "scope_targets": "装飾の対象",
+            "scope_targets_hint": "装飾を適用する場所を選んでください。",
+            "scope_edit_targets": "編集時の設定",
+            "scope_edit_targets_hint": "メッセージ編集時に装飾する対象を選んでください。",
             "exceptions_chat_menu": "除外に追加 / 除外から外す",
             "exceptions_chat_added": "チャットを除外に追加しました",
             "exceptions_chat_removed": "チャットを除外から外しました",
@@ -1484,6 +1486,7 @@ class LocalizationManager:
             "config_part_mask": "マスク",
             "config_part_separator": "区切り文字",
             "config_part_exceptions": "除外とチャット",
+            "config_part_exceptions_reset": "例外、チャット、適用範囲",
             "config_part_language": "プラグインの言語",
             "config_part_media": "メディア",
             "config_import_done": "設定セットをインポートしました",
@@ -1768,7 +1771,7 @@ class LocalizationManager:
             "mask_editor_title": "마스크",
             "mask_editor_hint": "[text]는 메시지 본문, [text: 링크]는 링크가 걸린 본문입니다.",
             "mask_invalid": "마스크에 [text]가 정확히 하나 있어야 합니다",
-            "zalgo_rejected": "Zalgo 텍스트(결합 문자 중첩)는 사용할 수 없습니다",
+            "unsafe_text_rejected": "방향 재정의(RTL), 보이지 않는 문자·제어 문자, Zalgo 또는 지나치게 긴 이모지 연속이 포함된 텍스트는 사용할 수 없습니다",
             "mask_too_long": "마스크가 너무 깁니다 (최대 {n}자)",
             "mask_preview_sample": "메시지 예시",
             "mask_preview_invalid": "마스크가 손상되었습니다. [text]가 정확히 하나 필요합니다",
@@ -1867,6 +1870,10 @@ class LocalizationManager:
             "ignore_segments": "그대로 둘 부분",
             "ignore_segments_hint": "메시지에서 바꾸지 않을 부분을 선택하세요.",
             "ignore_segments_count": "켜짐: {total}개 중 {n}개",
+            "scope_targets": "꾸밀 대상",
+            "scope_targets_hint": "꾸밈을 적용할 위치를 선택하세요.",
+            "scope_edit_targets": "수정 설정",
+            "scope_edit_targets_hint": "메시지를 수정할 때 꾸밀 대상을 선택하세요.",
             "exceptions_chat_menu": "예외에 추가 / 예외에서 빼기",
             "exceptions_chat_added": "채팅을 예외에 추가했습니다",
             "exceptions_chat_removed": "채팅을 예외에서 뺐습니다",
@@ -1922,6 +1929,7 @@ class LocalizationManager:
             "config_part_mask": "마스크",
             "config_part_separator": "구분자",
             "config_part_exceptions": "예외 및 채팅",
+            "config_part_exceptions_reset": "예외, 채팅 및 적용 범위",
             "config_part_language": "플러그인 언어",
             "config_part_media": "미디어",
             "config_import_done": "구성을 가져왔습니다",
@@ -2206,7 +2214,7 @@ class LocalizationManager:
             "mask_editor_title": "Masque",
             "mask_editor_hint": "[text] est votre message, [text: lien] est votre message avec un lien.",
             "mask_invalid": "Le masque doit contenir exactement un [text]",
-            "zalgo_rejected": "Le texte Zalgo (diacritiques empilés) n’est pas accepté",
+            "unsafe_text_rejected": "Le texte avec inversion de sens (RTL), caractères invisibles ou de contrôle, Zalgo ou chaîne d’émojis trop longue n’est pas accepté",
             "mask_too_long": "Masque trop long : {n} caractères au maximum",
             "mask_preview_sample": "Exemple de message",
             "mask_preview_invalid": "Masque endommagé : il faut exactement un [text]",
@@ -2305,6 +2313,10 @@ class LocalizationManager:
             "ignore_segments": "À ne pas toucher",
             "ignore_segments_hint": "Cochez les parties du message à laisser telles quelles.",
             "ignore_segments_count": "Activés : {n} sur {total}",
+            "scope_targets": "Quoi mettre en forme",
+            "scope_targets_hint": "Choisissez où le plugin applique la mise en forme.",
+            "scope_edit_targets": "Réglages de modification",
+            "scope_edit_targets_hint": "Choisissez quoi mettre en forme lors de la modification d'un message.",
             "exceptions_chat_menu": "Exceptions : ajouter ou retirer le chat",
             "exceptions_chat_added": "Chat ajouté aux exceptions",
             "exceptions_chat_removed": "Chat retiré des exceptions",
@@ -2360,6 +2372,7 @@ class LocalizationManager:
             "config_part_mask": "Masque",
             "config_part_separator": "Séparateurs",
             "config_part_exceptions": "Exceptions et chats",
+            "config_part_exceptions_reset": "Exceptions, chats et portée",
             "config_part_language": "Langue du plugin",
             "config_part_media": "Média",
             "config_import_done": "Configuration importée",
@@ -2718,11 +2731,26 @@ def as_text(value) -> str:
     return "" if value is None else str(value)
 
 
+# ==== PURE:BEGIN text_safety ====
+# Чистый блок без Android и без зависимостей от остального файла: только re и unicodedata. Его проверяет tests/.
+#
 # 49.6.0: защита от Zalgo. Zalgo — это стопки комбинирующих знаков на одной букве: такой текст вылезает за строку,
 # ломает вёрстку клиента и раздувает сообщение. Подряд идущие комбинирующие знаки (Mn/Me) сверх ZALGO_MAX_RUN считаются Zalgo.
 # Обычные диакритики (é, ё, й, вьетнамский, огласовки иврита и арабского) укладываются в лимит. Невидимые символы
 # формата (Cf: ZWJ, ZWNJ, ZWSP…) не прерывают стопку, иначе их можно вставлять между знаками и обходить проверку.
+#
+# 50.0.0: к Zalgo добавлено остальное, чем текст можно подменить или спрятать в нём что-то:
+#   * bidi-символы (U+202A–202E, U+2066–2069, LRM/RLM, ALM): U+202E переворачивает остаток строки, и «gpj.exe» выглядит как «exe.jpg»;
+#   * невидимые символы (ZWSP, word joiner, мягкий перенос, заполнители Hangul/Braille, селекторы вариантов, теги Unicode):
+#     ими разбивают слова, чтобы обойти фильтры, и прячут в тексте данные;
+#   * управляющие коды (C0, DEL, C1) и «одиночные» суррогаты;
+#   * аномальные цепочки эмодзи: слишком длинные ZWJ-последовательности и слишком длинные серии эмодзи подряд.
+# ZWJ, ZWNJ, VS16 и теги флагов остаются там, где они нужны: внутри эмодзи-последовательностей и в письменностях,
+# которым ZWNJ/ZWJ необходимы (арабское письмо, индийские, бирманское, кхмерское).
 ZALGO_MAX_RUN = 4
+EMOJI_MAX_ZWJ_LINKS = 6     # элементов в одной ZWJ-цепочке (самая длинная настоящая — 4: семья, поцелуй)
+EMOJI_MAX_RUN = 32          # эмодзи подряд, без пробелов между ними
+EMOJI_MAX_TAGS = 8          # тегов в одной последовательности флага (настоящим нужно 6–7)
 _ZALGO_MARKS = frozenset(("Mn", "Me"))
 _unicode_category = unicodedata.category
 
@@ -2773,6 +2801,170 @@ def strip_zalgo(text):
     return "".join(out)
 
 
+# Эмодзи. 50.0.0: из базового класса убраны модификаторы тона кожи (1F3FB–1F3FF) и региональные индикаторы (1F1E6–1F1FF).
+# Раньше они входили и в базовый класс, и в «хвост» элемента или в пару флага, поэтому один и тот же текст разбирался
+# несколькими способами, и проверка вида «👍🏽 × 25 + буква» перебирала 2^25 вариантов (22 эмодзи — 2 секунды, 30 — минуты).
+# Теперь у каждой строки ровно одно разбиение, и проверка линейна.
+_EMOJI_SYMBOL = r"[\u00A9\u00AE\u203C\u2049\u2122\u2139\u2194-\u2199\u21A9-\u21AA\u231A-\u231B\u2328\u23CF\u23E9-\u23F3\u23F8-\u23FA\u24C2\u25AA-\u25AB\u25B6\u25C0\u25FB-\u25FE\u2600-\u2604\u260E\u2611\u2614-\u2615\u2618\u261D\u2620\u2622-\u2623\u2626\u262A\u262E-\u262F\u2638-\u263A\u2640\u2642\u2648-\u2653\u265F-\u2660\u2663\u2665-\u2666\u2668\u267B\u267E-\u267F\u2692-\u2697\u2699\u269B-\u269C\u26A0-\u26A1\u26A7\u26AA-\u26AB\u26B0-\u26B1\u26BD-\u26BE\u26C4-\u26C5\u26C8\u26CE-\u26CF\u26D1\u26D3-\u26D4\u26E9-\u26EA\u26F0-\u26F5\u26F7-\u26FA\u26FD\u2702\u2705\u2708-\u270D\u270F\u2712\u2714\u2716\u271D\u2721\u2728\u2733-\u2734\u2744\u2747\u274C\u274E\u2753-\u2755\u2757\u2763-\u2764\u2795-\u2797\u27A1\u27B0\u27BF\u2934-\u2935\u2B05-\u2B07\u2B1B-\u2B1C\u2B50\u2B55\u3030\u303D\u3297\u3299\U0001F000-\U0001F1E5\U0001F200-\U0001F3FA\U0001F400-\U0001FAFF]"
+_EMOJI_ELEMENT = (
+    r"(?:[\U0001F1E6-\U0001F1FF]{2}|[#*0-9]\uFE0F?\u20E3|" + _EMOJI_SYMBOL + r")"
+    r"\uFE0F?[\U0001F3FB-\U0001F3FF]?"
+    r"[\U000E0020-\U000E007E]*\U000E007F?"
+)
+_EMOJI_TOKEN = _EMOJI_ELEMENT + r"(?:\u200D" + _EMOJI_ELEMENT + r")*"
+_EMOJI_CHAR_RE = re.compile(_EMOJI_SYMBOL)
+_EMOJI_RUN_RE = re.compile(r"(?:" + _EMOJI_TOKEN + r")+")
+_EMOJI_TOKEN_RE = re.compile(_EMOJI_TOKEN)
+
+
+@lru_cache(maxsize=1)
+def _emoji_only_regex():
+    return re.compile(_EMOJI_TOKEN + r"(?:\s*" + _EMOJI_TOKEN + r")*")
+
+
+@lru_cache(maxsize=1)
+def _emoji_token_regex():
+    return _EMOJI_TOKEN_RE
+
+
+# Всегда удаляются: управляющие (кроме \t \n \r), bidi, невидимые, селекторы вариантов, суррогаты, служебные теги.
+_BIDI_CLASS = r"\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069"
+_CONTROL_CLASS = r"\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x84\x86-\x9f\ud800-\udfff"
+_INVISIBLE_CLASS = (
+    r"\u00ad\u034f\u115f\u1160\u17b4\u17b5\u180b-\u180f\u200b\u2060-\u2064\u206a-\u206f\u2800\u3164\ufe00-\ufe0d\ufeff\uffa0"
+    r"\ufff9-\ufffc\U0001d173-\U0001d17a\U000e0000-\U000e001f\U000e0080-\U000e01ef"
+)
+_BIDI_RE = re.compile("[" + _BIDI_CLASS + "]")
+_CONTROL_RE = re.compile("[" + _CONTROL_CLASS + "]")
+_INVISIBLE_RE = re.compile("[" + _INVISIBLE_CLASS + "]")
+_ALWAYS_DROP_RE = re.compile("[" + _BIDI_CLASS + _CONTROL_CLASS + _INVISIBLE_CLASS + "]")
+_LINE_BREAKS = {0x85: "\n", 0x2028: "\n", 0x2029: "\n"}
+# Остаются только в нужном месте: ZWNJ, ZWJ, VS15/VS16, теги флагов (E0020–E007F).
+_CONDITIONAL_RE = re.compile(r"[\u200c\u200d\ufe0e\ufe0f\U000e0020-\U000e007f]")
+_EMOJI_BASE_FOR_VS = frozenset("#*0123456789")
+_VS_BASE_CATEGORIES = frozenset(("So", "Sm", "Sk"))
+_BLACK_FLAG = "\U0001F3F4"
+
+
+def _joiner_script(char: str) -> bool:
+    """Буква или знак письменности, где ZWNJ/ZWJ значимы: арабское и сирийское, индийские, бирманское, кхмерское."""
+    code = ord(char)
+    return (0x0600 <= code <= 0x0DFF or 0x1000 <= code <= 0x109F or 0x1780 <= code <= 0x17FF) and _unicode_category(char)[0] in "LM"
+
+
+def _emojiish(char: str) -> bool:
+    return (
+        char in ("\ufe0f", "\u20e3") or "\U0001F3FB" <= char <= "\U0001F3FF"
+        or _EMOJI_CHAR_RE.fullmatch(char) is not None
+    )
+
+
+def _vs_allowed(previous: str) -> bool:
+    return (
+        previous in _EMOJI_BASE_FOR_VS or _EMOJI_CHAR_RE.fullmatch(previous) is not None
+        or _unicode_category(previous) in _VS_BASE_CATEGORIES
+    )
+
+
+def _resolve_conditional(text: str) -> str:
+    out: List[str] = []
+    tags = 0
+    length = len(text)
+    for index, char in enumerate(text):
+        code = ord(char)
+        if code >= 0xE0020:
+            previous = out[-1] if out else ""
+            if code == 0xE007F:
+                keep = bool(previous) and 0xE0020 <= ord(previous) <= 0xE007E
+            else:
+                keep = previous == _BLACK_FLAG or (bool(previous) and 0xE0020 <= ord(previous) <= 0xE007E and tags < EMOJI_MAX_TAGS)
+            if keep:
+                out.append(char)
+                tags += 1
+            continue
+        tags = 0
+        if code in (0x200C, 0x200D, 0xFE0E, 0xFE0F):
+            previous = out[-1] if out else ""
+            following = text[index + 1] if index + 1 < length else ""
+            if code in (0xFE0E, 0xFE0F):
+                keep = bool(previous) and _vs_allowed(previous)
+            elif not previous or not following:
+                keep = False
+            elif code == 0x200D:
+                keep = (_emojiish(previous) and _emojiish(following)) or (_joiner_script(previous) and _joiner_script(following))
+            else:
+                keep = _joiner_script(previous) and _joiner_script(following)
+            if not keep:
+                continue
+        out.append(char)
+    return "".join(out)
+
+
+def _limit_emoji_run(match) -> str:
+    run = match.group(0)
+    tokens: List[str] = []
+    for token in _EMOJI_TOKEN_RE.findall(run):
+        links = token.split("\u200d")
+        if len(links) > EMOJI_MAX_ZWJ_LINKS:
+            tokens.append("\u200d".join(links[:EMOJI_MAX_ZWJ_LINKS]))
+            tokens.extend(links[EMOJI_MAX_ZWJ_LINKS:])
+        else:
+            tokens.append(token)
+    return "".join(tokens[:EMOJI_MAX_RUN])
+
+
+def limit_emoji_chains(text):
+    """Режет ZWJ-цепочки длиннее EMOJI_MAX_ZWJ_LINKS (хвост становится отдельными эмодзи) и серии длиннее EMOJI_MAX_RUN."""
+    if not isinstance(text, str) or len(text) < 2:
+        return text
+    return _EMOJI_RUN_RE.sub(_limit_emoji_run, text)
+
+
+def sanitize_text(text):
+    """Приводит текст к безопасному виду: убирает bidi, невидимые и управляющие символы, Zalgo, аномальные цепочки эмодзи.
+    Обычный текст возвращается тем же объектом. Не строки возвращаются как есть. Результат стабилен: повторный вызов ничего не меняет."""
+    if not isinstance(text, str) or not text:
+        return text
+    cleaned = text
+    for _ in range(6):  # удаление одного символа может изменить соседей другого, поэтому идём до неподвижной точки
+        step = cleaned
+        if _ALWAYS_DROP_RE.search(step) or "\x85" in step or "\u2028" in step or "\u2029" in step:
+            step = _ALWAYS_DROP_RE.sub("", step.translate(_LINE_BREAKS))
+        if _CONDITIONAL_RE.search(step):
+            step = _resolve_conditional(step)
+        step = limit_emoji_chains(strip_zalgo(step))
+        if step == cleaned:
+            break
+        cleaned = step
+    return text if cleaned == text else cleaned
+
+
+def has_unsafe_text(text) -> bool:
+    return isinstance(text, str) and sanitize_text(text) != text
+
+
+def unsafe_kinds(text) -> frozenset:
+    """Что именно не так с текстом: подмножество {"bidi", "invisible", "control", "zalgo", "emoji_chain"}. Для журнала и тестов."""
+    if not isinstance(text, str) or not text:
+        return frozenset()
+    kinds = set()
+    if _BIDI_RE.search(text):
+        kinds.add("bidi")
+    if _CONTROL_RE.search(text) or "\x85" in text:
+        kinds.add("control")
+    if _INVISIBLE_RE.search(text) or "\u2028" in text or "\u2029" in text:
+        kinds.add("invisible")
+    base = _ALWAYS_DROP_RE.sub("", text.translate(_LINE_BREAKS))
+    if _CONDITIONAL_RE.search(base) and _resolve_conditional(base) != base:
+        kinds.add("invisible")
+    if has_zalgo(text):
+        kinds.add("zalgo")
+    if limit_emoji_chains(text) != text:
+        kinds.add("emoji_chain")
+    return frozenset(kinds)
+# ==== PURE:END text_safety ====
+
+
 MASK_TOKEN_RE = re.compile(r"\[text(?:[ \t]*:[ \t]*([^\[\]\r\n]*?))?[ \t]*\]")
 _LINK_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:(?://|[^\s/])")
 
@@ -2788,6 +2980,8 @@ def normalize_link(raw) -> Optional[str]:
     принимались за схему и уходили без https://, то есть нерабочей ссылкой."""
     link = as_text(raw).strip()
     if not link or any(ch.isspace() for ch in link) or len(link) > 2048:
+        return None
+    if has_unsafe_text(link):  # 50.0.0: bidi-подмена и невидимые символы в адресе ссылки
         return None
     if link.startswith("@") and len(link) > 1:
         name = link[1:]
@@ -3070,6 +3264,14 @@ def _style_atoms_full(text: str, style: int, translit: bool = False) -> List[Tup
     if style == STYLE_MIXED:
         return _mixed_atoms(text, translit)
     protected = {match.start(): match.end() for match in _PLACEHOLDER_RE.finditer(text)}
+    # 50.0.0: составное эмодзи (ZWJ-последовательность, флаг, ❤️ с селектором, кейкап) остаётся неделимым атомом. Раньше стиль
+    # шёл по одному символу кода: «Vaporwave» рвал семью 👨‍👩‍👧‍👦 пробелами, а «Upside down» и «Mirrored» отрывали селектор от ❤️.
+    emoji_starts = set()
+    if not text.isascii():
+        for match in _EMOJI_TOKEN_RE.finditer(text):
+            if match.end() - match.start() > 1 and match.start() not in protected:
+                protected[match.start()] = match.end()
+                emoji_starts.add(match.start())
     atoms: List[Tuple[str, str]] = []
     upper = False
     convert = style == STYLE_TRANSLIT or (translit and style not in _CYRILLIC_STYLES)
@@ -3077,7 +3279,11 @@ def _style_atoms_full(text: str, style: int, translit: bool = False) -> List[Tup
     while index < size:
         end = protected.get(index)
         if end is not None:
-            atoms.append((text[index:end], text[index:end]))
+            chunk = text[index:end]
+            out = chunk
+            if style == STYLE_VAPORWAVE and index in emoji_starts and text[end:end + 1] and not text[end:end + 1].isspace():
+                out += " "
+            atoms.append((chunk, out))
             index = end
             continue
         char = text[index]
@@ -3612,7 +3818,7 @@ def parse_conditional_masks(raw):
 
 
 def sanitize_tag_value(value) -> str:
-    cleaned = strip_zalgo(_TAG_INVISIBLE_RE.sub("", as_text(value)))
+    cleaned = sanitize_text(as_text(value))
     return _TAG_UNSAFE_RE.sub(" ", cleaned).strip()[:TAG_VALUE_LIMIT]
 
 
@@ -4614,28 +4820,9 @@ def enabled_language_indices() -> List[int]:
 
 
 def language_index_value(value) -> int:
-    """48.0.0: индекс языка из настроек. Вне раскладки (например, сохранённый «de» = 6) — это автоопределение."""
+    """Индекс языка из настроек. Вне списка — это автоопределение."""
     index = clamp_int(value, 0, -(2 ** 31), 2 ** 31)
     return index if 0 <= index < len(LANGUAGE_MODES) else 0
-
-
-def migrate_language_index(value) -> int:
-    if not isinstance(value, int) or isinstance(value, bool) or not 0 <= value < len(LEGACY_LANGUAGE_MODES):
-        return 0
-    code = LEGACY_LANGUAGE_MODES[value]
-    if code == "de":
-        code = "en"  # немецкий удалён: сидевшие на нём переходят на английский
-    return LANGUAGE_MODES.index(code) if code in LANGUAGE_MODES else 0
-
-
-def removed_german_index(value) -> bool:
-    """True для сохранённого индекса удалённого немецкого (пока этот индекс не занят другим языком)."""
-    return (len(LANGUAGE_MODES) <= GERMAN_LEGACY_INDEX and isinstance(value, int)
-            and not isinstance(value, bool) and value == GERMAN_LEGACY_INDEX)
-
-
-def language_layout_pending(plugin) -> bool:
-    return clamp_int(plugin.get_setting(LANGUAGE_LAYOUT_KEY, 1), 1, 1, LANGUAGE_LAYOUT_VERSION) < LANGUAGE_LAYOUT_VERSION
 
 
 def has_language_choice() -> bool:
@@ -4757,15 +4944,6 @@ class CuteOptions:
         self.active = self.enabled and any(getattr(self, key[5:]) for key in CUTE_EFFECT_KEYS)
 
 
-def setting_default(source, key: str):
-    """45.6.0: «ignore_special» разбит на шесть тумблеров. В старых наборах новых ключей нет, и они наследуют старое значение."""
-    if key in IGNORE_KEYS and isinstance(source, dict):
-        legacy = source.get(IGNORE_LEGACY_KEY)
-        if isinstance(legacy, bool):
-            return legacy
-    return SETTING_DEFAULTS[key]
-
-
 class RuntimeSettings:
     __slots__ = (
         "language", "chat_scope_enabled", "process_message", "process_media", "process_article", "process_edit",
@@ -4781,8 +4959,8 @@ class RuntimeSettings:
         self.raw = dict(raw)
 
         def get(key):
-            value = raw.get(key, setting_default(raw, key))
-            return strip_zalgo(value) if isinstance(value, str) else value
+            value = raw.get(key, SETTING_DEFAULTS[key])
+            return sanitize_text(value) if isinstance(value, str) else value
 
         self.language = language_index_value(get("language"))
         self.chat_scope_enabled = bool(get("chat_scope_enabled"))
@@ -4837,7 +5015,7 @@ class RuntimeSettings:
         self.cute = CuteOptions(get, LANGUAGE_MODES[self.language])
         self.exceptions = parse_lines(get("exceptions"))
         self.ignore_kinds = frozenset(
-            kind for kind, key in zip(IGNORE_KINDS, IGNORE_KEYS) if bool(raw.get(key, setting_default(raw, key)))
+            kind for kind, key in zip(IGNORE_KINDS, IGNORE_KEYS) if bool(raw.get(key, SETTING_DEFAULTS[key]))
         )
         self.ignore_emoji_only = bool(get("ignore_emoji_only"))
         self.disabled_chats = parse_chat_ids(get("disabled_chats"))
@@ -4870,7 +5048,7 @@ class PrefixfySettings:
         if default is None:
             default = self.DEFAULTS.get(key)
         value = self.plugin.get_setting(key, default)
-        return strip_zalgo(value) if isinstance(value, str) else value
+        return sanitize_text(value) if isinstance(value, str) else value
 
     def set(self, key, value, reload_settings=False):
         self.plugin.set_setting(key, value, reload_settings=reload_settings)
@@ -4878,7 +5056,7 @@ class PrefixfySettings:
 
     def raw(self) -> Dict[str, Any]:
         values = {key: self.plugin.get_setting(key, default) for key, default in SETTING_DEFAULTS.items()}
-        return {key: strip_zalgo(value) if isinstance(value, str) else value for key, value in values.items()}
+        return {key: sanitize_text(value) if isinstance(value, str) else value for key, value in values.items()}
 
     def snapshot(self) -> RuntimeSettings:
         return RuntimeSettings(self.raw())
@@ -4915,32 +5093,13 @@ class _SnapshotSettings:
     def get(self, key, default=None):
         if key in self._values:
             value = self._values[key]
-            return strip_zalgo(value) if isinstance(value, str) else value
+            return sanitize_text(value) if isinstance(value, str) else value
         return PrefixfySettings.DEFAULTS.get(key) if default is None else default
 
     language_index = PrefixfySettings.language_index
     separator_count = PrefixfySettings.separator_count
     markdown_enabled = PrefixfySettings.markdown_enabled
     markdown_style_value = PrefixfySettings.markdown_style_value
-
-
-_EMOJI_SYMBOL = r"[\u00A9\u00AE\u203C\u2049\u2122\u2139\u2194-\u2199\u21A9-\u21AA\u231A-\u231B\u2328\u23CF\u23E9-\u23F3\u23F8-\u23FA\u24C2\u25AA-\u25AB\u25B6\u25C0\u25FB-\u25FE\u2600-\u2604\u260E\u2611\u2614-\u2615\u2618\u261D\u2620\u2622-\u2623\u2626\u262A\u262E-\u262F\u2638-\u263A\u2640\u2642\u2648-\u2653\u265F-\u2660\u2663\u2665-\u2666\u2668\u267B\u267E-\u267F\u2692-\u2697\u2699\u269B-\u269C\u26A0\u26A7\u26AA-\u26AB\u26B0-\u26B1\u26BD-\u26BE\u26C4-\u26C5\u26C8\u26CE-\u26CF\u26D1\u26D3-\u26D4\u26E9-\u26EA\u26F0-\u26F5\u26F7-\u26FA\u26FD\u2702\u2705\u2708-\u270D\u270F\u2712\u2714\u2716\u271D\u2721\u2728\u2733-\u2734\u2744\u2747\u274C\u274E\u2753-\u2755\u2757\u2763-\u2764\u2795-\u2797\u27A1\u27B0\u27BF\u2934-\u2935\u2B05-\u2B07\u2B1B-\u2B1C\u2B50\u2B55\u3030\u303D\u3297\u3299\U0001F000-\U0001FAFF]"
-_EMOJI_ELEMENT = (
-    r"(?:[\U0001F1E6-\U0001F1FF]{2}|[#*0-9]\uFE0F?\u20E3|" + _EMOJI_SYMBOL + r")"
-    r"\uFE0F?[\U0001F3FB-\U0001F3FF]?"
-    r"[\U000E0020-\U000E007E]*\U000E007F?"
-)
-_EMOJI_TOKEN = _EMOJI_ELEMENT + r"(?:\u200D" + _EMOJI_ELEMENT + r")*"
-
-
-@lru_cache(maxsize=1)
-def _emoji_only_regex():
-    return re.compile(_EMOJI_TOKEN + r"(?:\s*" + _EMOJI_TOKEN + r")*")
-
-
-@lru_cache(maxsize=1)
-def _emoji_token_regex():
-    return re.compile(_EMOJI_TOKEN)
 
 
 class TextFilter:
@@ -5551,10 +5710,11 @@ class TransformationPipeline:
                     self.logger(f"Prefixfy transformation failed: {exc}")
         result = restore_special(protected, spans)
         # 49.6.0: если из чистого текста получился Zalgo, сообщение уходит без оформления.
+        # 50.0.0: то же для bidi, невидимых и управляющих символов и аномальных цепочек эмодзи.
         probe = _MD_SENTINEL_RE.sub("", result) if self.markdown_table else result
-        if has_zalgo(probe) and not has_zalgo(text):
+        if has_unsafe_text(probe) and not has_unsafe_text(text):
             if self.logger:
-                self.logger("Prefixfy: decoration would produce Zalgo, message left as is")
+                self.logger("Prefixfy: decoration would produce unsafe text, message left as is")
             return text
         return result
 
@@ -6388,8 +6548,325 @@ class ConfigurationSaveError(RuntimeError):
     pass
 
 
+# ==== LEGACY:BEGIN migration (данные версий ниже 49) ====
+# 50.0.0: весь код под прошлые версии собран здесь. Раньше он был размазан по файлу: раскладка языков, немецкий,
+# «ignore_special», плоские конфигурации, профили аккаунтов <uid>.json, .pfx_prev, Prefixfy_flags.json.
+#
+# Как это работает. Версия схемы данных лежит в настройке SCHEMA_KEY. Её нет у всех, кто обновляется с версий ниже 50:
+# у 49.x ключа ещё не было, а все шаги ниже безопасно выполняются повторно (у каждого своя защита от двойного применения).
+# Мигратор проходит шаги в хронологическом порядке (45.6 -> 46 -> 47 -> 48 -> 49), и только если все они прошли,
+# пишет SCHEMA_KEY = 50. Если хотя бы один шаг не удался (например, не записался файл), ключ не пишется, и всё
+# повторяется при следующем запуске. После этого мигратор не выполняется вообще.
+#
+# Чтобы убрать поддержку старых версий совсем, достаточно удалить этот блок (всё, что в нём, называется LEGACY_* или
+# legacy_*), его вызовы (grep "_legacy") и слово LegacyMigration в _setup_init.
+SCHEMA_KEY = "Prefixfy_schema"
+SCHEMA_VERSION = 50
+
+LEGACY_LANGUAGE_LAYOUTS = {
+    1: (None, "ru", "en", "ja", "ko", "ar", "fr", "pl", "de", "uk"),  # до 47: были арабский, польский, немецкий, украинский
+    2: LANGUAGE_MODES + ("de",),                                       # 47: немецкий последним; удалён в 48.0.0
+}
+LEGACY_LANGUAGE_LAYOUT_KEY = "Prefixfy_language_layout"   # нет ключа или 1 — раскладка 1; 2 — раскладка 2
+LEGACY_LANGUAGE_LIVE_KEY = "Prefixfy_language_live_layout"
+LEGACY_LANGUAGE_MARKS_KEY = "Prefixfy_language_migrated"  # какие наборы уже переведены (индексы не идемпотентны)
+LEGACY_IGNORE_SPLIT_KEY = "Prefixfy_ignore_split"
+LEGACY_IGNORE_KEY = "ignore_special"                      # 45.6.0: разбит на шесть ignore_*
+LEGACY_CONFIG_FORMATS = ("maskify-config",)               # прежнее имя плагина в файлах экспорта
+LEGACY_CONFIG_LAYOUT_VERSION = 15                         # в файлах версии ниже 15 язык записан в раскладке 1
+LEGACY_FLAT_CONFIGS_KEY = "Prefixfy_experimental_configurations"
+LEGACY_FLAT_ACTIVE_KEY = "Prefixfy_experimental_active_configuration"
+LEGACY_FLAT_MAX_RECORDS = 200
+LEGACY_FLAGS_CACHE_FILE = "Prefixfy_flags.json"           # теперь .pfx_profile
+LEGACY_PREV_FILE = ".pfx_prev"                            # прежняя схема отката OTA, теперь раздел .pfx_slot
+LEGACY_SETTING_KEYS = (LEGACY_FLAT_CONFIGS_KEY, LEGACY_FLAT_ACTIVE_KEY)
+
+
+def legacy_language_index(value, layout: int) -> int:
+    """Индекс языка из раскладки layout (1 или 2) в текущую. Немецкий становится английским, исчезнувшие языки —
+    автоопределением (0). Не целое и отрицательное возвращается как есть: такое отвергает проверка конфигурации."""
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        return value
+    table = LEGACY_LANGUAGE_LAYOUTS.get(layout)
+    if table is None or value >= len(table):
+        return 0
+    code = table[value]
+    if code == "de":
+        code = "en"
+    return LANGUAGE_MODES.index(code) if code in LANGUAGE_MODES else 0
+
+
+def legacy_fill_ignore_keys(source):
+    """45.6.0: «ignore_special» разбит на шесть тумблеров. В старых наборах новых ключей нет, и они наследуют старое
+    значение; сам «ignore_special» убирается. Набор без него возвращается тем же объектом."""
+    if not isinstance(source, dict) or LEGACY_IGNORE_KEY not in source:
+        return source
+    result = dict(source)
+    legacy = result.pop(LEGACY_IGNORE_KEY)
+    if isinstance(legacy, bool):
+        for key in IGNORE_KEYS:
+            result.setdefault(key, legacy)
+    return result
+
+
+def legacy_upgrade_section(data: dict, component: str, section):
+    """Раздел импортируемого файла приводится к текущей схеме. Языка в файлах версии ниже 15 — раскладка 1, в остальных —
+    раскладка 2 (там «de» = 6)."""
+    if component == "language" and isinstance(section, dict):
+        value = section.get("value")
+        version = data.get("version")
+        old_file = not isinstance(version, int) or isinstance(version, bool) or version < LEGACY_CONFIG_LAYOUT_VERSION
+        if isinstance(value, int) and not isinstance(value, bool) and (old_file or value >= len(LANGUAGE_MODES)):
+            section = {**section, "value": legacy_language_index(value, 1 if old_file else 2)}
+    elif component == "exceptions":
+        section = legacy_fill_ignore_keys(section)
+    return section
+
+
+class LegacyMigration:
+    """Единый мигратор данных версий ниже 50. Создаётся один раз на запуск; если данные уже новые, все методы ничего не делают."""
+
+    def __init__(self, plugin):
+        self.plugin = plugin
+        self.schema = clamp_int(self._get(SCHEMA_KEY, 0), 0, 0, 1_000_000)
+        self.pending = self.schema < SCHEMA_VERSION
+        self.layout_pending = clamp_int(self._get(LEGACY_LANGUAGE_LAYOUT_KEY, 1), 1, 1, 2) < 2
+        self.ok = True
+        self.flat_imported = False
+
+    @staticmethod
+    def preexisting_install(plugin) -> bool:
+        """Плагин уже стоял до этого запуска (для мастера первой настройки): у любой установки есть версия схемы или раскладка языка."""
+        try:
+            return plugin.get_setting(SCHEMA_KEY, None) is not None or plugin.get_setting(LEGACY_LANGUAGE_LAYOUT_KEY, None) is not None
+        except Exception:
+            return False
+
+    def _get(self, key, default=None):
+        try:
+            return self.plugin.get_setting(key, default)
+        except Exception:
+            return default
+
+    def _set(self, key, value):
+        self.plugin.set_setting(key, value, reload_settings=False)
+
+    def _fail(self, step: str, exc):
+        self.ok = False
+        self.plugin.log(f"Prefixfy migration step '{step}' failed, it will be retried at the next start: {exc}")
+
+    def _marks(self) -> set:
+        try:
+            data = json.loads(as_text(self._get(LEGACY_LANGUAGE_MARKS_KEY, "")) or "[]")
+        except (ValueError, TypeError):
+            return set()
+        return {item for item in data if isinstance(item, str)} if isinstance(data, list) else set()
+
+    def _save_marks(self, marks: set):
+        try:
+            self._set(LEGACY_LANGUAGE_MARKS_KEY, json.dumps(sorted(marks)))
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy language migration marker failed: {exc}")
+
+    # --- шаг 1 (45.6, 47, 48): настройки самого плагина --------------------------------------------------------------
+    def migrate_settings(self):
+        if not self.pending:
+            return
+        try:
+            live_done = clamp_int(self._get(LEGACY_LANGUAGE_LIVE_KEY, 1), 1, 1, 2) >= 2
+            if self.layout_pending and not live_done:
+                self._set("language", legacy_language_index(self._get("language", 0), 1))
+                self._set(LEGACY_LANGUAGE_LIVE_KEY, 2)
+            language = self._get("language", 0)
+            if isinstance(language, int) and not isinstance(language, bool) and language >= len(LANGUAGE_MODES):
+                self._set("language", legacy_language_index(language, 2))  # 48.0.0: «de» -> английский
+            if not self._get(LEGACY_IGNORE_SPLIT_KEY, 0):
+                if self._get(LEGACY_IGNORE_KEY, None) is False:
+                    for key in IGNORE_KEYS:
+                        self._set(key, False)
+                self._set(LEGACY_IGNORE_SPLIT_KEY, 1)
+        except Exception as exc:
+            self._fail("settings", exc)
+
+    # --- шаг 2 (46.x, 49): файлы рядом с плагином ---------------------------------------------------------------------
+    def migrate_files(self):
+        if not self.pending:
+            return
+        base = get_plugins_dir()
+        old_flags, new_flags = os.path.join(base, LEGACY_FLAGS_CACHE_FILE), os.path.join(base, FLAGS_CACHE_FILE)
+        try:
+            if os.path.exists(old_flags):
+                if os.path.exists(new_flags):
+                    os.remove(old_flags)
+                else:
+                    os.replace(old_flags, new_flags)
+        except OSError as exc:
+            self.plugin.log(f"Prefixfy migration: flags cache not moved: {exc}")
+        try:
+            os.remove(os.path.join(base, LEGACY_PREV_FILE))
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            self.plugin.log(f"Prefixfy migration: {LEGACY_PREV_FILE} not removed: {exc}")
+
+    # --- шаг 3 (46.0): плоские конфигурации из настройки плагина -> хранилище ---------------------------------------
+    def import_flat_configurations(self, manager):
+        if not self.pending or manager.configurations:
+            return
+        raw = self._get(LEGACY_FLAT_CONFIGS_KEY, "")
+        if not (isinstance(raw, str) and raw) or len(raw) > 8 * 1024 * 1024:
+            return
+        try:
+            data = json.loads(raw)
+        except Exception as exc:
+            self.plugin.log(f"Configurations legacy load failed: {exc}")
+            manager._degraded = True  # повреждённый JSON не починить повтором, поэтому шаг не считается неудавшимся
+            return
+        if not isinstance(data, dict):
+            return
+        legacy_active = as_text(self._get(LEGACY_FLAT_ACTIVE_KEY, ""))
+        all_stored = True
+        for old_id, record in list(data.items())[:LEGACY_FLAT_MAX_RECORDS]:
+            if not isinstance(record, dict):
+                continue
+            if "current" not in record or "baseline" not in record:
+                flat = dict(record)
+                name = flat.pop("name", old_id)
+                record = {"name": name, "current": dict(flat), "baseline": dict(flat)}
+            config_id = (str(old_id) if manager._valid_id(str(old_id)) and manager._owner_of(str(old_id)) is None
+                         and str(old_id) not in manager.configurations else manager._new_id())
+            current, baseline = record.get("current"), record.get("baseline")
+            stored = manager._store_record(config_id, {
+                "name": as_text(record.get("name", old_id)),
+                "current": legacy_fill_ignore_keys(current) if isinstance(current, dict) else {},
+                "baseline": legacy_fill_ignore_keys(baseline) if isinstance(baseline, dict) else {},
+            })
+            all_stored = all_stored and stored
+            if str(old_id) == legacy_active:
+                manager.active_id = config_id
+        self.flat_imported = bool(manager.configurations) and all_stored
+        if not all_stored:
+            self.ok = False
+
+    # --- шаг 4 (46.x): профили аккаунтов <uid>.json -> пресеты --------------------------------------------------------
+    def convert_account_files(self, manager):
+        if not self.pending:
+            return
+        accounts = manager.accounts
+        try:
+            entries = sorted(os.listdir(accounts.directory))
+        except OSError as exc:
+            self._fail("account profiles", exc)
+            return
+        files: Dict[int, str] = {}
+        for entry in entries:
+            path = os.path.join(accounts.directory, entry)
+            match = _ACCT_FILE_RE.fullmatch(entry)
+            uid = accounts._canonical_uid(match.group(1)) if match and not os.path.isdir(path) else None
+            if uid is not None:
+                files[uid] = path
+        for uid, path in files.items():
+            if uid in accounts._presets:
+                discard_file(path)
+                continue
+            if len(accounts._presets) >= MAX_ACCOUNT_PROFILES:
+                accounts.degraded = True
+                continue
+            try:
+                payload = json.loads(store_read_text(path))
+                params = payload.get("params") if isinstance(payload, dict) else None
+                if not isinstance(params, dict):
+                    raise ValueError("no params object")
+            except Exception as exc:
+                accounts.degraded = True  # нечитаемый файл повтором не починить
+                manager.plugin.log(f"Prefixfy accounts: cannot read {os.path.basename(path)}: {exc}")
+                continue
+            try:
+                if not self._profile_to_preset(manager, uid, accounts._clean(legacy_fill_ignore_keys(params))):
+                    raise ValueError("conversion to a preset failed")
+            except Exception as exc:
+                accounts.degraded = True
+                self._fail("account profile", exc)
+                continue
+            discard_file(path)
+
+    def _profile_to_preset(self, manager, uid: int, params: dict) -> bool:
+        config_id = manager._new_id(uid)
+        base_id = manager.active_id if manager.active_id in manager.configurations else next(iter(manager.configurations), "")
+        record = {
+            "name": manager.plugin._tr("config_default_name"),
+            "current": manager._clone_with_media(params, config_id, "current"),
+            "baseline": manager._clone_with_media(manager._shared_baseline(), config_id, "baseline"),
+        }
+        if not manager._store_record(config_id, record):
+            manager._discard_record(config_id)
+            return False
+        manager.accounts.set_active(uid, config_id)
+        manager._write_index(uid)
+        if self.layout_pending:
+            marks = self._marks()
+            if f"acc:{uid}" in marks:
+                marks.add(f"{config_id}:current")
+            if base_id and f"{base_id}:baseline" in marks:
+                marks.add(f"{config_id}:baseline")
+            self._save_marks(marks)
+        return True
+
+    # --- шаг 5 (47, 48.0): язык в сохранённых наборах --------------------------------------------------------------
+    def migrate_languages(self, manager):
+        """Раскладка 1 -> текущая переводит каждый набор ровно один раз (метка пишется сразу после записи, поэтому сбой
+        посередине не приводит к повторному пересчёту: индексы не идемпотентны). Раскладка 2 -> текущая («de» -> английский)
+        безопасна для повторов."""
+        if not self.pending:
+            return
+        records = manager._all_records()
+        if self.layout_pending:
+            marks = self._marks()
+            for config_id, record in records:
+                for role in ("current", "baseline"):
+                    params = record.get(role) or {}
+                    mark = f"{config_id}:{role}"
+                    if mark in marks or "language" not in params:
+                        continue
+                    if manager._sync_params(config_id, role, {**params, "language": legacy_language_index(params["language"], 1)}):
+                        marks.add(mark)
+                        self._save_marks(marks)
+                    else:
+                        self.ok = False
+        for config_id, record in records:
+            for role in ("current", "baseline"):
+                params = record.get(role) or {}
+                value = params.get("language")
+                if isinstance(value, int) and not isinstance(value, bool) and value >= len(LANGUAGE_MODES):
+                    if not manager._sync_params(config_id, role, {**params, "language": legacy_language_index(value, 2)}):
+                        self.ok = False
+
+    # --- конец ----------------------------------------------------------------------------------------------------
+    def finish(self):
+        """Все шаги прошли: фиксируем версию схемы. Иначе ничего не пишем, и всё повторится при следующем запуске."""
+        if not self.pending:
+            return
+        if not self.ok:
+            self.plugin.log("Prefixfy migration is incomplete, it will continue at the next start")
+            return
+        try:
+            self._set(SCHEMA_KEY, SCHEMA_VERSION)
+            # Откат на 49.x (в том числе автоматический откат OTA) проверяет эти ключи при каждом запуске: без них он
+            # повторно пересчитал бы уже переведённые индексы языка.
+            self._set(LEGACY_LANGUAGE_LAYOUT_KEY, 2)
+            self._set(LEGACY_LANGUAGE_LIVE_KEY, 2)
+            self._set(LEGACY_IGNORE_SPLIT_KEY, 1)
+            self._set(LEGACY_LANGUAGE_MARKS_KEY, "")
+            if self.flat_imported:
+                for key in LEGACY_SETTING_KEYS:
+                    self._set(key, "")
+            self.pending = False
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy migration: schema version not saved: {exc}")
+# ==== LEGACY:END migration ====
+
+
 CONFIG_FORMAT = "Prefixfy-config"
-LEGACY_CONFIG_FORMATS = ("maskify-config",)
 CONFIG_VERSION = 15
 COMPONENTS = ("mask", "separator", "cute", "exceptions", "language", "media", "schedule")
 COMPONENT_ALIASES = {
@@ -6401,12 +6878,16 @@ COMPONENT_ALIASES = {
     "media": ("media", "attached_media"),
     "schedule": ("schedule",),
 }
+# Настройки «Где работает»: отдельного компонента для импорта/экспорта у них нет, но сбрасываться они должны вместе с
+# исключениями и чатами, иначе часть конфига остаётся нетронутой.
+SCOPE_RESET_KEYS = ("process_message", "process_media", "process_article", "process_edit", "process_edit_message",
+                    "process_edit_media", "process_edit_article", "skip_once_on_edit")
 COMPONENT_KEYS = {
     "language": ("language",),
     "mask": ("mask", "markdown_enabled", "markdown_style", "text_style_enabled", "text_style", "text_style_random", "mask_rotation_enabled", "masks_list", "mask_rotation_mode", "conditional_masks", "text_style_translit", "style_words", "tag_lines"),
     "separator": ("separator_enabled", "custom_emojis", "emoji_count", "separator_frequency", "separator_spaces", "separator_space_mode"),
     "cute": CUTE_KEYS,
-    "exceptions": ("exceptions", *IGNORE_KEYS, "ignore_emoji_only", "disabled_chats", "chat_scope_enabled", "regex_exceptions", "chat_type_rules"),
+    "exceptions": ("exceptions", *SCOPE_RESET_KEYS, *IGNORE_KEYS, "ignore_emoji_only", "disabled_chats", "chat_scope_enabled", "regex_exceptions", "chat_type_rules"),
     "media": ("attached_media_enabled", "attached_media_path", "attached_media_name", "attached_media_mime"),
     "schedule": (),
 }
@@ -6430,7 +6911,7 @@ def _section_from_flat_settings(settings, component):
             "count": settings.get("emoji_count", 1),
         }
     flat_exception_keys = ("exceptions", "disabled_chats", "chat_scope_enabled", "chat_scope", "ignore_emoji_only",
-                           IGNORE_LEGACY_KEY, *IGNORE_KEYS)
+                           *IGNORE_KEYS)
     if component == "exceptions" and any(k in settings for k in flat_exception_keys):
         return {
             "values": settings.get("exceptions", ""),
@@ -6438,29 +6919,13 @@ def _section_from_flat_settings(settings, component):
             "chat_scope_enabled": settings.get("chat_scope_enabled", True),
             "chat_scope": settings.get("chat_scope"),
             "ignore_emoji_only": settings.get("ignore_emoji_only", SETTING_DEFAULTS["ignore_emoji_only"]),
-            **{key: settings.get(key, setting_default(settings, key)) for key in IGNORE_KEYS},
+            **{key: settings.get(key, SETTING_DEFAULTS[key]) for key in IGNORE_KEYS},
         }
     return None
 
 
-def _legacy_language_layout(data: dict) -> bool:
-    version = data.get("version")
-    return not _is_int(version) or version < 15
-
-
 def extract_component(data: dict, component: str):
-    section = _extract_raw_component(data, component)
-    if component == "language" and isinstance(section, dict) and _legacy_language_layout(data):
-        value = section.get("value")
-        if _is_int(value) and 0 <= value < len(LEGACY_LANGUAGE_MODES):
-            section = {**section, "value": migrate_language_index(value)}
-    if component == "language" and isinstance(section, dict):
-        value = section.get("value")
-        if removed_german_index(value):
-            section = {**section, "value": ENGLISH_INDEX}  # 48.0.0: «de» из старых файлов -> английский
-        elif _is_int(value) and value >= len(LANGUAGE_MODES):
-            section = {**section, "value": 0}
-    return section
+    return legacy_upgrade_section(data, component, _extract_raw_component(data, component))
 
 
 def _extract_raw_component(data: dict, component: str):
@@ -6470,7 +6935,7 @@ def _extract_raw_component(data: dict, component: str):
             section = data[key]
             break
     else:
-        return _section_from_flat_settings(data.get("settings"), component)
+        return _section_from_flat_settings(legacy_fill_ignore_keys(data.get("settings")), component)
     if isinstance(section, dict):
         return section
     if component == "language" and _is_int(section):
@@ -6487,13 +6952,13 @@ def _texts_within_limit(section, depth: int = 0) -> bool:
         return False
     for value in section.values():
         if isinstance(value, str):
-            if len(value) > MAX_SETTING_TEXT or has_zalgo(value):
+            if len(value) > MAX_SETTING_TEXT or has_unsafe_text(value):
                 return False
         elif isinstance(value, dict):
             if not _texts_within_limit(value, depth + 1):
                 return False
         elif isinstance(value, list):
-            if len(value) > 4096 or any(isinstance(item, str) and (len(item) > MAX_SETTING_TEXT or has_zalgo(item)) for item in value):
+            if len(value) > 4096 or any(isinstance(item, str) and (len(item) > MAX_SETTING_TEXT or has_unsafe_text(item)) for item in value):
                 return False
     return True
 
@@ -6573,8 +7038,6 @@ def validate_component(component: str, section: dict) -> bool:
         if "regex_exceptions" in section and not isinstance(section["regex_exceptions"], str):
             return False
         if "chat_type_rules" in section and not isinstance(section["chat_type_rules"], str):
-            return False
-        if not isinstance(section.get(IGNORE_LEGACY_KEY, True), bool):
             return False
         if any(key in section and not isinstance(section[key], bool) for key in IGNORE_KEYS):
             return False
@@ -6904,7 +7367,9 @@ class ConfigTransfer:
             hidden.add("schedule")
         return tuple(c for c in COMPONENTS if c not in hidden)
 
-    def _component_label(self, component):
+    def _component_label(self, component, for_reset: bool = False):
+        if for_reset and component == "exceptions":
+            return self._tr("config_part_exceptions_reset")
         return self._tr("config_part_" + component)
 
     def request_import(self, view=None):
@@ -6925,8 +7390,8 @@ class ConfigTransfer:
             self._show_export_selection()
             return
         fragment, _ = self._activity()
-        available = tuple(c for c in self.visible_components() if operation != "reset" or COMPONENT_KEYS.get(c))
-        rows = [(self._component_label(component), True, True) for component in available]
+        available = tuple(c for c in self.visible_components() if operation != "reset" or COMPONENT_KEYS.get(c) or c == "schedule")
+        rows = [(self._component_label(component, operation == "reset"), True, True) for component in available]
         extra = None
         message = self._tr("config_parts_message", n=len(available))
         imported = False
@@ -7469,7 +7934,7 @@ class ConfigTransfer:
                     self.settings.set("chat_scope_enabled", scope_enabled)
                     self.settings.set("ignore_emoji_only", section.get("ignore_emoji_only", SETTING_DEFAULTS["ignore_emoji_only"]))
                     for key in IGNORE_KEYS:
-                        self.settings.set(key, section.get(key, setting_default(section, key)))
+                        self.settings.set(key, section.get(key, SETTING_DEFAULTS[key]))
                     if "regex_exceptions" in section:
                         self.settings.set("regex_exceptions", section["regex_exceptions"])
                     if "chat_type_rules" in section:
@@ -7730,7 +8195,6 @@ class ConfigTransfer:
                 "chat_scope": {"mode": "exceptions" if scope_enabled else "included", "chats": chats},
                 "ignore_emoji_only": bool(s.get("ignore_emoji_only")),
                 **{key: bool(s.get(key)) for key in IGNORE_KEYS},
-                IGNORE_LEGACY_KEY: all(bool(s.get(key)) for key in IGNORE_KEYS),
                 "regex_exceptions": as_text(s.get("regex_exceptions")),
                 "chat_type_rules": dump_chat_type_rules(parse_chat_type_rules(s.get("chat_type_rules"))),
             }
@@ -7876,8 +8340,6 @@ class ConfigTransfer:
 
 
 class ConfigurationsManager:
-    LEGACY_SETTING_KEY = "Prefixfy_experimental_configurations"
-    LEGACY_ACTIVE_KEY = "Prefixfy_experimental_active_configuration"
     SELECTOR_KEY = "Prefixfy_experimental_configuration_selector"
     MEDIA_DIR_NAME = "Prefixfy_configurations"
     STORE_DIR_NAME = "Prefixfy_store"
@@ -7902,7 +8364,6 @@ class ConfigurationsManager:
         self._loading = False
         self._failed_writes = set()
         self._degraded = False
-        self._migrated_legacy = False
         self._acct_reset_visible: Optional[bool] = None
         self.media_dir = os.path.join(get_plugins_dir(), self.MEDIA_DIR_NAME)
         self.store_dir = os.path.join(get_plugins_dir(), self.STORE_DIR_NAME)
@@ -7915,11 +8376,11 @@ class ConfigurationsManager:
         self.accounts = AccountProfiles(self)
         self.configurations: Dict[str, dict] = {}
         self._load_store()
-        if not self.configurations:
-            self._migrate_legacy_setting()
+        legacy = plugin._legacy  # 50.0.0: данные версий ниже 50 приводит к текущей схеме единый мигратор (см. LegacyMigration)
+        legacy.import_flat_configurations(self)
         self.accounts.load()
-        self._migrate_language_layout()
-        self._migrate_removed_german()
+        legacy.convert_account_files(self)
+        legacy.migrate_languages(self)
         if not self.configurations:
             baseline = self._snapshot_with_media("default", "baseline")
             self._store_record("default", {
@@ -7933,8 +8394,6 @@ class ConfigurationsManager:
         self._dedupe_names()
         self._collect_orphan_media()
         self._write_index()
-        if self._migrated_legacy:
-            self.plugin.set_setting(self.LEGACY_SETTING_KEY, "", reload_settings=False)
 
     @classmethod
     def _valid_id(cls, config_id) -> bool:
@@ -8113,7 +8572,7 @@ class ConfigurationsManager:
     def _read_params(self, config_id: str, role: str, fallback: Optional[dict]) -> Dict[str, Any]:
         result = {}
         for key in self.CONFIG_KEYS:
-            default = fallback.get(key, setting_default(fallback, key)) if fallback is not None else SETTING_DEFAULTS[key]
+            default = fallback.get(key, SETTING_DEFAULTS[key]) if fallback is not None else SETTING_DEFAULTS[key]
             ok, value = self._read_json(self._param_path(config_id, role, key))
             result[key] = self._coerce(key, value) if ok else default
         return result
@@ -8178,7 +8637,7 @@ class ConfigurationsManager:
         merged = {}
         all_ok = True
         for key in self.CONFIG_KEYS:
-            value = self._coerce(key, new.get(key, old.get(key, setting_default(old, key))))
+            value = self._coerce(key, new.get(key, old.get(key, SETTING_DEFAULTS[key])))
             merged[key] = value
             marker = (config_id, role, key)
             if (marker not in self._failed_writes and key in old
@@ -8274,79 +8733,6 @@ class ConfigurationsManager:
             shutil.rmtree(path, ignore_errors=True)
             return None
 
-    def _migrated_marks(self) -> set:
-        try:
-            data = json.loads(as_text(self.plugin.get_setting(LANGUAGE_MIGRATED_KEY, "")) or "[]")
-        except (ValueError, TypeError):
-            return set()
-        return {item for item in data if isinstance(item, str)} if isinstance(data, list) else set()
-
-    def _save_migrated_marks(self, marks: set):
-        try:
-            self.plugin.set_setting(LANGUAGE_MIGRATED_KEY, json.dumps(sorted(marks)))
-        except Exception as exc:
-            self.plugin.log(f"Prefixfy language migration marker failed: {exc}")
-
-    def _migrate_language_layout(self):
-        """Переводит индекс языка в новую раскладку. Каждый набор помечается сразу после записи, поэтому сбой посередине
-        не приведёт к повторному пересчёту уже переведённых (индексы не идемпотентны)."""
-        if not language_layout_pending(self.plugin):
-            return
-        marks = self._migrated_marks()
-        for config_id, record in self._all_records():
-            for role in ("current", "baseline"):
-                params = record.get(role) or {}
-                mark = f"{config_id}:{role}"
-                if mark in marks or "language" not in params:
-                    continue
-                if self._sync_params(config_id, role, {**params, "language": migrate_language_index(params["language"])}):
-                    marks.add(mark)
-                    self._save_migrated_marks(marks)
-
-    def _migrate_removed_german(self):
-        """48.0.0: в наборах (общих и по аккаунтам) немецкий заменяется английским. Иначе индекс вышел бы за список
-        и молча стал автоопределением. Повторный запуск безвреден: после замены индекса 6 нигде не остаётся."""
-        for config_id, record in self._all_records():
-            for role in ("current", "baseline"):
-                params = record.get(role) or {}
-                if removed_german_index(params.get("language")):
-                    self._sync_params(config_id, role, {**params, "language": ENGLISH_INDEX})
-
-    MAX_LEGACY_RECORDS = 200
-
-    def _migrate_legacy_setting(self):
-        raw = self.plugin.get_setting(self.LEGACY_SETTING_KEY, "")
-        if not (isinstance(raw, str) and raw) or len(raw) > 8 * 1024 * 1024:
-            return
-        try:
-            data = json.loads(raw)
-        except Exception as exc:
-            self.plugin.log(f"Configurations legacy load failed: {exc}")
-            self._degraded = True
-            return
-        if not isinstance(data, dict):
-            return
-        legacy_active = as_text(self.plugin.get_setting(self.LEGACY_ACTIVE_KEY, ""))
-        all_stored = True
-        for old_id, record in list(data.items())[:self.MAX_LEGACY_RECORDS]:
-            if not isinstance(record, dict):
-                continue
-            if "current" not in record or "baseline" not in record:
-                flat = dict(record)
-                name = flat.pop("name", old_id)
-                record = {"name": name, "current": dict(flat), "baseline": dict(flat)}
-            config_id = (str(old_id) if self._valid_id(str(old_id)) and self._owner_of(str(old_id)) is None
-                         and str(old_id) not in self.configurations else self._new_id())
-            stored = self._store_record(config_id, {
-                "name": as_text(record.get("name", old_id)),
-                "current": record.get("current") if isinstance(record.get("current"), dict) else {},
-                "baseline": record.get("baseline") if isinstance(record.get("baseline"), dict) else {},
-            })
-            all_stored = all_stored and stored
-            if str(old_id) == legacy_active:
-                self.active_id = config_id
-        self._migrated_legacy = bool(self.configurations) and all_stored
-
     def _dedupe_names(self):
         self._dedupe_bucket(self.configurations)
         for uid in self.accounts.uids():
@@ -8399,7 +8785,7 @@ class ConfigurationsManager:
             return value if isinstance(value, bool) else default
         if isinstance(default, int):
             return clamp_int(value, default, -2 ** 31, 2 ** 31 - 1)
-        return strip_zalgo(value) if isinstance(value, str) and len(value) <= MAX_SETTING_TEXT else default
+        return sanitize_text(value) if isinstance(value, str) and len(value) <= MAX_SETTING_TEXT else default
 
     def _snapshot(self) -> Dict[str, Any]:
         return {key: self._coerce(key, self.settings.get(key, SETTING_DEFAULTS[key])) for key in self.CONFIG_KEYS}
@@ -8527,29 +8913,6 @@ class ConfigurationsManager:
             self.accounts.set_pin(uid, None)
         self._write_index(uid)
         return config_id
-
-    def _migrate_account_profile(self, uid: int, params: dict) -> bool:
-        """Профиль аккаунта прежних версий (<uid>.json) становится его первым пресетом."""
-        config_id = self._new_id(uid)
-        base_id = self.active_id if self.active_id in self.configurations else next(iter(self.configurations), "")
-        record = {
-            "name": self.plugin._tr("config_default_name"),
-            "current": self._clone_with_media(params, config_id, "current"),
-            "baseline": self._clone_with_media(self._shared_baseline(), config_id, "baseline"),
-        }
-        if not self._store_record(config_id, record):
-            self._discard_record(config_id)
-            return False
-        self.accounts.set_active(uid, config_id)
-        self._write_index(uid)
-        if language_layout_pending(self.plugin):
-            marks = self._migrated_marks()
-            if f"acc:{uid}" in marks:
-                marks.add(f"{config_id}:current")
-            if base_id and f"{base_id}:baseline" in marks:
-                marks.add(f"{config_id}:baseline")
-            self._save_migrated_marks(marks)
-        return True
 
     def _retry_later(self):
         with self._lock:
@@ -8744,7 +9107,7 @@ class ConfigurationsManager:
 
     @staticmethod
     def normalize_name(name) -> str:
-        return " ".join(strip_zalgo(as_text(name)).split())[:MAX_CONFIG_NAME_LENGTH].strip()
+        return " ".join(sanitize_text(as_text(name)).split())[:MAX_CONFIG_NAME_LENGTH].strip()
 
     def is_name_taken(self, name, ignore_id=None) -> bool:
         """Имена уникальны в пределах области: общего набора или пресетов одного аккаунта."""
@@ -8985,6 +9348,11 @@ class ConfigurationsManager:
         if failed:
             self.plugin._toast("config_save_failed")
             return
+        if "schedule" in components:
+            try:
+                self.plugin.reset_schedule_section()
+            except Exception as exc:
+                self.plugin.log(f"Prefixfy schedule reset failed: {exc}")
         self.plugin.refresh_chat_menu_item()
         self._refresh_ui()
         self.plugin._toast("config_restored")
@@ -9031,7 +9399,7 @@ class ConfigurationsManager:
         params = params if isinstance(params, dict) else {}
         signature = []
         for key in self.CONFIG_KEYS:
-            value = self._coerce(key, params.get(key, setting_default(params, key)))
+            value = self._coerce(key, params.get(key, SETTING_DEFAULTS[key]))
             signature.append(bool(value) if key == "attached_media_path" else value)
         return tuple(signature)
 
@@ -9076,7 +9444,7 @@ class ConfigurationsManager:
     def _same_as_shared(self, snapshot: dict, config_id: Optional[str] = None) -> bool:
         shared = self._current(config_id or self.active_id)
         return all(
-            snapshot.get(key) == self._coerce(key, shared.get(key, setting_default(shared, key)))
+            snapshot.get(key) == self._coerce(key, shared.get(key, SETTING_DEFAULTS[key]))
             for key in self.CONFIG_KEYS
         )
 
@@ -9765,7 +10133,7 @@ class AccountProfiles:
     @staticmethod
     def _clean(params) -> Dict[str, Any]:
         coerce = ConfigurationsManager._coerce
-        return {key: coerce(key, params.get(key, setting_default(params, key))) for key in ConfigurationsManager.CONFIG_KEYS}
+        return {key: coerce(key, params.get(key, SETTING_DEFAULTS[key])) for key in ConfigurationsManager.CONFIG_KEYS}
 
     def load(self):
         manager = self.manager
@@ -9776,7 +10144,6 @@ class AccountProfiles:
             manager.plugin.log(f"Prefixfy accounts: listing failed: {exc}")
             self.degraded = True
             return
-        legacy: Dict[int, str] = {}
         for entry in entries:
             path = os.path.join(self.directory, entry)
             if os.path.isdir(path):
@@ -9794,30 +10161,6 @@ class AccountProfiles:
                     with self._lock:
                         self._presets[uid] = records
                         self._active[uid] = active if active in records else next(iter(records))
-                continue
-            match = _ACCT_FILE_RE.fullmatch(entry)
-            uid = self._canonical_uid(match.group(1)) if match else None
-            if uid is not None:
-                legacy[uid] = path
-        for uid, path in legacy.items():
-            if uid in self._presets:
-                discard_file(path)
-                continue
-            if len(self._presets) >= MAX_ACCOUNT_PROFILES:
-                self.degraded = True
-                continue
-            try:
-                payload = json.loads(store_read_text(path))
-                params = payload.get("params") if isinstance(payload, dict) else None
-                if not isinstance(params, dict):
-                    raise ValueError("no params object")
-                if not manager._migrate_account_profile(uid, self._clean(params)):
-                    raise ValueError("conversion to a preset failed")
-            except Exception as exc:
-                self.degraded = True
-                manager.plugin.log(f"Prefixfy accounts: cannot convert {os.path.basename(path)}: {exc}")
-                continue
-            discard_file(path)
         self._load_pins()
 
     def _load_pins(self):
@@ -10103,10 +10446,6 @@ def _ota_state_path() -> str:
     return os.path.join(get_plugins_dir(), OTA_STATE_FILE)
 
 
-def _ota_legacy_prev_path() -> str:
-    return os.path.join(get_plugins_dir(), OTA_LEGACY_PREV_FILE)
-
-
 def _ota_read() -> Dict[str, Any]:
     try:
         with open(_ota_state_path(), "r", encoding="utf-8") as handle:
@@ -10193,12 +10532,8 @@ def _slot_exists() -> bool:
 
 
 def _slot_clear(log=None):
-    """Очистить неактивный раздел целиком (и остаток прежней схемы с одним файлом .pfx_prev)."""
+    """Очистить неактивный раздел целиком."""
     shutil.rmtree(_slot_dir(), ignore_errors=True)
-    try:
-        os.remove(_ota_legacy_prev_path())
-    except OSError:
-        pass
     if log is not None and _slot_exists():
         log("Prefixfy: the inactive slot could not be fully cleared")
 
@@ -10313,15 +10648,9 @@ def _ota_rollback(reason: str, log) -> bool:
         return False
     try:
         meta = _slot_meta_read()
-        if meta.get("role") == SLOT_PREVIOUS:
-            previous = _slot_verified_bytes(meta, SLOT_PREVIOUS)
-        else:
-            with open(_ota_legacy_prev_path(), "rb") as handle:
-                previous = handle.read()
-            expected = as_text(data.get("prev_sha256"))
-            if expected and not hmac.compare_digest(hashlib.sha256(previous).hexdigest(), expected):
-                raise ValueError("saved previous version is damaged")
-            compile(previous, "prefixfy_prev.py", "exec")
+        if meta.get("role") != SLOT_PREVIOUS:
+            raise ValueError("no saved previous version")
+        previous = _slot_verified_bytes(meta, SLOT_PREVIOUS)
         _write_file_atomic(path, previous)
     except Exception as exc:
         log(f"Prefixfy OTA rollback failed: {exc}")
@@ -10377,8 +10706,8 @@ def _self_file_digests() -> Optional[Tuple[str, str, int]]:
 
 
 _WIPE_STATE_FILES = (
-    "Prefixfy_remote.json", BLACKLIST_CACHE_FILE, FLAGS_CACHE_FILE, FLAGS_CACHE_LEGACY_FILE, AUTO_STATE_FILE,
-    STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, OTA_LEGACY_PREV_FILE, BLACKLIST_GUARD_FILE,
+    "Prefixfy_remote.json", BLACKLIST_CACHE_FILE, FLAGS_CACHE_FILE, LEGACY_FLAGS_CACHE_FILE, AUTO_STATE_FILE,
+    STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, LEGACY_PREV_FILE, BLACKLIST_GUARD_FILE,
 )
 _WIPE_KEEP_ON_CLEAN = frozenset({STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, BLACKLIST_GUARD_FILE})
 _WIPE_DIRS = ("Prefixfy_media", ConfigurationsManager.MEDIA_DIR_NAME, ConfigurationsManager.STORE_DIR_NAME, ACCT_DIR_NAME)
@@ -10388,11 +10717,11 @@ _WIPE_MEDIA_RESET = {
     "attached_media_path": "", "attached_media_name": "", "attached_media_mime": "", "attached_media_enabled": False,
 }
 _WIPE_INTERNAL_KEYS = {
-    LANGUAGE_LAYOUT_KEY: 1, LANGUAGE_LIVE_KEY: 1, LANGUAGE_MIGRATED_KEY: "", CHAT_COUNTS_KEY: "", COUNTER_KEY: 0,
-    SETUP_STAGE_KEY: 1, SETUP_SEEN_KEY: 1, WELCOME_UNTIL_KEY: 0, IGNORE_SPLIT_KEY: 1,
+    SCHEMA_KEY: SCHEMA_VERSION, CHAT_COUNTS_KEY: "", COUNTER_KEY: 0,
+    SETUP_STAGE_KEY: 1, SETUP_SEEN_KEY: 1, WELCOME_UNTIL_KEY: 0,
     "Prefixfy_markdown_style_pick": 0, "Prefixfy_text_style_pick": 0,
     CHAT_CONFIGS_KEY: "{}", SCHEDULE_KEY: "", ACCT_MODE_KEY: False, ACCT_TARGET_KEY: ACCT_AUTO, ACCT_LIVE_KEY: "", ACCT_PINS_KEY: "",
-    ConfigurationsManager.LEGACY_SETTING_KEY: "", ConfigurationsManager.LEGACY_ACTIVE_KEY: "",
+    **{key: "" for key in LEGACY_SETTING_KEYS},  # старые плоские конфигурации тоже содержат пользовательские настройки
 }
 
 
@@ -10774,15 +11103,6 @@ class RemoteControl:
         self._load_floor()
         self._load_cache()
         self._flags_path = os.path.join(get_plugins_dir(), FLAGS_CACHE_FILE)
-        legacy = os.path.join(get_plugins_dir(), FLAGS_CACHE_LEGACY_FILE)
-        try:
-            if os.path.exists(legacy):
-                if os.path.exists(self._flags_path):
-                    os.remove(legacy)
-                else:
-                    os.replace(legacy, self._flags_path)
-        except OSError:
-            pass
         self._load_flags_cache()
         self._load_blacklist_cache()
         self._ota_lock = threading.Lock()
@@ -11119,10 +11439,9 @@ class RemoteControl:
         self.plugin.log("Prefixfy: forced check, cached remote state kept until a verified one arrives")
 
     def _invalidate_cache(self):
-        legacy = os.path.join(get_plugins_dir(), FLAGS_CACHE_LEGACY_FILE)
         # 48.2.0: подписанный кэш ЧС не удаляется: иначе «Проверить сейчас» без сети с последующим перезапуском
         # стирал блокировку. Подделать его нельзя (подпись и серийный номер), а новый список его заменит.
-        for path in (self._cache_path, self._flags_path, legacy):
+        for path in (self._cache_path, self._flags_path):
             for target in (path, path + ".tmp"):
                 try:
                     os.remove(target)
@@ -11862,10 +12181,6 @@ class RemoteControl:
         if data.get("state") == "pending" and data.get("to") == __build__:
             data["state"] = "ok"
             _ota_write(data, self.plugin.log)
-            try:
-                os.remove(_ota_legacy_prev_path())
-            except OSError:
-                pass
             self.plugin.log(f"Prefixfy OTA: {__build__} confirmed")
 
     def _ota_next_wait(self) -> Optional[float]:
@@ -12527,8 +12842,10 @@ class PrefixfyPlugin(BasePlugin):
     def _on_plugin_load_impl(self):
         if self._startup_gate():
             return
+        self._legacy = LegacyMigration(self)
         self._setup_init()
         _slot_housekeeping(self.log)
+        self._legacy.migrate_files()
         VAULT.attach(self.log)
         VAULT.prepare()
         self.settings = PrefixfySettings(self)
@@ -12552,8 +12869,7 @@ class PrefixfyPlugin(BasePlugin):
 
         self._reset_transient_settings()
         self._remove_stale_files()
-        self._migrate_language_setting()
-        self._migrate_ignore_split()
+        self._legacy.migrate_settings()
         self.configurations = ConfigurationsManager(self)
         try:
             self.configurations.sync_target()
@@ -12563,7 +12879,7 @@ class PrefixfyPlugin(BasePlugin):
             self._seal_vault()
         except Exception as exc:
             self.log(f"Prefixfy vault sealing failed: {exc}")
-        self.set_setting(LANGUAGE_LAYOUT_KEY, LANGUAGE_LAYOUT_VERSION)
+        self._legacy.finish()
         self.runtime_manager.rebuild()
 
         self.transfer.register_file_handler()
@@ -12616,26 +12932,6 @@ class PrefixfyPlugin(BasePlugin):
             with lock:
                 self._internal_sends.clear()
                 self._edit_seen = {}
-
-    def _migrate_language_setting(self):
-        live_done = clamp_int(self.get_setting(LANGUAGE_LIVE_KEY, 1), 1, 1, LANGUAGE_LAYOUT_VERSION) >= LANGUAGE_LAYOUT_VERSION
-        if language_layout_pending(self) and not live_done:
-            self.set_setting("language", migrate_language_index(self.get_setting("language", 0)))
-            self.set_setting(LANGUAGE_LIVE_KEY, LANGUAGE_LAYOUT_VERSION)
-        if removed_german_index(self.get_setting("language", 0)):
-            self.set_setting("language", ENGLISH_INDEX)  # 48.0.0: сидевшие на немецком переходят на английский
-
-    def _migrate_ignore_split(self):
-        """45.6.0: старый тумблер «ignore_special» разбит на шесть; выключенный раньше остаётся выключенным."""
-        try:
-            if self.get_setting(IGNORE_SPLIT_KEY, 0):
-                return
-            if self.get_setting(IGNORE_LEGACY_KEY, None) is False:
-                for key in IGNORE_KEYS:
-                    self.set_setting(key, False)
-            self.set_setting(IGNORE_SPLIT_KEY, 1)
-        except Exception as exc:
-            self.log(f"Prefixfy ignore split migration failed: {exc}")
 
     def _reset_transient_settings(self):
         for key, default in TRANSIENT_SETTING_DEFAULTS.items():
@@ -12854,9 +13150,9 @@ class PrefixfyPlugin(BasePlugin):
                 if neutral[1](editor) is not False:
                     bld.dismiss()
                 return
-            if has_zalgo(value):
-                editor.setError(self._tr("zalgo_rejected"))
-                self._toast("zalgo_rejected", fragment)
+            if has_unsafe_text(value):
+                editor.setError(self._tr("unsafe_text_rejected"))
+                self._toast("unsafe_text_rejected", fragment)
                 return
             if on_confirm(value, editor) is not False:
                 bld.dismiss()
@@ -13067,6 +13363,12 @@ class PrefixfyPlugin(BasePlugin):
                 chats[dialog] = as_text(record.get("name"))
         active = (configs._record(config_id) if config_id else None) or configs.configurations.get(configs.active_id) or {}
         return {"source": as_text(active.get("name")), "chats": chats, "rules": as_text(self.get_setting(SCHEDULE_KEY, ""))}
+
+    def reset_schedule_section(self):
+        """Сброс привязок чатов и расписания; привязки, заданные для отдельных аккаунтов, остаются."""
+        kept = {chat: cid for chat, cid in self._chat_bindings().items() if ":" in chat}
+        self.set_setting(CHAT_CONFIGS_KEY, dump_chat_configs(kept))
+        self.set_setting(SCHEDULE_KEY, "")
 
     def import_schedule_section(self, section: dict, new_name: Optional[str] = None):
         configs = self.configurations
@@ -13860,29 +14162,69 @@ class PrefixfyPlugin(BasePlugin):
             items.append(Text(text=tr("schedule"), subtext=self._schedule_subtext(), icon=self._icon("msg_calendar", "msg_recent"), on_click=self._show_schedule_editor))
         return items
 
+    def _scope_target_keys(self) -> Tuple[str, ...]:
+        keys = ["process_message", "process_media"]
+        if FEATURES.on("articles"):
+            keys.append("process_article")
+        return tuple(keys)
+
+    _SCOPE_TARGET_LABELS = {"process_message": "scope_message", "process_media": "scope_media", "process_article": "scope_article"}
+
+    def _show_scope_targets_editor(self, view=None):
+        keys = self._scope_target_keys()
+        rows = [(self._tr(self._SCOPE_TARGET_LABELS[key]), bool(self.settings.get(key)), True) for key in keys]
+
+        def save(selected, extra):
+            chosen = set(selected)
+            last = len(keys) - 1
+            for index, key in enumerate(keys):
+                self.settings.set(key, index in chosen, reload_settings=(index == last))
+
+        self.show_checklist(self._tr("scope_targets"), rows, save, message=self._tr("scope_targets_hint"))
+
+    def _scope_targets_subtext(self) -> str:
+        keys = self._scope_target_keys()
+        enabled = sum(1 for key in keys if bool(self.settings.get(key)))
+        return self._tr("ignore_segments_count", n=enabled, total=len(keys))
+
+    def _scope_edit_keys(self) -> Tuple[str, ...]:
+        keys = ["process_edit_message", "process_edit_media"]
+        if FEATURES.on("articles"):
+            keys.append("process_edit_article")
+        keys.append("skip_once_on_edit")
+        return tuple(keys)
+
+    _SCOPE_EDIT_LABELS = {"process_edit_message": "scope_edit_message", "process_edit_media": "scope_edit_media", "process_edit_article": "scope_edit_article", "skip_once_on_edit": "skip_once_on_edit"}
+
+    def _show_scope_edit_editor(self, view=None):
+        keys = self._scope_edit_keys()
+        rows = [(self._tr(self._SCOPE_EDIT_LABELS[key]), bool(self.settings.get(key)), True) for key in keys]
+
+        def save(selected, extra):
+            chosen = set(selected)
+            last = len(keys) - 1
+            for index, key in enumerate(keys):
+                self.settings.set(key, index in chosen, reload_settings=(index == last))
+
+        self.show_checklist(self._tr("scope_edit_targets"), rows, save, message=self._tr("scope_edit_targets_hint"))
+
+    def _scope_edit_subtext(self) -> str:
+        keys = self._scope_edit_keys()
+        enabled = sum(1 for key in keys if bool(self.settings.get(key)))
+        return self._tr("ignore_segments_count", n=enabled, total=len(keys))
+
     def _settings_scope(self) -> List[Any]:
         tr = self._tr
         items: List[Any] = [
             Header(text=tr("section_scope")),
-            self._switch("process_message", tr("scope_message"), tr("scope_message_subtext"), "msg_text"),
-            self._switch("process_media", tr("scope_media"), tr("scope_media_subtext"), "msg_image"),
+            Text(text=tr("scope_targets"), subtext=self._scope_targets_subtext(), icon=self._icon("msg_text", "msg_info"), on_click=self._show_scope_targets_editor),
         ]
         articles_on = FEATURES.on("articles")
-        if articles_on:
-            items.append(self._switch("process_article", tr("scope_article"), tr("scope_article_subtext"), "msg_text"))
         edit_on = FEATURES.on("edit_processing")
         if edit_on:
             items.append(self._switch("process_edit", tr("scope_edit"), tr("scope_edit_subtext"), "msg_edit", True))
         if edit_on and self.settings.get("process_edit"):
-            items += [
-                self._switch("process_edit_message", tr("scope_edit_message"), tr("scope_edit_message_subtext"), "msg_text"),
-                self._switch("process_edit_media", tr("scope_edit_media"), tr("scope_edit_media_subtext"), "msg_image"),
-            ]
-            if articles_on:
-                items.append(self._switch("process_edit_article", tr("scope_edit_article"), tr("scope_edit_article_subtext"), "msg_text"))
-            items += [
-                self._switch("skip_once_on_edit", tr("skip_once_on_edit"), tr("skip_once_on_edit_subtext"), "msg_edit"),
-            ]
+            items.append(Text(text=tr("scope_edit_targets"), subtext=self._scope_edit_subtext(), icon=self._icon("msg_edit", "msg_info"), on_click=self._show_scope_edit_editor))
         if FEATURES.on("chat_type_rules"):
             items.append(Text(text=tr("chat_types"), subtext=self._chat_types_subtext(), icon=self._icon("msg_groups", "msg_info"), on_click=self._show_chat_types_editor))
         return items + self._section_body(self._settings_exceptions())
@@ -14845,7 +15187,7 @@ class PrefixfyPlugin(BasePlugin):
         """Первичное состояние мастера.
 
         «Старой установкой» (мастера ещё не было, сразу «завершено») считается только та, у которой нет метки
-        SETUP_SEEN_KEY: LANGUAGE_LAYOUT_KEY переписывается при каждой загрузке и сам по себе ничего не доказывает.
+        SETUP_SEEN_KEY: версия схемы переписывается при каждой загрузке и сама по себе ничего не доказывает.
         Если этап потерян (сброс настроек хоста, порча), а метка есть, это не старая установка: мастер начинается заново."""
         try:
             raw = self.get_setting(SETUP_STAGE_KEY, None)
@@ -14857,7 +15199,7 @@ class PrefixfyPlugin(BasePlugin):
             # 48.2.0: «старая установка» должна иметь и следы реальной работы (хранилище конфигураций), иначе одного
             # ключа языка хватало, чтобы пропустить мастер и проверку аккаунта.
             legacy = (
-                not seen and self.get_setting(LANGUAGE_LAYOUT_KEY, None) is not None
+                not seen and LegacyMigration.preexisting_install(self)
                 and os.path.isdir(os.path.join(get_plugins_dir(), ConfigurationsManager.STORE_DIR_NAME))
             )
             self.set_setting(SETUP_STAGE_KEY, SETUP_DONE if legacy else 1, reload_settings=False)
