@@ -74,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "50.0.0"
-__build__ = "50.0.0_20261122.2_96"
+__version__ = "50.1.0"
+__build__ = "50.1.0_20261122.3_97"
 __icon__ = "http_Prefixfy_by_fStikBot/3"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -632,6 +632,10 @@ class LocalizationManager:
             "config_export_partial": "Экспортировано {ok} из {total}",
             "config_import_found_title": "Файл конфигурации",
             "config_import_found_contains": "Что импортировать:",
+            "config_part_state_default": "по умолчанию",
+            "config_part_state_absent": "нет в файле",
+            "config_import_nothing": "В файле нечего импортировать: выбранные части отсутствуют или уже стоят по умолчанию",
+            "config_import_skipped": "Пропущено, импортировать нечего: {parts}",
             "config_import_as_new": "Импортировать как новую конфигурацию",
             "config_import_file_failed": "Не удалось открыть файл конфигурации",
             "config_import_invalid": "В файле нет выбранных частей или он повреждён.",
@@ -1075,6 +1079,10 @@ class LocalizationManager:
             "config_export_partial": "Exported {ok} of {total}",
             "config_import_found_title": "Configuration file",
             "config_import_found_contains": "What to import:",
+            "config_part_state_default": "default",
+            "config_part_state_absent": "not in file",
+            "config_import_nothing": "Nothing to import: the selected parts are missing from the file or already at their defaults",
+            "config_import_skipped": "Skipped, nothing to import: {parts}",
             "config_import_as_new": "Import as a new configuration",
             "config_import_file_failed": "Couldn’t open the configuration file",
             "config_import_invalid": "The file has none of the selected parts or is damaged.",
@@ -1518,6 +1526,10 @@ class LocalizationManager:
             "config_export_partial": "{total} 個中 {ok} 個をエクスポートしました",
             "config_import_found_title": "設定セットのファイル",
             "config_import_found_contains": "インポートする項目：",
+            "config_part_state_default": "既定値",
+            "config_part_state_absent": "ファイルにありません",
+            "config_import_nothing": "インポートするものがありません：選択した項目はファイルにないか、既定値のままです",
+            "config_import_skipped": "スキップ（インポートする内容なし）：{parts}",
             "config_import_as_new": "新しい設定セットとしてインポート",
             "config_import_file_failed": "設定セットのファイルを開けませんでした",
             "config_import_invalid": "ファイルに選んだ項目がないか、ファイルが壊れています。",
@@ -1961,6 +1973,10 @@ class LocalizationManager:
             "config_export_partial": "{total}개 중 {ok}개를 내보냈습니다",
             "config_import_found_title": "구성 파일",
             "config_import_found_contains": "가져올 항목:",
+            "config_part_state_default": "기본값",
+            "config_part_state_absent": "파일에 없음",
+            "config_import_nothing": "가져올 내용이 없습니다: 선택한 항목이 파일에 없거나 이미 기본값입니다",
+            "config_import_skipped": "건너뜀(가져올 내용 없음): {parts}",
             "config_import_as_new": "새 구성으로 가져오기",
             "config_import_file_failed": "구성 파일을 열지 못했습니다",
             "config_import_invalid": "파일에 선택한 항목이 없거나 파일이 손상되었습니다.",
@@ -2404,6 +2420,10 @@ class LocalizationManager:
             "config_export_partial": "{ok} sur {total} exportées",
             "config_import_found_title": "Fichier de configuration",
             "config_import_found_contains": "À importer :",
+            "config_part_state_default": "par défaut",
+            "config_part_state_absent": "absent du fichier",
+            "config_import_nothing": "Rien à importer : les parties choisies sont absentes du fichier ou déjà aux valeurs par défaut",
+            "config_import_skipped": "Ignoré, rien à importer : {parts}",
             "config_import_as_new": "Importer comme nouvelle configuration",
             "config_import_file_failed": "Impossible d’ouvrir le fichier de configuration",
             "config_import_invalid": "Le fichier ne contient aucune des parties choisies ou il est endommagé.",
@@ -7112,6 +7132,86 @@ def detect_components(data: dict) -> Tuple[str, ...]:
     return tuple(found)
 
 
+def _section_setting_values(component: str, section: dict) -> Dict[str, Any]:
+    """50.1.0: какие настройки импорт этой части записал бы (без побочных действий). Зеркало apply_components."""
+    values: Dict[str, Any] = {}
+    if component == "language":
+        values["language"] = section.get("value")
+    elif component == "mask":
+        if "markdown_enabled" in section:
+            enabled, style = section["markdown_enabled"], section.get("markdown_style", SETTING_DEFAULTS["markdown_style"])
+        elif "markdown_style" in section:
+            style = section["markdown_style"]
+            enabled = style != 1
+        elif "markdown" in section:
+            enabled, style = section["markdown"], 0
+        else:
+            enabled, style = SETTING_DEFAULTS["markdown_enabled"], SETTING_DEFAULTS["markdown_style"]
+        values["mask"] = section.get("value")
+        values["markdown_enabled"] = enabled
+        values["markdown_style"] = 0 if style == 1 else style
+        styling = section.get("style")
+        if isinstance(styling, dict):
+            values["text_style_enabled"], values["text_style"] = styling.get("enabled"), styling.get("value")
+        for key in ("text_style_random", "mask_rotation_enabled", "masks_list", "mask_rotation_mode",
+                    "conditional_masks", "text_style_translit", "style_words", "tag_lines"):
+            if key in section:
+                values[key] = section[key]
+    elif component == "separator":
+        values.update({
+            "separator_enabled": section.get("enabled", False),
+            "custom_emojis": section.get("values", DEFAULT_SEPARATORS),
+            "emoji_count": section.get("count", 1),
+            "separator_frequency": section.get("frequency", SEPARATOR_FREQUENCY_DEFAULT),
+            "separator_spaces": section.get("spaces", True),
+            "separator_space_mode": section.get("space_mode", 0),
+        })
+    elif component == "cute":
+        values.update({key: section.get(key, SETTING_DEFAULTS[key]) for key in CUTE_KEYS})
+    elif component == "exceptions":
+        scope = section.get("chat_scope")
+        if isinstance(scope, dict):
+            scope_enabled = scope.get("mode") == "exceptions"
+            chats = scope.get("chats", section.get("disabled_chats", ""))
+        else:
+            scope_enabled = bool(section.get("chat_scope_enabled", True))
+            chats = section.get("disabled_chats", "")
+        values.update({"exceptions": section.get("values", ""), "disabled_chats": chats, "chat_scope_enabled": scope_enabled})
+        for key in ("ignore_emoji_only", *IGNORE_KEYS):
+            values[key] = section.get(key, SETTING_DEFAULTS[key])
+        if "regex_exceptions" in section:
+            values["regex_exceptions"] = section["regex_exceptions"]
+        if "chat_type_rules" in section:
+            values["chat_type_rules"] = dump_chat_type_rules(parse_chat_type_rules(section["chat_type_rules"]))
+    return values
+
+
+IMPORT_USEFUL, IMPORT_DEFAULT, IMPORT_ABSENT = "useful", "default", "absent"
+
+
+def classify_component(data: dict, component: str) -> str:
+    """50.1.0: даёт ли часть конфига что-то при импорте. absent — в файле нет (или она некорректна), default — есть,
+    но все значения совпадают со стандартными плагина, useful — есть значения, отличающиеся от стандартных."""
+    try:
+        section = extract_component(data, component)
+        if section is None or not validate_component(component, section):
+            return IMPORT_ABSENT
+        if component == "schedule":
+            return IMPORT_USEFUL if (section.get("chats") or as_text(section.get("rules", "")).strip()) else IMPORT_DEFAULT
+        if component == "media":
+            return IMPORT_USEFUL if (section.get("enabled", False) and as_text(section.get("file", ""))) else IMPORT_DEFAULT
+        values = _section_setting_values(component, section)
+        if any(value != SETTING_DEFAULTS[key] for key, value in values.items() if key in SETTING_DEFAULTS):
+            return IMPORT_USEFUL
+        return IMPORT_DEFAULT
+    except Exception:
+        return IMPORT_ABSENT
+
+
+def classify_components(data: dict) -> Dict[str, str]:
+    return {component: classify_component(data, component) for component in COMPONENTS}
+
+
 MAX_CONTAINER_ENTRIES = 16
 
 
@@ -7554,11 +7654,23 @@ class ConfigTransfer:
             detected = tuple(c for c in detect_components(data) if c in visible)
             if not detected:
                 raise ConfigurationError("configuration has no valid components")
+            states = classify_components(data)
+            useful = tuple(c for c in detected if states.get(c) == IMPORT_USEFUL)
+            if not useful:
+                self._toast("config_import_nothing", fragment)
+                return
 
-            rows = [(self._component_label(c), c in detected, c in detected) for c in visible]
+            def row_label(c):
+                if states.get(c) == IMPORT_DEFAULT:
+                    return self._component_label(c) + " — " + self._tr("config_part_state_default")
+                if states.get(c) != IMPORT_USEFUL:
+                    return self._component_label(c) + " — " + self._tr("config_part_state_absent")
+                return self._component_label(c)
+
+            rows = [(row_label(c), c in useful, c in useful) for c in visible]
 
             def confirm(selected, as_new):
-                chosen = tuple(visible[i] for i in selected if visible[i] in detected)
+                chosen = tuple(visible[i] for i in selected if visible[i] in useful)
                 if not chosen:
                     self._toast("config_parts_none", fragment)
                     return False
@@ -7627,6 +7739,17 @@ class ConfigTransfer:
         if self._import_locked(fragment):
             self.discard_container_media(data)
             return
+        if not links_confirmed:
+            # 50.1.0: выбранные части, которых нет в файле или которые стоят по умолчанию, ничего не меняют: пропускаем.
+            states = classify_components(data)
+            useless = tuple(c for c in components if states.get(c) != IMPORT_USEFUL)
+            if useless:
+                components = tuple(c for c in components if c not in useless)
+                if not components:
+                    self.discard_container_media(data)
+                    self._toast("config_import_nothing", fragment)
+                    return
+                self._toast("config_import_skipped", fragment, parts=", ".join(self._component_label(c) for c in useless))
         if not links_confirmed:
             try:
                 links = collect_import_links(data, components)
