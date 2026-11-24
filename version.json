@@ -1,11 +1,33 @@
 {
+  "changelog": {
+    "en": [
+      "\u25cf Plugin",
+      "New: added changelog support"
+    ],
+    "fr": [
+      "\u25cf Plugin",
+      "Nouveau : ajout de la prise en charge des notes de version"
+    ],
+    "ja": [
+      "\u25cf \u30d7\u30e9\u30b0\u30a4\u30f3",
+      "\u65b0\u6a5f\u80fd: \u5909\u66f4\u5c65\u6b74\u306e\u30b5\u30dd\u30fc\u30c8\u3092\u8ffd\u52a0"
+    ],
+    "ko": [
+      "\u25cf \ud50c\ub7ec\uadf8\uc778",
+      "\uc2e0\uaddc: \ubcc0\uacbd \uc0ac\ud56d \ubaa9\ub85d \uc9c0\uc6d0 \ucd94\uac00"
+    ],
+    "ru": [
+      "\u25cf \u041f\u043b\u0430\u0433\u0438\u043d",
+      "\u041d\u043e\u0432\u043e\u0435: \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u0430 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0430 \u0441\u043f\u0438\u0441\u043a\u043e\u0432 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u0439"
+    ]
+  },
   "file": "Prefixfy.py",
   "format": 1,
-  "issued_at": 1795509322,
-  "serial": 99,
-  "sha256": "28b06466b9b89364aea0efa691e91b1c14bfd8610fc690d526068d89cf8dca08",
-  "sha512": "4fdc2bd4bb61719ad7ba75a5b263ec8004aa118d27f89a700aee99df8c988a18288dc5f0702078ceab873c468af1ee5f8b6bce33844e02a2a80b4e58f44c83ea",
-  "signature": "YZJZR5aj+0c/uAYA+1eFGzgLO3G1WX1Jw3sDaQjXFf1roIZI+rHg7mCEFfKHFkDsiUOADRz0rlCBmRdO0La5BRkEZIhmN6ZCbQ+AhdlN5EKOhL+95RXfyEfwWMDiGgXW7TcVvT2LcLcU02UPyXH4O6w56A4ezm1QVU7M6ShF6yy4KEP/KRJcxfvlQrDJJiOeo7PctYmlpk5UsLSaxkmdlGjo3M4Jr2qQ/46iABuWUQclSQAqDu292lqJZdQ35SaT87p0cJv7YqOPiS5t4VpV/0neCiHwkxQbeH9bd6R3Azj/Pzebq+MlGrHFZqzaX7ddhkr+3m3VYuEocD8YhaU3gQM/qDeleC0fgPtOxWXGGxlsSrAWuKvxjWp2q8bwtth3V1jRdUTU2cU1MKFtVFkUPVEGoUs2Inu3r1wVniCaU7dwVDkhlXFBbh+9OjjErGBakM8hCggsNbD5lZbcqiG7l3e1PEH6hLLgUqTStDrwWiITZvvZqgjFf2YKFg5gm9EJ",
-  "size": 866076,
-  "version": "50.3.0_20261124.1_99"
+  "issued_at": 1795510344,
+  "serial": 100,
+  "sha256": "8bdbc87f216069439439e30501d39128449a18daf4205681d0975ad85c47714e",
+  "sha512": "6da11a506527e6e434e43bdc41a7d94c6c6e6d95d1ac7f533dd60e2b21206c03c379b8224a2c8246efa2f85e3cafcf949ab1116d6e3682a80c035c8aa42b66d0",
+  "signature": "e0TtXftRTmANiYYmyinZxvc3P4BsakNaOQAHBAoe5mukvsbueqSKQhhSSdMGCj1ngIRuYHhjLE0M4Xud37u/sCmW+xn89JGrrydfsoLbe4mTVKkzkx+z8G7HU8UYLZdMDKjWLXD8IfO4eMnWDr+UAt0SCicCs2mnG/1ZzEqEJR+JvQO9oi//7fYyCCtFE5Z+4nlcag2i+SE2MNxdobwAbkQA5XcpBmfjISwSdOF3pGvc2cNfY7y2gyRJT3SBQPoQaBHzOH1K7/pt0psA9e68TqLSsyXfguPzl/U3na72Kn+6N4tuDy5oGyB3XqVr0fonklEnfuh8KYWiygUOLICTcki4byPIeo1rFGPjM/FZ6J+uMaGKAlpueiDcBKdDV94PFvdYEzvAt4lB2YB9sUv2FmASnZNcvFs4jEC++fGFDaRGesGXd4z5dlboVkZEQDkUsXRytAjvKmtcy/e+WL6wBe5dZsZGGGRNHQnadUL5ymMdAT8fd36nfhIUb3gCuuyg",
+  "size": 872928,
+  "version": "50.4.0_20261124.2_100"
 }
