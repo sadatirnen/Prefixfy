@@ -1,33 +1,43 @@
 {
   "changelog": {
     "en": [
-      "\u25cf Interface",
-      "Optimization: improved changelog display"
+      "\u25cf Schedule",
+      "New: More powerful config schedule settings",
+      "\u25cf Other",
+      "Optimization: Fixes and improvements"
     ],
     "fr": [
-      "\u25cf Interface",
-      "Optimisation : am\u00e9lioration de l'affichage des notes de version"
+      "\u25cf Planification",
+      "Nouveau : capacit\u00e9s de planification des configurations \u00e9tendues",
+      "\u25cf Autre",
+      "Optimisation : corrections et am\u00e9liorations"
     ],
     "ja": [
-      "\u25cf \u30a4\u30f3\u30bf\u30fc\u30d5\u30a7\u30fc\u30b9",
-      "\u6700\u9069\u5316: \u5909\u66f4\u5c65\u6b74\u306e\u8868\u793a\u3092\u6539\u5584"
+      "\u25cf \u30b9\u30b1\u30b8\u30e5\u30fc\u30eb",
+      "\u65b0\u6a5f\u80fd: \u8a2d\u5b9a\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u306e\u30ab\u30b9\u30bf\u30de\u30a4\u30ba\u6a5f\u80fd\u3092\u5f37\u5316",
+      "\u25cf \u305d\u306e\u4ed6",
+      "\u6700\u9069\u5316: \u4fee\u6b63\u3068\u6539\u5584"
     ],
     "ko": [
-      "\u25cf \uc778\ud130\ud398\uc774\uc2a4",
-      "\ucd5c\uc801\ud654: \ubcc0\uacbd \uc0ac\ud56d \ubaa9\ub85d \ud45c\uc2dc \uac1c\uc120"
+      "\u25cf \uc2a4\ucf00\uc904",
+      "\uc2e0\uaddc: \uc124\uc815 \uc2a4\ucf00\uc904 \uad6c\uc131 \uae30\ub2a5 \uac15\ud654",
+      "\u25cf \uae30\ud0c0",
+      "\ucd5c\uc801\ud654: \uc218\uc815 \ubc0f \uac1c\uc120"
     ],
     "ru": [
-      "\u25cf \u0418\u043d\u0442\u0435\u0440\u0444\u0435\u0439\u0441",
-      "\u041e\u043f\u0442\u0438\u043c\u0438\u0437\u0430\u0446\u0438\u044f: \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u043e \u043e\u0442\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u0441\u043f\u0438\u0441\u043a\u0430 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u0439"
+      "\u25cf \u0420\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435",
+      "\u041d\u043e\u0432\u043e\u0435: \u0423\u0432\u0435\u043b\u0438\u0447\u0435\u043d\u0430 \u043c\u043e\u0449\u043d\u043e\u0441\u0442\u044c \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0440\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0439 \u043a\u043e\u043d\u0444\u0438\u0433\u043e\u0432",
+      "\u25cf \u041f\u0440\u043e\u0447\u0435\u0435",
+      "\u041e\u043f\u0442\u0438\u043c\u0438\u0437\u0430\u0446\u0438\u044f: \u0418\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u0438 \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u044f"
     ]
   },
   "file": "Prefixfy.py",
   "format": 1,
-  "issued_at": 1795511448,
-  "serial": 101,
-  "sha256": "71d6df15b55b2deaa118911779abd54d4a477d61d456cbedfc844d7057966934",
-  "sha512": "c147f2397cd9bef2c24702bd348307e91643f402244836dd63534c0a9978b03c0b438c1c6260059cca9100b0aace44757b7cf9dded1631b4591c8a2d0758cc86",
-  "signature": "DJw7cfdnMPX1rZRAZ1Pjw/K2f3+8+x0bDYr+cICMrjqg4dY5fNQLkiAliUS189uJrSJWe0WVR2DpOCm9wSkMzooPAnu7ZliU332/jcfEn6kG6krkWVh9Sv/5Yt0ULlCDiFMnL8mELO0DWX+ZDHka83j+uFem3f9xzfbnzthrC2RF3vOj7GRlfvQwV17+3bSzxo7PpRFxLWlt9GYN0je/l/AuIPVpDGLQ04LocoBZnjY+W+pmUJ6ko9Y5ZhZFGnf0SjFULko7Gew0bQ32wRDPM/EzzGus04mjaOAXlXPudrZW3Y/WspfgavTzGzRt6nAGWOg0Gae71eRd+qcfC0x4U55IT1D35i9bfbs8MkHoNNPAYAtBnzpmSJKMBk38YKCv28NN7GaeYnciR2/+n7gMORqJviB8V9h0MOQL0BLcBS0d/rnuW93G89PhmpXtMONMGrtPhtG7TJHhJU2LyJHk6Kr1OzVQyhldp3cjFvEp/XWAGueyt2lTBes8gP+Kq3ga",
-  "size": 874125,
-  "version": "50.4.1_20261124.3_101"
+  "issued_at": 1795512665,
+  "serial": 102,
+  "sha256": "6a0d6b9ee9f49e7d9dd80d3244dab0d56bd3aa4126caed3874f393fb515e8d67",
+  "sha512": "9ad13907cab9c13d11bcb86317dbe786af4ea10d5d23463a7bfa1c04f09af6bad70bb517674809d3c0e59410845ccfd3960f568fa6c7117b238f133a6d3881f8",
+  "signature": "cnUM0KXkMdd8H8pBQzMJE4/rjD9wAU67nUWmwbZC58Cp57TKbBie7LyYozKRnZBS233CicMYcfgcqUDoZDPI2JM0Xh9Xc8SXGEDh4/CQ0E07y4Z8sqfnIy7FP4033TPm9m2rdVTQwP2L7wN/l9vf3qBLbMCagFQ5ms4fIkGV2r+WcJpWNgp7UB4xjzREZz2BgdT3mn+qYlG1ZWWsORva30/uMyeTiCn4FSTjYAV68rYNUmcFWx4y3UULWiz/sYUem+Ctssi7ZTaenVXLznJc/y5Et1yNRiSROMVUvMRfYGMh5/KNFoEam+EHdvS397ncJz1lFLdrBVKYn3lldAl01SO39swCdliMWXGqbuhHq+mDe+qsfplYwF5KF1pg2UbhxINA9+wKBpk+odPULRMLUGF5ZrV9OSd9WTeBhliXOaQMczAeuXydIL0jnp2V6IC7CyMLNqtqBH16LXpgf3JR+G5fMOFUPUILxcFiFOgeCPTjmYqmWg/IXsLxxH3rhw+1",
+  "size": 891467,
+  "version": "51.0.0_20261124.4_102"
 }
