@@ -23,11 +23,11 @@ import zipfile
 import zlib
 from bisect import bisect_left, bisect_right
 from collections import OrderedDict
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from functools import lru_cache
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
-from base_plugin import BasePlugin, HookResult, HookStrategy, MenuItemData, MenuItemType, MethodHook
+from base_plugin import BasePlugin, HookFilter, HookResult, HookStrategy, MenuItemData, MenuItemType
 from ui.settings import Divider, Header, Input, Selector, Switch, Text
 from ui.alert import AlertDialogBuilder
 from ui.bulletin import BulletinHelper
@@ -39,26 +39,20 @@ from android.net import Uri
 from file_utils import FilesController, delete_file, ensure_dir_exists, get_cache_dir, get_plugins_dir
 from client_utils import (
     PLUGINS_QUEUE,
+    get_hook_account,
     get_last_fragment,
+    get_messages_controller,
     get_selected_account,
     get_user_config,
     run_on_queue,
     send_document,
+    send_message as _send_message,
     send_photo,
     send_video,
 )
-from hook_utils import find_class
-
-try:
-    from android_utils import run_on_ui_thread
-except ImportError:
-    def run_on_ui_thread(func, *args, **kwargs):
-        return func()
-
-try:
-    from client_utils import send_message as _send_message
-except ImportError:
-    _send_message = None
+from android_utils import run_on_ui_thread
+from hook_utils import find_class, java_class
+import plugin_settings as _settings_store
 
 try:
     from re import _constants as _re_constants, _parser as _re_parser
@@ -74,11 +68,11 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "51.0.0"
-__build__ = "51.0.0_20261124.4_102"
+__version__ = "52.0.0"
+__build__ = "52.0.0_20261125.1_103"
 __icon__ = "http_Prefixfy_by_fStikBot/3"
-__app_version__ = ">=12.10.6"
-__sdk_version__ = ">=1.4.5.0"
+__app_version__ = ">=13.1.1"
+__sdk_version__ = ">=1.4.6.4"
 
 
 REPO_URL = "https://github.com/sadatirnen/Prefixfy"
@@ -3837,14 +3831,83 @@ def _regex_adjacent_overlap(items, ignore_case: bool) -> bool:
     return False
 
 
+def _regex_flex_carriers(items, out: list) -> bool:
+    """Собирает тела гибких повторов внутри items. False - внутри есть гибкий повтор не из одного простого элемента
+    (группа, ветвление) или вложенный повтор: такой случай безопасным не признаётся."""
+    for op, av in _regex_seq(items):
+        if _regex_is_repeat(op):
+            body = _regex_simple_item(av[2])
+            if _regex_is_flexible(op, av):
+                if body is None:
+                    return False
+                out.append(body)
+            elif _regex_has_flex(av[2]):
+                return False
+        elif op == _re_constants.SUBPATTERN:
+            if _regex_has_flex(av[-1]) and not _regex_flex_carriers(av[-1], out):
+                return False
+        elif op == _re_constants.BRANCH:
+            if any(_regex_has_flex(branch) for branch in av[1]):
+                return False
+        elif op in (_re_constants.ASSERT, _re_constants.ASSERT_NOT):
+            if _regex_has_flex(av[1]):
+                return False
+    return True
+
+
+def _regex_flex_delimiters(items, out: list):
+    for op, av in _regex_seq(items):
+        if op in (_re_constants.LITERAL, _re_constants.NOT_LITERAL, _re_constants.ANY, _re_constants.IN):
+            out.append((op, av))
+        elif _regex_is_repeat(op) and not _regex_is_flexible(op, av) and av[0] > 0:
+            body = _regex_simple_item(av[2])
+            if body is not None:
+                out.append(body)
+        elif op == _re_constants.SUBPATTERN and not _regex_has_flex(av[-1]):
+            _regex_flex_delimiters(av[-1], out)
+
+
+def _regex_star_height_unsafe(items, ignore_case: bool) -> bool:
+    """52.0.0: повтор (max > 1), внутри которого есть ещё один гибкий повтор, допускается только в виде
+    «носитель + разделитель», где разделитель не может совпасть с символами носителя: (\\d+,)* - можно,
+    (?:.{0,40}a){0,40} - нельзя (точка съедает «a», перебор растёт экспоненциально и подвешивает отправку)."""
+    for op, av in _regex_seq(items):
+        if _regex_is_repeat(op):
+            if av[1] > 1 and _regex_has_flex(av[2]):
+                carriers: list = []
+                if not _regex_flex_carriers(av[2], carriers):
+                    return True
+                delimiters: list = []
+                _regex_flex_delimiters(av[2], delimiters)
+                if not any(
+                    not any(_regex_bodies_overlap(carrier, delimiter, ignore_case) for carrier in carriers)
+                    for delimiter in delimiters
+                ):
+                    return True
+            if _regex_star_height_unsafe(av[2], ignore_case):
+                return True
+        elif op == _re_constants.SUBPATTERN:
+            if _regex_star_height_unsafe(av[-1], ignore_case):
+                return True
+        elif op == _re_constants.BRANCH:
+            if any(_regex_star_height_unsafe(branch, ignore_case) for branch in av[1]):
+                return True
+        elif op in (_re_constants.ASSERT, _re_constants.ASSERT_NOT):
+            if _regex_star_height_unsafe(av[1], ignore_case):
+                return True
+    return False
+
+
 @lru_cache(maxsize=256)
 def regex_is_safe(pattern: str) -> bool:
     if _re_parser is None:
         return False
     try:
         tree = _re_parser.parse(pattern)
+        ignore_case = bool(getattr(getattr(tree, "state", None), "flags", 0) & re.IGNORECASE)
         return (
             _regex_count_unbounded(tree) <= MAX_REGEX_REPEATS
+            and not _regex_star_height_unsafe(tree, ignore_case)
             and not _regex_nested_repeat(tree)
             and not _regex_repeated_ambiguity(tree)
             and not _regex_has_backref(tree)
@@ -4106,6 +4169,8 @@ class _ScheduleParser:
         if token is None:
             raise _ScheduleSyntaxError("schedule_err_format")
         if self._op(token) == "not":
+            if depth > MAX_SCHEDULE_EXPR_DEPTH:
+                raise _ScheduleSyntaxError("schedule_err_deep")
             self.index += 1
             self._count()
             return ("not", self._unary(depth + 1))
@@ -4233,6 +4298,11 @@ def _schedule_dates_hit(dates, day) -> bool:
 def _parse_schedule_line(line: str, number: int):
     """Одна строка -> (правило, None) или (None, ошибка). Не бросает исключений."""
     try:
+        # 52.0.0: строка правила с bidi-подменой, невидимыми или управляющими символами отвергается. Иначе в
+        # редакторе и в чужом файле конфигурации она выглядела бы иначе, чем работает («Работа» могла
+        # оказаться другим именем), а редактор потом не давал сохранить расписание целиком.
+        if has_unsafe_text(line):
+            return None, (number, "schedule_err_format", "")
         left, separator, name = line.partition("=")
         name = name.strip()
         if not separator or not name or not left.strip():
@@ -4291,9 +4361,10 @@ def clean_schedule_text(raw) -> str:
 
 
 class _ScheduleEnv:
-    def __init__(self, minutes, anchor, chat):
+    def __init__(self, minutes, anchor, chat, previous=None):
         self.minutes = minutes
         self.anchor = anchor
+        self.previous = previous if previous is not None else anchor - timedelta(days=1)
         self._chat_source = chat
         self._chat = None
 
@@ -4307,9 +4378,30 @@ class _ScheduleEnv:
         return self._chat
 
 
+def _schedule_in_tail(node, minutes: int) -> bool:
+    """Есть ли в группе «и» интервал через полночь, который сейчас в своей части после полуночи.
+    Под «не» не заходим: исключённое время не задаёт день группы."""
+    op = node[0]
+    if op == "time":
+        return node[1] > node[2] and minutes < node[2]
+    if op in ("and", "or"):
+        return any(_schedule_in_tail(item, minutes) for item in node[1])
+    return False
+
+
 def _schedule_eval(node, env) -> bool:
     op = node[0]
     if op == "and":
+        # 52.0.0: день недели и дата берутся по дню начала интервала отдельно для каждой группы «и». Раньше день
+        # переносился на вчера для всего правила, если в нём был хоть один интервал через полночь, и
+        # «wed 01:00-03:00 or fri 23:00-02:00» в среду в 01:30 не срабатывало (среда проверялась как вторник).
+        if _schedule_in_tail(node, env.minutes) and env.anchor != env.previous:
+            saved = env.anchor
+            env.anchor = env.previous
+            try:
+                return all(_schedule_eval(item, env) for item in node[1])
+            finally:
+                env.anchor = saved
         return all(_schedule_eval(item, env) for item in node[1])
     if op == "or":
         return any(_schedule_eval(item, env) for item in node[1])
@@ -4347,8 +4439,9 @@ def schedule_match(rules, now, resolve=None, chat=None):
         for rule in rules:
             if rule.tier != tier:
                 continue
-            tail = any(minutes < finish for _begin, finish in rule.wrapped)
-            env = _ScheduleEnv(minutes, yesterday if tail else today, chat if rule.needs_chat else None)
+            # Одиночный интервал (без «и») тоже относится ко дню начала: так он работал и раньше.
+            single_tail = rule.expr[0] == "time" and _schedule_in_tail(rule.expr, minutes)
+            env = _ScheduleEnv(minutes, yesterday if single_tail else today, chat if rule.needs_chat else None, yesterday)
             try:
                 hit = _schedule_eval(rule.expr, env)
             except Exception:
@@ -4371,7 +4464,9 @@ def rename_schedule_target(raw, old_name: str, new_name: str) -> Tuple[str, bool
     for line in as_text(raw).splitlines():
         head, sep, tail = line.partition("=")
         if sep and tail.strip().casefold() == old:
-            flat_name = re.sub(r"[\r\n]+", " ", as_text(new_name))
+            # 52.0.0: splitlines() режет и по \x0b, \x0c, \x1c-\x1e, \x85, \u2028, \u2029; имя с таким символом
+            # дописало бы в расписание новое правило.
+            flat_name = " ".join(as_text(sanitize_text(as_text(new_name))).split())
             line, changed = f"{head}= {flat_name}", True
         lines.append(line)
     return "\n".join(lines), changed
@@ -5411,24 +5506,95 @@ class RuntimeSettings:
         )
 
 
+_MISSING_SETTING = object()
+
+
+def bulk_set_settings(plugin, values: Dict[str, Any]) -> bool:
+    """52.0.0: записать много настроек одной операцией.
+
+    plugin_settings.set_setting на каждый ключ заново сериализует и записывает с fsync общий файл настроек ВСЕХ
+    плагинов. Смена конфигурации (~70 ключей), импорт и сброс делали так десятки полных перезаписей подряд.
+    Здесь чтение, слияние и запись идут под замком хранилища SDK, чтобы параллельный set_setting не потерялся.
+    Если пакетная запись не прошла (проверка по прочитанным значениям), ключи пишутся по одному, как раньше."""
+    if not values:
+        return True
+    lock = getattr(_settings_store, "_lock", None)
+    try:
+        with lock if lock is not None else nullcontext():
+            merged = plugin.export_settings()
+            if not isinstance(merged, dict):
+                raise TypeError("settings export is not a dict")
+            merged.update(values)
+            plugin.import_settings(merged, reload_settings=False)
+        if all(plugin.get_setting(key, _MISSING_SETTING) == value for key, value in values.items()):
+            return True
+        plugin.log("Prefixfy: bulk settings write was not stored, writing keys one by one")
+    except Exception as exc:
+        plugin.log(f"Prefixfy: bulk settings write failed, writing keys one by one: {exc}")
+    ok = True
+    for key, value in values.items():
+        try:
+            plugin.set_setting(key, value)
+        except Exception as exc:
+            ok = False
+            plugin.log(f"Prefixfy: setting {key} was not stored: {exc}")
+    return ok
+
+
 class PrefixfySettings:
     DEFAULTS = {**SETTING_DEFAULTS, **TRANSIENT_SETTING_DEFAULTS, **OTA_SETTING_DEFAULTS}
 
     def __init__(self, plugin):
         self.plugin = plugin
+        self._batch_lock = threading.RLock()
+        self._batch_depth = 0
+        self._pending: Dict[str, Any] = {}
+        self._pending_reload = False
+
+    def _read(self, key, default):
+        with self._batch_lock:
+            if key in self._pending:
+                return self._pending[key]
+        return self.plugin.get_setting(key, default)
 
     def get(self, key, default=None):
         if default is None:
             default = self.DEFAULTS.get(key)
-        value = self.plugin.get_setting(key, default)
+        value = self._read(key, default)
         return sanitize_text(value) if isinstance(value, str) else value
 
     def set(self, key, value, reload_settings=False):
-        self.plugin.set_setting(key, value, reload_settings=reload_settings)
+        with self._batch_lock:
+            batching = self._batch_depth > 0
+            if batching:
+                self._pending[key] = value
+                self._pending_reload = self._pending_reload or bool(reload_settings)
+        if not batching:
+            self.plugin.set_setting(key, value, reload_settings=reload_settings)
         self.plugin.handle_setting_changed(key)
 
+    @contextmanager
+    def batch(self):
+        """52.0.0: все set() внутри пишутся на диск одной операцией при выходе из внешнего batch()."""
+        with self._batch_lock:
+            self._batch_depth += 1
+        try:
+            yield self
+        finally:
+            with self._batch_lock:
+                self._batch_depth -= 1
+                if self._batch_depth > 0:
+                    pending, reload_settings = {}, False
+                else:
+                    pending, reload_settings = self._pending, self._pending_reload
+                    self._pending, self._pending_reload = {}, False
+            if pending:
+                bulk_set_settings(self.plugin, pending)
+            if reload_settings:
+                self.plugin.reload_settings_ui()
+
     def raw(self) -> Dict[str, Any]:
-        values = {key: self.plugin.get_setting(key, default) for key, default in SETTING_DEFAULTS.items()}
+        values = {key: self._read(key, default) for key, default in SETTING_DEFAULTS.items()}
         return {key: sanitize_text(value) if isinstance(value, str) else value for key, value in values.items()}
 
     def snapshot(self) -> RuntimeSettings:
@@ -6430,16 +6596,6 @@ def _new_tg_entity(kind: str):
         return getattr(TLRPC, "TL_messageEntity" + kind)()
     except Exception as exc:
         errors.append(f"TLRPC: {exc}")
-    try:
-        cls = find_class(name)
-        if cls is not None:
-            try:
-                return cls.newInstance()
-            except Exception as exc:
-                errors.append(f"newInstance: {exc}")
-            return cls()
-    except Exception as exc:
-        errors.append(f"find_class: {exc}")
     raise RuntimeError(f"Telegram entity {kind} unavailable ({'; '.join(errors)})")
 
 
@@ -6904,7 +7060,9 @@ class RuntimeManager:
         with self._lock:
             self._suspend += 1
         try:
-            yield
+            # 52.0.0: правки внутри bulk() ещё и пишутся на диск одной операцией (PrefixfySettings.batch).
+            with self.plugin.settings.batch():
+                yield
         finally:
             with self._lock:
                 self._suspend = max(0, self._suspend - 1)
@@ -7678,7 +7836,8 @@ class ConfigTransfer:
 
     def _prepare_media_target(self, name, mime):
         name = re.sub(r"[\x00-\x1f\x7f]", "", os.path.basename(as_text(name).replace("\\", "/"))).strip()[:120]
-        name = name or "attached_media.bin"
+        # 52.0.0: имя из чужого файла или стороннего приложения - без bidi-подмены («gpj.exe» → «exe.jpg») и невидимых символов.
+        name = as_text(sanitize_text(name)).strip() or "attached_media.bin"
         mime = as_text(mime).strip().lower()
         if not self._MIME_RE.fullmatch(mime):
             mime = mimetypes.guess_type(name)[0] or ""
@@ -7973,7 +8132,9 @@ class ConfigTransfer:
         if self._file_handler_secret:
             return
         try:
-            self._file_handler_secret = FilesController.register(
+            # 52.0.0: через add_file_hook SDK сам снимет обработчик при выгрузке, даже если on_plugin_unload упадёт;
+            # раньше после такого сбоя расширение оставалось занятым до перезапуска приложения.
+            self._file_handler_secret = self.plugin.add_file_hook(
                 FilesController.FileInfo(ext="prefixfy", on_click=self._on_config_file_click)
             )
         except Exception as exc:
@@ -7986,7 +8147,7 @@ class ConfigTransfer:
             return
         for attempt in (1, 2):
             try:
-                FilesController.unregister("prefixfy", secret)
+                self.plugin.remove_file_hook("prefixfy", secret)
             except Exception as exc:
                 self.plugin.log(f"Prefixfy file handler unregistration failed (attempt {attempt}): {exc}")
                 continue
@@ -7999,20 +8160,44 @@ class ConfigTransfer:
             return
         if self._import_locked(fragment):
             return
-        data = None
-        handed_over = False
         try:
-            data = self.read_container(args.file.getAbsolutePath())
-            visible = self.visible_components()
-            detected = tuple(c for c in detect_components(data) if c in visible)
-            if not detected:
-                raise ConfigurationError("configuration has no valid components")
-            states = classify_components(data)
-            useful = tuple(c for c in detected if states.get(c) == IMPORT_USEFUL)
-            if not useful:
-                self._toast("config_import_nothing", fragment)
-                return
+            path = args.file.getAbsolutePath()
+        except Exception as exc:
+            self.plugin.log(f"Prefixfy file open failed: {exc}")
+            self._toast("config_import_file_failed", fragment)
+            return
+        # 52.0.0: контейнер может весить до сотен мегабайт (вложенное медиа). Раньше он распаковывался прямо в
+        # обработчике нажатия, то есть в главном потоке, и чужой файл из чата подвешивал приложение. Теперь чтение и
+        # проверка идут в фоне, а окно выбора частей показывается уже в главном потоке.
 
+        def work():
+            data = None
+            handed_over = False
+            try:
+                data = self.read_container(path)
+                visible = self.visible_components()
+                detected = tuple(c for c in detect_components(data) if c in visible)
+                if not detected:
+                    raise ConfigurationError("configuration has no valid components")
+                states = classify_components(data)
+                useful = tuple(c for c in detected if states.get(c) == IMPORT_USEFUL)
+                if not useful:
+                    self._toast("config_import_nothing", fragment)
+                    return
+                handed_over = True
+                run_on_ui_thread(lambda: self._show_opened_parts(data, fragment, visible, states, useful))
+            except Exception as exc:
+                self.plugin.log(f"Prefixfy file open failed: {exc}")
+                self._toast("config_import_file_failed", fragment)
+            finally:
+                if data is not None and not handed_over:
+                    self.discard_container_media(data)
+
+        threading.Thread(target=work, name="PrefixfyOpenConfig", daemon=True).start()
+
+    def _show_opened_parts(self, data, fragment, visible, states, useful):
+        shown = False
+        try:
             def row_label(c):
                 if states.get(c) == IMPORT_DEFAULT:
                     return self._component_label(c) + " — " + self._tr("config_part_state_default")
@@ -8020,7 +8205,9 @@ class ConfigTransfer:
                     return self._component_label(c) + " — " + self._tr("config_part_state_absent")
                 return self._component_label(c)
 
-            rows = [(row_label(c), c in useful, c in useful) for c in visible]
+            # 52.0.0: медиа из чужого файла потом уходит вместе с каждым сообщением, поэтому эта часть
+            # больше не отмечается заранее: пользователь включает её сам.
+            rows = [(row_label(c), c in useful and c != "media", c in useful) for c in visible]
 
             def confirm(selected, as_new):
                 chosen = tuple(visible[i] for i in selected if visible[i] in useful)
@@ -8033,20 +8220,19 @@ class ConfigTransfer:
             def on_dismiss_without_import():
                 self.discard_container_media(data)
 
-            shown = self.plugin.show_checklist(
+            shown = bool(self.plugin.show_checklist(
                 self._tr("config_import_found_title"), rows, confirm,
                 message=self._tr("config_import_found_contains"),
                 extra=(self._tr("config_import_as_new"), False),
                 positive=self._tr("config_import"), fragment=fragment,
                 on_cancel=on_dismiss_without_import,
-            )
-            handed_over = bool(shown)
+            ))
         except Exception as exc:
             self.plugin.log(f"Prefixfy file open failed: {exc}")
             if fragment:
                 self._toast("config_import_file_failed", fragment)
         finally:
-            if data is not None and not handed_over:
+            if not shown:
                 self.discard_container_media(data)
 
     IMPORT_LINKS_SHOWN = 8
@@ -8068,13 +8254,6 @@ class ConfigTransfer:
         builder = AlertDialogBuilder(activity)
         builder.set_title(self._tr("config_import_links_title"))
         builder.set_message(self._tr("config_import_links_message") + "\n\n" + "\n".join(lines))
-        set_cancelable = getattr(builder, "set_cancelable", None)
-        if set_cancelable is not None:
-            try:
-                set_cancelable(False)
-            except Exception as exc:
-                self.plugin.log(f"Prefixfy: set_cancelable failed: {exc}")
-
         def accepted(bld, which):
             bld.dismiss()
             self._import_opened_data(data, fragment, components, as_new, links_confirmed=True)
@@ -8086,7 +8265,7 @@ class ConfigTransfer:
 
         builder.set_positive_button(self._tr("config_import"), accepted)
         builder.set_negative_button(self._tr("action_cancel"), declined)
-        return bool(self.plugin._show_builder(builder))
+        return bool(self.plugin._show_builder(builder, cancelable=False))
 
     def _import_opened_data(self, data, fragment, components, as_new, links_confirmed=False):
         if self._import_locked(fragment):
@@ -8253,12 +8432,6 @@ class ConfigTransfer:
         builder.set_title(self._tr("config_import_take_name_title"))
         shown_imported, shown_current = self._shorten(imported, 40), self._shorten(current, 40)
         builder.set_message(self._tr("config_import_take_name", name=shown_imported, current=shown_current))
-        set_cancelable = getattr(builder, "set_cancelable", None)
-        if set_cancelable is not None:
-            try:
-                set_cancelable(False)  # без ответа импорт не начнётся, поэтому окно закрывается только кнопками
-            except Exception as exc:
-                self.plugin.log(f"Prefixfy: set_cancelable failed: {exc}")
 
         def answered(take_name):
             def handler(bld, which):
@@ -8270,7 +8443,8 @@ class ConfigTransfer:
             self._tr("config_import_take_name_yes", name=self._shorten(imported, 16)), answered(True))
         builder.set_negative_button(
             self._tr("config_import_take_name_no", current=self._shorten(current, 16)), answered(False))
-        return bool(self.plugin._show_builder(builder))
+        # без ответа импорт не начнётся, поэтому окно закрывается только кнопками
+        return bool(self.plugin._show_builder(builder, cancelable=False))
 
     def _apply_import_rename(self, plan, fragment=None):
         uid, _planned_id, imported, _current = plan
@@ -8771,12 +8945,16 @@ class ConfigTransfer:
         if uri is None:
             return True
 
-        if request_code == self.MEDIA_IMPORT_REQUEST_CODE:
+        # 52.0.0: onActivityResult приходит в главном потоке, а копирование и распаковка файла (до сотен мегабайт)
+        # раньше шли прямо в нём и подвешивали приложение. Тяжёлая часть теперь в фоне, окна - снова в главном потоке.
+        _, activity = self._activity()
+        resolver = activity.getContentResolver() if activity is not None else None
+
+        def media_import():
             try:
-                _, activity = self._activity()
                 mime = ""
                 try:
-                    mime = as_text(activity.getContentResolver().getType(uri))
+                    mime = as_text(resolver.getType(uri)) if resolver is not None else ""
                 except Exception:
                     pass
                 self.store_media_uri(uri, self._uri_display_name(uri) or "attached_media.bin", mime)
@@ -8784,8 +8962,9 @@ class ConfigTransfer:
             except Exception as exc:
                 self.plugin.log(f"Media import failed: {exc}")
                 self._toast("media_import_failed", fragment)
-            self.plugin.reload_settings_ui()
-        elif request_code == self.CONFIG_EXPORT_REQUEST_CODE:
+            run_on_ui_thread(self.plugin.reload_settings_ui)
+
+        def config_export():
             path = None
             try:
                 path = self.build_config_file(components, temp_dir("exports"), config_id=export_id, name=export_name)
@@ -8797,7 +8976,8 @@ class ConfigTransfer:
             finally:
                 if path and os.path.isfile(path):
                     delete_file(path)
-        else:
+
+        def config_import():
             temp_path = None
             try:
                 temp_path = self._copy_uri_to_temp_file(uri)
@@ -8805,17 +8985,29 @@ class ConfigTransfer:
             except Exception as exc:
                 self.plugin.log(f"Configuration read failed: {exc}")
                 self._toast("config_import_invalid" if isinstance(exc, ConfigurationError) else "config_import_failed", fragment)
-                return True
+                return
             finally:
                 if temp_path and os.path.isfile(temp_path):
                     delete_file(temp_path)
-            try:
-                # 49.0.0: тот же путь, что и при открытии файла из чата: с выбором аккаунта для «как новую».
-                self._import_opened_data(parsed, fragment, components, as_new)
-            except Exception as exc:
-                self.discard_container_media(parsed)
-                self.plugin.log(f"Configuration import dialog failed: {exc}")
-                self._toast("config_import_failed", fragment)
+
+            def show():
+                try:
+                    # 49.0.0: тот же путь, что и при открытии файла из чата: с выбором аккаунта для «как новую».
+                    self._import_opened_data(parsed, fragment, components, as_new)
+                except Exception as exc:
+                    self.discard_container_media(parsed)
+                    self.plugin.log(f"Configuration import dialog failed: {exc}")
+                    self._toast("config_import_failed", fragment)
+
+            run_on_ui_thread(show)
+
+        if request_code == self.MEDIA_IMPORT_REQUEST_CODE:
+            work = media_import
+        elif request_code == self.CONFIG_EXPORT_REQUEST_CODE:
+            work = config_export
+        else:
+            work = config_import
+        threading.Thread(target=work, name="PrefixfyTransfer", daemon=True).start()
         return True
 
 
@@ -11107,8 +11299,24 @@ def _slot_verified_bytes(meta: Dict[str, Any], role: str) -> bytes:
         blob = handle.read(MANIFEST_MAX_FILE_SIZE + 1)
     if len(blob) > MANIFEST_MAX_FILE_SIZE:
         raise ValueError("slot file is too large")
-    if not hmac.compare_digest(hashlib.sha256(blob).hexdigest(), as_text(meta.get("sha256"))):
+    digest = hashlib.sha256(blob).hexdigest()
+    if not hmac.compare_digest(digest, as_text(meta.get("sha256"))):
         raise ValueError("slot file is damaged")
+    if role == SLOT_STAGED:
+        # 52.0.0: описание раздела лежит рядом с файлом и подписи не имеет. Раньше staged-раздел ставился, если
+        # файл совпадал с хешем из этого же описания, то есть подложенные файл + slot.json становились активной
+        # сборкой по кнопке «Перезагрузить» или при самолечении. Теперь в разделе хранится подписанный манифест,
+        # и файл обязан совпасть с его хешем, версией и серией.
+        signed = meta.get("manifest")
+        if not isinstance(signed, dict):
+            raise ValueError("staged slot has no signed manifest")
+        info = verify_manifest(json.dumps(signed, ensure_ascii=True).encode("utf-8"))
+        if not hmac.compare_digest(digest, info["sha256"]):
+            raise ValueError("staged slot does not match the signed manifest")
+        if info["sha512"] and not hmac.compare_digest(hashlib.sha512(blob).hexdigest(), info["sha512"]):
+            raise ValueError("staged slot does not match the signed manifest")
+        if tuple(info["version"]) != parse_version(meta.get("version")) or info["serial"] != meta.get("serial"):
+            raise ValueError("staged slot version differs from the signed manifest")
     source = blob.decode("utf-8")
     if re.search(r'^__id__\s*=\s*"' + re.escape(__id__) + r'"\s*$', source, re.MULTILINE) is None:
         raise ValueError("slot holds another plugin")
@@ -11215,31 +11423,64 @@ def _ota_rollback(reason: str, log) -> bool:
     return True
 
 
-def _host_set_plugin_enabled(enabled: bool, log) -> bool:
+HOST_TOGGLE_TIMEOUT = 20.0
+
+
+def _on_plugins_queue_thread() -> bool:
+    try:
+        from java.lang import Thread
+        from org.telegram.messenger import Utilities
+        queue = Utilities.pluginsQueue
+        handler = queue.getHandler() if queue is not None else None
+        return handler is not None and handler.getLooper().getThread() == Thread.currentThread()
+    except Exception:
+        return False
+
+
+def _host_set_plugin_enabled(enabled: bool, log, wait: bool = True) -> bool:
     """Единственное место, привязанное к API хоста: включить или выключить этот плагин.
 
-    Имена класса и метода могут отличаться между сборками клиента, поэтому всё защищено.
-    Если вызов недоступен, OTA сообщит пользователю, что плагин нужно перезапустить вручную.
+    52.0.0: PluginsController.setPluginEnabled(id, enabled, Callback<String>) выполняется асинхронно в pluginsQueue и
+    сообщает результат в callback (null или текст ошибки). Раньше результат не ждали: выключение и включение
+    разделяла пауза в 1.5 с, а ошибка включения новой сборки терялась. Теперь ждём ответа (кроме вызова из самой
+    pluginsQueue - там ожидание заблокировало бы очередь) и возвращаем False при ошибке.
     """
     try:
-        controller = find_class("com.exteragram.messenger.plugins.PluginsController").getInstance()
+        from java import dynamic_proxy
+        from org.telegram.messenger import Utilities
+        from com.exteragram.messenger.plugins import PluginsController
+        controller = PluginsController.getInstance()
     except Exception as exc:
         log(f"Prefixfy OTA: plugin controller not available: {exc}")
         return False
-    for args in ((__id__, bool(enabled), None), (__id__, bool(enabled))):
-        try:
-            controller.setPluginEnabled(*args)
-            return True
-        except Exception:
-            continue
-    log("Prefixfy OTA: setPluginEnabled call failed")
-    return False
+    done = threading.Event()
+    outcome: Dict[str, Any] = {"error": None}
+
+    class _Done(dynamic_proxy(Utilities.Callback)):
+        def run(self, error):
+            outcome["error"] = as_text(error) if error is not None else None
+            done.set()
+
+    try:
+        controller.setPluginEnabled(__id__, bool(enabled), _Done())
+    except Exception as exc:
+        log(f"Prefixfy OTA: setPluginEnabled call failed: {exc}")
+        return False
+    if not wait or _on_plugins_queue_thread():
+        return True
+    if not done.wait(HOST_TOGGLE_TIMEOUT):
+        log(f"Prefixfy OTA: no answer to setPluginEnabled({bool(enabled)}) in {HOST_TOGGLE_TIMEOUT:.0f} s")
+        return True
+    if outcome["error"]:
+        log(f"Prefixfy OTA: setPluginEnabled({bool(enabled)}) failed: {outcome['error'][:300]}")
+        return False
+    return True
 
 
 def _host_restart_plugin(log) -> bool:
     if not _host_set_plugin_enabled(False, log):
         return False
-    time.sleep(1.5)
+    time.sleep(0.3)
     return _host_set_plugin_enabled(True, log)
 
 
@@ -11416,11 +11657,8 @@ def _wipe_settings(plugin, opt_out: bool):
     # Сброс без отказа тоже стирает все настройки и служебные ключи: иначе от конфигураций, расписания,
     # режима аккаунтов и счётчиков остались бы «хвосты». От отказа он отличается только тем, что плагин не засыпает.
     values: Dict[str, Any] = {**SETTING_DEFAULTS, **TRANSIENT_SETTING_DEFAULTS, **OTA_SETTING_DEFAULTS, **_WIPE_INTERNAL_KEYS}
-    for key, value in values.items():
-        try:
-            plugin.set_setting(key, value)
-        except Exception as exc:
-            plugin.log(f"Prefixfy wipe: setting {key} was not reset: {exc}")
+    bulk_set_settings(plugin, values)
+    plugin._counter_state = None  # 52.0.0: счётчики в памяти не должны пережить сброс и записаться обратно
     # Мастер обязан начаться заново: если запись этапа не прошла, повторяем и проверяем результат.
     for _attempt in range(3):
         try:
@@ -11891,7 +12129,8 @@ class RemoteControl:
                 if isinstance(exc, urllib.error.HTTPError) and exc.code == 404:
                     exc = urllib.error.URLError(f"mirror has no {name}")
                 last = exc
-        assert last is not None
+        if last is None:
+            raise ConnectionError(f"{name} download was cancelled")
         raise last
 
     def _touch(self, path: str):
@@ -12596,6 +12835,7 @@ class RemoteControl:
         _slot_store(data, {
             "role": SLOT_STAGED, "version": format_version(state["version"]), "serial": state["serial"],
             "sha256": hashlib.sha256(data).hexdigest(), "size": len(data), "heal": bool(heal),
+            "manifest": state["signed"],
         })
 
     def staged_ready(self) -> Optional[Dict[str, Any]]:
@@ -12672,8 +12912,17 @@ class RemoteControl:
     def _ota_apply(self):
         """Перезапуск плагина и наблюдение: если новая версия не загрузилась, прошлая возвращается автоматически."""
         log = self.plugin.log
-        if not _host_restart_plugin(log):
+        if not _host_set_plugin_enabled(False, log):
             self._ota_report(("ota_restart_manual", {"version": self._ota_done}))
+            return
+        time.sleep(0.3)
+        if not _host_set_plugin_enabled(True, log):
+            # 52.0.0: хост сообщил, что новая сборка не включилась. Раньше это выяснялось только по таймауту
+            # OTA_LOAD_TIMEOUT; теперь откат сразу.
+            if _ota_rollback("new build failed to start", log):
+                _host_restart_plugin(log)
+            else:
+                self._ota_report(("ota_restart_manual", {"version": self._ota_done}))
             return
         deadline = time.monotonic() + OTA_LOAD_TIMEOUT
         while time.monotonic() < deadline:
@@ -13008,17 +13257,12 @@ _ARTICLE_EMOJI_IMAGE_SIZE = 20
 def _iv_new(name: str):
     """Новый экземпляр узла TL_iv$<name> (textPlain, textConcat, textImage...)."""
     full = _IV_PACKAGE + name
+    # 52.0.0: find_class - тот же jclass, повторная попытка через него только писала в журнал второй traceback.
     try:
         from java import jclass
         return jclass(full)()
-    except Exception:
-        cls = find_class(full)
-        if cls is None:
-            raise RuntimeError(f"{full} unavailable")
-        try:
-            return cls.newInstance()
-        except Exception:
-            return cls()
+    except Exception as exc:
+        raise RuntimeError(f"{full} unavailable: {exc}") from None
 
 
 def _article_emoji_kinds() -> list:
@@ -13260,7 +13504,7 @@ class DismissGuard:
     """50.2.0: замечает, что диалог закрыт не его кнопкой, а «назад» или касанием за окном.
 
     Кнопки диалога вызывают mark() до dismiss(); если окно закрылось, а mark() не звали, вызывается on_unanswered.
-    Срабатывает не больше одного раза. Слушатель ставится на сам диалог (OnDismissListener), поэтому событие приходит
+    Срабатывает не больше одного раза. Слушатель закрытия ставится через builder до show(), поэтому событие приходит
     при любом закрытии, а флаг отличает ответ пользователя от отмены.
     """
 
@@ -13284,48 +13528,34 @@ class DismissGuard:
             log(f"Prefixfy: dialog dismissal handler failed: {exc}")
 
     def attach(self, builder, log) -> bool:
-        """Ставит слушатель закрытия на диалог builder. False, если ни один способ не подошёл."""
-        guard = self
+        """Ставит слушатель закрытия на builder. 52.0.0: вызывается ДО show() - AlertDialog.Builder передаёт
+        слушатель диалогу при create(), а SDK сам оборачивает Python-функцию в OnDismissListener."""
         try:
-            from java import dynamic_proxy
-            from android.content import DialogInterface
-
-            class _Listener(dynamic_proxy(DialogInterface.OnDismissListener)):
-                def onDismiss(self, dialog):
-                    run_on_ui_thread(lambda: guard._dismissed(log))
-
-            listener = _Listener()
+            builder.set_on_dismiss_listener(lambda _bld: run_on_ui_thread(lambda: self._dismissed(log)))
+            return True
         except Exception as exc:
             log(f"Prefixfy: dismiss listener unavailable: {exc}")
             return False
-        for name in ("set_on_dismiss_listener", "setOnDismissListener"):
-            setter = getattr(builder, name, None)
-            if callable(setter):
+
+
+def _show_info_unbound(text: str, log):
+    """Плашка в главном потоке без привязки к жизненному циклу плагина (для сообщений после самовыключения)."""
+    try:
+        from java import dynamic_proxy
+        from java.lang import Runnable as JavaRunnable
+        from org.telegram.messenger import AndroidUtilities, R as TelegramR
+
+        class _Show(dynamic_proxy(JavaRunnable)):
+            def run(self):
                 try:
-                    setter(listener)
-                    return True
-                except Exception:
-                    continue
-        dialog = None
-        for name in ("get_dialog", "getDialog"):
-            getter = getattr(builder, name, None)
-            if callable(getter):
-                try:
-                    dialog = getter()
-                except Exception:
-                    dialog = None
-                if dialog is not None:
-                    break
-        if dialog is None:
-            dialog = getattr(builder, "dialog", None) or getattr(builder, "_dialog", None)
-        setter = getattr(dialog, "setOnDismissListener", None) if dialog is not None else None
-        if callable(setter):
-            try:
-                setter(listener)
-                return True
-            except Exception as exc:
-                log(f"Prefixfy: setOnDismissListener failed: {exc}")
-        return False
+                    factory, _ = BulletinHelper._get_factory_and_provider(None)
+                    factory.createSimpleBulletin(TelegramR.raw.info, text).show()
+                except Exception as exc:
+                    log(f"Prefixfy notice failed: {exc}")
+
+        AndroidUtilities.runOnUIThread(_Show())
+    except Exception as exc:
+        log(f"Prefixfy notice failed: {exc}")
 
 
 class PrefixfyPlugin(BasePlugin):
@@ -13534,6 +13764,10 @@ class PrefixfyPlugin(BasePlugin):
         self.log(f"Prefixfy {__build__} loaded ({self.localization.language()})")
 
     def on_plugin_unload(self):
+        try:
+            self._flush_counters()
+        except Exception as exc:
+            self.log(f"Prefixfy final counter save failed: {exc}")
         remote = getattr(self, "remote", None)
         if remote is not None:
             remote.stop()
@@ -13551,7 +13785,7 @@ class PrefixfyPlugin(BasePlugin):
             transfer.unregister_file_handler()
         for hook in getattr(self, "_prefixfy_hooks", []):
             try:
-                hook.unhook()
+                self.unhook_method(hook)
             except Exception:
                 pass
         self._prefixfy_hooks = []
@@ -13570,11 +13804,10 @@ class PrefixfyPlugin(BasePlugin):
                 self._edit_seen = {}
 
     def _reset_transient_settings(self):
-        for key, default in TRANSIENT_SETTING_DEFAULTS.items():
-            try:
-                self.set_setting(key, default)
-            except Exception as exc:
-                self.log(f"Prefixfy transient setting reset failed ({key}): {exc}")
+        # 52.0.0: пишем только то, что отличается, и одной операцией; обычно запись не нужна вовсе.
+        changed = {key: default for key, default in TRANSIENT_SETTING_DEFAULTS.items()
+                   if self.get_setting(key, default) != default}
+        bulk_set_settings(self, changed)
 
     def _seal_vault(self):
         """Один раз запечатывает всё, что осталось открытым текстом, и только после этого включает строгий режим."""
@@ -13595,79 +13828,51 @@ class PrefixfyPlugin(BasePlugin):
 
     @staticmethod
     def _hookable_class(name: str):
-        try:
-            cls = find_class(name)
-        except Exception:
-            cls = None
-        if cls is not None:
-            literal = getattr(cls, "class_", None)
-            if literal is not None and hasattr(literal, "getName"):
-                return literal
-            if hasattr(cls, "getName") and hasattr(cls, "getDeclaredMethods"):
-                return cls
-        try:
-            from java import jclass
-            class_type = jclass("java.lang.Class")
-            try:
-                return class_type.forName(name)
-            except Exception:
-                loader = jclass("org.telegram.messenger.ApplicationLoader").applicationContext.getClassLoader()
-                return class_type.forName(name, True, loader)
-        except Exception:
-            return None
+        """52.0.0: java.lang.Class по имени через hook_utils.java_class (загрузчик приложения, вложенные классы
+        через $). Раньше здесь перебирались find_class, .class_ и Class.forName по очереди."""
+        return java_class(name)
 
     def _install_activity_result_hook(self):
-        plugin = self
-
-        class ActivityResultHook(MethodHook):
-            def after_hooked_method(self, param):
-                try:
-                    plugin.transfer.handle_activity_result(param.args[0], param.args[1], param.args[2])
-                except Exception as exc:
-                    plugin.log(f"Activity result handling failed: {exc}")
+        def after(param):
+            self.transfer.handle_activity_result(param.args[0], param.args[1], param.args[2])
 
         launch_class = self._hookable_class("org.telegram.ui.LaunchActivity")
         if launch_class is None:
             self.log("LaunchActivity not found: file pickers are unavailable")
             return
-        try:
-            hooks = self.hook_all_methods(launch_class, "onActivityResult", ActivityResultHook())
-        except Exception as exc:
-            self.log(f"LaunchActivity hook failed, file pickers are unavailable: {exc}")
+        # 52.0.0: before/after-колбэки SDK (BaseHook) сами ловят и пишут в лог исключения обработчика.
+        hooks = self.hook_all_methods(launch_class, "onActivityResult", after=after)
+        if not hooks:
+            self.log("LaunchActivity hook failed, file pickers are unavailable")
             return
-        if hooks:
-            self._prefixfy_hooks.extend(hooks)
+        self._prefixfy_hooks.extend(hooks)
 
     def _install_edit_message_hook(self):
-        plugin = self
+        edit_class = self._hookable_class("org.telegram.tgnet.TLRPC$TL_messages_editMessage")
+        if edit_class is None:
+            self.log("Prefixfy edit: TL_messages_editMessage not found, message editing is unavailable")
+            return
 
-        edit_class = find_class("org.telegram.tgnet.TLRPC$TL_messages_editMessage")
-
-        def is_edit_request(request) -> bool:
-            if edit_class is not None:
-                try:
-                    return bool(edit_class.isInstance(request))
-                except Exception:
-                    pass
-            return plugin._class_name(request).endswith("TL_messages_editMessage")
-
-        class EditRequestHook(MethodHook):
-            def before_hooked_method(self, param):
-                try:
-                    if len(param.args) and param.args[0] is not None and is_edit_request(param.args[0]):
-                        plugin._on_edit_request(param, param.args[0])
-                except Exception as exc:
-                    plugin.log(f"Prefixfy edit hook failed: {exc}")
+        def before(param):
+            request = param.args[0] if len(param.args) else None
+            if request is not None and edit_class.isInstance(request):
+                self._on_edit_request(param, request)
 
         manager_class = self._hookable_class("org.telegram.tgnet.ConnectionsManager")
         if manager_class is None:
             self.log("Prefixfy edit: ConnectionsManager not found, message editing is unavailable")
             return
-        try:
-            hooks = self.hook_all_methods(manager_class, "sendRequest", EditRequestHook())
-            hooks = list(hooks) if hooks else []
-        except Exception as exc:
-            self.log(f"Prefixfy edit: hooking sendRequest failed: {exc}")
+        # 52.0.0: sendRequest вызывается на каждый запрос клиента. Фильтр по типу запроса работает в Java,
+        # поэтому Python вызывается только для messages.editMessage, а не для всего сетевого трафика.
+        hooks = self.hook_all_methods(
+            manager_class, "sendRequest", before=before,
+            before_filters=[HookFilter.ArgumentIsInstanceOf(0, edit_class)],
+        )
+        if not hooks:
+            self.log("Prefixfy edit: Java-side hook filter unavailable, falling back to the Python check")
+            hooks = self.hook_all_methods(manager_class, "sendRequest", before=before)
+        if not hooks:
+            self.log("Prefixfy edit: hooking sendRequest failed, message editing is unavailable")
             return
         self._prefixfy_hooks.extend(hooks)
 
@@ -13685,6 +13890,12 @@ class PrefixfyPlugin(BasePlugin):
     def _toast(self, key, fragment=None, **kwargs):
         # 49.0.0: уведомления часто вызываются из фоновых потоков (проверка, импорт, OTA); UI трогаем только из главного.
         text = self._tr(key, **kwargs)
+        stop = self.stop_event
+        if stop is not None and stop.is_set():
+            # 52.0.0: после выгрузки (OTA и сброс сами выключают плагин) run_on_ui_thread SDK отменяет задачи
+            # плагина, и BulletinHelper тоже: сообщение вроде «перезапустите плагин вручную» просто терялось.
+            _show_info_unbound(text, self.log)
+            return
 
         def show():
             try:
@@ -13733,11 +13944,20 @@ class PrefixfyPlugin(BasePlugin):
                 return activity
         return None
 
-    def _show_builder(self, builder, guard: Optional[DismissGuard] = None) -> bool:
+    def _show_builder(self, builder, guard: Optional[DismissGuard] = None, *, red=(), cancelable: Optional[bool] = None) -> bool:
+        """52.0.0: всё, что AlertDialogBuilder применяет при создании (красные кнопки, слушатель закрытия), ставится
+        до show(); то, что SDK меняет только у готового диалога (cancelable), - после."""
         try:
-            builder.show()
+            for kind in red:
+                builder.make_button_red(self._BUTTON_CODES[kind])
             if guard is not None and not guard.attach(builder, self.log):
                 self.log("Prefixfy: closing by back/outside tap cannot be detected for this dialog")
+            builder.show()
+            if builder.get_dialog() is None:
+                return False
+            if cancelable is not None:
+                builder.set_cancelable(bool(cancelable))
+                builder.set_canceled_on_touch_outside(bool(cancelable))
             return True
         except Exception as exc:
             self.log(f"Prefixfy dialog show failed: {exc}")
@@ -13765,32 +13985,19 @@ class PrefixfyPlugin(BasePlugin):
 
         builder = AlertDialogBuilder(activity)
         builder.set_title(title)
-        neutral_ready = False
+        guard = DismissGuard(on_cancel)
         if neutral:
-            set_neutral = getattr(builder, "set_neutral_button", None)
-            if set_neutral is None:
-                self.log("Prefixfy: set_neutral_button is not supported by this SDK, using the empty-field fallback")
-            else:
-                try:
-                    set_neutral(neutral[0], lambda bld, which: neutral[1](editor) is not False and bld.dismiss())
-                    neutral_ready = True
-                except Exception as exc:
-                    self.log(f"Prefixfy: neutral button failed ({exc}), using the empty-field fallback")
-        if neutral and not neutral_ready:
-            message = f"{message}\n\n{self._tr('editor_empty_means_default')}" if message else self._tr("editor_empty_means_default")
+            def reset(bld, which):
+                if neutral[1](editor) is not False:
+                    guard.mark()
+                    bld.dismiss()
+            builder.set_neutral_button(neutral[0], reset)
         if message:
             builder.set_message(message)
         builder.set_view(editor)
 
-        guard = DismissGuard(on_cancel)
-
         def ok(bld, which):
             value = editor.getText().toString()
-            if neutral and not neutral_ready and not value.strip():
-                if neutral[1](editor) is not False:
-                    guard.mark()
-                    bld.dismiss()
-                return
             if has_unsafe_text(value):
                 editor.setError(self._tr("unsafe_text_rejected"))
                 self._toast("unsafe_text_rejected", fragment)
@@ -13860,9 +14067,7 @@ class PrefixfyPlugin(BasePlugin):
 
         builder.set_positive_button(f"{label} ({cooldown})" if cooldown else label, ok)
         builder.set_negative_button(self._tr("action_cancel"), cancel)
-        shown = self._show_builder(builder, guard if on_cancel else None)
-        if shown and red:
-            self._paint_button_red(builder, "positive")
+        shown = self._show_builder(builder, guard if on_cancel else None, red=("positive",) if red else ())
         if shown and cooldown:
             self._run_wipe_countdown(builder, label, shown_at)
         return shown
@@ -13892,8 +14097,7 @@ class PrefixfyPlugin(BasePlugin):
             return dialog_id
         if peer is not None and self._class_name(peer).endswith("InputPeerSelf"):
             try:
-                slot = int(account) if account is not None else int(get_selected_account())
-                own = find_class("org.telegram.messenger.UserConfig").getInstance(slot).getClientUserId()
+                own = get_user_config(None if account is None else int(account)).getClientUserId()
                 found = java_int(own)
                 if found:
                     return found
@@ -14029,7 +14233,9 @@ class PrefixfyPlugin(BasePlugin):
         mapping = dict(self._chat_bindings())
         chats = section.get("chats")
         for dialog, name in (list(chats.items())[:MAX_IMPORTED_CHAT_BINDINGS] if isinstance(chats, dict) else ()):
-            if not _CHAT_BIND_KEY_RE.fullmatch(str(dialog)):
+            # 52.0.0: привязки вида «uid:чат» относятся к аккаунтам конкретного устройства, экспорт их не пишет;
+            # из чужого файла они не принимаются.
+            if not _CHAT_BIND_KEY_RE.fullmatch(str(dialog)) or ":" in str(dialog):
                 continue
             name = as_text(name).strip()
             target = new_name if new_name and source and name.casefold() == source.casefold() else name
@@ -14075,7 +14281,7 @@ class PrefixfyPlugin(BasePlugin):
         if slot is None:
             return ""
         try:
-            user = find_class("org.telegram.messenger.UserConfig").getInstance(int(slot)).getCurrentUser()
+            user = get_user_config(int(slot)).getCurrentUser()
             full = f"{as_text(getattr(user, 'first_name', None))} {as_text(getattr(user, 'last_name', None))}".strip()
             return full or as_text(getattr(user, "username", None))
         except Exception:
@@ -15375,18 +15581,8 @@ class PrefixfyPlugin(BasePlugin):
                 run_on_ui_thread(self._show_wipe_dialog)
             run_on_queue(later, PLUGINS_QUEUE, 250)
 
-        wipe_kind = None
-        for setter, kind in (("set_neutral_button", "neutral"), ("set_negative_button", "negative")):
-            method = getattr(builder, setter, None)
-            if callable(method):
-                try:
-                    method(self._tr("wipe_row"), open_wipe)
-                    wipe_kind = kind
-                    break
-                except Exception as exc:
-                    self.log(f"Prefixfy about dialog: {setter} failed: {exc}")
-        if self._show_builder(builder) and wipe_kind:
-            self._paint_button_red(builder, wipe_kind)
+        builder.set_neutral_button(self._tr("wipe_row"), open_wipe)
+        self._show_builder(builder, red=("neutral",))
 
     def _settings_about(self) -> List[Any]:
         return [
@@ -15442,79 +15638,15 @@ class PrefixfyPlugin(BasePlugin):
 
         builder.set_positive_button(f"{label} ({WIPE_COOLDOWN_SEC})", confirm)
         builder.set_negative_button(tr("action_cancel"), lambda bld, which: bld.dismiss())
-        if self._show_builder(builder):
-            self._paint_button_red(builder, "positive")
+        if self._show_builder(builder, red=("positive",)):
             self._run_wipe_countdown(builder, label, shown_at)
 
-    _BUTTON_CODES = {"positive": ("BUTTON_POSITIVE", -1), "negative": ("BUTTON_NEGATIVE", -2), "neutral": ("BUTTON_NEUTRAL", -3)}
+    _BUTTON_CODES = {
+        "positive": AlertDialogBuilder.BUTTON_POSITIVE,
+        "negative": AlertDialogBuilder.BUTTON_NEGATIVE,
+        "neutral": AlertDialogBuilder.BUTTON_NEUTRAL,
+    }
     _RED = 0xFFE53935 - (1 << 32)
-
-    @staticmethod
-    def _dialog_button(builder, kind: str = "positive"):
-        """Кнопка диалога; зависит от версии SDK, поэтому каждый путь защищён."""
-        const_name, android_code = PrefixfyPlugin._BUTTON_CODES[kind]
-        which_values = [getattr(AlertDialogBuilder, const_name, None), android_code]
-        for name in ("get_button", "getButton"):
-            getter = getattr(builder, name, None)
-            if callable(getter):
-                for which in which_values:
-                    if which is None:
-                        continue
-                    try:
-                        button = getter(which)
-                        if button is not None:
-                            return button
-                    except Exception:
-                        continue
-        dialog = None
-        for name in ("get_dialog", "getDialog"):
-            getter = getattr(builder, name, None)
-            if callable(getter):
-                try:
-                    dialog = getter()
-                except Exception:
-                    dialog = None
-                if dialog is not None:
-                    break
-        if dialog is None:
-            dialog = getattr(builder, "dialog", None) or getattr(builder, "_dialog", None)
-        getter = getattr(dialog, "getButton", None) if dialog is not None else None
-        if callable(getter):
-            for which in which_values:
-                if which is None:
-                    continue
-                try:
-                    button = getter(which)
-                    if button is not None:
-                        return button
-                except Exception:
-                    continue
-        return None
-
-    def _paint_button_red(self, builder, kind: str):
-        """Красит кнопку диалога в красный: штатным make_button_red, если он есть, и setTextColor как запасным путём."""
-        const_name, android_code = self._BUTTON_CODES[kind]
-
-        def paint():
-            maker = getattr(builder, "make_button_red", None)
-            if callable(maker):
-                for which in (getattr(AlertDialogBuilder, const_name, None), android_code):
-                    if which is None:
-                        continue
-                    try:
-                        maker(which)
-                        break
-                    except Exception:
-                        continue
-            button = self._dialog_button(builder, kind)
-            if button is not None:
-                try:
-                    button.setTextColor(self._RED)
-                except Exception:
-                    pass
-
-        run_on_ui_thread(paint)
-        run_on_queue(lambda: run_on_ui_thread(paint), PLUGINS_QUEUE, 250)
 
     @staticmethod
     def _style_button(button, text: str, enabled: bool):
@@ -15531,8 +15663,10 @@ class PrefixfyPlugin(BasePlugin):
             button = None
             while True:
                 left = WIPE_COOLDOWN_SEC - (time.monotonic() - shown_at)
+                if self.stop_event is not None and self.stop_event.is_set():
+                    return
                 if button is None:
-                    button = self._dialog_button(builder)
+                    button = builder.get_button(AlertDialogBuilder.BUTTON_POSITIVE)
                 if button is not None:
                     text = label if left <= 0 else f"{label} ({int(math.ceil(left))})"
                     run_on_ui_thread(lambda b=button, t=text, e=left <= 0: self._style_button(b, t, e))
@@ -16370,7 +16504,7 @@ class PrefixfyPlugin(BasePlugin):
             self._send_plain_fallback(dialog_id, caption, account, options)
 
     def _send_plain_fallback(self, dialog_id, text: str, account: int, options: Optional[Dict[str, Any]] = None):
-        if not text or _send_message is None:
+        if not text:
             return
         self._remember_internal_send(dialog_id, text)
         attempts = []
@@ -16406,7 +16540,7 @@ class PrefixfyPlugin(BasePlugin):
         if not markers:
             markers = custom_emoji_markers_from_input()
         dialog_id = self._dialog_id_from_params(params, account)
-        if not markers or dialog_id is None or _send_message is None:
+        if not markers or dialog_id is None:
             return False
         try:
             self.set_setting("capture_custom_emoji", False)
@@ -16421,8 +16555,7 @@ class PrefixfyPlugin(BasePlugin):
     @staticmethod
     def _account_is_premium(account, default: bool = True) -> bool:
         try:
-            user_config = find_class("org.telegram.messenger.UserConfig")
-            return bool(user_config.getInstance(int(account)).isPremium())
+            return bool(get_user_config(int(account)).isPremium())
         except Exception:
             return default
 
@@ -16582,7 +16715,7 @@ class PrefixfyPlugin(BasePlugin):
         if cached is not None:
             return cached
         try:
-            controller = find_class("org.telegram.messenger.MessagesController").getInstance(int(account))
+            controller = get_messages_controller(int(account))
             chat = controller.getChat(find_class("java.lang.Long").valueOf(-int(dialog_id)))
         except Exception as exc:
             self.log(f"Prefixfy chat kind lookup failed: {exc}")
@@ -16641,7 +16774,7 @@ class PrefixfyPlugin(BasePlugin):
         if title:
             return title
         try:
-            controller = find_class("org.telegram.messenger.MessagesController").getInstance(int(account))
+            controller = get_messages_controller(int(account))
             boxed = find_class("java.lang.Long").valueOf(abs(int(dialog_id)))
             if dialog_id < 0:
                 chat = controller.getChat(boxed)
@@ -16654,7 +16787,7 @@ class PrefixfyPlugin(BasePlugin):
 
     def _own_username(self, account) -> str:
         try:
-            user = find_class("org.telegram.messenger.UserConfig").getInstance(int(account)).getCurrentUser()
+            user = get_user_config(int(account)).getCurrentUser()
             name = as_text(getattr(user, "username", None))
             if not name:
                 for item in list(getattr(user, "usernames", None) or []):
@@ -16666,10 +16799,36 @@ class PrefixfyPlugin(BasePlugin):
             self.log(f"Prefixfy username lookup failed: {exc}")
             return ""
 
+    # 52.0.0: счётчики [count]/[chatcount] живут в памяти и пишутся на диск не чаще раза в COUNTER_FLUSH_MS.
+    # Раньше каждое отправленное сообщение делало две полные перезаписи файла настроек SDK (с fsync) прямо
+    # в потоке отправки. Несохранённый хвост записывается при выгрузке плагина.
+    COUNTER_FLUSH_MS = 3000
+    _counter_state: Optional[Dict[str, Any]] = None
+    _counter_flush_armed = False
+
+    def _counter_data(self) -> Dict[str, Any]:
+        """Вызывать под _counter_lock."""
+        state = self._counter_state
+        if state is None:
+            try:
+                chats = json.loads(as_text(self.get_setting(CHAT_COUNTS_KEY, "")) or "{}")
+            except (ValueError, TypeError):
+                chats = {}
+            if not isinstance(chats, dict):
+                chats = {}
+            state = {
+                "total": clamp_int(self.get_setting(COUNTER_KEY, 0), 0, 0, 10 ** 9),
+                "chats": {str(key): value for key, value in chats.items()
+                          if len(str(key)) <= 48 and _is_int(value) and 0 <= value <= 10 ** 9},
+                "dirty": False,
+            }
+            self._counter_state = state
+        return state
+
     def _message_number(self) -> int:
         self._count_used = True
         with self._counter_lock:
-            return clamp_int(self.get_setting(COUNTER_KEY, 0), 0, 0, 10 ** 9) + 1
+            return self._counter_data()["total"] + 1
 
     def _commit_message_counter(self):
         used, chat_key = self._count_used, self._chat_count_key
@@ -16678,32 +16837,39 @@ class PrefixfyPlugin(BasePlugin):
         if not used and not chat_key:
             return
         with self._counter_lock:
+            state = self._counter_data()
             if used:
-                try:
-                    number = clamp_int(self.get_setting(COUNTER_KEY, 0), 0, 0, 10 ** 9) + 1
-                    self.set_setting(COUNTER_KEY, number)
-                except Exception as exc:
-                    self.log(f"Prefixfy counter save failed: {exc}")
+                state["total"] = min(state["total"] + 1, 10 ** 9)
             if chat_key:
-                try:
-                    counts = self._chat_counts()
-                    current = counts.pop(chat_key, 0)
-                    counts[chat_key] = min(current + 1, 10 ** 9)
-                    while len(counts) > MAX_CHAT_COUNTS:
-                        counts.pop(next(iter(counts)), None)
-                    self.set_setting(CHAT_COUNTS_KEY, json.dumps(counts))
-                except Exception as exc:
-                    self.log(f"Prefixfy chat counter save failed: {exc}")
+                counts = state["chats"]
+                current = counts.pop(chat_key, 0)
+                counts[chat_key] = min(current + 1, 10 ** 9)
+                while len(counts) > MAX_CHAT_COUNTS:
+                    counts.pop(next(iter(counts)), None)
+            state["dirty"] = True
+            arm = not self._counter_flush_armed
+            self._counter_flush_armed = True
+        if arm:
+            try:
+                run_on_queue(self._flush_counters, PLUGINS_QUEUE, self.COUNTER_FLUSH_MS)
+            except Exception as exc:
+                self.log(f"Prefixfy counter flush scheduling failed: {exc}")
+                self._flush_counters()
+
+    def _flush_counters(self):
+        with self._counter_lock:
+            self._counter_flush_armed = False
+            state = self._counter_state
+            if state is None or not state["dirty"]:
+                return
+            values = {COUNTER_KEY: state["total"], CHAT_COUNTS_KEY: json.dumps(state["chats"])}
+            state["dirty"] = False
+        if not bulk_set_settings(self, values):
+            self.log("Prefixfy counter save failed")
 
     def _chat_counts(self) -> Dict[str, int]:
-        try:
-            data = json.loads(as_text(self.get_setting(CHAT_COUNTS_KEY, "")) or "{}")
-        except (ValueError, TypeError):
-            return {}
-        if not isinstance(data, dict):
-            return {}
-        return {str(key): value for key, value in data.items()
-                if len(str(key)) <= 48 and _is_int(value) and 0 <= value <= 10 ** 9}
+        with self._counter_lock:
+            return dict(self._counter_data()["chats"])
 
     def _chat_message_number(self, account, dialog_id) -> int:
         if dialog_id is None:
@@ -16711,7 +16877,7 @@ class PrefixfyPlugin(BasePlugin):
         key = f"{account}:{dialog_id}"
         self._chat_count_key = key
         with self._counter_lock:
-            return self._chat_counts().get(key, 0) + 1
+            return self._counter_data()["chats"].get(key, 0) + 1
 
     def _reply_name(self, account, params) -> str:
         try:
@@ -16719,7 +16885,7 @@ class PrefixfyPlugin(BasePlugin):
             if message is None:
                 return ""
             owner = getattr(message, "messageOwner", None)
-            controller = find_class("org.telegram.messenger.MessagesController").getInstance(int(account))
+            controller = get_messages_controller(int(account))
             boxed = find_class("java.lang.Long")
             for field in ("from_id", "peer_id"):
                 peer = getattr(owner, field, None)
@@ -17315,7 +17481,7 @@ class PrefixfyPlugin(BasePlugin):
         except Exception:
             pass
         try:
-            controller = find_class("org.telegram.messenger.MessagesController").getInstance(int(account))
+            controller = get_messages_controller(int(account))
             found = controller.dialogMessagesByIds.get(message_id)
             return found if self._message_in_dialog(found, dialog_id) else None
         except Exception:
@@ -17358,7 +17524,9 @@ class PrefixfyPlugin(BasePlugin):
         try:
             account = int(param.thisObject.currentAccount)
         except Exception:
-            account = get_selected_account()
+            account = get_hook_account()
+            if account is None:
+                account = get_selected_account()
         dialog_id = self._dialog_id_from_params(request, account)
 
         if not self.remote.allows():
