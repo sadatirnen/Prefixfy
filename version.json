@@ -1,48 +1,33 @@
 {
   "changelog": {
     "en": [
-      "\u25cf Stability and reliability",
-      "Optimization: Adapted the plugin for the new ExteraGram client version and SDK",
-      "\u25cf Security",
-      "Optimization: Improved plugin security",
-      "Warning! Before updating, it is strongly recommended to update the ExteraGram client to version 13.2.2 and the SDK to version 1.4.6.5. Plugin stability is not guaranteed on older client versions"
+      "\u25cf Exceptions",
+      "Optimization: Improved the exceptions system"
     ],
     "fr": [
-      "\u25cf Stabilit\u00e9 et fiabilit\u00e9",
-      "Optimisation : adaptation du plugin \u00e0 la nouvelle version du client et au SDK ExteraGram",
-      "\u25cf S\u00e9curit\u00e9",
-      "Optimisation : s\u00e9curit\u00e9 du plugin renforc\u00e9e",
-      "Attention ! Avant de mettre \u00e0 jour, il est fortement recommand\u00e9 de mettre \u00e0 jour le client ExteraGram vers la version 13.2.2 et le SDK vers la version 1.4.6.5. La stabilit\u00e9 du plugin n'est pas garantie sur les versions ant\u00e9rieures"
+      "\u25cf Exceptions",
+      "Optimisation : am\u00e9lioration du fonctionnement du syst\u00e8me d'exceptions"
     ],
     "ja": [
-      "\u25cf \u5b89\u5b9a\u6027\u3068\u4fe1\u983c\u6027",
-      "\u6700\u9069\u5316: \u65b0\u3057\u3044ExteraGram\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u304a\u3088\u3073SDK\u3078\u306e\u30d7\u30e9\u30b0\u30a4\u30f3\u306e\u5bfe\u5fdc",
-      "\u25cf \u30bb\u30ad\u30e5\u30ea\u30c6\u30a3",
-      "\u6700\u9069\u5316: \u30d7\u30e9\u30b0\u30a4\u30f3\u306e\u30bb\u30ad\u30e5\u30ea\u30c6\u30a3\u3092\u5411\u4e0a",
-      "\u6ce8\u610f\uff01\u30a2\u30c3\u30d7\u30c7\u30fc\u30c8\u3059\u308b\u524d\u306b\u3001ExteraGram\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u3092\u30d0\u30fc\u30b8\u30e7\u30f313.2.2\u3001SDK\u3092\u30d0\u30fc\u30b8\u30e7\u30f31.4.6.5\u306b\u66f4\u65b0\u3059\u308b\u3053\u3068\u3092\u5f37\u304f\u63a8\u5968\u3057\u307e\u3059\u3002\u53e4\u3044\u30d0\u30fc\u30b8\u30e7\u30f3\u306e\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u3067\u306f\u30d7\u30e9\u30b0\u30a4\u30f3\u306e\u5b89\u5b9a\u52d5\u4f5c\u306f\u4fdd\u8a3c\u3055\u308c\u307e\u305b\u3093"
+      "\u25cf \u4f8b\u5916",
+      "\u6700\u9069\u5316: \u4f8b\u5916\u30b7\u30b9\u30c6\u30e0\u306e\u52d5\u4f5c\u3092\u6539\u5584"
     ],
     "ko": [
-      "\u25cf \uc548\uc815\uc131 \ubc0f \uc2e0\ub8b0\uc131",
-      "\ucd5c\uc801\ud654: \uc0c8\ub85c\uc6b4 ExteraGram \ud074\ub77c\uc774\uc5b8\ud2b8 \ubc84\uc804 \ubc0f SDK\uc5d0 \ub9de\ucdb0 \ud50c\ub7ec\uadf8\uc778 \ucd5c\uc801\ud654",
-      "\u25cf \ubcf4\uc548",
-      "\ucd5c\uc801\ud654: \ud50c\ub7ec\uadf8\uc778 \ubcf4\uc548 \uac15\ud654",
-      "\uc8fc\uc758! \uc5c5\ub370\uc774\ud2b8\ud558\uae30 \uc804\uc5d0 ExteraGram \ud074\ub77c\uc774\uc5b8\ud2b8\ub97c 13.2.2 \ubc84\uc804, SDK\ub97c 1.4.6.5 \ubc84\uc804\uc73c\ub85c \uc5c5\ub370\uc774\ud2b8\ud558\ub294 \uac83\uc744 \uac15\ub825\ud788 \uad8c\uc7a5\ud569\ub2c8\ub2e4. \uc774\uc804 \ubc84\uc804\uc758 \ud074\ub77c\uc774\uc5b8\ud2b8\uc5d0\uc11c\ub294 \ud50c\ub7ec\uadf8\uc778\uc758 \uc548\uc815\uc801\uc778 \uc791\ub3d9\uc774 \ubcf4\uc7a5\ub418\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4"
+      "\u25cf \uc608\uc678",
+      "\ucd5c\uc801\ud654: \uc608\uc678 \uc2dc\uc2a4\ud15c \uc791\ub3d9 \uac1c\uc120"
     ],
     "ru": [
-      "\u25cf \u0421\u0442\u0430\u0431\u0438\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u0438 \u043d\u0430\u0434\u0451\u0436\u043d\u043e\u0441\u0442\u044c",
-      "\u041e\u043f\u0442\u0438\u043c\u0438\u0437\u0430\u0446\u0438\u044f: \u0410\u0434\u0430\u043f\u0442\u0430\u0446\u0438\u044f \u043f\u043b\u0430\u0433\u0438\u043d\u0430 \u043f\u043e\u0434 \u043d\u043e\u0432\u0443\u044e \u0432\u0435\u0440\u0441\u0438\u044e \u043a\u043b\u0438\u0435\u043d\u0442\u0430 \u0438 SDK ExteraGram",
-      "\u25cf \u0411\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0441\u0442\u044c",
-      "\u041e\u043f\u0442\u0438\u043c\u0438\u0437\u0430\u0446\u0438\u044f: \u041f\u043e\u0432\u044b\u0448\u0435\u043d\u0430 \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0441\u0442\u044c \u0440\u0430\u0431\u043e\u0442\u044b \u043f\u043b\u0430\u0433\u0438\u043d\u0430",
-      "\u0412\u043d\u0438\u043c\u0430\u043d\u0438\u0435! \u041f\u0435\u0440\u0435\u0434 \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435\u043c \u043d\u0430\u0441\u0442\u043e\u044f\u0442\u0435\u043b\u044c\u043d\u043e \u0440\u0435\u043a\u043e\u043c\u0435\u043d\u0434\u0443\u0435\u0442\u0441\u044f \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043a\u043b\u0438\u0435\u043d\u0442 ExteraGram \u0434\u043e \u0432\u0435\u0440\u0441\u0438\u0438 13.2.2 \u0438 SDK \u0432\u0435\u0440\u0441\u0438\u0438 1.4.6.5. \u041d\u0430 \u0431\u043e\u043b\u0435\u0435 \u0441\u0442\u0430\u0440\u044b\u0445 \u0432\u0435\u0440\u0441\u0438\u044f\u0445 \u043a\u043b\u0438\u0435\u043d\u0442\u0430 \u0441\u0442\u0430\u0431\u0438\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u0440\u0430\u0431\u043e\u0442\u044b \u043f\u043b\u0430\u0433\u0438\u043d\u0430 \u043d\u0435 \u0433\u0430\u0440\u0430\u043d\u0442\u0438\u0440\u0443\u0435\u0442\u0441\u044f"
+      "\u25cf \u0418\u0441\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f",
+      "\u041e\u043f\u0442\u0438\u043c\u0438\u0437\u0430\u0446\u0438\u044f: \u0423\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u0435 \u0440\u0430\u0431\u043e\u0442\u044b \u0441\u0438\u0441\u0442\u0435\u043c\u044b \u0438\u0441\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0439"
     ]
   },
   "file": "Prefixfy.py",
   "format": 1,
-  "issued_at": 1795547923,
-  "serial": 103,
-  "sha256": "8a3f633226ea5eca130f5126b588621de4dd0433b31d560c7f1aeb5a9f8dec49",
-  "sha512": "783ada4d58a716356dd07088854c39cd47610a3d014c710fdb245e8c4572acb5aad7e78be30b60f1c480da0a16dc125eb355edb20157a65958730fee0417c470",
-  "signature": "ScP+u9DKOFqFAoxoV/jXR0Li1SP491+lRgDrs4GWS8bnpWI5FYQ3NcL3VXV1fNEx92NPTei5tWL2P83gRg+RwqGAN9CVlAQdole5iVSjR487lD0jNyQPosakaN9IQ6JEL52JbiejLCaRpB5Nz2oBQFQ/NsxDEx6l/3LJt53hVE2Qwk6o/4jEHnlGr/+WZ0np5dbF3DIJ7YV+s7/0xZhrzDPeYc3Kzdo+TZYGL+jhOd72s2EfD1BkimKeyt66FoS94y+QAXRXGf5ZQw6J4rtQivouDyaR7wQAaPR9kTE56RaVmzDZigDrbDNoPl0ijGO4LW87UXTMZOsY8XCuwyYQ/UtITgKTc/pL4obZvogZqlzK5NEBJtAaErEJ9jE3/4rwTSJWXzeHAvuOcPi5FzfHL8iJaBtfQZJuSuRiZPkdzrLQ3wA3qIQWuRnk/C+zCp1RVe7pZDSYfXzdGo/kfcCCevSgvRC/dkDVV7Vl1YNX6ziIr3UIw4Rn3YnYAZgyEdL4",
-  "size": 905410,
-  "version": "52.0.0_20261125.1_103"
+  "issued_at": 1795549084,
+  "serial": 104,
+  "sha256": "c3d7480070077068a353616b2b54434eb3b2d312ebb412fc35509c54baeb8292",
+  "sha512": "d2c4772a68319b4cdc6bc1f3f394a97309ff233bcaa84dd706b0bbbfdace59dc18c3ce3c00548d378eae8ba8884acedab57e10637d8e059f581892149f7d0056",
+  "signature": "asligAIWV4aRtV6gr6Fdy3r/JEfymBVZ055sU6td9YIJicJLdcx8hB4PDnZp4ToMZs78NqQjSxF8f7w88F5YVE9k4rC15hm7jnCI0NcZS/3BWjtWpOu/Wle3F2JwYf2W9auIm94u9U0Kx/sFkYFjQGlbKXg/L0lgxb7Aly8HIT+ViVJY+19HtjkvcdcrsBLJTjdThFGAGglori+bNHBghbA7l9PqRb9KfsUDMXvpn/GgQ2SolZeSiAwaDZxVE7sNMDYTVlYJSYjbLmyTZxiF+OCJbSzRSRaFnjEyj8N5bJwZFKj2ZugJgF0vO3ZkPf+8eu3OoE7qt/7F/wZZ6tBqVXmPUAw0cflkiIj0TXNysD//11IFHA0rx8e5T4pwmlmx0s4tNywL+mkdZBOrlrFwGVw0Pa3mtDRtF4OOa+3uuBMYri/+yptoKBwhxRmagRdEFEct/NBQj78CYK1q3WLLpxLNcwLI2P2i+ohDkrpUs9l7/LJcGBB72i4klT0k2eNP",
+  "size": 913172,
+  "version": "52.1.0_20261125.2_104"
 }
