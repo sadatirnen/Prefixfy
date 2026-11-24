@@ -74,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "50.4.0"
-__build__ = "50.4.0_20261124.2_100"
+__version__ = "50.4.1"
+__build__ = "50.4.1_20261124.3_101"
 __icon__ = "http_Prefixfy_by_fStikBot/3"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -14995,7 +14995,27 @@ class PrefixfyPlugin(BasePlugin):
         if latest:
             lines.append(f"{tr('about_latest')}: {latest}")
         lines.append(f"{tr('about_status')}: {tr(status_key)}")
-        return "\n".join(lines) + "\n\n" + tr("about_note")
+        text = "\n".join(lines)
+        notes = self._about_changelog_block()
+        if notes:
+            text += "\n\n" + notes
+        return text + "\n\n" + tr("about_note")
+
+    def _about_changelog_block(self) -> str:
+        """50.4.1: «Что нового» для текущей сборки в сведениях о плагине. Сначала проверенный манифест, затем список,
+        сохранённый при обновлении. Если пунктов нет, блока нет вовсе. Ошибка здесь не должна ломать окно."""
+        try:
+            remote = getattr(self, "remote", None)
+            notes = (remote.release_notes() if remote is not None else None) or {}
+            if not notes and as_text(self.get_setting(UPDATED_BUILD_KEY, "")) == __build__:
+                raw = self.get_setting(UPDATED_NOTES_KEY, "")
+                notes = parse_changelog(json.loads(raw)) if isinstance(raw, str) and raw else {}
+            if not changelog_for_language(notes, self.localization.language()):
+                return ""
+            return self._changelog_block(notes)
+        except Exception as exc:
+            self.log(f"Prefixfy about changelog failed: {exc}")
+            return ""
 
     def _show_about(self, *_):
         activity = self._dialog_activity()
@@ -15328,7 +15348,7 @@ class PrefixfyPlugin(BasePlugin):
     def _changelog_block(self, changelog) -> str:
         """Блок «Что нового» с пунктами на языке плагина, либо с пометкой, что разработчик ничего не указал."""
         lines = changelog_for_language(changelog, self.localization.language())
-        body = "\n".join("\u2022 " + line for line in lines) if lines else self._tr("ota_dl_changelog_none")
+        body = "\n".join(lines) if lines else self._tr("ota_dl_changelog_none")
         return self._tr("ota_dl_changelog") + ":\n" + body
 
     def _ota_info_text(self, state) -> str:
