@@ -74,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "50.2.0"
-__build__ = "50.2.0_20261122.4_98"
+__version__ = "50.3.0"
+__build__ = "50.3.0_20261124.1_99"
 __icon__ = "http_Prefixfy_by_fStikBot/3"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -97,6 +97,12 @@ FLAGS_MAX_COUNT = 128
 FLAGS_MAX_ACCOUNTS = 1024
 FLAGS_MAX_BYTES = 256 * 1024
 MANIFEST_MAX_FILE_SIZE = 8 * 1024 * 1024
+# 50.3.0: необязательный список изменений в манифесте. Он только показывается в окне обновления и ни на что не влияет;
+# что бы ни лежало в поле "changelog", разбор его не может уронить проверку манифеста (см. parse_changelog).
+CHANGELOG_MAX_ITEMS = 30
+CHANGELOG_ITEM_LIMIT = 300
+CHANGELOG_TOTAL_LIMIT = 4000
+CHANGELOG_MAX_LANGS = 8
 BLACKLIST_MAX_AGE = 3 * 24 * 3600
 SIGNED_FUTURE_SKEW = 14 * 24 * 3600
 SIGNED_MAX_AGE = 0
@@ -717,6 +723,8 @@ class LocalizationManager:
             "ota_download_subtext": "Версия {version}. Сначала покажем сведения об обновлении.",
             "ota_dl_title": "Обновление Prefixfy",
             "ota_dl_size": "Размер",
+            "ota_dl_changelog": "Что нового",
+            "ota_dl_changelog_none": "Разработчик не предоставил информацию",
             "ota_dl_confirm": "Скачать и установить",
             "ota_dl_warning": "В мобильной сети оператор может взять плату за трафик. Лучше подключиться к Wi-Fi.",
             "ota_unit_kb": "КБ",
@@ -1164,6 +1172,8 @@ class LocalizationManager:
             "ota_download_subtext": "Version {version}. Update details come first.",
             "ota_dl_title": "Prefixfy update",
             "ota_dl_size": "Size",
+            "ota_dl_changelog": "What’s new",
+            "ota_dl_changelog_none": "The developer hasn’t provided any information",
             "ota_dl_confirm": "Download and install",
             "ota_dl_warning": "On mobile data your carrier may charge for traffic. Wi-Fi is better.",
             "ota_unit_kb": "KB",
@@ -1611,6 +1621,8 @@ class LocalizationManager:
             "ota_download_subtext": "バージョン {version}。まずアップデートの詳細を表示します。",
             "ota_dl_title": "Prefixfy のアップデート",
             "ota_dl_size": "サイズ",
+            "ota_dl_changelog": "新機能",
+            "ota_dl_changelog_none": "開発者から情報は提供されていません",
             "ota_dl_confirm": "ダウンロードしてインストール",
             "ota_dl_warning": "モバイル通信では通信料がかかる場合があります。Wi-Fi をおすすめします。",
             "ota_unit_kb": "KB",
@@ -2058,6 +2070,8 @@ class LocalizationManager:
             "ota_download_subtext": "{version} 버전. 먼저 업데이트 정보를 보여 드립니다.",
             "ota_dl_title": "Prefixfy 업데이트",
             "ota_dl_size": "크기",
+            "ota_dl_changelog": "새로운 기능",
+            "ota_dl_changelog_none": "개발자가 정보를 제공하지 않았습니다",
             "ota_dl_confirm": "내려받고 설치",
             "ota_dl_warning": "모바일 데이터에서는 통신사 요금이 부과될 수 있습니다. Wi-Fi 사용을 권장합니다.",
             "ota_unit_kb": "KB",
@@ -2505,6 +2519,8 @@ class LocalizationManager:
             "ota_download_subtext": "Version {version}. D’abord, les détails de la mise à jour.",
             "ota_dl_title": "Mise à jour de Prefixfy",
             "ota_dl_size": "Taille",
+            "ota_dl_changelog": "Nouveautés",
+            "ota_dl_changelog_none": "Le développeur n’a fourni aucune information",
             "ota_dl_confirm": "Télécharger et installer",
             "ota_dl_warning": "En données mobiles, votre opérateur peut facturer le trafic. Le Wi-Fi est préférable.",
             "ota_unit_kb": "Ko",
@@ -9968,8 +9984,76 @@ def _manifest_int(body: Dict[str, Any], key: str) -> int:
     return value
 
 
-def _body_digest(body: Dict[str, Any]) -> str:
-    content = {key: value for key, value in body.items() if key != "issued_at"}
+_CHANGELOG_BULLET_RE = re.compile(r"^[\u2022\-*\u2013\u2014]\s+")
+_CHANGELOG_LANG_RE = re.compile(r"[a-z]{2,3}")
+_CHANGELOG_DEFAULT_KEYS = frozenset(("", "default", "all", "*"))
+
+
+def _changelog_lines(value) -> Tuple[str, ...]:
+    """Строка (по строке на пункт) или список строк -> очищенные пункты. Всё, что не строка, молча пропускается."""
+    if isinstance(value, str):
+        items = value.splitlines()
+    elif isinstance(value, (list, tuple)):
+        items = value
+    else:
+        return ()
+    lines: List[str] = []
+    total = 0
+    for item in items:
+        if not isinstance(item, str):
+            continue
+        text = _CHANGELOG_BULLET_RE.sub("", " ".join(sanitize_text(item).split()))[:CHANGELOG_ITEM_LIMIT].strip()
+        if not text:
+            continue
+        if total + len(text) > CHANGELOG_TOTAL_LIMIT:
+            break
+        lines.append(text)
+        total += len(text)
+        if len(lines) >= CHANGELOG_MAX_ITEMS:
+            break
+    return tuple(lines)
+
+
+def parse_changelog(value) -> Dict[str, Tuple[str, ...]]:
+    """Поле "changelog" манифеста -> {код языка: пункты}; "" — общий список для всех языков.
+    Принимает строку, список строк или словарь {язык: строка или список}. Никогда не бросает исключений:
+    непонятное содержимое даёт пустой результат, а манифест остаётся годным."""
+    try:
+        if isinstance(value, dict):
+            result: Dict[str, Tuple[str, ...]] = {}
+            for key, item in value.items():
+                if len(result) >= CHANGELOG_MAX_LANGS:
+                    break
+                code = as_text(key).strip().lower().replace("-", "_").split("_", 1)[0]
+                if code in _CHANGELOG_DEFAULT_KEYS:
+                    code = ""
+                elif not _CHANGELOG_LANG_RE.fullmatch(code):
+                    continue
+                lines = _changelog_lines(item)
+                if lines:
+                    result.setdefault(code, lines)
+            return result
+        lines = _changelog_lines(value)
+        return {"": lines} if lines else {}
+    except Exception:
+        return {}
+
+
+def changelog_for_language(changelog, language) -> Tuple[str, ...]:
+    """Пункты на языке плагина; если такого нет, то общий список, затем английский, русский и любой другой."""
+    try:
+        if not isinstance(changelog, dict) or not changelog:
+            return ()
+        for code in (as_text(language), "", "en", "ru"):
+            if changelog.get(code):
+                return tuple(changelog[code])
+        return tuple(next(iter(changelog.values())))
+    except Exception:
+        return ()
+
+
+def _body_digest(body: Dict[str, Any], ignore: Tuple[str, ...] = ("issued_at",)) -> str:
+    content = {key: value for key, value in body.items() if key not in ignore}
     packed = json.dumps(content, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("ascii")
     return hashlib.sha256(packed).hexdigest()
 
@@ -10066,7 +10150,9 @@ def verify_manifest(raw: bytes) -> Dict[str, Any]:
         "sha512": sha512,
         "size": size,
         "file": name,
-        "digest": _body_digest(body),
+        # changelog не входит в digest: правка текста без новой сборки не должна считаться «повторным использованием serial».
+        "changelog": parse_changelog(body.get("changelog")),
+        "digest": _body_digest(body, ("issued_at", "changelog")),
         "signed": signed,
     }
 
@@ -15199,6 +15285,19 @@ class PrefixfyPlugin(BasePlugin):
         value = f"{size / 1048576:.1f} {tr('ota_unit_mb')}" if size >= 1048576 else f"{max(1, round(size / 1024))} {tr('ota_unit_kb')}"
         return value.replace(".", ",") if self.localization.language() in ("ru", "fr") else value
 
+    def _ota_changelog_text(self, state) -> str:
+        """«Что нового» только для действительно более новой версии (та же проверка, что в mismatch_reason).
+        Для переустановки текущей или изменённой сборки блока нет. Ошибка здесь не должна ломать окно обновления."""
+        try:
+            build = parse_version(__build__)
+            if not build or not build < tuple(state["version"]):
+                return ""
+            lines = changelog_for_language(state.get("changelog"), self.localization.language())
+            body = "\n".join("\u2022 " + line for line in lines) if lines else self._tr("ota_dl_changelog_none")
+            return self._tr("ota_dl_changelog") + ":\n" + body
+        except Exception:
+            return ""
+
     def _ota_info_text(self, state) -> str:
         tr = self._tr
         unknown = tr("about_unknown")
@@ -15221,7 +15320,8 @@ class PrefixfyPlugin(BasePlugin):
             f"{tr('about_build_label')}: {format_version(parts) or unknown}",
             f"{tr('ota_dl_size')}: {self._ota_size_text(state.get('size'))}",
         ]
-        return "\n".join(lines) + "\n\n" + tr("ota_dl_warning")
+        notes = self._ota_changelog_text(state)
+        return "\n".join(lines) + ("\n\n" + notes if notes else "") + "\n\n" + tr("ota_dl_warning")
 
     def _show_ota_download_dialog(self, *_):
         remote = getattr(self, "remote", None)
