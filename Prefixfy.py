@@ -25,7 +25,7 @@ from bisect import bisect_left, bisect_right
 from collections import OrderedDict
 from contextlib import contextmanager
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from base_plugin import BasePlugin, HookResult, HookStrategy, MenuItemData, MenuItemType, MethodHook
 from ui.settings import Divider, Header, Input, Selector, Switch, Text
@@ -74,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "50.4.1"
-__build__ = "50.4.1_20261124.3_101"
+__version__ = "51.0.0"
+__build__ = "51.0.0_20261124.4_102"
 __icon__ = "http_Prefixfy_by_fStikBot/3"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -569,16 +569,21 @@ class LocalizationManager:
             "schedule": "Расписание конфигураций",
             "schedule_empty": "Не задано",
             "schedule_count": "Правил: {n}",
-            "schedule_message": "По одному правилу в строке: [дата] [ЧЧ:ММ-ЧЧ:ММ] [дни] = конфигурация.\nДата: ГГГГ-ММ-ДД, ДД.ММ.ГГГГ или ДД.ММ (каждый год), диапазон — через «..». Без времени — весь день. Вместо времени можно указать часть суток: утро (05–12), день (12–17), вечер (17–23), ночь (23–05) или диапазон вроде «утро-вечер». Дни: пн-пт, сб,вс или mon-fri; без дней — каждый день.\nПравила с датой важнее правил по дням недели, дальше выигрывает первое подходящее. На чаты со своей конфигурацией расписание не действует.",
-            "schedule_hint": "22:00-07:00 = Ночная\n09:00-18:00 пн-пт = Рабочая\n31.12 = Праздничная\n2026-12-28..2027-01-10 = Отпуск\nутро пн-пт = Рабочая\nночь = Ночная",
+            "schedule_message": "По одному правилу в строке: условие = конфигурация.\nУсловия: время ЧЧ:ММ-ЧЧ:ММ или часть суток (утро 05–12, день 12–17, вечер 17–23, ночь 23–05, диапазон вроде «утро-вечер»); дни (пн-пт, сб,вс, выходные, будни); дата ГГГГ-ММ-ДД, ДД.ММ.ГГГГ или ДД.ММ (каждый год), диапазон через «..»; тип чата (личные, группа, канал); «чат ID»; «аккаунт ID»; «случайно N%» (на каждое сообщение).\nУсловия соединяются словами и, или, не и скобками; без слова между ними подразумевается «и». «иначе» — правило на все остальные случаи. Можно писать и по-английски: and, or, not, else.\nПравила с датой важнее остальных, «иначе» проверяется последним, а среди равных выигрывает первое подходящее. Дни и дата у интервала через полночь считаются по дню его начала. На чаты со своей конфигурацией расписание не действует.",
+            "schedule_hint": "22:00-07:00 = Ночная\n09:00-18:00 пн-пт = Рабочая\n(31.12 или 01.01) и не канал = Праздничная\nгруппа и вечер = Тихая\nчат -1001234567890 = Особая\nслучайно 20% = Весёлая\nиначе = Основная",
             "schedule_saved": "Расписание сохранено",
             "schedule_error": "Строка {n}: {reason}",
-            "schedule_err_format": "нужен формат [дата] [ЧЧ:ММ-ЧЧ:ММ] [дни] = конфигурация",
+            "schedule_err_format": "нужен формат условие = конфигурация",
             "schedule_err_time": "неверное время",
             "schedule_err_days": "неверные дни недели",
             "schedule_err_config": "нет конфигурации «{name}»",
             "schedule_err_limit": "не больше {n} правил",
             "schedule_err_date": "неверная дата",
+            "schedule_err_unknown": "не понимаю «{x}»",
+            "schedule_err_parens": "скобки не сходятся",
+            "schedule_err_deep": "слишком сложное условие",
+            "schedule_err_random": "процент должен быть от 0 до 100",
+            "schedule_err_size": "слишком много текста",
             # Конфигурации
             "config_import_cancelled": "Импорт отменён",
             "config_import": "Импортировать",
@@ -1020,16 +1025,21 @@ class LocalizationManager:
             "schedule": "Configuration schedule",
             "schedule_empty": "Not set",
             "schedule_count": "Rules: {n}",
-            "schedule_message": "One rule per line: [date] [HH:MM-HH:MM] [days] = configuration.\nDate: YYYY-MM-DD, DD.MM.YYYY or DD.MM (every year); use “..” for a range. No time means the whole day. Instead of a time you can use a part of the day: morning (05–12), day (12–17), evening (17–23), night (23–05) or a range like “morning-evening”. Days: mon-fri, sat,sun or пн-пт; no days means every day.\nDated rules beat weekday rules, then the first matching rule wins. Chats with their own configuration ignore the schedule.",
-            "schedule_hint": "22:00-07:00 = Night\n09:00-18:00 mon-fri = Work\n31.12 = Holiday\n2026-12-28..2027-01-10 = Vacation\nmorning mon-fri = Work\nnight = Night",
+            "schedule_message": "One rule per line: condition = configuration.\nConditions: time HH:MM-HH:MM or a part of the day (morning 05–12, day 12–17, evening 17–23, night 23–05, or a range like “morning-evening”); days (mon-fri, sat,sun, weekend, weekdays); date YYYY-MM-DD, DD.MM.YYYY or DD.MM (every year), with “..” for a range; chat type (private, group, channel); “chat ID”; “account ID”; “random N%” (rolled for each message).\nCombine conditions with and, or, not and parentheses; with no word between them “and” is assumed. “else” is the rule for every other case. Words in Russian work too: и, или, не, иначе.\nDated rules beat the rest, “else” is checked last, and among equals the first match wins. Days and dates of an interval that crosses midnight refer to the day it started. Chats with their own configuration ignore the schedule.",
+            "schedule_hint": "22:00-07:00 = Night\n09:00-18:00 mon-fri = Work\n(31.12 or 01.01) and not channel = Holiday\ngroup and evening = Quiet\nchat -1001234567890 = Special\nrandom 20% = Fun\nelse = Default",
             "schedule_saved": "Schedule saved",
             "schedule_error": "Line {n}: {reason}",
-            "schedule_err_format": "expected [date] [HH:MM-HH:MM] [days] = configuration",
+            "schedule_err_format": "expected condition = configuration",
             "schedule_err_time": "invalid time",
             "schedule_err_days": "invalid days of the week",
             "schedule_err_config": "no configuration named “{name}”",
             "schedule_err_limit": "no more than {n} rules",
             "schedule_err_date": "invalid date",
+            "schedule_err_unknown": "can’t read “{x}”",
+            "schedule_err_parens": "parentheses don’t match",
+            "schedule_err_deep": "the condition is too complex",
+            "schedule_err_random": "the percentage must be 0 to 100",
+            "schedule_err_size": "too much text",
             # Конфигурации
             "config_import_cancelled": "Import cancelled",
             "config_import": "Import",
@@ -1471,16 +1481,21 @@ class LocalizationManager:
             "schedule": "設定セットのスケジュール",
             "schedule_empty": "未設定",
             "schedule_count": "ルール：{n}",
-            "schedule_message": "1 行に 1 つのルール：[日付] [HH:MM-HH:MM] [曜日] = 設定セット。\n日付：YYYY-MM-DD、DD.MM.YYYY、または DD.MM（毎年）。範囲は「..」でつなぎます。時刻なしは終日です。時刻の代わりに時間帯も使えます：朝 (05–12)、昼 (12–17)、夕方 (17–23)、夜 (23–05)、または「朝-夕方」のような範囲。曜日：mon-fri、sat,sun、または 1-5（1 = 月曜）。曜日なしは毎日です。\n日付付きのルールが曜日のルールより優先され、その次は最初に一致したルールが使われます。独自の設定セットがあるチャットにはスケジュールは適用されません。",
-            "schedule_hint": "22:00-07:00 = 夜\n09:00-18:00 mon-fri = 仕事\n31.12 = 祝日\n2026-12-28..2027-01-10 = 休暇\n朝 mon-fri = 仕事\n夜 = 夜",
+            "schedule_message": "1 行に 1 つのルール：条件 = 設定セット。\n条件：時刻 HH:MM-HH:MM または時間帯（朝 05–12、昼 12–17、夕方 17–23、夜 23–05、「朝-夕方」のような範囲）、曜日（mon-fri、sat,sun、weekend、weekdays）、日付 YYYY-MM-DD・DD.MM.YYYY・DD.MM（毎年）で範囲は「..」、チャットの種類（private、group、channel）、「chat ID」、「account ID」、「random N%」（メッセージごとに判定）。\n条件は and、or、not と括弧でつなぎます。語がなければ and とみなします。else はそれ以外すべての場合のルールです。и、или、не、иначе も使えます。\n日付付きのルールが優先され、else は最後に確認され、同じ順位では最初に一致したルールが使われます。日付をまたぐ時間帯の曜日と日付は開始日で判定します。独自の設定セットがあるチャットにはスケジュールは適用されません。",
+            "schedule_hint": "22:00-07:00 = 夜\n09:00-18:00 mon-fri = 仕事\n(31.12 or 01.01) and not channel = 祝日\ngroup and 夕方 = 静か\nchat -1001234567890 = 特別\nrandom 20% = お楽しみ\nelse = 通常",
             "schedule_saved": "スケジュールを保存しました",
             "schedule_error": "{n} 行目：{reason}",
-            "schedule_err_format": "形式は [日付] [HH:MM-HH:MM] [曜日] = 設定セット",
+            "schedule_err_format": "形式は 条件 = 設定セット",
             "schedule_err_time": "時刻が正しくありません",
             "schedule_err_days": "曜日が正しくありません",
             "schedule_err_config": "設定セット「{name}」がありません",
             "schedule_err_limit": "ルールは {n} 個まで",
             "schedule_err_date": "日付が正しくありません",
+            "schedule_err_unknown": "「{x}」を読み取れません",
+            "schedule_err_parens": "括弧が対応していません",
+            "schedule_err_deep": "条件が複雑すぎます",
+            "schedule_err_random": "割合は 0〜100 にしてください",
+            "schedule_err_size": "テキストが長すぎます",
             # Конфигурации
             "config_import_cancelled": "インポートを取り消しました",
             "config_import": "インポート",
@@ -1922,16 +1937,21 @@ class LocalizationManager:
             "schedule": "구성 일정",
             "schedule_empty": "설정 안 됨",
             "schedule_count": "규칙: {n}개",
-            "schedule_message": "한 줄에 규칙 하나: [날짜] [HH:MM-HH:MM] [요일] = 구성.\n날짜: YYYY-MM-DD, DD.MM.YYYY 또는 DD.MM(매년). 기간은 ‘..’로 잇습니다. 시간이 없으면 하루 종일입니다. 시간 대신 시간대를 쓸 수도 있습니다: 아침 (05–12), 낮 (12–17), 저녁 (17–23), 밤 (23–05) 또는 ‘아침-저녁’ 같은 범위. 요일: mon-fri, sat,sun 또는 1-5(1 = 월요일). 요일이 없으면 매일입니다.\n날짜가 있는 규칙이 요일 규칙보다 우선하고, 그다음에는 처음 일치한 규칙이 적용됩니다. 자체 구성이 있는 채팅에는 일정이 적용되지 않습니다.",
-            "schedule_hint": "22:00-07:00 = 밤\n09:00-18:00 mon-fri = 업무\n31.12 = 휴일\n2026-12-28..2027-01-10 = 휴가\n아침 mon-fri = 업무\n밤 = 밤",
+            "schedule_message": "한 줄에 규칙 하나: 조건 = 구성.\n조건: 시간 HH:MM-HH:MM 또는 시간대(아침 05–12, 낮 12–17, 저녁 17–23, 밤 23–05, ‘아침-저녁’ 같은 범위), 요일(mon-fri, sat,sun, weekend, weekdays), 날짜 YYYY-MM-DD·DD.MM.YYYY·DD.MM(매년)이며 기간은 ‘..’로 잇습니다. 채팅 유형(private, group, channel), ‘chat ID’, ‘account ID’, ‘random N%’(메시지마다 판정).\n조건은 and, or, not과 괄호로 잇습니다. 단어가 없으면 and로 봅니다. else는 그 밖의 모든 경우를 위한 규칙입니다. и, или, не, иначе도 쓸 수 있습니다.\n날짜가 있는 규칙이 먼저이고, else는 마지막에 확인하며, 같은 순위에서는 처음 일치한 규칙이 적용됩니다. 자정을 넘는 시간대의 요일과 날짜는 시작한 날을 기준으로 합니다. 자체 구성이 있는 채팅에는 일정이 적용되지 않습니다.",
+            "schedule_hint": "22:00-07:00 = 밤\n09:00-18:00 mon-fri = 업무\n(31.12 or 01.01) and not channel = 휴일\ngroup and 저녁 = 조용히\nchat -1001234567890 = 특별\nrandom 20% = 재미\nelse = 기본",
             "schedule_saved": "일정을 저장했습니다",
             "schedule_error": "{n}번째 줄: {reason}",
-            "schedule_err_format": "형식: [날짜] [HH:MM-HH:MM] [요일] = 구성",
+            "schedule_err_format": "형식: 조건 = 구성",
             "schedule_err_time": "잘못된 시간",
             "schedule_err_days": "잘못된 요일",
             "schedule_err_config": "‘{name}’ 구성이 없습니다",
             "schedule_err_limit": "규칙은 최대 {n}개",
             "schedule_err_date": "잘못된 날짜",
+            "schedule_err_unknown": "‘{x}’을(를) 이해할 수 없습니다",
+            "schedule_err_parens": "괄호가 맞지 않습니다",
+            "schedule_err_deep": "조건이 너무 복잡합니다",
+            "schedule_err_random": "비율은 0~100이어야 합니다",
+            "schedule_err_size": "텍스트가 너무 깁니다",
             # Конфигурации
             "config_import_cancelled": "가져오기를 취소했습니다",
             "config_import": "가져오기",
@@ -2373,16 +2393,21 @@ class LocalizationManager:
             "schedule": "Planning des configurations",
             "schedule_empty": "Non défini",
             "schedule_count": "Règles : {n}",
-            "schedule_message": "Une règle par ligne : [date] [HH:MM-HH:MM] [jours] = configuration.\nDate : AAAA-MM-JJ, JJ.MM.AAAA ou JJ.MM (chaque année) ; « .. » pour une plage. Sans heure : toute la journée. Au lieu d’une heure, vous pouvez indiquer un moment de la journée : matin (05–12), après-midi (12–17), soir (17–23), nuit (23–05) ou une plage comme « matin-soir ». Jours : mon-fri, sat,sun ou 1-5 (1 = lundi) ; sans jours : tous les jours.\nLes règles avec date l’emportent sur celles par jour de semaine, puis la première règle qui correspond gagne. Les chats ayant leur propre configuration ne suivent pas le planning.",
-            "schedule_hint": "22:00-07:00 = Nuit\n09:00-18:00 mon-fri = Travail\n31.12 = Fête\n2026-12-28..2027-01-10 = Vacances\nmatin mon-fri = Travail\nnuit = Nuit",
+            "schedule_message": "Une règle par ligne : condition = configuration.\nConditions : heure HH:MM-HH:MM ou moment de la journée (matin 05–12, après-midi 12–17, soir 17–23, nuit 23–05, ou plage comme « matin-soir ») ; jours (mon-fri, sat,sun, weekend, weekdays) ; date AAAA-MM-JJ, JJ.MM.AAAA ou JJ.MM (chaque année), « .. » pour une plage ; type de chat (private, group, channel) ; « chat ID » ; « account ID » ; « random N% » (tiré à chaque message).\nCombinez les conditions avec and, or, not et des parenthèses ; sans mot entre elles, « and » est sous-entendu. « else » est la règle pour tous les autres cas. Les mots russes и, или, не, иначе fonctionnent aussi.\nLes règles avec date l’emportent, « else » est vérifiée en dernier, et à égalité la première règle qui correspond gagne. Les jours et dates d’un intervalle qui passe minuit se rapportent au jour où il a commencé. Les chats ayant leur propre configuration ne suivent pas le planning.",
+            "schedule_hint": "22:00-07:00 = Nuit\n09:00-18:00 mon-fri = Travail\n(31.12 or 01.01) and not channel = Fête\ngroup and soir = Calme\nchat -1001234567890 = Spécial\nrandom 20% = Fun\nelse = Défaut",
             "schedule_saved": "Planning enregistré",
             "schedule_error": "Ligne {n} : {reason}",
-            "schedule_err_format": "format attendu : [date] [HH:MM-HH:MM] [jours] = configuration",
+            "schedule_err_format": "format attendu : condition = configuration",
             "schedule_err_time": "heure invalide",
             "schedule_err_days": "jours invalides",
             "schedule_err_config": "aucune configuration « {name} »",
             "schedule_err_limit": "{n} règles au maximum",
             "schedule_err_date": "date invalide",
+            "schedule_err_unknown": "« {x} » n’est pas compris",
+            "schedule_err_parens": "parenthèses non appariées",
+            "schedule_err_deep": "condition trop complexe",
+            "schedule_err_random": "le pourcentage doit être de 0 à 100",
+            "schedule_err_size": "trop de texte",
             # Конфигурации
             "config_import_cancelled": "Importation annulée",
             "config_import": "Importer",
@@ -3887,19 +3912,282 @@ ACCT_DIR_NAME = "Prefixfy_accounts"
 _ACCT_FILE_RE = re.compile(r"([0-9]{1,16})\.json")
 _ACCT_DIR_RE = re.compile(r"[0-9]{1,16}")
 _PRESET_ID_RE = re.compile(r"acc([0-9]{1,16})_[0-9a-f]{8}")
-MAX_SCHEDULE_RULES = 24
+MAX_SCHEDULE_RULES = 48
+MAX_SCHEDULE_EXPR_LENGTH = 240
+MAX_SCHEDULE_EXPR_NODES = 40
+MAX_SCHEDULE_EXPR_DEPTH = 8
+MAX_SCHEDULE_TEXT_LENGTH = 8000
+MAX_SCHEDULE_LINES = 200
+MAX_SCHEDULE_NAME_LENGTH = 100
+MAX_IMPORTED_CHAT_BINDINGS = 2000
 _SCHEDULE_DAYS = {
     "mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6,
     "пн": 0, "вт": 1, "ср": 2, "чт": 3, "пт": 4, "сб": 5, "вс": 6, "нд": 6,
     "1": 0, "2": 1, "3": 2, "4": 3, "5": 4, "6": 5, "7": 6,
 }
-_SCHEDULE_DATE = r"(\d{4}-\d{2}-\d{2}|\d{1,2}\.\d{1,2}\.\d{4}|\d{1,2}\.\d{1,2})"
-_SCHEDULE_LEFT_RE = re.compile(
-    r"^(?:" + _SCHEDULE_DATE + r"(?:\s*\.\.\s*" + _SCHEDULE_DATE + r")?\s*)?"
-    r"(?:(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})"
-    r"|(" + _DAYPART_PATTERN + r")(?:\s*[-–—]\s*(" + _DAYPART_PATTERN + r"))?(?![^\W\d_]))?(.*)$",
+_SCHEDULE_DATE = r"([0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4}|[0-9]{1,2}\.[0-9]{1,2})"
+_SCHEDULE_KIND_ALIASES = {
+    "private": ("private", "pm", "dm", "личные", "личный", "лс", "privé", "privés", "個人", "개인"),
+    "group": ("group", "groups", "группа", "группы", "groupe", "groupes", "グループ", "그룹"),
+    "channel": ("channel", "channels", "канал", "каналы", "canal", "canaux", "チャンネル", "채널"),
+}
+_SCHEDULE_KIND_BY_ALIAS = {alias: kind for kind, names in _SCHEDULE_KIND_ALIASES.items() for alias in names}
+_SCHEDULE_DAYSETS = {
+    "weekend": frozenset((5, 6)), "weekends": frozenset((5, 6)), "выходные": frozenset((5, 6)),
+    "weekdays": frozenset(range(5)), "workdays": frozenset(range(5)), "будни": frozenset(range(5)),
+}
+_SCHEDULE_AND = ("and", "и", "et")
+_SCHEDULE_OR = ("or", "или", "ou")
+_SCHEDULE_NOT = ("not", "не", "non")
+_SCHEDULE_ELSE = ("else", "иначе", "sinon", "otherwise")
+_SCHEDULE_CHAT = ("chat", "чат")
+_SCHEDULE_ACCOUNT = ("account", "аккаунт", "compte")
+_SCHEDULE_RANDOM = ("random", "rand", "случайно", "aléatoire")
+
+
+def _schedule_alt(words) -> str:
+    return "|".join(re.escape(word) for word in sorted(words, key=len, reverse=True))
+
+
+_SD_DAY = r"(?:" + _schedule_alt(_SCHEDULE_DAYS) + r")"
+_SD_DAYTOK = _SD_DAY + r"(?:\s*[-–—]\s*" + _SD_DAY + r")?"
+_SCHEDULE_TOKEN_RE = re.compile(
+    r"\s*(?:"
+    r"(?P<date>" + _SCHEDULE_DATE + r"(?:\s*\.\.\s*" + _SCHEDULE_DATE + r")?)(?![\w.])"
+    r"|(?P<time>[0-9]{1,2}:[0-9]{2}\s*[-–—]\s*[0-9]{1,2}:[0-9]{2})(?![0-9])"
+    r"|(?P<part>(?:" + _DAYPART_PATTERN + r")(?:\s*[-–—]\s*(?:" + _DAYPART_PATTERN + r"))?)(?![^\W\d_])"
+    r"|(?P<random>(?:" + _schedule_alt(_SCHEDULE_RANDOM) + r")\s+(?P<pct>[0-9]{1,3})\s*%?)(?!\w)"
+    r"|(?P<chat>(?:" + _schedule_alt(_SCHEDULE_CHAT) + r")\s+(?P<chat_id>-?[0-9]{1,19}))(?!\w)"
+    r"|(?P<account>(?:" + _schedule_alt(_SCHEDULE_ACCOUNT) + r")\s+(?P<uid>[0-9]{1,16}))(?!\w)"
+    r"|(?P<days>" + _SD_DAYTOK + r"(?:\s*,\s*" + _SD_DAYTOK + r"|\s+" + _SD_DAYTOK + r")*)(?!\w)"
+    r"|(?P<word>[^\W\d_]+)(?!\w)"
+    r"|(?P<op>&&|\|\||[()!&|])"
+    r")",
     re.IGNORECASE,
 )
+
+
+class ScheduleRule(NamedTuple):
+    expr: tuple
+    name: str
+    line: int
+    tier: int
+    needs_chat: bool
+    wrapped: tuple
+
+
+class _ScheduleSyntaxError(Exception):
+    def __init__(self, code: str, detail: str = ""):
+        super().__init__(code)
+        self.code = code
+        self.detail = detail
+
+
+def _schedule_days_set(text: str) -> Optional[frozenset]:
+    text = re.sub(r"\s*([-–—])\s*", "-", text.strip().lower())
+    days = set()
+    for token in (t for t in re.split(r"[,\s]+", text) if t):
+        ends = re.split(r"[-–—]", token)
+        if len(ends) > 2 or any(end not in _SCHEDULE_DAYS for end in ends):
+            return None
+        a = _SCHEDULE_DAYS[ends[0]]
+        b = _SCHEDULE_DAYS[ends[-1]]
+        while True:
+            days.add(a)
+            if a == b:
+                break
+            a = (a + 1) % 7
+    return frozenset(days) if days else None
+
+
+def _schedule_tokens(text: str):
+    position, tokens = 0, []
+    text = text.strip()
+    while position < len(text):
+        match = _SCHEDULE_TOKEN_RE.match(text, position)
+        if match is None or match.end() == position:
+            raise _ScheduleSyntaxError("schedule_err_unknown", text[position:position + 16].strip())
+        position = match.end()
+        for kind in ("date", "time", "part", "random", "chat", "account", "days", "word", "op"):
+            if match.group(kind) is not None:
+                tokens.append((kind, match))
+                break
+        if len(tokens) > MAX_SCHEDULE_EXPR_NODES * 3:
+            raise _ScheduleSyntaxError("schedule_err_deep")
+    return tokens
+
+
+class _ScheduleParser:
+    """Условие правила: и / или / не, скобки, «иначе»; между условиями без слова подразумевается «и»."""
+
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.index = 0
+        self.nodes = 0
+        self.has_date = False
+        self.needs_chat = False
+        self.wrapped: List[Tuple[int, int]] = []
+        self.is_else = False
+
+    def _peek(self):
+        return self.tokens[self.index] if self.index < len(self.tokens) else None
+
+    @staticmethod
+    def _op(token) -> str:
+        if token is None:
+            return ""
+        kind, match = token
+        if kind not in ("word", "op"):
+            return ""
+        text = match.group(kind).strip().lower()
+        if kind == "op":
+            return {"&&": "and", "&": "and", "||": "or", "|": "or", "!": "not"}.get(text, text)
+        if text in _SCHEDULE_AND:
+            return "and"
+        if text in _SCHEDULE_OR:
+            return "or"
+        if text in _SCHEDULE_NOT:
+            return "not"
+        if text in _SCHEDULE_ELSE:
+            return "else"
+        return ""
+
+    def _count(self):
+        self.nodes += 1
+        if self.nodes > MAX_SCHEDULE_EXPR_NODES:
+            raise _ScheduleSyntaxError("schedule_err_deep")
+
+    def parse(self):
+        if not self.tokens:
+            raise _ScheduleSyntaxError("schedule_err_format")
+        if len(self.tokens) == 1 and self._op(self.tokens[0]) == "else":
+            self.is_else = True
+            return ("else",)
+        node = self._or(0)
+        if self.index != len(self.tokens):
+            text = self.tokens[self.index][1].group(0).strip()
+            raise _ScheduleSyntaxError("schedule_err_parens" if text == ")" else "schedule_err_unknown", text[:16])
+        return node
+
+    def _or(self, depth):
+        if depth > MAX_SCHEDULE_EXPR_DEPTH:
+            raise _ScheduleSyntaxError("schedule_err_deep")
+        items = [self._and(depth)]
+        while self._op(self._peek()) == "or":
+            self.index += 1
+            items.append(self._and(depth))
+        return items[0] if len(items) == 1 else ("or", tuple(items))
+
+    def _starts_unary(self, token) -> bool:
+        if token is None:
+            return False
+        kind, match = token
+        if kind == "op":
+            return match.group("op").strip() in ("(", "!")
+        if kind == "word":
+            return self._op(token) in ("", "not")
+        return True
+
+    def _and(self, depth):
+        items = [self._unary(depth)]
+        while True:
+            token = self._peek()
+            if self._op(token) == "and":
+                self.index += 1
+                items.append(self._unary(depth))
+            elif self._starts_unary(token):
+                items.append(self._unary(depth))
+            else:
+                break
+        return items[0] if len(items) == 1 else ("and", tuple(items))
+
+    def _unary(self, depth):
+        token = self._peek()
+        if token is None:
+            raise _ScheduleSyntaxError("schedule_err_format")
+        if self._op(token) == "not":
+            self.index += 1
+            self._count()
+            return ("not", self._unary(depth + 1))
+        kind, match = token
+        if kind == "op" and match.group("op").strip() == "(":
+            self.index += 1
+            node = self._or(depth + 1)
+            closing = self._peek()
+            if closing is None or closing[0] != "op" or closing[1].group("op").strip() != ")":
+                raise _ScheduleSyntaxError("schedule_err_parens")
+            self.index += 1
+            return node
+        self.index += 1
+        return self._atom(kind, match)
+
+    def _atom(self, kind, match):
+        self._count()
+        if kind == "date":
+            parts = [part for part in re.split(r"\s*\.\.\s*", match.group("date").strip()) if part]
+            first, last = _parse_schedule_date(parts[0]), _parse_schedule_date(parts[-1])
+            if (first is None or last is None or (first[0] is None) != (last[0] is None)
+                    or (first[0] is not None and _date(*first) > _date(*last))):
+                raise _ScheduleSyntaxError("schedule_err_date")
+            self.has_date = True
+            return ("date", (first, last))
+        if kind == "time":
+            h1, m1, h2, m2 = (int(x) for x in re.findall(r"[0-9]+", match.group("time")))
+            if not (0 <= h1 <= 23 and 0 <= h2 <= 23 and 0 <= m1 <= 59 and 0 <= m2 <= 59) or (h1, m1) == (h2, m2):
+                raise _ScheduleSyntaxError("schedule_err_time")
+            return self._time_node(h1 * 60 + m1, h2 * 60 + m2)
+        if kind == "part":
+            names = [n for n in re.split(r"\s*[-–—]\s*", match.group("part").strip().casefold()) if n]
+            first_part, last_part = DAYPART_BY_ALIAS.get(names[0]), DAYPART_BY_ALIAS.get(names[-1])
+            if first_part is None or last_part is None:
+                raise _ScheduleSyntaxError("schedule_err_unknown", match.group("part").strip()[:16])
+            begin = DAYPART_BOUNDS[first_part][0]
+            finish = DAYPART_BOUNDS[last_part][1]
+            if begin == finish:
+                raise _ScheduleSyntaxError("schedule_err_time")
+            return self._time_node(begin, finish)
+        if kind == "days":
+            days = _schedule_days_set(match.group("days"))
+            if days is None:
+                raise _ScheduleSyntaxError("schedule_err_days")
+            return ("days", days)
+        if kind == "random":
+            percent = int(match.group("pct"))
+            if not 0 <= percent <= 100:
+                raise _ScheduleSyntaxError("schedule_err_random")
+            return ("random", percent)
+        if kind == "chat":
+            number = int(match.group("chat_id"))
+            if abs(number) >= 2 ** 63:
+                raise _ScheduleSyntaxError("schedule_err_unknown", match.group("chat")[:16])
+            self.needs_chat = True
+            return ("chat", number)
+        if kind == "account":
+            self.needs_chat = True
+            return ("account", int(match.group("uid")))
+        if kind == "word":
+            word = match.group("word").strip().lower()
+            if word in _SCHEDULE_KIND_BY_ALIAS:
+                self.needs_chat = True
+                return ("kind", _SCHEDULE_KIND_BY_ALIAS[word])
+            if word in _SCHEDULE_DAYSETS:
+                return ("days", _SCHEDULE_DAYSETS[word])
+        raise _ScheduleSyntaxError("schedule_err_unknown", match.group(0).strip()[:16])
+
+    def _time_node(self, begin, finish):
+        if begin > finish:
+            self.wrapped.append((begin, finish))
+        return ("time", begin, finish)
+
+
+def parse_schedule_expression(text: str):
+    """Условие правила -> (дерево, ярус, нужен ли чат, интервалы через полночь). Ярусы: 0 — с датой, 1 — остальные, 2 — «иначе»."""
+    if len(text) > MAX_SCHEDULE_EXPR_LENGTH:
+        raise _ScheduleSyntaxError("schedule_err_deep")
+    parser = _ScheduleParser(_schedule_tokens(text))
+    tree = parser.parse()
+    tier = 2 if parser.is_else else (0 if parser.has_date else 1)
+    return tree, tier, parser.needs_chat, tuple(parser.wrapped)
 
 
 _CHAT_ID_RE = re.compile(r"-?[0-9]{1,20}")
@@ -3918,25 +4206,6 @@ def parse_chat_configs(raw) -> Dict[str, str]:
 
 def dump_chat_configs(mapping: Dict[str, str]) -> str:
     return json.dumps(mapping, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-
-
-def _parse_schedule_days(text: str) -> Optional[frozenset]:
-    tokens = [t for t in re.split(r"[,\s]+", text.strip().lower().rstrip(".")) if t]
-    if not tokens:
-        return frozenset(range(7))
-    days = set()
-    for token in tokens:
-        first, dash, last = token.partition("-")
-        if first not in _SCHEDULE_DAYS or (dash and last not in _SCHEDULE_DAYS):
-            return None
-        a = _SCHEDULE_DAYS[first]
-        b = _SCHEDULE_DAYS[last] if dash else a
-        while True:
-            days.add(a)
-            if a == b:
-                break
-            a = (a + 1) % 7
-    return frozenset(days)
 
 
 def _parse_schedule_date(token: str):
@@ -3961,81 +4230,134 @@ def _schedule_dates_hit(dates, day) -> bool:
     return first <= today <= last if first <= last else (today >= first or today <= last)
 
 
+def _parse_schedule_line(line: str, number: int):
+    """Одна строка -> (правило, None) или (None, ошибка). Не бросает исключений."""
+    try:
+        left, separator, name = line.partition("=")
+        name = name.strip()
+        if not separator or not name or not left.strip():
+            return None, (number, "schedule_err_format", "")
+        if len(name) > MAX_SCHEDULE_NAME_LENGTH:
+            return None, (number, "schedule_err_size", "")
+        tree, tier, needs_chat, wrapped = parse_schedule_expression(left)
+        return ScheduleRule(tree, name, number, tier, needs_chat, wrapped), None
+    except _ScheduleSyntaxError as exc:
+        return None, (number, exc.code, exc.detail)
+    except RecursionError:
+        return None, (number, "schedule_err_deep", "")
+    except Exception:
+        return None, (number, "schedule_err_format", "")
+
+
 def parse_schedule(raw):
+    """Строки расписания -> (правила, ошибки). Ошибка — (номер строки, код, подробность).
+    Слишком большой текст не разбирается вовсе: правил нет, ошибка одна."""
+    text = as_text(raw)
+    if len(text) > MAX_SCHEDULE_TEXT_LENGTH:
+        return [], [(1, "schedule_err_size", "")]
+    lines = text.splitlines()
+    if len(lines) > MAX_SCHEDULE_LINES:
+        return [], [(MAX_SCHEDULE_LINES + 1, "schedule_err_size", "")]
     rules, errors = [], []
-    number = 0
-    for line in as_text(raw).splitlines():
-        number += 1
+    for number, line in enumerate(lines, 1):
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        left, separator, name = line.partition("=")
-        name = name.strip()
-        match = _SCHEDULE_LEFT_RE.match(left.strip()) if separator and name else None
-        if match is None:
-            errors.append((number, "schedule_err_format"))
-            continue
-        first, last, h1, m1, h2, m2, part_a, part_b, rest = match.groups()
-        if first is None and h1 is None and part_a is None:
-            errors.append((number, "schedule_err_format"))
-            continue
-        dates = None
-        if first is not None:
-            start_date = _parse_schedule_date(first)
-            end_date = _parse_schedule_date(last) if last is not None else start_date
-            if (start_date is None or end_date is None or (start_date[0] is None) != (end_date[0] is None)
-                    or (start_date[0] is not None and _date(*start_date) > _date(*end_date))):
-                errors.append((number, "schedule_err_date"))
-                continue
-            dates = (start_date, end_date)
-        if part_a is not None:
-            first_part = DAYPART_BY_ALIAS[part_a.casefold()]
-            last_part = DAYPART_BY_ALIAS[part_b.casefold()] if part_b is not None else first_part
-            start, end = DAYPART_BOUNDS[first_part][0], DAYPART_BOUNDS[last_part][1]
-            if start == end:
-                errors.append((number, "schedule_err_time"))
-                continue
-        elif h1 is None:
-            start, end = 0, 24 * 60
+        rule, error = _parse_schedule_line(line, number)
+        if error is not None:
+            errors.append(error)
         else:
-            h1, m1, h2, m2 = int(h1), int(m1), int(h2), int(m2)
-            if not (0 <= h1 <= 23 and 0 <= h2 <= 23 and 0 <= m1 <= 59 and 0 <= m2 <= 59) or (h1, m1) == (h2, m2):
-                errors.append((number, "schedule_err_time"))
-                continue
-            start, end = h1 * 60 + m1, h2 * 60 + m2
-        days = _parse_schedule_days(rest)
-        if days is None:
-            errors.append((number, "schedule_err_days"))
-            continue
-        rules.append((start, end, days, name, number, dates))
+            rules.append(rule)
     if len(rules) > MAX_SCHEDULE_RULES:
-        errors.append((number, "schedule_err_limit"))
+        errors.append((len(lines), "schedule_err_limit", ""))
     return rules[:MAX_SCHEDULE_RULES], errors
 
 
-def schedule_match(rules, now, resolve=None):
+def clean_schedule_text(raw) -> str:
+    """Для импорта: оставляет только правильные правила (до MAX_SCHEDULE_RULES), всё остальное отбрасывается."""
+    text = as_text(raw)
+    if len(text) > MAX_SCHEDULE_TEXT_LENGTH:
+        return ""
+    kept: List[str] = []
+    for number, line in enumerate(text.splitlines()[:MAX_SCHEDULE_LINES], 1):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if _parse_schedule_line(line, number)[0] is not None:
+            kept.append(line)
+            if len(kept) >= MAX_SCHEDULE_RULES:
+                break
+    return "\n".join(kept)
+
+
+class _ScheduleEnv:
+    def __init__(self, minutes, anchor, chat):
+        self.minutes = minutes
+        self.anchor = anchor
+        self._chat_source = chat
+        self._chat = None
+
+    def chat(self):
+        if self._chat is None:
+            try:
+                info = self._chat_source() if callable(self._chat_source) else None
+                self._chat = tuple(info) if info else (None, None, None)
+            except Exception:
+                self._chat = (None, None, None)
+        return self._chat
+
+
+def _schedule_eval(node, env) -> bool:
+    op = node[0]
+    if op == "and":
+        return all(_schedule_eval(item, env) for item in node[1])
+    if op == "or":
+        return any(_schedule_eval(item, env) for item in node[1])
+    if op == "not":
+        return not _schedule_eval(node[1], env)
+    if op == "else":
+        return True
+    if op == "time":
+        begin, finish, minutes = node[1], node[2], env.minutes
+        return begin <= minutes < finish if begin < finish else (minutes >= begin or minutes < finish)
+    if op == "days":
+        return env.anchor.weekday() in node[1]
+    if op == "date":
+        return _schedule_dates_hit(node[1], env.anchor)
+    if op == "random":
+        return random.random() * 100 < node[1]
+    kind, chat_id, uid = env.chat()
+    if op == "kind":
+        return kind == node[1]
+    if op == "chat":
+        return chat_id == node[1]
+    if op == "account":
+        return uid == node[1]
+    return False
+
+
+def schedule_match(rules, now, resolve=None, chat=None):
+    """Имя (или результат resolve) первого подходящего правила. Порядок: правила с датой, остальные, затем «иначе».
+    День недели и дата правила считаются по дню начала интервала, если время перешло через полночь.
+    chat — функция без аргументов, возвращающая (вид чата, id чата, id аккаунта); вызывается только если она нужна."""
     minutes = now.hour * 60 + now.minute
     today = now.date()
     yesterday = today - timedelta(days=1)
-
-    def day_ok(days, dates, day):
-        return day.weekday() in days and (dates is None or _schedule_dates_hit(dates, day))
-
-    for dated in (True, False):
-        for start, end, days, name, _line, dates in rules:
-            if (dates is not None) != dated:
+    for tier in (0, 1, 2):
+        for rule in rules:
+            if rule.tier != tier:
                 continue
-            if start < end:
-                hit = start <= minutes < end and day_ok(days, dates, today)
-            elif minutes >= start:
-                hit = day_ok(days, dates, today)
-            else:
-                hit = minutes < end and day_ok(days, dates, yesterday)
+            tail = any(minutes < finish for _begin, finish in rule.wrapped)
+            env = _ScheduleEnv(minutes, yesterday if tail else today, chat if rule.needs_chat else None)
+            try:
+                hit = _schedule_eval(rule.expr, env)
+            except Exception:
+                hit = False
             if not hit:
                 continue
             if resolve is None:
-                return name
-            target = resolve(name)
+                return rule.name
+            target = resolve(rule.name)
             if target:
                 return target
     return None
@@ -13655,7 +13977,12 @@ class PrefixfyPlugin(BasePlugin):
         raw = as_text(self.get_setting(SCHEDULE_KEY, ""))
         cached = self._schedule_cache
         if cached is None or cached[0] != raw:
-            cached = self._schedule_cache = (raw, parse_schedule(raw)[0])
+            try:
+                parsed = parse_schedule(raw)[0]
+            except Exception as exc:
+                self.log(f"Prefixfy schedule parse failed: {exc}")
+                parsed = []
+            cached = self._schedule_cache = (raw, parsed)
         return cached[1]
 
     def prune_chat_bindings(self):
@@ -13701,7 +14028,9 @@ class PrefixfyPlugin(BasePlugin):
         source = as_text(section.get("source")).strip()
         mapping = dict(self._chat_bindings())
         chats = section.get("chats")
-        for dialog, name in (chats.items() if isinstance(chats, dict) else ()):
+        for dialog, name in (list(chats.items())[:MAX_IMPORTED_CHAT_BINDINGS] if isinstance(chats, dict) else ()):
+            if not _CHAT_BIND_KEY_RE.fullmatch(str(dialog)):
+                continue
             name = as_text(name).strip()
             target = new_name if new_name and source and name.casefold() == source.casefold() else name
             config_id = configs.find_id_by_name(target)
@@ -13711,7 +14040,7 @@ class PrefixfyPlugin(BasePlugin):
         rules = as_text(section.get("rules", ""))
         if new_name and source:
             rules = rename_schedule_target(rules, source, new_name)[0]
-        self.set_setting(SCHEDULE_KEY, rules)
+        self.set_setting(SCHEDULE_KEY, clean_schedule_text(rules))
 
     _acc_cache = (0.0, {})
 
@@ -13923,13 +14252,26 @@ class PrefixfyPlugin(BasePlugin):
         if config_id is None:
             rules = self._schedule_rules() if FEATURES.on("schedule") else None
             if rules:
-                config_id = schedule_match(rules, datetime.now(), configs.find_id_by_name)
+                config_id = schedule_match(rules, datetime.now(), configs.find_id_by_name, lambda: self._schedule_chat_info(account, dialog_id))
         if config_id is None or config_id == runtime.config_id:
             return runtime
         owner = configs._owner_of(config_id)
         if owner is None:
             return configs.runtime_for(config_id) or runtime
         return configs.accounts.runtime_for_preset(owner, config_id) or runtime
+
+    def _schedule_chat_info(self, account, dialog_id):
+        """Для условий расписания: (вид чата, id чата, id аккаунта). Неизвестное остаётся None."""
+        kind = chat_id = uid = None
+        try:
+            if _is_int(dialog_id):
+                chat_id = int(dialog_id)
+                kind = self._dialog_kind(account, chat_id) if account is not None or chat_id > 0 else None
+            if account is not None:
+                uid = self._accounts().get(int(account))
+        except Exception as exc:
+            self.log(f"Prefixfy schedule chat info failed: {exc}")
+        return kind, chat_id, uid
 
     def _show_chat_config_picker(self, context):
         if self._update_blocked(context):
@@ -13976,12 +14318,12 @@ class PrefixfyPlugin(BasePlugin):
             rules, errors = parse_schedule(value)
             problem = None
             if errors:
-                number, code = errors[0]
-                problem = (number, self._tr(code, n=MAX_SCHEDULE_RULES))
+                number, code, detail = errors[0]
+                problem = (number, self._tr(code, n=MAX_SCHEDULE_RULES, x=detail))
             else:
                 for rule in rules:
-                    if configs.find_id_by_name(rule[3]) is None:
-                        problem = (rule[4], self._tr("schedule_err_config", name=rule[3]))
+                    if configs.find_id_by_name(rule.name) is None:
+                        problem = (rule.line, self._tr("schedule_err_config", name=rule.name))
                         break
             if problem:
                 editor.setError(self._tr("schedule_error", n=problem[0], reason=problem[1]))
