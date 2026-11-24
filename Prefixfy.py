@@ -74,8 +74,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "50.3.0"
-__build__ = "50.3.0_20261124.1_99"
+__version__ = "50.4.0"
+__build__ = "50.4.0_20261124.2_100"
 __icon__ = "http_Prefixfy_by_fStikBot/3"
 __app_version__ = ">=12.10.6"
 __sdk_version__ = ">=1.4.5.0"
@@ -97,7 +97,7 @@ FLAGS_MAX_COUNT = 128
 FLAGS_MAX_ACCOUNTS = 1024
 FLAGS_MAX_BYTES = 256 * 1024
 MANIFEST_MAX_FILE_SIZE = 8 * 1024 * 1024
-# 50.3.0: необязательный список изменений в манифесте. Он только показывается в окне обновления и ни на что не влияет;
+# 50.4.0: необязательный список изменений в манифесте. Он только показывается в окне обновления и ни на что не влияет;
 # что бы ни лежало в поле "changelog", разбор его не может уронить проверку манифеста (см. parse_changelog).
 CHANGELOG_MAX_ITEMS = 30
 CHANGELOG_ITEM_LIMIT = 300
@@ -173,6 +173,11 @@ SETUP_STAGE_KEY = "Prefixfy_setup_stage"
 SETUP_SEEN_KEY = "Prefixfy_setup_seen"
 WELCOME_UNTIL_KEY = "Prefixfy_welcome_until"
 WELCOME_SECONDS = 4 * 3600
+# 50.4.0: «Обновление завершено» после установки через OTA. Окно живёт по тем же правилам, что и «Спасибо за установку»:
+# WELCOME_SECONDS или до «Понятно». UPDATED_BUILD_KEY помнит сборку, для которой плашка уже была, и не даёт включить её второй раз.
+UPDATED_UNTIL_KEY = "Prefixfy_updated_until"
+UPDATED_BUILD_KEY = "Prefixfy_updated_build"
+UPDATED_NOTES_KEY = "Prefixfy_updated_notes"
 SETUP_STAGE_COUNT = 3
 SETUP_DONE = SETUP_STAGE_COUNT + 1
 MAX_STORE_JSON_BYTES = 2 * 1024 * 1024
@@ -811,6 +816,8 @@ class LocalizationManager:
             "welcome_title": "Добро пожаловать в Prefixfy",
             "welcome_body": "Prefixfy добавляет к вашим сообщениям маску: текст до или после сообщения, оформление и украшения.\n\nЧто умеет плагин:\n• маска с Markdown, стилями текста и разделителями\n• милые эффекты: каомодзи, UwU, украшения\n• медиа, которое прикладывается к сообщениям\n• исключения: чаты, где плагин не работает, или наоборот, только они\n• несколько конфигураций с импортом, экспортом и расписанием\n• свои настройки для каждого аккаунта\n\nС чего начать:\n1. В разделе «Оформление текста» задайте маску.\n2. В разделе «Где работает» выберите, что оформлять.\n3. Чтобы исключить чат или вернуть его, откройте меню в самом чате.\n\nВот и всё — просто пишите сообщения.",
             "welcome_ok": "Понятно",
+            "updated_banner": "Обновление завершено",
+            "updated_banner_subtext": "Нажмите для просмотра",
         },
         "en": {
             # Общие действия, ошибки, подсказки редакторов
@@ -1260,6 +1267,8 @@ class LocalizationManager:
             "welcome_title": "Welcome to Prefixfy",
             "welcome_body": "Prefixfy adds a mask to your messages: text before or after the message, styling and decorations.\n\nWhat it can do:\n• a mask with Markdown, text styles and separators\n• cute effects: kaomoji, UwU, decorations\n• media attached to your messages\n• exceptions: chats where the plugin is off, or only those chats\n• several configurations with import, export and a schedule\n• separate settings for each account\n\nGetting started:\n1. Set your mask in “Text appearance”.\n2. Choose what to style in “Where it works”.\n3. To exclude a chat or bring it back, open the menu inside that chat.\n\nThat’s it — just write messages.",
             "welcome_ok": "Got it",
+            "updated_banner": "Update complete",
+            "updated_banner_subtext": "Tap to view",
         },
         "ja": {
             # Общие действия, ошибки, подсказки редакторов
@@ -1709,6 +1718,8 @@ class LocalizationManager:
             "welcome_title": "Prefixfy へようこそ",
             "welcome_body": "Prefixfy はメッセージにマスクを追加します。メッセージの前後のテキスト、装飾、デコレーションです。\n\nできること：\n• Markdown、テキストのスタイル、区切り文字を使ったマスク\n• かわいいエフェクト：顔文字、UwU、デコレーション\n• メッセージに添付するメディア\n• 除外：プラグインを使わないチャット、またはそのチャットだけで使う設定\n• インポート・エクスポート・スケジュールに対応した複数の設定セット\n• アカウントごとの設定\n\nはじめかた：\n1.「テキストの装飾」でマスクを設定します。\n2.「適用範囲」で装飾する対象を選びます。\n3. チャットを除外したり戻したりするには、そのチャットのメニューを開きます。\n\nあとはメッセージを書くだけです。",
             "welcome_ok": "OK",
+            "updated_banner": "アップデートが完了しました",
+            "updated_banner_subtext": "タップして確認",
         },
         "ko": {
             # Общие действия, ошибки, подсказки редакторов
@@ -2158,6 +2169,8 @@ class LocalizationManager:
             "welcome_title": "Prefixfy에 오신 것을 환영합니다",
             "welcome_body": "Prefixfy는 메시지에 마스크를 더합니다. 메시지 앞뒤의 텍스트, 꾸미기, 장식입니다.\n\n할 수 있는 일:\n• Markdown, 텍스트 스타일, 구분자를 쓴 마스크\n• 귀여운 효과: 카오모지, UwU, 장식\n• 메시지에 첨부되는 미디어\n• 예외: 플러그인을 쓰지 않을 채팅, 또는 그 채팅에서만 쓰기\n• 가져오기, 내보내기, 일정을 지원하는 여러 구성\n• 계정별 설정\n\n시작하기:\n1. ‘텍스트 꾸미기’에서 마스크를 정합니다.\n2. ‘적용 범위’에서 꾸밀 대상을 고릅니다.\n3. 채팅을 제외하거나 되돌리려면 그 채팅의 메뉴를 엽니다.\n\n이제 메시지를 쓰기만 하면 됩니다.",
             "welcome_ok": "확인",
+            "updated_banner": "업데이트가 완료되었습니다",
+            "updated_banner_subtext": "눌러서 확인하기",
         },
         "fr": {
             # Общие действия, ошибки, подсказки редакторов
@@ -2607,6 +2620,8 @@ class LocalizationManager:
             "welcome_title": "Bienvenue dans Prefixfy",
             "welcome_body": "Prefixfy ajoute un masque à vos messages : du texte avant ou après le message, de la mise en forme et des décorations.\n\nCe qu’il sait faire :\n• un masque avec Markdown, styles de texte et séparateurs\n• des effets mignons : kaomoji, UwU, décorations\n• un média joint à vos messages\n• des exceptions : les chats où le plugin est désactivé, ou uniquement ceux-là\n• plusieurs configurations avec importation, exportation et planning\n• des réglages séparés pour chaque compte\n\nPour commencer :\n1. Définissez votre masque dans « Apparence du texte ».\n2. Choisissez ce qu’il faut mettre en forme dans « Où il agit ».\n3. Pour exclure un chat ou le réintégrer, ouvrez le menu dans ce chat.\n\nC’est tout : écrivez simplement vos messages.",
             "welcome_ok": "Compris",
+            "updated_banner": "Mise à jour terminée",
+            "updated_banner_subtext": "Touchez pour voir",
         },
     }
 
@@ -10931,7 +10946,7 @@ _WIPE_MEDIA_RESET = {
 }
 _WIPE_INTERNAL_KEYS = {
     SCHEMA_KEY: SCHEMA_VERSION, CHAT_COUNTS_KEY: "", COUNTER_KEY: 0,
-    SETUP_STAGE_KEY: 1, SETUP_SEEN_KEY: 1, WELCOME_UNTIL_KEY: 0,
+    SETUP_STAGE_KEY: 1, SETUP_SEEN_KEY: 1, WELCOME_UNTIL_KEY: 0, UPDATED_UNTIL_KEY: 0, UPDATED_NOTES_KEY: "",
     "Prefixfy_markdown_style_pick": 0, "Prefixfy_text_style_pick": 0,
     CHAT_CONFIGS_KEY: "{}", SCHEDULE_KEY: "", ACCT_MODE_KEY: False, ACCT_TARGET_KEY: ACCT_AUTO, ACCT_LIVE_KEY: "", ACCT_PINS_KEY: "",
     **{key: "" for key in LEGACY_SETTING_KEYS},  # старые плоские конфигурации тоже содержат пользовательские настройки
@@ -12182,6 +12197,19 @@ class RemoteControl:
             return None
         return state
 
+    def release_notes(self) -> Optional[Dict[str, Tuple[str, ...]]]:
+        """50.4.0: список изменений текущей сборки из проверенного подписанного манифеста.
+        None, если манифеста именно этой сборки нет (нет сети, кэш устарел, проверки выключены)."""
+        try:
+            with self._lock:
+                state = self._state
+            if not state or tuple(state["version"]) != parse_version(__build__):
+                return None
+            notes = state.get("changelog")
+            return notes if isinstance(notes, dict) else {}
+        except Exception:
+            return None
+
     def reinstall_state(self) -> Optional[Dict[str, Any]]:
         """Проверенный подписанный манифест для переустановки текущей сборки без обновления (перед сбросом данных).
         Не зависит от того, есть ли новая версия, от списка плохих серий и от прошлых установок."""
@@ -12996,6 +13024,7 @@ class PrefixfyPlugin(BasePlugin):
             self.remote.ota_loaded()
         except Exception as exc:
             self.log(f"Prefixfy OTA confirm failed: {exc}")
+        self._updated_arm()
         if self._wiped_clean or self._auto_reset_done:
             notice = "wipe_auto_reset_done" if self._auto_reset_done else "wipe_done"
             self._wiped_clean = False
@@ -15292,11 +15321,15 @@ class PrefixfyPlugin(BasePlugin):
             build = parse_version(__build__)
             if not build or not build < tuple(state["version"]):
                 return ""
-            lines = changelog_for_language(state.get("changelog"), self.localization.language())
-            body = "\n".join("\u2022 " + line for line in lines) if lines else self._tr("ota_dl_changelog_none")
-            return self._tr("ota_dl_changelog") + ":\n" + body
+            return self._changelog_block(state.get("changelog"))
         except Exception:
             return ""
+
+    def _changelog_block(self, changelog) -> str:
+        """Блок «Что нового» с пунктами на языке плагина, либо с пометкой, что разработчик ничего не указал."""
+        lines = changelog_for_language(changelog, self.localization.language())
+        body = "\n".join("\u2022 " + line for line in lines) if lines else self._tr("ota_dl_changelog_none")
+        return self._tr("ota_dl_changelog") + ":\n" + body
 
     def _ota_info_text(self, state) -> str:
         tr = self._tr
@@ -15610,6 +15643,93 @@ class PrefixfyPlugin(BasePlugin):
         builder.set_positive_button(self._tr("welcome_ok"), understood)
         self._show_builder(builder)
 
+    def _updated_arm(self):
+        """50.4.0: включает плашку «Обновление завершено», если эту сборку поставил модуль OTA со старой версии.
+        Признак: файл состояния OTA, который пишет установщик (старая версия) при смене разделов: state=pending,
+        to равен нашей сборке, prev старше её, это не самолечение (heal). Повторные загрузки той же сборки плашку не включают."""
+        try:
+            data = _ota_read()
+            build = parse_version(__build__)
+            previous = parse_version(data.get("prev"))
+            if (data.get("state") != "pending" or data.get("to") != __build__ or data.get("heal") is True
+                    or not build or not previous or not previous < build):
+                return
+            if as_text(self.get_setting(UPDATED_BUILD_KEY, "")) == __build__:
+                return
+            remote = getattr(self, "remote", None)
+            notes = remote.release_notes() if remote is not None else None
+            packed = json.dumps({code: list(lines) for code, lines in notes.items()}, ensure_ascii=False) if notes else ""
+            self.set_setting(UPDATED_BUILD_KEY, __build__, reload_settings=False)
+            self.set_setting(UPDATED_NOTES_KEY, packed, reload_settings=False)
+            self.set_setting(UPDATED_UNTIL_KEY, time.time() + WELCOME_SECONDS, reload_settings=False)
+        except Exception as exc:
+            self.log(f"Prefixfy update notice failed: {exc}")
+
+    def _updated_items(self) -> List[Any]:
+        """Плашка «Обновление завершено» вверху настроек: те же правила, что у плашки-благодарности."""
+        try:
+            until = float(self.get_setting(UPDATED_UNTIL_KEY, 0) or 0)
+        except Exception:
+            return []
+        if until <= 0:
+            return []
+        if time.time() >= until:
+            try:
+                self.set_setting(UPDATED_UNTIL_KEY, 0, reload_settings=False)
+            except Exception as exc:
+                self.log(f"Prefixfy update notice clear failed: {exc}")
+            return []
+        tr = self._tr
+        return [self._setup_button(
+            tr("updated_banner"), tr("updated_banner_subtext"), self._icon("msg_download", "msg_info"),
+            self._show_updated_dialog, accent=True,
+        )]
+
+    def _updated_text(self) -> str:
+        tr = self._tr
+        parts = parse_version(__build__)
+        lines = []
+        if len(parts) >= 3:
+            lines.append(f"{tr('about_version')}: {parts[0]}.{parts[1]}.{parts[2]}")
+        label = format_version(parts) if parts else ""
+        if label:
+            lines.append(f"{tr('about_build_label')}: {label}")
+        notes: Dict[str, Tuple[str, ...]] = {}
+        try:
+            raw = self.get_setting(UPDATED_NOTES_KEY, "")
+            notes = parse_changelog(json.loads(raw)) if isinstance(raw, str) and raw else {}
+        except Exception:
+            notes = {}
+        if not notes:
+            # при включении плашки манифеста этой сборки в кэше могло не быть: смотрим, нет ли его сейчас
+            remote = getattr(self, "remote", None)
+            notes = (remote.release_notes() if remote is not None else None) or {}
+        return "\n".join(lines) + ("\n\n" if lines else "") + self._changelog_block(notes)
+
+    def _show_updated_dialog(self, *_):
+        activity = self._dialog_activity()
+        if not activity:
+            return
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(self._tr("updated_banner"))
+        try:
+            message = self._updated_text()
+        except Exception as exc:
+            self.log(f"Prefixfy update notice text failed: {exc}")
+            message = self._tr("ota_dl_changelog") + ":\n" + self._tr("ota_dl_changelog_none")
+        builder.set_message(message)
+
+        def understood(bld, which):
+            bld.dismiss()
+            try:
+                self.set_setting(UPDATED_UNTIL_KEY, 0, reload_settings=False)
+                self.reload_settings_ui()
+            except Exception as exc:
+                self.log(f"Prefixfy update notice dismiss failed: {exc}")
+
+        builder.set_positive_button(self._tr("welcome_ok"), understood)
+        self._show_builder(builder)
+
     def _setup_button(self, text, subtext, icon, on_click, accent=False):
         if accent:
             try:
@@ -15758,7 +15878,7 @@ class PrefixfyPlugin(BasePlugin):
             wizard = self._settings_setup(self._setup_stage())
             if wizard:
                 return wizard
-        settings: List[Any] = self._welcome_items() + list(notice)
+        settings: List[Any] = self._welcome_items() + self._updated_items() + list(notice)
         try:
             self.configurations.sync_target()
         except Exception as exc:
