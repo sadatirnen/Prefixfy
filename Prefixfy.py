@@ -68,11 +68,11 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "52.0.0"
-__build__ = "52.0.0_20261125.1_103"
+__version__ = "52.1.0"
+__build__ = "52.1.0_20261125.2_104"
 __icon__ = "http_Prefixfy_by_fStikBot/3"
 __app_version__ = ">=13.1.1"
-__sdk_version__ = ">=1.4.6.4"
+__sdk_version__ = ">=1.4.6.5"
 
 
 REPO_URL = "https://github.com/sadatirnen/Prefixfy"
@@ -553,6 +553,9 @@ class LocalizationManager:
             "exceptions_chat_menu": "Исключения: добавить или убрать чат",
             "exceptions_chat_added": "Чат добавлен в исключения",
             "exceptions_chat_removed": "Чат убран из исключений",
+            "exceptions_chat_now_off": "В этом чате Prefixfy больше не оформляет сообщения",
+            "exceptions_chat_now_on": "В этом чате Prefixfy снова оформляет сообщения",
+            "exceptions_chat_other_config": "Список изменён, но этот чат оформляется по другой конфигурации (привязка, расписание или настройки аккаунта)",
             "exceptions_count": "Правил: {n}, чатов: {m}",
             # Premium Emoji
             "capture_custom_emoji": "Получить код Premium Emoji",
@@ -1009,6 +1012,9 @@ class LocalizationManager:
             "exceptions_chat_menu": "Exceptions: add or remove chat",
             "exceptions_chat_added": "Chat added to exceptions",
             "exceptions_chat_removed": "Chat removed from exceptions",
+            "exceptions_chat_now_off": "Prefixfy no longer decorates messages in this chat",
+            "exceptions_chat_now_on": "Prefixfy decorates messages in this chat again",
+            "exceptions_chat_other_config": "The list was changed, but this chat follows another configuration (chat binding, schedule or account settings)",
             "exceptions_count": "Rules: {n}, chats: {m}",
             # Premium Emoji
             "capture_custom_emoji": "Get Premium Emoji code",
@@ -1465,6 +1471,9 @@ class LocalizationManager:
             "exceptions_chat_menu": "除外に追加 / 除外から外す",
             "exceptions_chat_added": "チャットを除外に追加しました",
             "exceptions_chat_removed": "チャットを除外から外しました",
+            "exceptions_chat_now_off": "このチャットでは Prefixfy はメッセージを装飾しません",
+            "exceptions_chat_now_on": "このチャットで Prefixfy が再びメッセージを装飾します",
+            "exceptions_chat_other_config": "リストは変更されましたが、このチャットは別の構成（チャットの割り当て、スケジュール、アカウント設定）に従います",
             "exceptions_count": "ルール：{n}、チャット：{m}",
             # Premium Emoji
             "capture_custom_emoji": "Premium 絵文字のコードを取得",
@@ -1921,6 +1930,9 @@ class LocalizationManager:
             "exceptions_chat_menu": "예외에 추가 / 예외에서 빼기",
             "exceptions_chat_added": "채팅을 예외에 추가했습니다",
             "exceptions_chat_removed": "채팅을 예외에서 뺐습니다",
+            "exceptions_chat_now_off": "이 채팅에서는 Prefixfy가 더 이상 메시지를 꾸미지 않습니다",
+            "exceptions_chat_now_on": "이 채팅에서 Prefixfy가 다시 메시지를 꾸밉니다",
+            "exceptions_chat_other_config": "목록은 바뀌었지만 이 채팅은 다른 구성(채팅 연결, 일정 또는 계정 설정)을 따릅니다",
             "exceptions_count": "규칙: {n}개, 채팅: {m}개",
             # Premium Emoji
             "capture_custom_emoji": "Premium 이모지 코드 받기",
@@ -2377,6 +2389,9 @@ class LocalizationManager:
             "exceptions_chat_menu": "Exceptions : ajouter ou retirer le chat",
             "exceptions_chat_added": "Chat ajouté aux exceptions",
             "exceptions_chat_removed": "Chat retiré des exceptions",
+            "exceptions_chat_now_off": "Prefixfy ne décore plus les messages dans ce chat",
+            "exceptions_chat_now_on": "Prefixfy décore de nouveau les messages dans ce chat",
+            "exceptions_chat_other_config": "La liste a été modifiée, mais ce chat suit une autre configuration (liaison de chat, planning ou réglages du compte)",
             "exceptions_count": "Règles : {n}, chats : {m}",
             # Premium Emoji
             "capture_custom_emoji": "Obtenir le code d’un Premium Emoji",
@@ -3503,14 +3518,25 @@ class StyleLayout:
         return begin, max(0, finish - begin)
 
 
+_BOT_API_CHANNEL_SHIFT = 10 ** 12
+
+
+def normalize_dialog_id(number: int) -> int:
+    """52.1.0: id канала или супергруппы в формате Bot API (-100XXXXXXXXXX, его показывают боты вроде @userinfobot)
+    -> dialog_id клиента (-XXXXXXXXXX). Раньше такой id в списке исключений просто ни с чем не совпадал."""
+    if -2 * _BOT_API_CHANNEL_SHIFT < number <= -_BOT_API_CHANNEL_SHIFT:
+        return -(-number - _BOT_API_CHANNEL_SHIFT)
+    return number
+
+
 def parse_chat_ids(raw) -> frozenset:
     result = set()
     for token in re.split(r"[\s,;]+", as_text(raw)):
         if not re.fullmatch(r"-?[0-9]{1,19}", token):
             continue
         number = int(token)
-        if abs(number) < 2 ** 63:
-            result.add(number)
+        if abs(number) < 2 ** 63 and number != 0:
+            result.add(normalize_dialog_id(number))
     return frozenset(result)
 
 
@@ -3917,6 +3943,23 @@ def regex_is_safe(pattern: str) -> bool:
         return False
 
 
+def clean_regex_exceptions(raw) -> str:
+    """52.1.0: для импорта: только правильные и безопасные шаблоны (до MAX_REGEX_EXCEPTIONS). Раньше из чужого файла
+    сохранялось всё, а негодные строки молча не работали и не давали сохранить редактор."""
+    kept = []
+    for line in parse_lines(raw):
+        if len(kept) >= MAX_REGEX_EXCEPTIONS:
+            break
+        if len(line) > MAX_REGEX_LENGTH or has_unsafe_text(line) or not regex_is_safe(line):
+            continue
+        try:
+            re.compile(line)
+        except re.error:
+            continue
+        kept.append(line)
+    return "\n".join(kept)
+
+
 def compile_regex_exceptions(raw) -> tuple:
     compiled = []
     for line in parse_lines(raw)[:MAX_REGEX_EXCEPTIONS]:
@@ -4226,7 +4269,7 @@ class _ScheduleParser:
             if abs(number) >= 2 ** 63:
                 raise _ScheduleSyntaxError("schedule_err_unknown", match.group("chat")[:16])
             self.needs_chat = True
-            return ("chat", number)
+            return ("chat", normalize_dialog_id(number))
         if kind == "account":
             self.needs_chat = True
             return ("account", int(match.group("uid")))
@@ -5656,8 +5699,14 @@ class TextFilter:
                 return True
         if self.regex_exceptions:
             sample = text[:REGEX_TEXT_LIMIT]
+            # 52.1.0: в длинном сообщении проверяется ещё и хвост. Раньше смотрелись только первые REGEX_TEXT_LIMIT
+            # символов, и правило вида «\?$» не срабатывало на сообщениях длиннее 1024 знаков. search(text, pos)
+            # не даёт «^» совпасть в середине текста, а «$» по-прежнему означает настоящий конец.
+            tail_start = len(text) - REGEX_TEXT_LIMIT if len(text) > REGEX_TEXT_LIMIT else None
             for pattern in self.regex_exceptions:
                 if pattern.search(sample):
+                    return True
+                if tail_start is not None and pattern.search(text, tail_start):
                     return True
         if self.ignore_emoji_only:
             try:
@@ -7574,10 +7623,19 @@ def validate_component(component: str, section: dict) -> bool:
             return False
         if scope is None:
             return True
-        if not isinstance(scope, dict):
+        # 52.1.0: импорт берёт режим и список из chat_scope, а плоские ключи — только если их нет. Проверка
+        # теперь такая же: файл только с chat_scope (без chat_scope_enabled/disabled_chats) больше не отвергается,
+        # а противоречие между chat_scope и плоскими ключами, если они есть, по-прежнему ошибка.
+        if not isinstance(scope, dict) or scope.get("mode") not in ("exceptions", "included"):
             return False
-        expected_mode = "exceptions" if enabled else "included"
-        return scope.get("mode") == expected_mode and scope.get("chats", chats) == chats
+        scope_chats = scope.get("chats", chats)
+        if not isinstance(scope_chats, str):
+            return False
+        if "chat_scope_enabled" in section and (scope.get("mode") == "exceptions") != enabled:
+            return False
+        if "disabled_chats" in section and scope_chats != chats:
+            return False
+        return True
     if component == "schedule":
         chats, rules = section.get("chats", {}), section.get("rules", "")
         return (
@@ -7691,7 +7749,7 @@ def _section_setting_values(component: str, section: dict) -> Dict[str, Any]:
         for key in ("ignore_emoji_only", *IGNORE_KEYS):
             values[key] = section.get(key, SETTING_DEFAULTS[key])
         if "regex_exceptions" in section:
-            values["regex_exceptions"] = section["regex_exceptions"]
+            values["regex_exceptions"] = clean_regex_exceptions(section["regex_exceptions"])
         if "chat_type_rules" in section:
             values["chat_type_rules"] = dump_chat_type_rules(parse_chat_type_rules(section["chat_type_rules"]))
     return values
@@ -8590,7 +8648,7 @@ class ConfigTransfer:
                     for key in IGNORE_KEYS:
                         self.settings.set(key, section.get(key, SETTING_DEFAULTS[key]))
                     if "regex_exceptions" in section:
-                        self.settings.set("regex_exceptions", section["regex_exceptions"])
+                        self.settings.set("regex_exceptions", clean_regex_exceptions(section["regex_exceptions"]))
                     if "chat_type_rules" in section:
                         self.settings.set("chat_type_rules", dump_chat_type_rules(parse_chat_type_rules(section["chat_type_rules"])))
         self.plugin.refresh_chat_menu_item()
@@ -14618,6 +14676,24 @@ class PrefixfyPlugin(BasePlugin):
             ids.add(dialog_id)
             message = "exceptions_chat_added"
         self.settings.set_disabled_chat_ids(ids)
+        # 52.1.0: итог считается по той конфигурации, которая реально оформляет этот чат. Список правится в
+        # текущей (редактируемой) конфигурации, а чат может оформляться по другой: привязка чата, расписание или
+        # пресет аккаунта. Раньше плашка говорила «добавлен в исключения», хотя в чате ничего не менялось;
+        # в режиме белого списка добавление вообще включает плагин, а не выключает.
+        try:
+            account = self._current_account_slot()
+            base = self._base_runtime(account)
+            live = self.runtime_manager.runtime
+            if base is not None and live is not None:
+                governing = self._runtime_for_chat(base, dialog_id, account)
+                allowed = (governing.settings.is_chat_allowed(dialog_id)
+                           and self._chat_type_allowed(account, dialog_id, governing.settings.chat_type_rules))
+                if governing.config_id != live.config_id:
+                    message = "exceptions_chat_other_config"
+                else:
+                    message = "exceptions_chat_now_on" if allowed else "exceptions_chat_now_off"
+        except Exception as exc:
+            self.log(f"Prefixfy chat toggle state check failed: {exc}")
         BulletinHelper.show_info(self._tr(message), fragment)
 
     MARKDOWN_PICK_KEY = "Prefixfy_markdown_style_pick"
@@ -16735,7 +16811,13 @@ class PrefixfyPlugin(BasePlugin):
         if len(kinds) >= len(CHAT_KINDS):
             return True
         kind = self._dialog_kind(account, dialog_id)
-        return kind is None or kind in kinds
+        if kind is None:
+            # 52.1.0: вид чата не узнать (чат не загружен). Отрицательный id - точно группа или канал: если оба
+            # вида выключены, сообщение не оформляется. Раньше неизвестный вид пропускался всегда.
+            if _is_int(dialog_id) and dialog_id < 0:
+                return "group" in kinds or "channel" in kinds
+            return True
+        return kind in kinds
 
     def _chat_title(self, account: int, dialog_id) -> str:
         if dialog_id is None:
@@ -17133,6 +17215,10 @@ class PrefixfyPlugin(BasePlugin):
         if not settings.is_chat_allowed(dialog_id):
             return HookResult()
 
+        # 52.1.0: «Пропустить одно сообщение» действует и на статьи. Раньше статья проверялась раньше пропуска:
+        # она оформлялась, а пропуск оставался взведённым и съедал следующее обычное сообщение.
+        if self._skip_once is not None and self._is_article(params) and self._consume_skip_once(dialog_id):
+            return HookResult()
         article = self._decorate_article(runtime, params, account)
         if article is not None:
             return article
@@ -17158,6 +17244,13 @@ class PrefixfyPlugin(BasePlugin):
             return HookResult()
         setattr(params, field, transformed)
         return HookResult(strategy=HookStrategy.MODIFY, params=params)
+
+    @staticmethod
+    def _is_article(params) -> bool:
+        try:
+            return bool(FEATURES.on("articles") and article_blocks(params))
+        except Exception:
+            return False
 
     def _decorate_article(self, runtime: Runtime, params, account: int = 0, editing: bool = False) -> Optional[HookResult]:
         """40.0.0: оформление текстовых блоков статьи. None - это не статья (обычный путь).
@@ -17545,6 +17638,8 @@ class PrefixfyPlugin(BasePlugin):
             if not settings.process_edit_article:
                 return
             if not self._chat_type_allowed(account, dialog_id, settings.chat_type_rules) or not settings.is_chat_allowed(dialog_id):
+                return
+            if settings.skip_once_on_edit and self._skip_once is not None and self._consume_skip_once(dialog_id):
                 return
             runtime, rotation_next = self._runtime_for_message(runtime, account, dialog_id, text)
             if self._decorate_article(runtime, request, account, editing=True) is not None:
