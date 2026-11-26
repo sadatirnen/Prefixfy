@@ -2,6 +2,7 @@ import base64
 import difflib
 import hashlib
 import hmac
+import struct
 import json
 import math
 import mimetypes
@@ -9,6 +10,7 @@ import os
 import random
 import re
 import shutil
+import secrets
 import threading
 import time
 import types
@@ -68,11 +70,11 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "52.2.0"
-__build__ = "52.2.0_20261126.1_105"
+__version__ = "53.0.0"
+__build__ = "53.0.0_20261126.2_106"
 __icon__ = "http_Prefixfy_by_fStikBot/3"
 __app_version__ = ">=13.1.1"
-__sdk_version__ = ">=1.4.6.4"
+__sdk_version__ = ">=1.4.6.5"
 
 
 REPO_URL = "https://github.com/sadatirnen/Prefixfy"
@@ -650,6 +652,19 @@ class LocalizationManager:
             "config_import_nothing": "В файле нечего импортировать: выбранные части отсутствуют или уже стоят по умолчанию",
             "config_import_skipped": "Пропущено, импортировать нечего: {parts}",
             "config_import_as_new": "Импортировать как новую конфигурацию",
+            "config_export_encrypt": "Зашифровать паролем",
+            "config_export_encrypting": "Шифрую файл…",
+            "password_export_title": "Пароль для файла",
+            "password_export_title_named": "Пароль для «{name}»",
+            "password_export_message": "Файл будет зашифрован целиком: без пароля не видно даже, какие части в нём есть. Пароль нигде не сохраняется, и восстановить его нельзя.",
+            "password_import_title": "Файл защищён паролем",
+            "password_import_message": "Введите пароль, чтобы увидеть, какие части есть в файле.",
+            "password_wrong": "Неверный пароль или файл повреждён. Попробуйте ещё раз.",
+            "password_checking": "Проверяю пароль…",
+            "password_hint": "Пароль",
+            "password_repeat_hint": "Повторите пароль",
+            "password_length": "От {min} до {max} символов",
+            "password_mismatch": "Пароли не совпадают",
             "config_import_file_failed": "Не удалось открыть файл конфигурации",
             "config_import_invalid": "В файле нет выбранных частей или он повреждён.",
             "config_default_name": "Конфигурация по умолчанию",
@@ -1111,6 +1126,19 @@ class LocalizationManager:
             "config_import_nothing": "Nothing to import: the selected parts are missing from the file or already at their defaults",
             "config_import_skipped": "Skipped, nothing to import: {parts}",
             "config_import_as_new": "Import as a new configuration",
+            "config_export_encrypt": "Encrypt with a password",
+            "config_export_encrypting": "Encrypting the file…",
+            "password_export_title": "File password",
+            "password_export_title_named": "Password for “{name}”",
+            "password_export_message": "The whole file is encrypted: without the password not even its list of parts is visible. The password is not stored anywhere and cannot be recovered.",
+            "password_import_title": "Password-protected file",
+            "password_import_message": "Enter the password to see which parts the file contains.",
+            "password_wrong": "Wrong password or damaged file. Try again.",
+            "password_checking": "Checking the password…",
+            "password_hint": "Password",
+            "password_repeat_hint": "Repeat the password",
+            "password_length": "{min} to {max} characters",
+            "password_mismatch": "The passwords do not match",
             "config_import_file_failed": "Couldn’t open the configuration file",
             "config_import_invalid": "The file has none of the selected parts or is damaged.",
             "config_default_name": "Default configuration",
@@ -1572,6 +1600,19 @@ class LocalizationManager:
             "config_import_nothing": "インポートするものがありません：選択した項目はファイルにないか、既定値のままです",
             "config_import_skipped": "スキップ（インポートする内容なし）：{parts}",
             "config_import_as_new": "新しい設定セットとしてインポート",
+            "config_export_encrypt": "パスワードで暗号化",
+            "config_export_encrypting": "ファイルを暗号化しています…",
+            "password_export_title": "ファイルのパスワード",
+            "password_export_title_named": "「{name}」のパスワード",
+            "password_export_message": "ファイル全体が暗号化され、パスワードなしではどの項目が入っているかも分かりません。パスワードはどこにも保存されず、復元できません。",
+            "password_import_title": "パスワードで保護されたファイル",
+            "password_import_message": "ファイルに含まれる項目を表示するには、パスワードを入力してください。",
+            "password_wrong": "パスワードが違うか、ファイルが壊れています。もう一度お試しください。",
+            "password_checking": "パスワードを確認しています…",
+            "password_hint": "パスワード",
+            "password_repeat_hint": "パスワードをもう一度入力",
+            "password_length": "{min}〜{max} 文字",
+            "password_mismatch": "パスワードが一致しません",
             "config_import_file_failed": "設定セットのファイルを開けませんでした",
             "config_import_invalid": "ファイルに選んだ項目がないか、ファイルが壊れています。",
             "config_default_name": "既定の設定セット",
@@ -2033,6 +2074,19 @@ class LocalizationManager:
             "config_import_nothing": "가져올 내용이 없습니다: 선택한 항목이 파일에 없거나 이미 기본값입니다",
             "config_import_skipped": "건너뜀(가져올 내용 없음): {parts}",
             "config_import_as_new": "새 구성으로 가져오기",
+            "config_export_encrypt": "비밀번호로 암호화",
+            "config_export_encrypting": "파일을 암호화하는 중…",
+            "password_export_title": "파일 비밀번호",
+            "password_export_title_named": "“{name}” 비밀번호",
+            "password_export_message": "파일 전체가 암호화되어 비밀번호 없이는 어떤 항목이 들어 있는지도 보이지 않습니다. 비밀번호는 어디에도 저장되지 않으며 복구할 수 없습니다.",
+            "password_import_title": "비밀번호로 보호된 파일",
+            "password_import_message": "파일에 어떤 항목이 있는지 보려면 비밀번호를 입력하세요.",
+            "password_wrong": "비밀번호가 틀렸거나 파일이 손상되었습니다. 다시 시도하세요.",
+            "password_checking": "비밀번호를 확인하는 중…",
+            "password_hint": "비밀번호",
+            "password_repeat_hint": "비밀번호 다시 입력",
+            "password_length": "{min}~{max}자",
+            "password_mismatch": "비밀번호가 일치하지 않습니다",
             "config_import_file_failed": "구성 파일을 열지 못했습니다",
             "config_import_invalid": "파일에 선택한 항목이 없거나 파일이 손상되었습니다.",
             "config_default_name": "기본 구성",
@@ -2494,6 +2548,19 @@ class LocalizationManager:
             "config_import_nothing": "Rien à importer : les parties choisies sont absentes du fichier ou déjà aux valeurs par défaut",
             "config_import_skipped": "Ignoré, rien à importer : {parts}",
             "config_import_as_new": "Importer comme nouvelle configuration",
+            "config_export_encrypt": "Chiffrer avec un mot de passe",
+            "config_export_encrypting": "Chiffrement du fichier…",
+            "password_export_title": "Mot de passe du fichier",
+            "password_export_title_named": "Mot de passe pour « {name} »",
+            "password_export_message": "Le fichier entier est chiffré : sans le mot de passe, même la liste de ses parties est invisible. Le mot de passe n’est enregistré nulle part et ne peut pas être récupéré.",
+            "password_import_title": "Fichier protégé par mot de passe",
+            "password_import_message": "Saisissez le mot de passe pour voir les parties contenues dans le fichier.",
+            "password_wrong": "Mot de passe incorrect ou fichier endommagé. Réessayez.",
+            "password_checking": "Vérification du mot de passe…",
+            "password_hint": "Mot de passe",
+            "password_repeat_hint": "Répétez le mot de passe",
+            "password_length": "De {min} à {max} caractères",
+            "password_mismatch": "Les mots de passe ne correspondent pas",
             "config_import_file_failed": "Impossible d’ouvrir le fichier de configuration",
             "config_import_invalid": "Le fichier ne contient aucune des parties choisies ou il est endommagé.",
             "config_default_name": "Configuration par défaut",
@@ -4710,11 +4777,29 @@ class StoreVault:
 
     @staticmethod
     def _jbytes(data: bytes):
+        # 53.0.0: Chaquopy умеет собрать byte[] прямо из bytes одной операцией. Если эта версия не умеет (TypeError,
+        # или значения >127 не влезают в jbyte - OverflowError/ValueError), остаётся прежний поэлементный путь.
+        # Раньше всегда шёл поэлементный: на списке блокировок до 1 МБ - секунды на каждое чтение и запись.
         from java import jarray, jbyte
+        data = bytes(data)
+        try:
+            array = jarray(jbyte)(data)
+            if len(array) == len(data):
+                return array
+        except (TypeError, ValueError, OverflowError):
+            pass
         return jarray(jbyte)([b - 256 if b > 127 else b for b in data])
 
     @staticmethod
     def _pybytes(array) -> bytes:
+        try:
+            # Буферный протокол массива Java: байты как есть. Без него bytes() перебирает знаковые значения и падает
+            # на отрицательных - тогда прежний путь.
+            data = bytes(array)
+            if len(data) == len(array):
+                return data
+        except (TypeError, ValueError, BufferError):
+            pass
         return bytes(x & 0xFF for x in array)
 
     def _store(self):
@@ -4853,6 +4938,12 @@ class StoreVault:
                 self._log(f"Prefixfy vault: keystore is unavailable, keys were not deleted: {exc}")
             self._usable, self._strict, self._data_key = None, False, None
             self._degraded = False
+
+    def subkey(self, label: bytes) -> Optional[bytes]:
+        """53.0.0: 64 байта ключа, производного от ключа данных (HMAC-SHA512). None - хранилище недоступно."""
+        if not self._usable or self._data_key is None:
+            return None
+        return hmac.new(bytes(self._data_key), b"Prefixfy-subkey/" + label, hashlib.sha512).digest()
 
     def seal(self, plain: bytes, aad: bytes) -> bytes:
         if not self._usable or self._data_key is None:
@@ -7794,6 +7885,303 @@ def classify_components(data: dict) -> Dict[str, str]:
 MAX_CONTAINER_ENTRIES = 16
 
 
+# 53.0.0: файл конфигурации, зашифрованный паролем.
+#
+# Шифруется весь контейнер .prefixfy целиком (config.json, имя, список частей, медиа), поэтому без пароля из файла
+# не узнать даже, какие части в нём есть. Всё на стандартной библиотеке Python, без Java: одинаково работает
+# на любом устройстве и проверяется тестами вне приложения.
+#   ключи:      PBKDF2-HMAC-SHA256(пароль в NFC, соль 16 байт, итерации из заголовка) -> 64 байта = k_enc | k_mac
+#   шифр:       блоки по 1 МиБ, гамма блока i = SHAKE256(метка | k_enc | nonce | i), XOR
+#   целостность: HMAC-SHA256(k_mac, заголовок | шифртекст), проверяется ДО расшифровки (encrypt-then-MAC);
+#                заголовок с длиной под MAC, поэтому обрезка, подмена параметров и перестановка блоков видны.
+# Файл: заголовок (LOCKED_HEADER) | шифртекст | тег 32 байта. Неверный пароль и порча файла неразличимы.
+LOCKED_MAGIC = b"PFXLOCK1"
+LOCKED_VERSION = 1
+LOCKED_KDF_PBKDF2_SHA256 = 1
+LOCKED_ITERATIONS = 600_000
+LOCKED_MIN_ITERATIONS = 100_000
+LOCKED_MAX_ITERATIONS = 5_000_000
+LOCKED_CHUNK = 1 << 20
+LOCKED_HEADER = struct.Struct(">8sBBI16s16sIQ")
+LOCKED_TAG_SIZE = 32
+LOCKED_MAX_PLAIN = MAX_MEDIA_BYTES + MAX_CONFIG_JSON_BYTES + 64 * 1024
+_LOCKED_STREAM_LABEL = b"prefixfy/locked/v1/stream\x00"
+PASSWORD_MIN_LENGTH = 6
+PASSWORD_MAX_LENGTH = 256
+
+
+class ContainerLockedError(ConfigurationError):
+    """Файл зашифрован паролем, а пароль не передан."""
+
+
+class ContainerPasswordError(ConfigurationError):
+    """Неверный пароль или файл повреждён (по шифртексту это не различить)."""
+
+
+def _locked_keys(password: str, salt: bytes, iterations: int) -> Tuple[bytes, bytes]:
+    secret = unicodedata.normalize("NFC", as_text(password)).encode("utf-8")
+    material = hashlib.pbkdf2_hmac("sha256", secret, salt, iterations, dklen=64)
+    return material[:32], material[32:]
+
+
+def _locked_xor(data: bytes, k_enc: bytes, nonce: bytes, index: int) -> bytes:
+    size = len(data)
+    stream = hashlib.shake_256(_LOCKED_STREAM_LABEL + k_enc + nonce + index.to_bytes(8, "big")).digest(size)
+    return (int.from_bytes(data, "little") ^ int.from_bytes(stream, "little")).to_bytes(size, "little")
+
+
+def is_locked_container(path: str) -> bool:
+    try:
+        with open(path, "rb") as handle:
+            return handle.read(len(LOCKED_MAGIC)) == LOCKED_MAGIC
+    except OSError:
+        return False
+
+
+def lock_container(source: str, target: str, password: str, iterations: int = LOCKED_ITERATIONS):
+    """Зашифровать готовый контейнер source в target."""
+    password = as_text(password)
+    if not PASSWORD_MIN_LENGTH <= len(password) <= PASSWORD_MAX_LENGTH:
+        raise ValueError("password length is out of range")
+    size = os.path.getsize(source)
+    if size > LOCKED_MAX_PLAIN:
+        raise ValueError("configuration is too large to encrypt")
+    salt, nonce = secrets.token_bytes(16), secrets.token_bytes(16)
+    header = LOCKED_HEADER.pack(LOCKED_MAGIC, LOCKED_VERSION, LOCKED_KDF_PBKDF2_SHA256, iterations,
+                                salt, nonce, LOCKED_CHUNK, size)
+    k_enc, k_mac = _locked_keys(password, salt, iterations)
+    mac = hmac.new(k_mac, header, hashlib.sha256)
+    written = 0
+    temp = target + ".lock"
+    try:
+        with open(source, "rb") as src, open(temp, "wb") as dst:
+            dst.write(header)
+            index = 0
+            while True:
+                chunk = src.read(LOCKED_CHUNK)
+                if not chunk:
+                    break
+                sealed = _locked_xor(chunk, k_enc, nonce, index)
+                mac.update(sealed)
+                dst.write(sealed)
+                written += len(chunk)
+                index += 1
+            if written != size:
+                raise IOError("configuration changed while encrypting")
+            dst.write(mac.digest())
+        os.replace(temp, target)
+    except BaseException:
+        discard_file(temp)
+        raise
+
+
+def _locked_header(handle, file_size: int):
+    raw = handle.read(LOCKED_HEADER.size)
+    if len(raw) != LOCKED_HEADER.size:
+        raise ConfigurationError("encrypted configuration is damaged")
+    magic, version, kdf, iterations, salt, nonce, chunk, size = LOCKED_HEADER.unpack(raw)
+    if magic != LOCKED_MAGIC:
+        raise ConfigurationError("not an encrypted configuration")
+    if version != LOCKED_VERSION or kdf != LOCKED_KDF_PBKDF2_SHA256:
+        raise ConfigurationError("unsupported encrypted configuration")
+    # Параметры из файла ограничены: чужой файл не заставит считать ключ минутами или читать гигабайты.
+    if not LOCKED_MIN_ITERATIONS <= iterations <= LOCKED_MAX_ITERATIONS or chunk != LOCKED_CHUNK:
+        raise ConfigurationError("unsupported encrypted configuration")
+    if size > LOCKED_MAX_PLAIN or file_size != LOCKED_HEADER.size + size + LOCKED_TAG_SIZE:
+        raise ConfigurationError("encrypted configuration is damaged")
+    return raw, iterations, salt, nonce, size
+
+
+def unlock_container(source: str, target: str, password: str):
+    """Проверить и расшифровать source в target. Ничего не пишет, пока тег не сошёлся."""
+    file_size = os.path.getsize(source)
+    with open(source, "rb") as src:
+        header, iterations, salt, nonce, size = _locked_header(src, file_size)
+        k_enc, k_mac = _locked_keys(password, salt, iterations)
+        mac = hmac.new(k_mac, header, hashlib.sha256)
+        remaining = size
+        while remaining:
+            chunk = src.read(min(LOCKED_CHUNK, remaining))
+            if not chunk:
+                raise ConfigurationError("encrypted configuration is damaged")
+            mac.update(chunk)
+            remaining -= len(chunk)
+        if not hmac.compare_digest(mac.digest(), src.read(LOCKED_TAG_SIZE)):
+            raise ContainerPasswordError("wrong password or damaged file")
+        src.seek(LOCKED_HEADER.size)
+        temp = target + ".part"
+        try:
+            with open(temp, "wb") as dst:
+                remaining, index = size, 0
+                while remaining:
+                    chunk = src.read(min(LOCKED_CHUNK, remaining))
+                    dst.write(_locked_xor(chunk, k_enc, nonce, index))
+                    remaining -= len(chunk)
+                    index += 1
+            os.replace(temp, target)
+        except BaseException:
+            discard_file(temp)
+            raise
+
+
+# 53.0.0: прикреплённое медиа хранится зашифрованным.
+# Ключ - производный от ключа данных хранилища (его оборачивает Android Keystore), поэтому файл медиа без этого
+# устройства не прочитать. Конструкция та же, что у файлов с паролем (гамма SHAKE256 + HMAC-SHA256, проверка до
+# расшифровки), только без пароля. Путь в ключ не входит: копии файла для конфигураций остаются читаемыми.
+# Файл: MEDIA_SEAL_HEADER | шифртекст | тег 32 байта. Хранилище недоступно - медиа хранится как раньше, открыто.
+MEDIA_SEAL_MAGIC = b"PFXMED01"
+MEDIA_SEAL_HEADER = struct.Struct(">8s16sQ")
+MEDIA_OUTBOX_DIR = "Prefixfy_outbox"
+MEDIA_OUTBOX_TTL = 24 * 3600
+
+
+def _media_keys() -> Optional[Tuple[bytes, bytes]]:
+    material = VAULT.subkey(b"media/v1")
+    return (material[:32], material[32:]) if material else None
+
+
+def is_sealed_media(path: str) -> bool:
+    try:
+        with open(path, "rb") as handle:
+            return handle.read(len(MEDIA_SEAL_MAGIC)) == MEDIA_SEAL_MAGIC
+    except OSError:
+        return False
+
+
+def seal_media_file(source: str, target: str) -> bool:
+    """Записать source в target зашифрованным (атомарно). False - хранилище недоступно, записана открытая копия."""
+    keys = _media_keys()
+    size = os.path.getsize(source)
+    if size > MAX_MEDIA_BYTES:
+        raise ValueError("media is too large")
+    temp = unique_temp(target)
+    try:
+        if keys is None:
+            copy_file_limited(source, temp, MAX_MEDIA_BYTES)
+        else:
+            k_enc, k_mac = keys
+            nonce = secrets.token_bytes(16)
+            header = MEDIA_SEAL_HEADER.pack(MEDIA_SEAL_MAGIC, nonce, size)
+            mac = hmac.new(k_mac, header, hashlib.sha256)
+            written = 0
+            with open(source, "rb") as src, open(temp, "wb") as dst:
+                dst.write(header)
+                index = 0
+                while True:
+                    chunk = src.read(LOCKED_CHUNK)
+                    if not chunk:
+                        break
+                    sealed = _locked_xor(chunk, k_enc, nonce, index)
+                    mac.update(sealed)
+                    dst.write(sealed)
+                    written += len(chunk)
+                    index += 1
+                if written != size:
+                    raise IOError("media changed while encrypting")
+                dst.write(mac.digest())
+        os.replace(temp, target)
+    except BaseException:
+        discard_file(temp)
+        raise
+    return keys is not None
+
+
+def read_media_plain(path: str, write):
+    """Отдать содержимое медиа кусками в write(). Зашифрованное сначала целиком проверяется (тег), и только потом
+    расшифровывается: подменённый или повреждённый файл не отдаёт ни байта. Открытое (старое) - как есть."""
+    with open(path, "rb") as src:
+        head = src.read(MEDIA_SEAL_HEADER.size)
+        if not head.startswith(MEDIA_SEAL_MAGIC):
+            src.seek(0)
+            while True:
+                chunk = src.read(LOCKED_CHUNK)
+                if not chunk:
+                    return
+                write(chunk)
+        if len(head) != MEDIA_SEAL_HEADER.size:
+            raise ConfigurationError("media file is damaged")
+        _, nonce, size = MEDIA_SEAL_HEADER.unpack(head)
+        if size > MAX_MEDIA_BYTES or os.fstat(src.fileno()).st_size != MEDIA_SEAL_HEADER.size + size + LOCKED_TAG_SIZE:
+            raise ConfigurationError("media file is damaged")
+        keys = _media_keys()
+        if keys is None:
+            raise VaultError("vault is not available")
+        k_enc, k_mac = keys
+        mac = hmac.new(k_mac, head, hashlib.sha256)
+        remaining = size
+        while remaining:
+            chunk = src.read(min(LOCKED_CHUNK, remaining))
+            if not chunk:
+                raise ConfigurationError("media file is damaged")
+            mac.update(chunk)
+            remaining -= len(chunk)
+        if not hmac.compare_digest(mac.digest(), src.read(LOCKED_TAG_SIZE)):
+            raise ConfigurationError("media file is damaged or belongs to another device")
+        src.seek(MEDIA_SEAL_HEADER.size)
+        remaining, index = size, 0
+        while remaining:
+            chunk = src.read(min(LOCKED_CHUNK, remaining))
+            write(_locked_xor(chunk, k_enc, nonce, index))
+            remaining -= len(chunk)
+            index += 1
+
+
+def media_plain_copy(path: str, name: str) -> str:
+    """Путь к открытой копии медиа для отправки. Telegram загружает файл по пути и асинхронно, поэтому копия живёт в
+    закрытой папке плагина до MEDIA_OUTBOX_TTL (на случай медленной загрузки и повторной отправки) и переиспользуется
+    для того же файла. Открытое (старое) медиа отправляется напрямую."""
+    if not is_sealed_media(path):
+        return path
+    outbox = os.path.join(get_plugins_dir(), MEDIA_OUTBOX_DIR)
+    os.makedirs(outbox, exist_ok=True)
+    sweep_old_files(outbox, MEDIA_OUTBOX_TTL)
+    stat = os.stat(path)
+    digest = hashlib.sha256(f"{os.path.realpath(path)}|{stat.st_size}|{stat.st_mtime_ns}".encode("utf-8")).hexdigest()[:24]
+    target = os.path.join(outbox, digest + (safe_extension(name) or safe_extension(path) or ".bin"))
+    if os.path.isfile(target):
+        os.utime(target, None)
+        return target
+    temp = unique_temp(target)
+    try:
+        with open(temp, "wb") as handle:
+            read_media_plain(path, handle.write)
+        os.replace(temp, target)
+    except BaseException:
+        discard_file(temp)
+        raise
+    return target
+
+
+def clear_media_outbox():
+    outbox = os.path.join(get_plugins_dir(), MEDIA_OUTBOX_DIR)
+    sweep_old_files(outbox, -1)
+
+
+def seal_legacy_media(log) -> int:
+    """Однократно: открытые медиафайлы в папках медиа плагина шифруются на месте (путь и имя не меняются).
+    Файлы прямо в папке плагинов не трогаем: это могут быть чужие файлы."""
+    if _media_keys() is None:
+        return 0
+    sealed = 0
+    base = get_plugins_dir()
+    for folder_name in sorted(MEDIA_STORE_DIRS):
+        for folder, _dirs, files in os.walk(os.path.join(base, folder_name)):
+            for name in files:
+                path = os.path.join(folder, name)
+                try:
+                    if not is_media_store_file(path) or is_sealed_media(path):
+                        continue
+                    if os.path.getsize(path) > MAX_MEDIA_BYTES:
+                        continue
+                    stat = os.stat(path)
+                    seal_media_file(path, path)
+                    os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns))
+                    sealed += 1
+                except Exception as exc:
+                    log(f"Prefixfy: media file was not encrypted ({name}): {exc}")
+    return sealed
+
+
 def _zip_entry_count_ok(path: str) -> bool:
     try:
         size = os.path.getsize(path)
@@ -7870,6 +8258,7 @@ class ConfigTransfer:
         self.pending_import_as_new = False
         self.pending_export_id: Optional[str] = None
         self.pending_export_name = ""
+        self.pending_export_password: Optional[str] = None
         self._awaiting: Optional[int] = None  # 49.0.0: код запроса, который плагин действительно запускал
         self._file_handler_secret = None
         self.media_data_dir = os.path.join(get_plugins_dir(), "Prefixfy_media")
@@ -7919,7 +8308,11 @@ class ConfigTransfer:
 
     def _commit_media(self, temp_path, target, name, mime):
         old = self.media_path()
-        os.replace(temp_path, target)
+        # 53.0.0: в хранилище медиа попадает уже зашифрованным; открытая временная копия удаляется.
+        try:
+            seal_media_file(temp_path, target)
+        finally:
+            discard_file(temp_path)
         with self.plugin.runtime_manager.bulk():
             self.settings.set("attached_media_path", target)
             self.settings.set("attached_media_name", name)
@@ -7970,6 +8363,7 @@ class ConfigTransfer:
             self.settings.set("attached_media_enabled", False, reload_settings=True)
         if path and is_inside(path, self.media_data_dir) and os.path.isfile(path):
             discard_file(path)
+        clear_media_outbox()
 
     def _blocked(self, fragment=None, export: bool = False) -> bool:
         remote = getattr(self.plugin, "remote", None)
@@ -8116,7 +8510,22 @@ class ConfigTransfer:
         self._awaiting = self.CONFIG_IMPORT_REQUEST_CODE
         activity.startActivityForResult(intent, self.CONFIG_IMPORT_REQUEST_CODE)
 
-    def read_container(self, path: str) -> dict:
+    def read_container(self, path: str, password: Optional[str] = None) -> dict:
+        """53.0.0: зашифрованный паролем файл сначала проверяется и расшифровывается во временный файл, который
+        удаляется сразу после разбора. Без пароля - ContainerLockedError, неверный пароль - ContainerPasswordError."""
+        if not is_locked_container(path):
+            return self._read_plain_container(path)
+        if password is None:
+            raise ContainerLockedError("configuration is protected with a password")
+        sweep_old_files(temp_dir("imports"), IMPORT_TEMP_TTL)
+        plain = os.path.join(temp_dir("imports"), uuid.uuid4().hex + ".unlocked")
+        try:
+            unlock_container(path, plain, password)
+            return self._read_plain_container(plain)
+        finally:
+            discard_file(plain)
+
+    def _read_plain_container(self, path: str) -> dict:
         if not _zip_entry_count_ok(path):
             raise ConfigurationError("not a .prefixfy container")
         sweep_old_files(temp_dir("imports"), IMPORT_TEMP_TTL)
@@ -8238,11 +8647,9 @@ class ConfigTransfer:
         # обработчике нажатия, то есть в главном потоке, и чужой файл из чата подвешивал приложение. Теперь чтение и
         # проверка идут в фоне, а окно выбора частей показывается уже в главном потоке.
 
-        def work():
-            data = None
+        def opened(data):
             handed_over = False
             try:
-                data = self.read_container(path)
                 visible = self.visible_components()
                 detected = tuple(c for c in detect_components(data) if c in visible)
                 if not detected:
@@ -8258,10 +8665,71 @@ class ConfigTransfer:
                 self.plugin.log(f"Prefixfy file open failed: {exc}")
                 self._toast("config_import_file_failed", fragment)
             finally:
-                if data is not None and not handed_over:
+                if not handed_over:
                     self.discard_container_media(data)
 
+        # 53.0.0: зашифрованный файл: сначала пароль, и только потом окно со списком частей.
+        self._open_container(path, fragment, opened)
+
+    def _open_container(self, path: str, fragment, on_data, on_finish=None, password: Optional[str] = None):
+        """Прочитать контейнер в фоне. Зашифрованный - спросить пароль (снова, если он неверный). on_data(data)
+        вызывается в фоновом потоке после успешного чтения; on_finish() - когда исходный файл больше не нужен
+        (прочитан, ошибка или отказ от ввода пароля)."""
+        def finish():
+            if on_finish is not None:
+                try:
+                    on_finish()
+                except Exception as exc:
+                    self.plugin.log(f"Prefixfy import cleanup failed: {exc}")
+
+        def work():
+            try:
+                data = self.read_container(path, password=password)
+            except ContainerLockedError:
+                run_on_ui_thread(lambda: self._ask_import_password(path, fragment, on_data, on_finish, wrong=False))
+                return
+            except ContainerPasswordError:
+                run_on_ui_thread(lambda: self._ask_import_password(path, fragment, on_data, on_finish, wrong=True))
+                return
+            except Exception as exc:
+                self.plugin.log(f"Prefixfy file open failed: {exc}")
+                self._toast("config_import_invalid" if isinstance(exc, ConfigurationError) else "config_import_file_failed",
+                            fragment)
+                finish()
+                return
+            finish()
+            on_data(data)
+
+        if password is not None:
+            self._toast("password_checking", fragment)
         threading.Thread(target=work, name="PrefixfyOpenConfig", daemon=True).start()
+
+    def _ask_import_password(self, path, fragment, on_data, on_finish, wrong: bool):
+        def accepted(password):
+            self._open_container(path, fragment, on_data, on_finish, password=password)
+
+        def cancelled():
+            if on_finish is not None:
+                try:
+                    on_finish()
+                except Exception as exc:
+                    self.plugin.log(f"Prefixfy import cleanup failed: {exc}")
+
+        shown = self.plugin.show_password_dialog(
+            self._tr("password_import_title"),
+            self._tr("password_wrong") if wrong else self._tr("password_import_message"),
+            accepted, confirm=False, positive=self._tr("action_next"), fragment=fragment, on_cancel=cancelled,
+        )
+        if not shown:
+            cancelled()
+
+    def _ask_export_password(self, on_password, name: Optional[str] = None, on_cancel=None):
+        fragment, _ = self._activity()
+        title = self._tr("password_export_title_named", name=name) if name else self._tr("password_export_title")
+        self.plugin.show_password_dialog(
+            title, self._tr("password_export_message"),
+            on_password, confirm=True, positive=self._tr("action_next"), fragment=fragment, on_cancel=on_cancel,
+        )
 
     def _show_opened_parts(self, data, fragment, visible, states, useful):
         shown = False
@@ -8729,7 +9197,7 @@ class ConfigTransfer:
             positive=self._tr("action_next"), fragment=fragment,
         )
 
-    def _export_ask_parts(self, chosen, index, picked, available):
+    def _export_ask_parts(self, chosen, index, picked, available, preset=None):
         fragment, _ = self._activity()
         config_id, label = chosen[index]
         # В списке у общих конфигураций аккаунта есть пометка; в файл и в имя файла идёт настоящее имя.
@@ -8743,35 +9211,56 @@ class ConfigTransfer:
             title = self._tr("config_export_parts_title", name=label)
             message = self._tr("config_export_parts_progress", i=index + 1, n=total) + "\n\n" + message
 
+        if preset is not None:
+            # Возврат после отмены ввода пароля: отметки частей и чекбокс шифрования как были.
+            chosen_parts, was_locked = preset
+            rows = [(label, component in chosen_parts, enabled)
+                    for (label, _checked, enabled), component in zip(rows, available)]
+        else:
+            was_locked = False
+
+        def proceed(done):
+            if last:
+                self._export_deliver(done)
+            else:
+                self._export_ask_parts(chosen, index + 1, done, available)
+
         def confirm(selected, extra_checked):
             if not selected:
                 self._toast("config_parts_none", fragment)
                 return False
             components = tuple(available[position] for position in selected)
-            done = picked + [(config_id, name, components)]
-            if last:
-                self._export_deliver(done)
-            else:
-                self._export_ask_parts(chosen, index + 1, done, available)
+            if not extra_checked:
+                proceed(picked + [(config_id, name, components, None)])
+                return True
+            # 53.0.0: у каждого конфига свой чекбокс и свой пароль. Пароль спрашивается сразу после выбора его
+            # частей, до перехода к следующему конфигу; отмена возвращает к частям этого же конфига.
+            run_on_ui_thread(lambda: self._ask_export_password(
+                lambda password: proceed(picked + [(config_id, name, components, password)]),
+                name=label if total > 1 else None,
+                on_cancel=lambda: self._export_ask_parts(chosen, index, picked, available, (components, True)),
+            ))
             return True
 
         self.plugin.show_checklist(
             title, rows, confirm, message=message,
+            extra=(self._tr("config_export_encrypt"), was_locked),
             positive=self._tr("action_apply") if last else self._tr("action_next"), fragment=fragment,
         )
 
     def _export_deliver(self, items):
-        """Один конфиг: спрашиваем, куда сохранить. Несколько: принудительно в Избранное активного аккаунта."""
+        """Один конфиг: спрашиваем, куда сохранить. Несколько: принудительно в Избранное активного аккаунта.
+        items: [(config_id, имя, части, пароль или None)] - пароль у каждого конфига свой."""
         fragment, _ = self._activity()
         if not items or self._blocked(fragment, export=True):
             return
         if len(items) == 1:
-            config_id, name, components = items[0]
-            self._request_export(components, config_id, name)
+            config_id, name, components, password = items[0]
+            self._request_export(components, config_id, name, password)
         else:
             self._export_many_to_saved(items[: self.EXPORT_MAX_CONFIGS])
 
-    def _request_export(self, components, config_id=None, name=""):
+    def _request_export(self, components, config_id=None, name="", password: Optional[str] = None):
         _, activity = self._activity()
         if not activity or not components:
             return
@@ -8779,29 +9268,30 @@ class ConfigTransfer:
         builder.set_title(self._tr("config_export_destination_title"))
         builder.set_items(
             [self._tr("config_export_to_saved"), self._tr("config_export_to_device")],
-            lambda bld, which: self._on_export_destination(bld, which, tuple(components), config_id, name),
+            lambda bld, which: self._on_export_destination(bld, which, tuple(components), config_id, name, password),
         )
         builder.set_negative_button(self._tr("action_cancel"), lambda bld, which: bld.dismiss())
         self.plugin._show_builder(builder)
 
-    def _on_export_destination(self, builder, which, components, config_id=None, name=""):
+    def _on_export_destination(self, builder, which, components, config_id=None, name="", password=None):
         builder.dismiss()
         if which == 0:
-            self._export_to_saved_messages(components, config_id, name)
+            self._export_to_saved_messages(components, config_id, name, password)
         elif which == 1:
-            self._request_export_to_device(components, config_id, name)
+            self._request_export_to_device(components, config_id, name, password)
 
     @staticmethod
     def _file_stem(name) -> str:
         return re.sub(r"[^\w\-]+", "_", as_text(name), flags=re.UNICODE).strip("_")[:40]
 
-    def _request_export_to_device(self, components, config_id=None, name=""):
+    def _request_export_to_device(self, components, config_id=None, name="", password=None):
         _, activity = self._activity()
         if not activity:
             return
         self.pending_components = components
         self.pending_export_id = config_id
         self.pending_export_name = as_text(name)
+        self.pending_export_password = password
         intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.setType("application/octet-stream")
@@ -8821,18 +9311,12 @@ class ConfigTransfer:
             raise RuntimeError("active account user id is not available")
         return account, user_id
 
-    def _export_to_saved_messages(self, components, config_id=None, name=""):
-        fragment, _ = self._activity()
-        try:
-            account, user_id = self._saved_messages_target()
-            path = self.build_config_file(components, temp_dir("exports"), config_id=config_id, name=name)
-            send_document(user_id, path, caption="", account=account)
-            self._toast("config_export_done", fragment)
-        except Exception as exc:
-            self.plugin.log(f"Saved Messages export failed: {exc}")
-            self._toast("config_export_failed", fragment)
+    def _export_to_saved_messages(self, components, config_id=None, name="", password=None):
+        self._export_many_to_saved([(config_id, name, components, password)], single=True)
 
-    def _export_many_to_saved(self, items):
+    def _export_many_to_saved(self, items, single: bool = False):
+        # 53.0.0: сборка файла (до сотен мегабайт медиа, а с паролем ещё и вывод ключа) идёт в фоне,
+        # раньше - прямо в обработчике нажатия, в главном потоке.
         fragment, _ = self._activity()
         try:
             account, user_id = self._saved_messages_target()
@@ -8840,20 +9324,29 @@ class ConfigTransfer:
             self.plugin.log(f"Saved Messages export failed: {exc}")
             self._toast("config_export_failed", fragment)
             return
-        sent = 0
-        for config_id, name, components in items:
-            try:
-                path = self.build_config_file(components, temp_dir("exports"), config_id=config_id, name=name)
-                send_document(user_id, path, caption="", account=account)
-                sent += 1
-            except Exception as exc:
-                self.plugin.log(f"Saved Messages export of {config_id} failed: {exc}")
-        if sent == len(items):
-            self._toast("config_export_done_multi", fragment, n=sent)
-        elif sent:
-            self._toast("config_export_partial", fragment, ok=sent, total=len(items))
-        else:
-            self._toast("config_export_failed", fragment)
+        if any(item[3] for item in items):
+            self._toast("config_export_encrypting", fragment)
+
+        def work():
+            sent = 0
+            for config_id, name, components, password in items:
+                try:
+                    path = self.build_config_file(components, temp_dir("exports"), config_id=config_id, name=name,
+                                                  password=password)
+                    send_document(user_id, path, caption="", account=account)
+                    sent += 1
+                except Exception as exc:
+                    self.plugin.log(f"Saved Messages export of {config_id} failed: {exc}")
+            if single:
+                self._toast("config_export_done" if sent else "config_export_failed", fragment)
+            elif sent == len(items):
+                self._toast("config_export_done_multi", fragment, n=sent)
+            elif sent:
+                self._toast("config_export_partial", fragment, ok=sent, total=len(items))
+            else:
+                self._toast("config_export_failed", fragment)
+
+        threading.Thread(target=work, name="PrefixfyExport", daemon=True).start()
 
     def _export_source(self, config_id):
         """None — живые настройки (активный конфиг), иначе сохранённые значения выбранного конфига."""
@@ -8933,7 +9426,7 @@ class ConfigTransfer:
             }
         return data
 
-    def build_config_file(self, components, directory: str, config_id=None, name="") -> str:
+    def build_config_file(self, components, directory: str, config_id=None, name="", password: Optional[str] = None) -> str:
         if not components:
             raise ValueError("no components selected")
         source = self._export_source(config_id)
@@ -8952,12 +9445,21 @@ class ConfigTransfer:
                 if media_ready:
                     entry = "media/attached_media" + safe_extension(config["media"]["name"])
                     config["media"]["file"] = entry
-                    archive.write(self.media_path(source), entry, compress_type=zipfile.ZIP_STORED)
+                    # 53.0.0: медиа хранится зашифрованным - в архив пишется расшифрованный поток, без файла на диске.
+                    info = zipfile.ZipInfo(entry, date_time=time.localtime()[:6])
+                    info.compress_type = zipfile.ZIP_STORED
+                    with archive.open(info, "w", force_zip64=True) as stream:
+                        read_media_plain(self.media_path(source), stream.write)
                 payload = json.dumps(config, ensure_ascii=False, indent=2).encode("utf-8")
                 if len(payload) > MAX_CONFIG_JSON_BYTES:
                     raise ValueError("configuration is too large to export")
                 archive.writestr("config.json", payload)
-            os.replace(temp, path)
+            if password:
+                # 53.0.0: открытый контейнер живёт только как временный файл и удаляется сразу после шифрования.
+                lock_container(temp, path, password)
+                discard_file(temp)
+            else:
+                os.replace(temp, path)
         except BaseException:
             discard_file(temp)
             raise
@@ -9000,13 +9502,16 @@ class ConfigTransfer:
         if self._blocked(export=request_code == self.CONFIG_EXPORT_REQUEST_CODE):
             self.pending_components, self.pending_import_as_new = (), False
             self.pending_export_id, self.pending_export_name = None, ""
+            self.pending_export_password = None
             return True
         fragment, _ = self._activity()
         components, as_new = self.pending_components, self.pending_import_as_new
         export_id, export_name = self.pending_export_id, self.pending_export_name
+        export_password = getattr(self, "pending_export_password", None)
         if request_code != self.MEDIA_IMPORT_REQUEST_CODE:
             self.pending_components, self.pending_import_as_new = (), False
             self.pending_export_id, self.pending_export_name = None, ""
+            self.pending_export_password = None
         if request_code == self.CONFIG_IMPORT_REQUEST_CODE and self._import_locked(fragment):
             return True
         uri = data.getData() if (result_code == Activity.RESULT_OK and data is not None) else None
@@ -9034,8 +9539,11 @@ class ConfigTransfer:
 
         def config_export():
             path = None
+            if export_password:
+                self._toast("config_export_encrypting", fragment)
             try:
-                path = self.build_config_file(components, temp_dir("exports"), config_id=export_id, name=export_name)
+                path = self.build_config_file(components, temp_dir("exports"), config_id=export_id, name=export_name,
+                                              password=export_password)
                 self._write_file_to_uri(uri, path)
                 self._toast("config_export_done", fragment)
             except Exception as exc:
@@ -9046,28 +9554,31 @@ class ConfigTransfer:
                     delete_file(path)
 
         def config_import():
-            temp_path = None
             try:
                 temp_path = self._copy_uri_to_temp_file(uri)
-                parsed = self.read_container(temp_path)
             except Exception as exc:
                 self.plugin.log(f"Configuration read failed: {exc}")
-                self._toast("config_import_invalid" if isinstance(exc, ConfigurationError) else "config_import_failed", fragment)
+                self._toast("config_import_failed", fragment)
                 return
-            finally:
+
+            def cleanup():
                 if temp_path and os.path.isfile(temp_path):
                     delete_file(temp_path)
 
-            def show():
-                try:
-                    # 49.0.0: тот же путь, что и при открытии файла из чата: с выбором аккаунта для «как новую».
-                    self._import_opened_data(parsed, fragment, components, as_new)
-                except Exception as exc:
-                    self.discard_container_media(parsed)
-                    self.plugin.log(f"Configuration import dialog failed: {exc}")
-                    self._toast("config_import_failed", fragment)
+            def opened(parsed):
+                def show():
+                    try:
+                        # 49.0.0: тот же путь, что и при открытии файла из чата: с выбором аккаунта для «как новую».
+                        self._import_opened_data(parsed, fragment, components, as_new)
+                    except Exception as exc:
+                        self.discard_container_media(parsed)
+                        self.plugin.log(f"Configuration import dialog failed: {exc}")
+                        self._toast("config_import_failed", fragment)
 
-            run_on_ui_thread(show)
+                run_on_ui_thread(show)
+
+            # 53.0.0: зашифрованный файл сначала спрашивает пароль; копия удаляется после чтения или отмены.
+            self._open_container(temp_path, fragment, opened, cleanup)
 
         if request_code == self.MEDIA_IMPORT_REQUEST_CODE:
             work = media_import
@@ -11569,7 +12080,8 @@ _WIPE_STATE_FILES = (
     STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, LEGACY_PREV_FILE, BLACKLIST_GUARD_FILE,
 )
 _WIPE_KEEP_ON_CLEAN = frozenset({STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, BLACKLIST_GUARD_FILE})
-_WIPE_DIRS = ("Prefixfy_media", ConfigurationsManager.MEDIA_DIR_NAME, ConfigurationsManager.STORE_DIR_NAME, ACCT_DIR_NAME)
+_WIPE_DIRS = ("Prefixfy_media", ConfigurationsManager.MEDIA_DIR_NAME, ConfigurationsManager.STORE_DIR_NAME, ACCT_DIR_NAME,
+              MEDIA_OUTBOX_DIR)
 _WIPE_CACHE_DIRS = ("Prefixfy_tmp", "Prefixfy_imports", "Prefixfy_exports", "Prefixfy")
 _WIPE_TEMP_SUFFIXES = (".tmp", ".ota", ".bak")
 _WIPE_MEDIA_RESET = {
@@ -13740,6 +14252,19 @@ class PrefixfyPlugin(BasePlugin):
             if not problems:
                 return
             self.log(f"Prefixfy: damaged data found: {', '.join(problems[:12])}")
+            if not key_bad and all(item == "settings" or item.startswith("setting:") for item in problems):
+                # 53.0.0: испорчены только живые настройки (значение не того типа, например записанное старой
+                # версией или другим плагином). Раньше это вело к полному сбросу: удалялись все сохранённые
+                # конфигурации и пресеты аккаунтов. Теперь к значению по умолчанию возвращаются только плохие
+                # ключи, а если не собираются сами настройки целиком - живые настройки; файлы конфигураций целы.
+                if "settings" in problems:
+                    values = dict(SETTING_DEFAULTS)
+                else:
+                    values = {item.split(":", 1)[1]: SETTING_DEFAULTS[item.split(":", 1)[1]]
+                              for item in problems if item.split(":", 1)[1] in SETTING_DEFAULTS}
+                bulk_set_settings(self, values)
+                self.log(f"Prefixfy: {len(values)} damaged setting(s) reset to defaults, configurations kept")
+                return
             if _auto_reset_recent():
                 self.log("Prefixfy: automatic reset already ran recently, skipped")
                 return
@@ -13748,6 +14273,14 @@ class PrefixfyPlugin(BasePlugin):
             self.log("Prefixfy: automatic full reset done")
         except Exception as exc:
             self.log(f"Prefixfy automatic reset failed: {exc}")
+
+    def _seal_legacy_media(self):
+        try:
+            count = seal_legacy_media(self.log)
+            if count:
+                self.log(f"Prefixfy: {count} media file(s) encrypted")
+        except Exception as exc:
+            self.log(f"Prefixfy media encryption failed: {exc}")
 
     def _request_blacklist_wipe(self):
         """Аккаунт устройства в ЧС: кладём метку и перезапускаем плагин, стирание выполнится в начале запуска."""
@@ -13792,6 +14325,12 @@ class PrefixfyPlugin(BasePlugin):
         self.transfer = ConfigTransfer(self)
         self.remote = RemoteControl(self)
         self._weather = WeatherCache(self.log)
+        # 53.0.0: открытые медиафайлы прошлых версий шифруются в очереди плагинов - той же, где идёт отправка
+        # прикреплённого медиа, поэтому файл не меняется у отправки под ногами.
+        try:
+            run_on_queue(self._seal_legacy_media, PLUGINS_QUEUE, 1500)
+        except Exception as exc:
+            self.log(f"Prefixfy media encryption scheduling failed: {exc}")
         self._internal_sends: Dict[Tuple[Any, str], float] = {}
         self._internal_lock = threading.Lock()
         self._dialog_kinds: Dict[int, str] = {}
@@ -14085,6 +14624,52 @@ class PrefixfyPlugin(BasePlugin):
                 on_cancel()
 
         builder.set_positive_button(positive or self._tr("action_save"), ok)
+        builder.set_negative_button(self._tr("action_cancel"), cancel)
+        return self._show_builder(builder, guard if on_cancel else None)
+
+    def show_password_dialog(self, title, message, on_password, *, confirm: bool, positive=None, fragment=None,
+                             on_cancel=None) -> bool:
+        """53.0.0: ввод пароля (скрытый текст). confirm=True - второе поле «Повторите пароль»."""
+        activity = self._dialog_activity(fragment)
+        if not activity:
+            return False
+        layout = LinearLayout(activity)
+        layout.setOrientation(LinearLayout.VERTICAL)
+        hidden = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
+        fields = []
+        for hint in (("password_hint", "password_repeat_hint") if confirm else ("password_hint",)):
+            field = AndroidEditText(activity)
+            field.setSingleLine(True)
+            field.setInputType(hidden)
+            field.setHint(self._tr(hint))
+            layout.addView(field)
+            fields.append(field)
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(title)
+        if message:
+            builder.set_message(message)
+        builder.set_view(layout)
+        guard = DismissGuard(on_cancel)
+
+        def ok(bld, which):
+            password = fields[0].getText().toString()
+            if not PASSWORD_MIN_LENGTH <= len(password) <= PASSWORD_MAX_LENGTH:
+                fields[0].setError(self._tr("password_length", min=PASSWORD_MIN_LENGTH, max=PASSWORD_MAX_LENGTH))
+                return
+            if confirm and fields[1].getText().toString() != password:
+                fields[1].setError(self._tr("password_mismatch"))
+                return
+            guard.mark()
+            bld.dismiss()
+            on_password(password)
+
+        def cancel(bld, which):
+            guard.mark()
+            bld.dismiss()
+            if on_cancel:
+                on_cancel()
+
+        builder.set_positive_button(positive or self._tr("action_apply"), ok)
         builder.set_negative_button(self._tr("action_cancel"), cancel)
         return self._show_builder(builder, guard if on_cancel else None)
 
@@ -16619,6 +17204,7 @@ class PrefixfyPlugin(BasePlugin):
         if caption:
             self._remember_internal_send(dialog_id, caption)
         try:
+            path = media_plain_copy(path, name)
             self._call_sender(self._pick_media_sender(name, mime), dialog_id, path, caption, account, options)
         except Exception as exc:
             self.log(f"Prefixfy attached media send failed: {exc}")
