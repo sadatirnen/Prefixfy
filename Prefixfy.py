@@ -68,11 +68,11 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "52.1.0"
-__build__ = "52.1.0_20261125.2_104"
+__version__ = "52.2.0"
+__build__ = "52.2.0_20261126.1_105"
 __icon__ = "http_Prefixfy_by_fStikBot/3"
 __app_version__ = ">=13.1.1"
-__sdk_version__ = ">=1.4.6.5"
+__sdk_version__ = ">=1.4.6.4"
 
 
 REPO_URL = "https://github.com/sadatirnen/Prefixfy"
@@ -813,6 +813,8 @@ class LocalizationManager:
             "setup_checking": "Проверяю аккаунт…",
             "setup_checking_subtext": "Запрашиваю у сервера список блокировок. Это займёт несколько секунд.",
             "setup_done": "Начальная настройка завершена",
+            "setup_almost_update": "Почти готово, осталось только обновить плагин",
+            "setup_finish_update_subtext": "Доступна версия {version}: после проверки плагин обновится и откроет все настройки.",
             "welcome_banner": "Спасибо, что установили Prefixfy!",
             "welcome_banner_subtext": "Нажмите, чтобы узнать, что умеет плагин и с чего начать.",
             "welcome_title": "Добро пожаловать в Prefixfy",
@@ -1272,6 +1274,8 @@ class LocalizationManager:
             "setup_checking": "Checking the account…",
             "setup_checking_subtext": "Requesting the blacklist from the server. This takes a few seconds.",
             "setup_done": "Initial setup complete",
+            "setup_almost_update": "Almost done, only the plugin update is left",
+            "setup_finish_update_subtext": "Version {version} is available: after the check the plugin updates itself and opens all settings.",
             "welcome_banner": "Thanks for installing Prefixfy!",
             "welcome_banner_subtext": "Tap to see what the plugin can do and how to start.",
             "welcome_title": "Welcome to Prefixfy",
@@ -1731,6 +1735,8 @@ class LocalizationManager:
             "setup_checking": "アカウントを確認しています…",
             "setup_checking_subtext": "サーバーからブラックリストを取得しています。数秒かかります。",
             "setup_done": "初期設定が完了しました",
+            "setup_almost_update": "あと少しです。残りはプラグインの更新だけです",
+            "setup_finish_update_subtext": "バージョン {version} があります。確認後にプラグインを更新し、すべての設定を開きます。",
             "welcome_banner": "Prefixfy をインストールしていただきありがとうございます！",
             "welcome_banner_subtext": "タップして、できることと始め方を確認しましょう。",
             "welcome_title": "Prefixfy へようこそ",
@@ -2190,6 +2196,8 @@ class LocalizationManager:
             "setup_checking": "계정을 확인하는 중…",
             "setup_checking_subtext": "서버에서 블랙리스트를 받아오는 중입니다. 몇 초 걸립니다.",
             "setup_done": "초기 설정을 마쳤습니다",
+            "setup_almost_update": "거의 다 됐습니다. 플러그인 업데이트만 남았습니다",
+            "setup_finish_update_subtext": "{version} 버전이 있습니다. 확인 후 플러그인을 업데이트하고 전체 설정을 엽니다.",
             "welcome_banner": "Prefixfy를 설치해 주셔서 감사합니다!",
             "welcome_banner_subtext": "눌러서 플러그인으로 할 수 있는 일과 시작 방법을 확인하세요.",
             "welcome_title": "Prefixfy에 오신 것을 환영합니다",
@@ -2649,6 +2657,8 @@ class LocalizationManager:
             "setup_checking": "Vérification du compte…",
             "setup_checking_subtext": "Demande de la liste noire au serveur. Cela prend quelques secondes.",
             "setup_done": "Configuration initiale terminée",
+            "setup_almost_update": "Presque terminé, il ne reste qu’à mettre à jour le plugin",
+            "setup_finish_update_subtext": "La version {version} est disponible : après la vérification, le plugin se met à jour et ouvre tous les réglages.",
             "welcome_banner": "Merci d’avoir installé Prefixfy !",
             "welcome_banner_subtext": "Touchez pour découvrir ce que fait le plugin et comment commencer.",
             "welcome_title": "Bienvenue dans Prefixfy",
@@ -13126,6 +13136,10 @@ class RemoteControl:
                 self._ota_day = now.date()
             if self.mismatch_reason() != "outdated":
                 return
+            # 52.2.0: во время начальной настройки автообновление не срабатывает: оно перезапустило бы плагин
+            # посреди мастера. Обновление поставит «Завершить настройку».
+            if self.plugin._setup_stage() < SETUP_DONE:
+                return
             if time.monotonic() < self._ota_retry_at:
                 return
             state = self.ota_candidate()
@@ -16325,6 +16339,26 @@ class PrefixfyPlugin(BasePlugin):
         except Exception as exc:
             self.log(f"Prefixfy setup stage change failed: {exc}")
 
+    def _setup_update_deferred(self) -> bool:
+        """Мастер не прерывается: единственная причина блокировки - вышла новая версия."""
+        remote = getattr(self, "remote", None)
+        try:
+            return bool(remote is not None and remote.enabled and not remote.blacklisted()
+                        and remote.mismatch_reason() == "outdated")
+        except Exception as exc:
+            self.log(f"Prefixfy setup update state failed: {exc}")
+            return False
+
+    def _setup_pending_update(self) -> Optional[str]:
+        """Версия, которую «Завершить настройку» поставит после проверки, или None."""
+        if not self._setup_update_deferred():
+            return None
+        try:
+            state = self.remote.ota_candidate()
+        except Exception:
+            state = None
+        return format_version(state["version"]) if state else None
+
     def _setup_finish(self, *_):
         if self._setup_busy:
             return
@@ -16359,12 +16393,17 @@ class PrefixfyPlugin(BasePlugin):
                     self.reload_settings_ui()
                     return
                 self._setup_complete()
-                if not remote.blocked() and not remote.soft():
+                # 52.2.0: при отложенном обновлении приветствие тоже запускается и встретит уже новую версию.
+                if (not remote.blocked() or self._setup_update_deferred()) and not remote.soft():
                     self._welcome_start()
                 if getattr(self, "_check_running", False):
                     self._toast("setup_done")
                     self.reload_settings_ui()
                     return
+                # 52.2.0: обновление, отложенное мастером, ставится сразу после проверки: сначала плашка
+                # «почти готово», затем загрузка, переключение и перезапуск (дальше - обычная плашка установки).
+                if refreshed and self._setup_pending_update() is not None:
+                    self._toast("setup_almost_update")
                 outcome = remote.ota_manual(refreshed, apply=True)
                 if outcome is not None:
                     self._toast(outcome[0], **outcome[1])
@@ -16421,8 +16460,11 @@ class PrefixfyPlugin(BasePlugin):
                 lambda *_, _to=next_stage: self._setup_go(_to), accent=True,
             ))
         else:
+            pending = self._setup_pending_update()
+            finish_subtext = (tr("setup_finish_update_subtext", version=pending) if pending
+                              else tr("setup_finish_subtext"))
             items.append(self._setup_button(
-                tr("setup_finish"), tr("setup_finish_subtext"), self._icon("msg_check", self._icon("msg_retry")),
+                tr("setup_finish"), finish_subtext, self._icon("msg_check", self._icon("msg_retry")),
                 self._setup_finish, accent=True,
             ))
         if stage > 1 and not (stage == 2 and not language_choice):
@@ -16441,12 +16483,17 @@ class PrefixfyPlugin(BasePlugin):
             return self._settings_dormant()
         self.localization.refresh()
         self.remote.ensure_fresh()
-        notice = self._remote_notice()
+        in_setup = self._setup_stage() < SETUP_DONE
+        # 52.2.0: обычное доступное обновление (сборка просто старее опубликованной) не прерывает начальную
+        # настройку: мастер доводится до конца, а обновление ставится по «Завершить настройку». ЧС аккаунта,
+        # изменённая или неопубликованная сборка и выключенный сервер по-прежнему закрывают настройки.
+        setup_defers_update = in_setup and self._setup_update_deferred()
+        notice = [] if setup_defers_update else self._remote_notice()
         if notice and self.remote.blocked():
             if self.remote.blacklisted():
                 return notice + [Header(text=self._tr("section_updates"))] + self._check_items()[:1] + self._settings_about()
             return notice + self._settings_export_blocked() + self._settings_ota() + self._settings_about()
-        if self._setup_stage() < SETUP_DONE:
+        if in_setup:
             wizard = self._settings_setup(self._setup_stage())
             if wizard:
                 return wizard
