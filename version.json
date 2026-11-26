@@ -1,33 +1,33 @@
 {
   "changelog": {
     "en": [
-      "\u25cf Exceptions",
-      "Optimization: Improved the exceptions system"
+      "\u25cf Other",
+      "Optimization: Bug fixes and stability improvements"
     ],
     "fr": [
-      "\u25cf Exceptions",
-      "Optimisation : am\u00e9lioration du fonctionnement du syst\u00e8me d'exceptions"
+      "\u25cf Autre",
+      "Optimisation : correction de bugs et am\u00e9lioration de la stabilit\u00e9"
     ],
     "ja": [
-      "\u25cf \u4f8b\u5916",
-      "\u6700\u9069\u5316: \u4f8b\u5916\u30b7\u30b9\u30c6\u30e0\u306e\u52d5\u4f5c\u3092\u6539\u5584"
+      "\u25cf \u305d\u306e\u4ed6",
+      "\u6700\u9069\u5316: \u4e0d\u5177\u5408\u306e\u4fee\u6b63\u3068\u5b89\u5b9a\u6027\u306e\u5411\u4e0a"
     ],
     "ko": [
-      "\u25cf \uc608\uc678",
-      "\ucd5c\uc801\ud654: \uc608\uc678 \uc2dc\uc2a4\ud15c \uc791\ub3d9 \uac1c\uc120"
+      "\u25cf \uae30\ud0c0",
+      "\ucd5c\uc801\ud654: \uc624\ub958 \uc218\uc815 \ubc0f \uc548\uc815\uc131 \ud5a5\uc0c1"
     ],
     "ru": [
-      "\u25cf \u0418\u0441\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f",
-      "\u041e\u043f\u0442\u0438\u043c\u0438\u0437\u0430\u0446\u0438\u044f: \u0423\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u0435 \u0440\u0430\u0431\u043e\u0442\u044b \u0441\u0438\u0441\u0442\u0435\u043c\u044b \u0438\u0441\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0439"
+      "\u25cf \u041f\u0440\u043e\u0447\u0435\u0435",
+      "\u041e\u043f\u0442\u0438\u043c\u0438\u0437\u0430\u0446\u0438\u044f: \u0418\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043e\u0448\u0438\u0431\u043e\u043a \u0438 \u043f\u043e\u0432\u044b\u0448\u0435\u043d\u0438\u0435 \u0441\u0442\u0430\u0431\u0438\u043b\u044c\u043d\u043e\u0441\u0442\u0438"
     ]
   },
   "file": "Prefixfy.py",
   "format": 1,
-  "issued_at": 1795549084,
-  "serial": 104,
-  "sha256": "c3d7480070077068a353616b2b54434eb3b2d312ebb412fc35509c54baeb8292",
-  "sha512": "d2c4772a68319b4cdc6bc1f3f394a97309ff233bcaa84dd706b0bbbfdace59dc18c3ce3c00548d378eae8ba8884acedab57e10637d8e059f581892149f7d0056",
-  "signature": "asligAIWV4aRtV6gr6Fdy3r/JEfymBVZ055sU6td9YIJicJLdcx8hB4PDnZp4ToMZs78NqQjSxF8f7w88F5YVE9k4rC15hm7jnCI0NcZS/3BWjtWpOu/Wle3F2JwYf2W9auIm94u9U0Kx/sFkYFjQGlbKXg/L0lgxb7Aly8HIT+ViVJY+19HtjkvcdcrsBLJTjdThFGAGglori+bNHBghbA7l9PqRb9KfsUDMXvpn/GgQ2SolZeSiAwaDZxVE7sNMDYTVlYJSYjbLmyTZxiF+OCJbSzRSRaFnjEyj8N5bJwZFKj2ZugJgF0vO3ZkPf+8eu3OoE7qt/7F/wZZ6tBqVXmPUAw0cflkiIj0TXNysD//11IFHA0rx8e5T4pwmlmx0s4tNywL+mkdZBOrlrFwGVw0Pa3mtDRtF4OOa+3uuBMYri/+yptoKBwhxRmagRdEFEct/NBQj78CYK1q3WLLpxLNcwLI2P2i+ohDkrpUs9l7/LJcGBB72i4klT0k2eNP",
-  "size": 913172,
-  "version": "52.1.0_20261125.2_104"
+  "issued_at": 1795717641,
+  "serial": 105,
+  "sha256": "97c4553e3e6cf5f2715ced3bd7a4b14cb5a1ebb6fc73f69fe341ecf3d5e57515",
+  "sha512": "cca2703d99e20147081f1ad07ee7bc355090c886b65828b5df8607ccd2369ce7acdedda633753da0f323b8110649af76f8520557b3c9032c7b3c92a82b2c88a4",
+  "signature": "dLl4ayjCclWNVspKfC+sC2l1Qp85P/cmDyXqc13W1ynDLDQJznCkp1XlWo8IHozlhyfHSLrUIhCCojVf+iWjQyxUhgx2PYorWU9rmPL0iuKYI17ZHSYS7mJ6uxh0RjuXcgmTCAZBJO0BkSCCdv8XQ9RQpQlwKrsR7+D1LfFsxuCJHv1tcFiYta8M0EyS2hSdbdH9dWvFV3WQhfNDGWDCS++e3MM/evgHxOWCV6Q1R3wBeirsEZGPuAkpyoDx/vJKq6MegNHkT8AheJNJVipTSmv7BFU09GzBssoQ0txyz+Y56wJhj46uJC6ComnQ+iZtjDtM9zZO54xfatYY1YiayvAN7sU58jeBM8u6rfcmigCGv/6yWn0CxdNiy14/npE7XBU3sdF2Hgg/FKQIUtRsRQlU8L25Py2QZD4SoiikP+khvdZmd6rdXdPEneYTigW53/ala87Gi1y5zro5rzy64/D+WySJAsQQMQFg9enW5GYc4+ELykoXIyUek8BUTdrW",
+  "size": 917494,
+  "version": "52.2.0_20261126.1_105"
 }
