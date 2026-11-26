@@ -1,33 +1,53 @@
 {
   "changelog": {
     "en": [
+      "\u25cf Configurations",
+      "New: Configurations can now be password-encrypted when exporting",
+      "\u25cf Security",
+      "Optimization: Improved plugin security",
       "\u25cf Other",
-      "Optimization: Bug fixes and stability improvements"
+      "Optimization: Improved plugin behavior"
     ],
     "fr": [
+      "\u25cf Configurations",
+      "Nouveau : les configurations peuvent d\u00e9sormais \u00eatre chiffr\u00e9es par mot de passe lors de l'exportation",
+      "\u25cf S\u00e9curit\u00e9",
+      "Optimisation : s\u00e9curit\u00e9 du plugin renforc\u00e9e",
       "\u25cf Autre",
-      "Optimisation : correction de bugs et am\u00e9lioration de la stabilit\u00e9"
+      "Optimisation : comportement du plugin am\u00e9lior\u00e9"
     ],
     "ja": [
+      "\u25cf \u8a2d\u5b9a",
+      "\u65b0\u6a5f\u80fd: \u30a8\u30af\u30b9\u30dd\u30fc\u30c8\u6642\u306b\u8a2d\u5b9a\u3092\u30d1\u30b9\u30ef\u30fc\u30c9\u3067\u6697\u53f7\u5316\u3067\u304d\u308b\u3088\u3046\u306b\u306a\u308a\u307e\u3057\u305f",
+      "\u25cf \u30bb\u30ad\u30e5\u30ea\u30c6\u30a3",
+      "\u6700\u9069\u5316: \u30d7\u30e9\u30b0\u30a4\u30f3\u306e\u30bb\u30ad\u30e5\u30ea\u30c6\u30a3\u3092\u5411\u4e0a",
       "\u25cf \u305d\u306e\u4ed6",
-      "\u6700\u9069\u5316: \u4e0d\u5177\u5408\u306e\u4fee\u6b63\u3068\u5b89\u5b9a\u6027\u306e\u5411\u4e0a"
+      "\u6700\u9069\u5316: \u30d7\u30e9\u30b0\u30a4\u30f3\u306e\u52d5\u4f5c\u3092\u6539\u5584"
     ],
     "ko": [
+      "\u25cf \uc124\uc815",
+      "\uc2e0\uaddc: \uc774\uc81c \uc124\uc815\uc744 \ub0b4\ubcf4\ub0bc \ub54c \ube44\ubc00\ubc88\ud638\ub85c \uc554\ud638\ud654\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4",
+      "\u25cf \ubcf4\uc548",
+      "\ucd5c\uc801\ud654: \ud50c\ub7ec\uadf8\uc778 \ubcf4\uc548 \uac15\ud654",
       "\u25cf \uae30\ud0c0",
-      "\ucd5c\uc801\ud654: \uc624\ub958 \uc218\uc815 \ubc0f \uc548\uc815\uc131 \ud5a5\uc0c1"
+      "\ucd5c\uc801\ud654: \ud50c\ub7ec\uadf8\uc778 \uc791\ub3d9 \ubc29\uc2dd \uac1c\uc120"
     ],
     "ru": [
+      "\u25cf \u041a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u0438",
+      "\u041d\u043e\u0432\u043e\u0435: \u0422\u0435\u043f\u0435\u0440\u044c \u043f\u0440\u0438 \u044d\u043a\u0441\u043f\u043e\u0440\u0442\u0435 \u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u0438 \u043c\u043e\u0436\u043d\u043e \u0437\u0430\u0448\u0438\u0444\u0440\u043e\u0432\u0430\u0442\u044c \u043f\u0430\u0440\u043e\u043b\u0435\u043c",
+      "\u25cf \u0411\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0441\u0442\u044c",
+      "\u041e\u043f\u0442\u0438\u043c\u0438\u0437\u0430\u0446\u0438\u044f: \u041f\u043e\u0432\u044b\u0448\u0435\u043d\u0430 \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0441\u0442\u044c \u043f\u043b\u0430\u0433\u0438\u043d\u0430",
       "\u25cf \u041f\u0440\u043e\u0447\u0435\u0435",
-      "\u041e\u043f\u0442\u0438\u043c\u0438\u0437\u0430\u0446\u0438\u044f: \u0418\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043e\u0448\u0438\u0431\u043e\u043a \u0438 \u043f\u043e\u0432\u044b\u0448\u0435\u043d\u0438\u0435 \u0441\u0442\u0430\u0431\u0438\u043b\u044c\u043d\u043e\u0441\u0442\u0438"
+      "\u041e\u043f\u0442\u0438\u043c\u0438\u0437\u0430\u0446\u0438\u044f: \u0423\u043b\u0443\u0447\u0448\u0435\u043d \u0445\u0430\u0440\u0430\u043a\u0442\u0435\u0440 \u0440\u0430\u0431\u043e\u0442\u044b \u043f\u043b\u0430\u0433\u0438\u043d\u0430"
     ]
   },
   "file": "Prefixfy.py",
   "format": 1,
-  "issued_at": 1795717641,
-  "serial": 105,
-  "sha256": "97c4553e3e6cf5f2715ced3bd7a4b14cb5a1ebb6fc73f69fe341ecf3d5e57515",
-  "sha512": "cca2703d99e20147081f1ad07ee7bc355090c886b65828b5df8607ccd2369ce7acdedda633753da0f323b8110649af76f8520557b3c9032c7b3c92a82b2c88a4",
-  "signature": "dLl4ayjCclWNVspKfC+sC2l1Qp85P/cmDyXqc13W1ynDLDQJznCkp1XlWo8IHozlhyfHSLrUIhCCojVf+iWjQyxUhgx2PYorWU9rmPL0iuKYI17ZHSYS7mJ6uxh0RjuXcgmTCAZBJO0BkSCCdv8XQ9RQpQlwKrsR7+D1LfFsxuCJHv1tcFiYta8M0EyS2hSdbdH9dWvFV3WQhfNDGWDCS++e3MM/evgHxOWCV6Q1R3wBeirsEZGPuAkpyoDx/vJKq6MegNHkT8AheJNJVipTSmv7BFU09GzBssoQ0txyz+Y56wJhj46uJC6ComnQ+iZtjDtM9zZO54xfatYY1YiayvAN7sU58jeBM8u6rfcmigCGv/6yWn0CxdNiy14/npE7XBU3sdF2Hgg/FKQIUtRsRQlU8L25Py2QZD4SoiikP+khvdZmd6rdXdPEneYTigW53/ala87Gi1y5zro5rzy64/D+WySJAsQQMQFg9enW5GYc4+ELykoXIyUek8BUTdrW",
-  "size": 917494,
-  "version": "52.2.0_20261126.1_105"
+  "issued_at": 1795723576,
+  "serial": 106,
+  "sha256": "97c8fadb45e78fc54f207034a17547111c1a667d59265dd9e59429471446480e",
+  "sha512": "165d0486a46542d3a830119beb7fd07486ba6430636e593a1d23011bc2b65417ffc9b9e67301d08fb693b12ba7c2709e08cc28e4a518c607e00c5ce50589ac9b",
+  "signature": "GlIYco4hLd7Lpz39m3SQG2hoZe4VT0M+LuPPBdi5X6n6KeobB5jQEa/0g0mezJGuHdAaGvkdsn1zAp7I9YeuN0d+k41t7T4kZTlX9mzlaBUJHZO0Jsb3IhSCtrN3vPr7q5QEgvbfbEjxdaoEalgbmbCT8gD9hKv5Jua9ZWlwBXtU/Ynx/Ih5B5CxmB0rok1kTGnLu5ZQPU8CO2vVYgnXvfASz2qURni5bFnogkMSwNDv1ZWmgpPpc2TKJXYkmm1a8MZrYNzCeXqPRchzz2cxBtEWZqeFH6qpgFoI+0Olv50LJ4Ft+G1XQ1+hHxGQw6+0ugTZ8UYlGMvkCvlPWCvqHJLRIGncCPHqzpe5YI1wjukWTN4LCtLZEtNSfIbjzwRRIyH2d8lEVEj9VaoLa4h5CFGTzLQtn/Z8lawA9k98vbxGygMhHtu0bp+Q6fRuJGZtyFpbg75aDLl61NbD5EWKE2rxcEOKZIRz060PTNzLC7sagZha7amDxzRxNmbieCMz",
+  "size": 951359,
+  "version": "53.0.0_20261126.2_106"
 }
