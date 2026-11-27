@@ -70,8 +70,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "53.0.0"
-__build__ = "53.0.0_20261126.2_106"
+__version__ = "53.0.1"
+__build__ = "53.0.1_20261127.1_108"
 __icon__ = "http_Prefixfy_by_fStikBot/3"
 __app_version__ = ">=13.1.1"
 __sdk_version__ = ">=1.4.6.5"
@@ -174,6 +174,10 @@ WELCOME_SECONDS = 4 * 3600
 UPDATED_UNTIL_KEY = "Prefixfy_updated_until"
 UPDATED_BUILD_KEY = "Prefixfy_updated_build"
 UPDATED_NOTES_KEY = "Prefixfy_updated_notes"
+# 53.0.1: время, когда «Завершить настройку» запустила отложенное обновление. Сборка, поставленная так, не показывает
+# плашку «Обновление завершено»: для пользователя это продолжение установки, его встречает приветствие.
+SETUP_UPDATE_AT_KEY = "Prefixfy_setup_update_at"
+SETUP_UPDATE_WINDOW = 3600
 SETUP_STAGE_COUNT = 3
 SETUP_DONE = SETUP_STAGE_COUNT + 1
 MAX_STORE_JSON_BYTES = 2 * 1024 * 1024
@@ -12090,6 +12094,7 @@ _WIPE_MEDIA_RESET = {
 _WIPE_INTERNAL_KEYS = {
     SCHEMA_KEY: SCHEMA_VERSION, CHAT_COUNTS_KEY: "", COUNTER_KEY: 0,
     SETUP_STAGE_KEY: 1, SETUP_SEEN_KEY: 1, WELCOME_UNTIL_KEY: 0, UPDATED_UNTIL_KEY: 0, UPDATED_NOTES_KEY: "",
+    SETUP_UPDATE_AT_KEY: 0,
     "Prefixfy_markdown_style_pick": 0, "Prefixfy_text_style_pick": 0,
     CHAT_CONFIGS_KEY: "{}", SCHEDULE_KEY: "", ACCT_MODE_KEY: False, ACCT_TARGET_KEY: ACCT_AUTO, ACCT_LIVE_KEY: "", ACCT_PINS_KEY: "",
     **{key: "" for key in LEGACY_SETTING_KEYS},  # старые плоские конфигурации тоже содержат пользовательские настройки
@@ -14142,6 +14147,14 @@ def _show_info_unbound(text: str, log):
         log(f"Prefixfy notice failed: {exc}")
 
 
+class _EntityCarrier:
+    """Заменитель SendMessageParams для сборки сущностей подписи к прикреплённому медиа."""
+    __slots__ = ("entities",)
+
+    def __init__(self):
+        self.entities = None
+
+
 class PrefixfyPlugin(BasePlugin):
     def on_plugin_load(self):
         try:
@@ -15702,7 +15715,7 @@ class PrefixfyPlugin(BasePlugin):
         if FEATURES.on("config_import"):
             items.append(Text(text=tr("config_import"), subtext=short, icon="msg_download", on_click=transfer.request_import))
         items += [
-            Text(text=tr("config_export"), subtext=short, icon=self._icon("msg_upload", "msg_document"), on_click=transfer.request_export),
+            Text(text=tr("config_export"), subtext=short, icon="msg_share", on_click=transfer.request_export),
             Text(text=tr("config_reset"), subtext=short, icon=self._icon("msg_retry"), on_click=transfer.request_reset),
         ]
         if FEATURES.on("schedule"):
@@ -16096,7 +16109,7 @@ class PrefixfyPlugin(BasePlugin):
             Header(text=tr("section_configurations")),
             Text(
                 text=tr("config_export"), subtext=tr("config_actions_subtext"),
-                icon=self._icon("msg_upload", "msg_document"), on_click=self.transfer.request_export,
+                icon="msg_share", on_click=self.transfer.request_export,
             ),
         ]
 
@@ -16827,6 +16840,17 @@ class PrefixfyPlugin(BasePlugin):
                 return
             if as_text(self.get_setting(UPDATED_BUILD_KEY, "")) == __build__:
                 return
+            try:
+                started = float(self.get_setting(SETUP_UPDATE_AT_KEY, 0) or 0)
+            except (TypeError, ValueError):
+                started = 0.0
+            if started:
+                self.set_setting(SETUP_UPDATE_AT_KEY, 0, reload_settings=False)
+                if 0 <= time.time() - started < SETUP_UPDATE_WINDOW:
+                    # Обновление шло как последний шаг начальной настройки: плашку не включаем и запоминаем сборку,
+                    # чтобы она не включилась при следующем запуске.
+                    self.set_setting(UPDATED_BUILD_KEY, __build__, reload_settings=False)
+                    return
             remote = getattr(self, "remote", None)
             notes = remote.release_notes() if remote is not None else None
             packed = json.dumps({code: list(lines) for code, lines in notes.items()}, ensure_ascii=False) if notes else ""
@@ -16987,9 +17011,14 @@ class PrefixfyPlugin(BasePlugin):
                     return
                 # 52.2.0: обновление, отложенное мастером, ставится сразу после проверки: сначала плашка
                 # «почти готово», затем загрузка, переключение и перезапуск (дальше - обычная плашка установки).
-                if refreshed and self._setup_pending_update() is not None:
+                deferred = refreshed and self._setup_pending_update() is not None
+                if deferred:
                     self._toast("setup_almost_update")
+                    self.set_setting(SETUP_UPDATE_AT_KEY, time.time(), reload_settings=False)
                 outcome = remote.ota_manual(refreshed, apply=True)
+                if deferred and (not outcome or outcome[0] != "ota_installed"):
+                    # Обновление не началось: метка не должна заглушить плашку у следующего обычного обновления.
+                    self.set_setting(SETUP_UPDATE_AT_KEY, 0, reload_settings=False)
                 if outcome is not None:
                     self._toast(outcome[0], **outcome[1])
                 elif remote.blocked():
@@ -17193,9 +17222,17 @@ class PrefixfyPlugin(BasePlugin):
                 return
             except Exception as exc:
                 self.log(f"Prefixfy send with carried-over options failed, retrying without them: {exc}")
-                if "scheduleDate" in options:
-                    sender(dialog_id, path, caption=caption, account=account, scheduleDate=options["scheduleDate"])
-                    return
+                # 53.0.2: при повторе остаются сущности подписи (Premium Emoji маски) и время отложенной отправки.
+                keep = {key: options[key] for key in ("scheduleDate", "entities") if key in options}
+                if keep:
+                    try:
+                        sender(dialog_id, path, caption=caption, account=account, **keep)
+                        return
+                    except Exception as retry_exc:
+                        self.log(f"Prefixfy send with caption entities failed, sending plain caption: {retry_exc}")
+                        if "scheduleDate" in keep:
+                            sender(dialog_id, path, caption=caption, account=account, scheduleDate=keep["scheduleDate"])
+                            return
         sender(dialog_id, path, caption=caption, account=account)
 
     def _send_attached_media(self, dialog_id, media, caption: str, account: int, options: Optional[Dict[str, Any]] = None):
@@ -17299,9 +17336,27 @@ class PrefixfyPlugin(BasePlugin):
         options = self._carry_over_options(params)
         if "scheduleDate" in options or self._existing_entity_count(params) > 0:
             return False
-        outgoing = runtime.pipeline.transform(message)
-        if utf16_length(outgoing) > self._caption_limit(account):
+        # 53.0.2: подпись к медиа строится тем же путём, что и обычное сообщение: с сущностями маски (Premium Emoji,
+        # Markdown). Раньше здесь был только pipeline.transform() - простой текст, и вместо Premium Emoji в подписи
+        # оставались запасные эмодзи из маски.
+        limit = self._caption_limit(account)
+        outgoing, entities, body_offset = self._transform_text(runtime, message)
+        entities = self._finalize_entities(account, params, entities, body_offset)
+        if utf16_length(outgoing) > limit:
             return False
+        if entities:
+            carrier = _EntityCarrier()
+            outgoing = self._apply_entities(runtime, carrier, message, outgoing, entities, body_offset)
+            if utf16_length(outgoing) > limit:
+                return False
+            built = carrier.entities
+            if built is not None:
+                try:
+                    built = list(built)
+                except Exception:
+                    built = [built.get(index) for index in range(int(built.size()))]
+                if built:
+                    options["entities"] = built
         run_on_queue(lambda: self._send_attached_media(dialog_id, media, outgoing, account, options), PLUGINS_QUEUE, 350)
         return True
 
