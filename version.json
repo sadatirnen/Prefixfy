@@ -1,33 +1,29 @@
 {
   "changelog": {
     "en": [
-      "\u25cf Other",
-      "Optimization: Bug fixes and plugin stability improvements"
+      "\u25cf Debugging",
+      "Experimental: added a plugin debugging feature (not available to everyone!)"
     ],
     "fr": [
-      "\u25cf Autre",
-      "Optimisation : correction de bugs et am\u00e9lioration de la stabilit\u00e9 du plugin"
+      "\u25cf D\u00e9bogage",
+      "Exp\u00e9rimental : ajout"
     ],
     "ja": [
-      "\u25cf \u305d\u306e\u4ed6",
-      "\u6700\u9069\u5316: \u4e0d\u5177\u5408\u306e\u4fee\u6b63\u3068\u30d7\u30e9\u30b0\u30a4\u30f3\u306e\u5b89\u5b9a\u6027\u5411\u4e0a"
-    ],
-    "ko": [
-      "\u25cf \uae30\ud0c0",
-      "\ucd5c\uc801\ud654: \uc624\ub958 \uc218\uc815 \ubc0f \ud50c\ub7ec\uadf8\uc778 \uc548\uc815\uc131 \ud5a5\uc0c1"
+      "\u25cf \u30c7\u30d0\u30c3\u30b0",
+      "\u5b9f\u9a13\u7684\u6a5f\u80fd: \u30d7\u30e9\u30b0\u30a4\u30f3\u306e\u30c7\u30d0\u30c3\u30b0\u6a5f\u80fd\u3092\u8ffd\u52a0\uff08\u4e00\u90e8\u30e6\u30fc\u30b6\u30fc\u306e\u307f\u5229\u7528\u53ef\u80fd\uff01\uff09"
     ],
     "ru": [
-      "\u25cf \u041f\u0440\u043e\u0447\u0435\u0435",
-      "\u041e\u043f\u0442\u0438\u043c\u0438\u0437\u0430\u0446\u0438\u044f: \u0418\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043e\u0448\u0438\u0431\u043e\u043a \u0438 \u043f\u043e\u0432\u044b\u0448\u0435\u043d\u0438\u0435 \u0441\u0442\u0430\u0431\u0438\u043b\u044c\u043d\u043e\u0441\u0442\u0438 \u043f\u043b\u0430\u0433\u0438\u043d\u0430"
+      "\u25cf \u041e\u0442\u043b\u0430\u0434\u043a\u0430",
+      "\u042d\u043a\u0441\u043f\u0435\u0440\u0438\u043c\u0435\u043d\u0442\u0430\u043b\u044c\u043d\u043e: \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u0430 \u0444\u0443\u043d\u043a\u0446\u0438\u044f \u043e\u0442\u043b\u0430\u0434\u043a\u0438 \u0440\u0430\u0431\u043e\u0442\u044b \u043f\u043b\u0430\u0433\u0438\u043d\u0430 (\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u043d\u0435 \u0432\u0441\u0435\u043c!)"
     ]
   },
   "file": "Prefixfy.py",
   "format": 1,
-  "issued_at": 1795772703,
+  "issued_at": 1795774860,
   "serial": 108,
-  "sha256": "19c76eae47290b5586dc5c584a874024589089b48044f9c070ea5e6ca8f42e4f",
-  "sha512": "54dc4637642ae6edf67f75a7819fa63ae7653b4e5b1c1ffde9dd050fa5f765d3f9116c90518c952da691b9821df501537e994c01e011e618e9c71ccdea7fe435",
-  "signature": "OFkdpWHUAL5YUkQfUhKj18c8sM6P5+nMIVjyEvJs4d2Pmiwt4BR4rwJ1+AQo2mnpdJJuw9Gksjbafjs7lt1YIUiWku9SATI344GMmVTJdGP7EjR951dZG6J2FiE0Tppet4yLqJATXkBq6qomaxhQxeEMiWCblHjtxtBoDWuVqce1CLA+Gbc3nCyycy/dNEtDCcTEltmLxXJVt0ls9ZQBZaL+RW66WMTKcCltHabHfCxrkh6LoejTzbn+iqjl29gMWn0ZJRtrPg8iGiYoiPPi6v5KxJS8DyJp8gyeUGuijoafYzNMtLuIh7Te5CrlGER0OuL1AkCejjNFFdCGjX8Zpiz0qjLh6pnj2osjk3UeW2+AmdjX+s0dmRWSfYyhvbo8eIIrGmh3/u64AuFMDsGCPS6abeX/C3xAbPE1/qOEZq/JvmacTdNTUKZdNCQEtPJP+1bVM2JhD4i0T5TwkbwzhJmoVYsJokQztVDRIvNNnw9wnkh8MHFda879xfkHJZEQ",
-  "size": 955064,
-  "version": "53.0.1_20261127.1_108"
+  "sha256": "efac71d0368febdae6d2de2251611faa44ae807f50cf42691635a340c9e4d8c9",
+  "sha512": "a0b51cb2c2dba8502a460afdb00d5e7ae689253e9471e11d6af65b04be79685aa497e3ca6a027dadf660e6f6f5d8133471f5e54592aebf541cb017b4ffa73fd0",
+  "signature": "R1RR8II0KFsD5H8XfJKw6qmsmbeKf+7TmrdfeiU0QGyzxOTD6aG5VV2tFgqRxFkvj8JdqOL4kto3LE1EbssOKFtVG8Op2TVwHtV1vzzUb6EOv6RZ6Z7b+P3VvdJypV5WCRqugf65Ce+ngPBxfWTw8lDFebvGW21R14GGCluq1gDS24quPqN1oHLmQ00oCqjsbX+O0dt0yMnby7VqeKogTDU0t8ju/qjo0joq8ZI5YwSCmy29aL7BN09t7J7ubIMqUEmQqg/DZQrdQ5Ehxg6hyYOoppVQsatBMLAV7WAnparQpzl0rpaIX1RcmzvB41lH9AdF9iBfa/Rfih30W8Nj6MrDK0KawDo5ra1yR8oeqvcrCFG5yDz5ruH0NuK+oaxgAZpl6AxTnF8qqbWcLNcHI4HZsJgH2YFkkCZauURDGtoT6j80e9jUcJkb4XyEMd1ZGx6DnOP/oe8srqvn2ItI1qzkzhC+IrNyaI1chSa/oY6g6xu9/DjR3NmetRZlc5Hs",
+  "size": 935176,
+  "version": "54.0.0_20261127.2_108"
 }
