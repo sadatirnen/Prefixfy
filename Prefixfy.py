@@ -3,6 +3,7 @@ import difflib
 import hashlib
 import hmac
 import struct
+import sys
 import json
 import math
 import mimetypes
@@ -31,6 +32,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from base_plugin import BasePlugin, HookFilter, HookResult, HookStrategy, MenuItemData, MenuItemType
 from ui.settings import Divider, Header, Input, Selector, Switch, Text
+from ui.settings import Input as _SdkInput, Selector as _SdkSelector, Switch as _SdkSwitch, Text as _SdkText
 from ui.alert import AlertDialogBuilder
 from ui.bulletin import BulletinHelper
 from android.widget import CheckBox, EditText as AndroidEditText, LinearLayout
@@ -70,8 +72,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "53.0.1"
-__build__ = "53.0.1_20261127.1_108"
+__version__ = "54.0.0"
+__build__ = "54.0.0_20261127.2_108"
 __icon__ = "http_Prefixfy_by_fStikBot/3"
 __app_version__ = ">=13.1.1"
 __sdk_version__ = ">=1.4.6.5"
@@ -93,8 +95,6 @@ FLAGS_MAX_COUNT = 128
 FLAGS_MAX_ACCOUNTS = 1024
 FLAGS_MAX_BYTES = 256 * 1024
 MANIFEST_MAX_FILE_SIZE = 8 * 1024 * 1024
-# 50.4.0: необязательный список изменений в манифесте. Он только показывается в окне обновления и ни на что не влияет;
-# что бы ни лежало в поле "changelog", разбор его не может уронить проверку манифеста (см. parse_changelog).
 CHANGELOG_MAX_ITEMS = 30
 CHANGELOG_ITEM_LIMIT = 300
 CHANGELOG_TOTAL_LIMIT = 4000
@@ -114,18 +114,14 @@ BLACKLIST_KEY = "/yADUrDk9+uuX6ilxfB4WFqZpglH2kwVmN+LN07pNHE="
 DEVICE_RECHECK_INTERVAL = 15.0
 _ACCOUNT_ID_RE = re.compile(r"[0-9]{1,16}")
 UPDATE_ALLOWED_HOSTS = ("raw.githubusercontent.com",)
-# 49.1.0: запасное зеркало того же репозитория. Используется, только если GitHub не ответил после повторов.
-# Это безопасно: манифест, ЧС и профиль подписаны, а файл обновления сверяется с хешем из подписанного манифеста,
-# так что зеркало не может подсунуть чужое содержимое. Ответ 404 от зеркала не считается «файла нет».
-# Чтобы отключить зеркало, оставьте кортеж пустым.
 UPDATE_MIRRORS: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
     ("https://cdn.jsdelivr.net/gh/sadatirnen/Prefixfy@main/", ("cdn.jsdelivr.net", "fastly.jsdelivr.net")),
 )
-REMOTE_FORCE_WAIT = 300       # сколько «Проверить сейчас» ждёт фоновую проверку, которая уже идёт
-REMOTE_ATTEMPTS = 3          # попыток к основному серверу на один файл
-REMOTE_RETRY_PAUSE = 1.5     # пауза перед повтором, затем вдвое больше
-OTA_TOTAL_TIMEOUT = 180      # на скачивание файла обновления (медленная мобильная сеть)
-OTA_VERIFY_ATTEMPTS = 3      # сколько раз перекачивать файл обновления при несовпадении хеша (кэш CDN)
+REMOTE_FORCE_WAIT = 300
+REMOTE_ATTEMPTS = 3
+REMOTE_RETRY_PAUSE = 1.5
+OTA_TOTAL_TIMEOUT = 180
+OTA_VERIFY_ATTEMPTS = 3
 UPDATE_PUBLIC_KEYS: Tuple[str, ...] = (
     "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAnCpVgdegnDqZoaOi5H5EOpHiwY8jhprNdIT3jGVauC0Nijz2L/iauWaVxnEOwDT2tqp1tJQ6CrdQxOS/PKV/7QLtGtAseKdpo/4tZjHgx2N9TAPMVb+zK3oWYk+0+OcLFIUoczCa1aZuwaScBqQchmgTj4sQwIbhWDhquE2EtyiF1+6S6GCgV5KyJrqylt2pAcif5z3ixUV27MPzaPbQmuyU+3amsIXDxGcdTFwlHMg/ThFVz77bwV5fkfaNdJrZGDp3+FKSIfjN68v2scL6O9oYHhkDg4AEPUYQkJmNTMnqc0ABFSW9MGuGsMTa0MKNDMaBY5iP2aQmfzLddorBP4ovfOZRzZguFVltFGd44xVOE1w5ceL1WVH+pW+4HX0Ck5FWnHbttaQiLoxXuiIK+F927LLM0yCmKLZC9tcIfMdBXgcaHp1ZaKGOIVvRs8SRaVnQ2z51v3NtjHbakGKwcXit2JlgyKvrHPG2AQj8ci7tApB6BWYffsNkFM4bCBIlAgMBAAE=",
 )
@@ -164,19 +160,22 @@ MASK_PLACEHOLDER = "[text]"
 IGNORE_KINDS = ("code", "commands", "mentions", "links", "hashtags", "cashtags")
 IGNORE_KEYS = tuple(f"ignore_{kind}" for kind in IGNORE_KINDS)
 DEFAULT_SEPARATORS = "•, ·, —, ~, |"
-LANGUAGE_MODES = (None, "ru", "en", "ja", "ko", "fr")  # индекс в настройке «language»; None — язык Telegram
+LANGUAGE_MODES = (None, "ru", "en", "ja", "ko", "fr")
 SETUP_STAGE_KEY = "Prefixfy_setup_stage"
 SETUP_SEEN_KEY = "Prefixfy_setup_seen"
 WELCOME_UNTIL_KEY = "Prefixfy_welcome_until"
 WELCOME_SECONDS = 4 * 3600
-# 50.4.0: «Обновление завершено» после установки через OTA. Окно живёт по тем же правилам, что и «Спасибо за установку»:
-# WELCOME_SECONDS или до «Понятно». UPDATED_BUILD_KEY помнит сборку, для которой плашка уже была, и не даёт включить её второй раз.
 UPDATED_UNTIL_KEY = "Prefixfy_updated_until"
 UPDATED_BUILD_KEY = "Prefixfy_updated_build"
 UPDATED_NOTES_KEY = "Prefixfy_updated_notes"
-# 53.0.1: время, когда «Завершить настройку» запустила отложенное обновление. Сборка, поставленная так, не показывает
-# плашку «Обновление завершено»: для пользователя это продолжение установки, его встречает приветствие.
 SETUP_UPDATE_AT_KEY = "Prefixfy_setup_update_at"
+DEBUG_ENABLED_KEY = "Prefixfy_debug_enabled"
+DEBUG_RECORDING_KEY = "Prefixfy_debug_recording"
+DEBUG_DIR_NAME = "Prefixfy_debug"
+DEBUG_LOG_NAME = "recording.log"
+DEBUG_MAX_BYTES = 4 * 1024 * 1024
+DEBUG_TAP_COUNT = 7
+DEBUG_TAP_GAP = 0.3
 SETUP_UPDATE_WINDOW = 3600
 SETUP_STAGE_COUNT = 3
 SETUP_DONE = SETUP_STAGE_COUNT + 1
@@ -369,7 +368,6 @@ class LocalizationManager:
 
     STRINGS = {
         "ru": {
-            # Общие действия, ошибки, подсказки редакторов
             "editor_empty_means_default": "Оставьте поле пустым и нажмите «Сохранить», чтобы вернуть значение по умолчанию.",
             "action_save": "Сохранить",
             "action_delete": "Удалить",
@@ -378,7 +376,6 @@ class LocalizationManager:
             "action_apply": "Применить",
             "action_next": "Далее",
             "error_operation_failed": "Не удалось выполнить действие",
-            # Заголовки разделов
             "section_scope": "Где работает",
             "section_language": "Язык плагина",
             "section_configurations": "Конфигурации",
@@ -388,13 +385,11 @@ class LocalizationManager:
             "section_accounts": "Аккаунты",
             "section_updates": "Обновления и проверка",
             "section_cute": "Милые эффекты",
-            # Плагин и язык
             "plugin_enable": "Режим чёрного списка",
             "plugin_enable_subtext": "Вкл: плагин работает везде, кроме чатов из списка. Выкл: только в чатах из списка (белый список).",
             "language": "Язык",
             "language_auto": "Язык как в Telegram",
             "language_auto_subtext": "Берётся язык интерфейса Telegram. Выключите, чтобы выбрать вручную.",
-            # Область применения, исключения по чатам, конфигурация чата
             "scope_message": "Сообщения",
             "scope_message_subtext": "Оформлять обычные текстовые сообщения.",
             "scope_media": "Подписи к медиа",
@@ -426,7 +421,6 @@ class LocalizationManager:
             "scope_edit_article_subtext": "Оформлять статьи после редактирования.",
             "skip_once_on_edit": "Пропуск действует и на редактирование",
             "skip_once_on_edit_subtext": "Если включён пропуск, следующее редактирование в чате тоже обойдётся без оформления.",
-            # Маска, Markdown, ротация и условные маски
             "mask": "Маска",
             "mask_text": "Текст маски",
             "markdown_style": "Стиль Markdown",
@@ -463,7 +457,6 @@ class LocalizationManager:
             "conditional_masks_empty": "Своя маска для сообщений с нужным текстом",
             "conditional_masks_format": "Строка {n}: нужен формат «выражение => маска»",
             "md_quote": "Вся маска цитатой",
-            # Стиль текста, слова и строки для тегов
             "text_style": "Стиль текста",
             "text_style_random": "Случайный стиль",
             "text_style_random_subtext": "Новый стиль для каждого сообщения (кроме перевёрнутого).",
@@ -481,7 +474,6 @@ class LocalizationManager:
             "tag_lines_count": "Строк: {n}",
             "tag_lines_empty": "Строк пока нет",
             "tag_lines_limit": "Не больше {n} строк",
-            # Разделители
             "separator": "Разделитель",
             "separator_enable": "Включить разделитель",
             "separator_enable_subtext": "Вставлять свои разделители между словами.",
@@ -499,10 +491,31 @@ class LocalizationManager:
             "separator_space_both": "С обеих сторон",
             "separator_space_left": "Только слева",
             "separator_space_right": "Только справа",
-            # Милые эффекты
             "cute_enabled": "Включить милые эффекты",
             "cute_enabled_subtext": "Каомодзи, UwU, действия и украшения. Ссылки, @упоминания, #хэштеги и код не меняются.",
             "cute_preview": "Предпросмотр",
+            "section_debug": "Отладка",
+            "debug_enabled": "Отладка включена",
+            "debug_disabled": "Отладка выключена",
+            "debug_start": "Начать запись",
+            "debug_start_subtext": "Записывает все действия плагина: нажатия, изменения настроек, окна, уведомления, обработку сообщений (только длины, без текста) и служебный журнал. Изменённые значения настроек и id чатов попадают в журнал — проверьте его, прежде чем кому-то отправлять.",
+            "debug_stop": "Остановить запись",
+            "debug_recording": "Идёт запись · {amount}",
+            "debug_log": "Журнал отладки",
+            "debug_log_subtext": "{amount}. Нажмите, чтобы сохранить, удалить или продолжить запись.",
+            "debug_amount": "строк: {lines}, {size}",
+            "debug_actions_message": "Запись остановлена ({amount}). Что сделать с журналом?",
+            "debug_to_saved": "Отправить в Избранное",
+            "debug_to_device": "Сохранить на устройство",
+            "debug_delete": "Удалить журнал",
+            "debug_continue": "Продолжить запись",
+            "debug_hide": "Скрыть отладку",
+            "debug_hide_subtext": "Остановит запись и удалит журнал. То же самое — 7 быстрых нажатий на «Предпросмотр».",
+            "debug_started": "Запись журнала начата",
+            "debug_exported": "Журнал отладки сохранён",
+            "debug_deleted": "Журнал отладки удалён",
+            "debug_hidden": "Отладка скрыта",
+            "debug_failed": "Не удалось выполнить действие с журналом",
             "cute_preview_sample": "Привет! Как дела? Сегодня отличный день.",
             "cute_preview_none": "Включите хотя бы один эффект. Нажмите, чтобы обновить.",
             "cute_preview_tap": "Нажмите, чтобы обновить.",
@@ -526,7 +539,6 @@ class LocalizationManager:
             "cute_stretch_3x": "Втрое (x3)",
             "cute_soft_sign": "Мягкий знак в конце слов (котикь)",
             "cute_soft_sign_subtext": "Только для русских слов.",
-            # Исключения: списки, игнорирование, regex
             "regex_exceptions": "Исключения по regex",
             "regex_exceptions_hint": "По одному регулярному выражению в строке. Подходящие сообщения не оформляются.",
             "regex_exceptions_count": "Правил: {n}",
@@ -563,12 +575,10 @@ class LocalizationManager:
             "exceptions_chat_now_on": "В этом чате Prefixfy снова оформляет сообщения",
             "exceptions_chat_other_config": "Список изменён, но этот чат оформляется по другой конфигурации (привязка, расписание или настройки аккаунта)",
             "exceptions_count": "Правил: {n}, чатов: {m}",
-            # Premium Emoji
             "capture_custom_emoji": "Получить код Premium Emoji",
             "capture_custom_emoji_enabled": "Отправьте сообщение с Premium Emoji — плагин пришлёт его код",
             "capture_custom_emoji_disabled": "Получение кода Premium Emoji отменено",
             "capture_custom_emoji_hint": "Premium Emoji в маске: (id|🙂), где 🙂 — обычный эмодзи для тех, у кого нет Premium. Код можно получить пунктом «Получить код Premium Emoji» в меню чата.",
-            # Расписание
             "schedule": "Расписание конфигураций",
             "schedule_empty": "Не задано",
             "schedule_count": "Правил: {n}",
@@ -587,7 +597,6 @@ class LocalizationManager:
             "schedule_err_deep": "слишком сложное условие",
             "schedule_err_random": "процент должен быть от 0 до 100",
             "schedule_err_size": "слишком много текста",
-            # Конфигурации
             "config_import_cancelled": "Импорт отменён",
             "config_import": "Импортировать",
             "config_export": "Экспортировать",
@@ -676,7 +685,6 @@ class LocalizationManager:
             "config_actions_subtext": "Выбрать, какие части использовать",
             "config_part_schedule": "Привязки чатов и расписание",
             "config_part_cute": "Милые эффекты",
-            # Медиа
             "media_attachment": "Медиа",
             "media_attachment_enable": "Прикладывать медиа",
             "media_attachment_enable_subtext": "Отправлять выбранный файл вместе с каждым сообщением.",
@@ -690,7 +698,6 @@ class LocalizationManager:
             "media_deleted": "Медиа удалено",
             "media_import_failed": "Не удалось добавить медиа",
             "media_delete_failed": "Не удалось удалить медиа",
-            # Аккаунты
             "account_mode": "Настройки по аккаунтам",
             "account_mode_subtext": "Свои настройки для каждого аккаунта. Пока вы их не меняли, у всех общие.",
             "account_target": "Какой аккаунт настраивать",
@@ -711,7 +718,6 @@ class LocalizationManager:
             "account_import_title": "Куда применить конфигурацию?",
             "account_import_all": "Ко всем аккаунтам",
             "account_import_common": "К общим (для аккаунтов без своих настроек)",
-            # Обновления и проверка
             "check_now": "Проверить сейчас",
             "check_now_subtext": "Проверить, что сборка плагина официальная.",
             "check_started": "Проверяю…",
@@ -755,7 +761,6 @@ class LocalizationManager:
             "ota_dl_warning": "В мобильной сети оператор может взять плату за трафик. Лучше подключиться к Wi-Fi.",
             "ota_unit_kb": "КБ",
             "ota_unit_mb": "МБ",
-            # О плагине, статусы и уведомления проверки
             "gate_update_required": "Требуется обновление",
             "gate_update_required_subtext": "Установите официальную сборку Prefixfy {version}. До этого плагин не оформляет сообщения.",
             "gate_verify_required": "Проверка не пройдена",
@@ -791,7 +796,6 @@ class LocalizationManager:
             "gate_soft": "Функции приостановлены",
             "gate_soft_subtext": "Сейчас не удаётся проверить сборку, поэтому работает только базовое оформление. Проверьте интернет — после успешной проверки всё вернётся.",
             "gate_bypass_note": "Эта функция не снимает блокировку.",
-            # Удаление данных и возобновление работы
             "wipe_row": "Удалить данные",
             "wipe_row_subtext": "Стереть все данные плагина или полностью отказаться от него.",
             "wipe_title": "Удалить данные Prefixfy?",
@@ -819,7 +823,6 @@ class LocalizationManager:
             "resume_done": "Prefixfy снова работает",
             "resume_failed": "Не удалось запустить плагин. Выключите и снова включите его.",
             "wipe_auto_reset_done": "Данные плагина были повреждены, поэтому он сброшен",
-            # Первая настройка и приветствие
             "setup_step_1": "Шаг 1 из 3: язык",
             "setup_step_2": "Шаг 2 из 3: оформление",
             "setup_step_3": "Шаг 3 из 3: обновления",
@@ -843,7 +846,6 @@ class LocalizationManager:
             "updated_banner_subtext": "Нажмите для просмотра",
         },
         "en": {
-            # Общие действия, ошибки, подсказки редакторов
             "editor_empty_means_default": "Leave the field empty and tap “Save” to restore the default value.",
             "action_save": "Save",
             "action_delete": "Delete",
@@ -852,7 +854,6 @@ class LocalizationManager:
             "action_apply": "Apply",
             "action_next": "Next",
             "error_operation_failed": "Something went wrong",
-            # Заголовки разделов
             "section_scope": "Where it works",
             "section_language": "Plugin language",
             "section_configurations": "Configurations",
@@ -862,13 +863,11 @@ class LocalizationManager:
             "section_accounts": "Accounts",
             "section_updates": "Updates and verification",
             "section_cute": "Cute effects",
-            # Плагин и язык
             "plugin_enable": "Blacklist mode",
             "plugin_enable_subtext": "On: the plugin works everywhere except chats in the list. Off: only in chats from the list (whitelist).",
             "language": "Language",
             "language_auto": "Same as Telegram",
             "language_auto_subtext": "Uses the Telegram interface language. Turn off to choose manually.",
-            # Область применения, исключения по чатам, конфигурация чата
             "scope_message": "Messages",
             "scope_message_subtext": "Style regular text messages.",
             "scope_media": "Media captions",
@@ -900,7 +899,6 @@ class LocalizationManager:
             "scope_edit_article_subtext": "Style articles after editing.",
             "skip_once_on_edit": "Skip also applies to edits",
             "skip_once_on_edit_subtext": "When a skip is active, the next edit in the chat is left unstyled too.",
-            # Маска, Markdown, ротация и условные маски
             "mask": "Mask",
             "mask_text": "Mask text",
             "markdown_style": "Markdown style",
@@ -937,7 +935,6 @@ class LocalizationManager:
             "conditional_masks_empty": "A separate mask for messages with certain text",
             "conditional_masks_format": "Line {n}: expected “expression => mask”",
             "md_quote": "Whole mask as quote",
-            # Стиль текста, слова и строки для тегов
             "text_style": "Text style",
             "text_style_random": "Random style",
             "text_style_random_subtext": "A new style for every message (except upside-down).",
@@ -955,7 +952,6 @@ class LocalizationManager:
             "tag_lines_count": "Lines: {n}",
             "tag_lines_empty": "No lines yet",
             "tag_lines_limit": "No more than {n} lines",
-            # Разделители
             "separator": "Separator",
             "separator_enable": "Enable separator",
             "separator_enable_subtext": "Insert your own separators between words.",
@@ -973,10 +969,31 @@ class LocalizationManager:
             "separator_space_both": "On both sides",
             "separator_space_left": "Left only",
             "separator_space_right": "Right only",
-            # Милые эффекты
             "cute_enabled": "Enable cute effects",
             "cute_enabled_subtext": "Kaomoji, UwU, actions and decorations. Links, @mentions, #hashtags and code stay unchanged.",
             "cute_preview": "Preview",
+            "section_debug": "Debugging",
+            "debug_enabled": "Debugging enabled",
+            "debug_disabled": "Debugging disabled",
+            "debug_start": "Start recording",
+            "debug_start_subtext": "Records every plugin action: taps, setting changes, dialogs, notices, message processing (lengths only, no text) and the service log. Changed setting values and chat IDs end up in the log, so check it before sending it to anyone.",
+            "debug_stop": "Stop recording",
+            "debug_recording": "Recording · {amount}",
+            "debug_log": "Debug log",
+            "debug_log_subtext": "{amount}. Tap to save, delete or continue recording.",
+            "debug_amount": "{lines} lines, {size}",
+            "debug_actions_message": "Recording stopped ({amount}). What should be done with the log?",
+            "debug_to_saved": "Send to Saved Messages",
+            "debug_to_device": "Save to device",
+            "debug_delete": "Delete log",
+            "debug_continue": "Continue recording",
+            "debug_hide": "Hide debugging",
+            "debug_hide_subtext": "Stops recording and deletes the log. Same as 7 quick taps on “Preview”.",
+            "debug_started": "Log recording started",
+            "debug_exported": "Debug log saved",
+            "debug_deleted": "Debug log deleted",
+            "debug_hidden": "Debugging hidden",
+            "debug_failed": "The log action failed",
             "cute_preview_sample": "Hi! How are you? It’s a great day today.",
             "cute_preview_none": "Turn on at least one effect. Tap to refresh.",
             "cute_preview_tap": "Tap to refresh.",
@@ -1000,7 +1017,6 @@ class LocalizationManager:
             "cute_stretch_3x": "Triple (x3)",
             "cute_soft_sign": "Soft sign at the end of words (котикь)",
             "cute_soft_sign_subtext": "Russian words only.",
-            # Исключения: списки, игнорирование, regex
             "regex_exceptions": "Regex exceptions",
             "regex_exceptions_hint": "One regular expression per line. Matching messages are not styled.",
             "regex_exceptions_count": "Rules: {n}",
@@ -1037,12 +1053,10 @@ class LocalizationManager:
             "exceptions_chat_now_on": "Prefixfy decorates messages in this chat again",
             "exceptions_chat_other_config": "The list was changed, but this chat follows another configuration (chat binding, schedule or account settings)",
             "exceptions_count": "Rules: {n}, chats: {m}",
-            # Premium Emoji
             "capture_custom_emoji": "Get Premium Emoji code",
             "capture_custom_emoji_enabled": "Send a message with a Premium Emoji and the plugin will reply with its code",
             "capture_custom_emoji_disabled": "Premium Emoji code capture cancelled",
             "capture_custom_emoji_hint": "Premium Emoji in a mask: (id|🙂), where 🙂 is a regular emoji for people without Premium. Get the code with “Get Premium Emoji code” in the chat menu.",
-            # Расписание
             "schedule": "Configuration schedule",
             "schedule_empty": "Not set",
             "schedule_count": "Rules: {n}",
@@ -1061,7 +1075,6 @@ class LocalizationManager:
             "schedule_err_deep": "the condition is too complex",
             "schedule_err_random": "the percentage must be 0 to 100",
             "schedule_err_size": "too much text",
-            # Конфигурации
             "config_import_cancelled": "Import cancelled",
             "config_import": "Import",
             "config_export": "Export",
@@ -1150,7 +1163,6 @@ class LocalizationManager:
             "config_actions_subtext": "Choose which parts to use",
             "config_part_schedule": "Chat bindings and schedule",
             "config_part_cute": "Cute effects",
-            # Медиа
             "media_attachment": "Media",
             "media_attachment_enable": "Attach media",
             "media_attachment_enable_subtext": "Send the selected file with every message.",
@@ -1164,7 +1176,6 @@ class LocalizationManager:
             "media_deleted": "Media deleted",
             "media_import_failed": "Couldn’t add the media",
             "media_delete_failed": "Couldn’t delete the media",
-            # Аккаунты
             "account_mode": "Per-account settings",
             "account_mode_subtext": "Separate settings for each account. Until you change them, all accounts share the same ones.",
             "account_target": "Account to configure",
@@ -1185,7 +1196,6 @@ class LocalizationManager:
             "account_import_title": "Where to apply the configuration?",
             "account_import_all": "To all accounts",
             "account_import_common": "To shared (accounts without their own settings)",
-            # Обновления и проверка
             "check_now": "Check now",
             "check_now_subtext": "Make sure the plugin build is official.",
             "check_started": "Checking…",
@@ -1229,7 +1239,6 @@ class LocalizationManager:
             "ota_dl_warning": "On mobile data your carrier may charge for traffic. Wi-Fi is better.",
             "ota_unit_kb": "KB",
             "ota_unit_mb": "MB",
-            # О плагине, статусы и уведомления проверки
             "gate_update_required": "Update required",
             "gate_update_required_subtext": "Install the official Prefixfy {version} build. Until then the plugin doesn’t style messages.",
             "gate_verify_required": "Check failed",
@@ -1265,7 +1274,6 @@ class LocalizationManager:
             "gate_soft": "Features paused",
             "gate_soft_subtext": "The build can’t be verified right now, so only basic styling works. Check your connection — everything comes back after a successful check.",
             "gate_bypass_note": "This feature doesn’t lift the block.",
-            # Удаление данных и возобновление работы
             "wipe_row": "Delete data",
             "wipe_row_subtext": "Erase all plugin data or stop using the plugin altogether.",
             "wipe_title": "Delete Prefixfy data?",
@@ -1293,7 +1301,6 @@ class LocalizationManager:
             "resume_done": "Prefixfy is working again",
             "resume_failed": "Couldn’t start the plugin. Turn it off and on again.",
             "wipe_auto_reset_done": "Plugin data was damaged, so the plugin was reset",
-            # Первая настройка и приветствие
             "setup_step_1": "Step 1 of 3: language",
             "setup_step_2": "Step 2 of 3: appearance",
             "setup_step_3": "Step 3 of 3: updates",
@@ -1317,7 +1324,6 @@ class LocalizationManager:
             "updated_banner_subtext": "Tap to view",
         },
         "ja": {
-            # Общие действия, ошибки, подсказки редакторов
             "editor_empty_means_default": "空欄のまま「保存」をタップすると、既定値に戻ります。",
             "action_save": "保存",
             "action_delete": "削除",
@@ -1326,7 +1332,6 @@ class LocalizationManager:
             "action_apply": "適用",
             "action_next": "次へ",
             "error_operation_failed": "操作を完了できませんでした",
-            # Заголовки разделов
             "section_scope": "適用範囲",
             "section_language": "プラグインの言語",
             "section_configurations": "設定セット",
@@ -1336,13 +1341,11 @@ class LocalizationManager:
             "section_accounts": "アカウント",
             "section_updates": "アップデートと検証",
             "section_cute": "かわいいエフェクト",
-            # Плагин и язык
             "plugin_enable": "ブラックリストモード",
             "plugin_enable_subtext": "オン：リスト内のチャット以外のすべてで動作。オフ：リスト内のチャットだけで動作（ホワイトリスト）。",
             "language": "言語",
             "language_auto": "Telegram と同じ言語",
             "language_auto_subtext": "Telegram の表示言語を使います。手動で選ぶ場合はオフにしてください。",
-            # Область применения, исключения по чатам, конфигурация чата
             "scope_message": "メッセージ",
             "scope_message_subtext": "通常のテキストメッセージを装飾します。",
             "scope_media": "メディアのキャプション",
@@ -1374,7 +1377,6 @@ class LocalizationManager:
             "scope_edit_article_subtext": "編集後の記事を装飾します。",
             "skip_once_on_edit": "スキップを編集にも適用",
             "skip_once_on_edit_subtext": "スキップが有効なとき、チャットでの次の編集も装飾しません。",
-            # Маска, Markdown, ротация и условные маски
             "mask": "マスク",
             "mask_text": "マスクのテキスト",
             "markdown_style": "Markdown のスタイル",
@@ -1411,7 +1413,6 @@ class LocalizationManager:
             "conditional_masks_empty": "特定のテキストを含むメッセージに別のマスク",
             "conditional_masks_format": "{n} 行目：「式 => マスク」の形式で入力してください",
             "md_quote": "マスク全体を引用",
-            # Стиль текста, слова и строки для тегов
             "text_style": "テキストのスタイル",
             "text_style_random": "ランダムなスタイル",
             "text_style_random_subtext": "メッセージごとに新しいスタイル（逆さま以外）。",
@@ -1429,7 +1430,6 @@ class LocalizationManager:
             "tag_lines_count": "行：{n}",
             "tag_lines_empty": "まだ行がありません",
             "tag_lines_limit": "行は {n} 個まで",
-            # Разделители
             "separator": "区切り文字",
             "separator_enable": "区切り文字を有効にする",
             "separator_enable_subtext": "単語の間に好きな区切り文字を入れます。",
@@ -1447,10 +1447,31 @@ class LocalizationManager:
             "separator_space_both": "両側",
             "separator_space_left": "左側のみ",
             "separator_space_right": "右側のみ",
-            # Милые эффекты
             "cute_enabled": "かわいいエフェクトを有効にする",
             "cute_enabled_subtext": "顔文字、UwU、アクション、デコレーション。リンク、@メンション、#ハッシュタグ、コードはそのままです。",
             "cute_preview": "プレビュー",
+            "section_debug": "デバッグ",
+            "debug_enabled": "デバッグを有効にしました",
+            "debug_disabled": "デバッグを無効にしました",
+            "debug_start": "記録を開始",
+            "debug_start_subtext": "プラグインのすべての操作を記録します：タップ、設定の変更、ダイアログ、通知、メッセージ処理（長さのみ、本文なし）、内部ログ。変更した設定値やチャット ID が含まれるため、誰かに送る前に確認してください。",
+            "debug_stop": "記録を停止",
+            "debug_recording": "記録中 · {amount}",
+            "debug_log": "デバッグログ",
+            "debug_log_subtext": "{amount}。タップして保存、削除、または記録を続行します。",
+            "debug_amount": "{lines} 行、{size}",
+            "debug_actions_message": "記録を停止しました（{amount}）。ログをどうしますか？",
+            "debug_to_saved": "保存済みメッセージに送信",
+            "debug_to_device": "端末に保存",
+            "debug_delete": "ログを削除",
+            "debug_continue": "記録を続行",
+            "debug_hide": "デバッグを隠す",
+            "debug_hide_subtext": "記録を停止してログを削除します。「プレビュー」を素早く 7 回タップしても同じです。",
+            "debug_started": "ログの記録を開始しました",
+            "debug_exported": "デバッグログを保存しました",
+            "debug_deleted": "デバッグログを削除しました",
+            "debug_hidden": "デバッグを隠しました",
+            "debug_failed": "ログの操作に失敗しました",
             "cute_preview_sample": "こんにちは！元気？今日はいい天気だね。",
             "cute_preview_none": "エフェクトを 1 つ以上オンにしてください。タップで更新します。",
             "cute_preview_tap": "タップで更新します。",
@@ -1474,7 +1495,6 @@ class LocalizationManager:
             "cute_stretch_3x": "3 倍 (x3)",
             "cute_soft_sign": "語末に軟音記号 (котикь)",
             "cute_soft_sign_subtext": "ロシア語の単語のみ。",
-            # Исключения: списки, игнорирование, regex
             "regex_exceptions": "正規表現による除外",
             "regex_exceptions_hint": "1 行に 1 つの正規表現。一致したメッセージは装飾しません。",
             "regex_exceptions_count": "ルール：{n}",
@@ -1511,12 +1531,10 @@ class LocalizationManager:
             "exceptions_chat_now_on": "このチャットで Prefixfy が再びメッセージを装飾します",
             "exceptions_chat_other_config": "リストは変更されましたが、このチャットは別の構成（チャットの割り当て、スケジュール、アカウント設定）に従います",
             "exceptions_count": "ルール：{n}、チャット：{m}",
-            # Premium Emoji
             "capture_custom_emoji": "Premium 絵文字のコードを取得",
             "capture_custom_emoji_enabled": "Premium 絵文字を含むメッセージを送ると、プラグインがコードを返します",
             "capture_custom_emoji_disabled": "Premium 絵文字のコード取得を取り消しました",
             "capture_custom_emoji_hint": "マスク内の Premium 絵文字：(id|🙂)。🙂 は Premium のない人に表示される通常の絵文字です。コードはチャットのメニューの「Premium 絵文字のコードを取得」で取得できます。",
-            # Расписание
             "schedule": "設定セットのスケジュール",
             "schedule_empty": "未設定",
             "schedule_count": "ルール：{n}",
@@ -1535,7 +1553,6 @@ class LocalizationManager:
             "schedule_err_deep": "条件が複雑すぎます",
             "schedule_err_random": "割合は 0〜100 にしてください",
             "schedule_err_size": "テキストが長すぎます",
-            # Конфигурации
             "config_import_cancelled": "インポートを取り消しました",
             "config_import": "インポート",
             "config_export": "エクスポート",
@@ -1624,7 +1641,6 @@ class LocalizationManager:
             "config_actions_subtext": "使う項目を選ぶ",
             "config_part_schedule": "チャットの割り当てとスケジュール",
             "config_part_cute": "かわいいエフェクト",
-            # Медиа
             "media_attachment": "メディア",
             "media_attachment_enable": "メディアを添付",
             "media_attachment_enable_subtext": "選んだファイルをメッセージごとに一緒に送ります。",
@@ -1638,7 +1654,6 @@ class LocalizationManager:
             "media_deleted": "メディアを削除しました",
             "media_import_failed": "メディアを追加できませんでした",
             "media_delete_failed": "メディアを削除できませんでした",
-            # Аккаунты
             "account_mode": "アカウントごとの設定",
             "account_mode_subtext": "アカウントごとに別の設定を使えます。変更するまでは、すべてのアカウントで共通です。",
             "account_target": "設定するアカウント",
@@ -1659,7 +1674,6 @@ class LocalizationManager:
             "account_import_title": "設定セットをどこに適用しますか？",
             "account_import_all": "すべてのアカウント",
             "account_import_common": "共通（独自の設定がないアカウント）",
-            # Обновления и проверка
             "check_now": "今すぐ確認",
             "check_now_subtext": "プラグインが公式ビルドかを確認します。",
             "check_started": "確認しています…",
@@ -1703,7 +1717,6 @@ class LocalizationManager:
             "ota_dl_warning": "モバイル通信では通信料がかかる場合があります。Wi-Fi をおすすめします。",
             "ota_unit_kb": "KB",
             "ota_unit_mb": "MB",
-            # О плагине, статусы и уведомления проверки
             "gate_update_required": "アップデートが必要",
             "gate_update_required_subtext": "Prefixfy {version} の公式ビルドをインストールしてください。それまでメッセージは装飾されません。",
             "gate_verify_required": "確認に失敗しました",
@@ -1739,7 +1752,6 @@ class LocalizationManager:
             "gate_soft": "機能を一時停止中",
             "gate_soft_subtext": "現在ビルドを確認できないため、基本の装飾だけが動作しています。接続を確認してください。確認に成功すれば元に戻ります。",
             "gate_bypass_note": "この機能でブロックは解除されません。",
-            # Удаление данных и возобновление работы
             "wipe_row": "データを削除",
             "wipe_row_subtext": "プラグインのデータをすべて消去するか、利用を完全にやめます。",
             "wipe_title": "Prefixfy のデータを削除しますか？",
@@ -1767,7 +1779,6 @@ class LocalizationManager:
             "resume_done": "Prefixfy が再び動作しています",
             "resume_failed": "プラグインを起動できませんでした。オフにしてからオンにしてください。",
             "wipe_auto_reset_done": "プラグインのデータが壊れていたため、リセットしました",
-            # Первая настройка и приветствие
             "setup_step_1": "ステップ 1/3：言語",
             "setup_step_2": "ステップ 2/3：装飾",
             "setup_step_3": "ステップ 3/3：アップデート",
@@ -1791,7 +1802,6 @@ class LocalizationManager:
             "updated_banner_subtext": "タップして確認",
         },
         "ko": {
-            # Общие действия, ошибки, подсказки редакторов
             "editor_empty_means_default": "칸을 비워 두고 ‘저장’을 누르면 기본값으로 돌아갑니다.",
             "action_save": "저장",
             "action_delete": "삭제",
@@ -1800,7 +1810,6 @@ class LocalizationManager:
             "action_apply": "적용",
             "action_next": "다음",
             "error_operation_failed": "작업을 완료하지 못했습니다",
-            # Заголовки разделов
             "section_scope": "적용 범위",
             "section_language": "플러그인 언어",
             "section_configurations": "구성",
@@ -1810,13 +1819,11 @@ class LocalizationManager:
             "section_accounts": "계정",
             "section_updates": "업데이트 및 검증",
             "section_cute": "귀여운 효과",
-            # Плагин и язык
             "plugin_enable": "블랙리스트 모드",
             "plugin_enable_subtext": "켜짐: 목록에 있는 채팅을 제외한 모든 곳에서 작동. 꺼짐: 목록에 있는 채팅에서만 작동 (화이트리스트).",
             "language": "언어",
             "language_auto": "Telegram과 같은 언어",
             "language_auto_subtext": "Telegram 인터페이스 언어를 사용합니다. 직접 고르려면 끄세요.",
-            # Область применения, исключения по чатам, конфигурация чата
             "scope_message": "메시지",
             "scope_message_subtext": "일반 텍스트 메시지를 꾸밉니다.",
             "scope_media": "미디어 캡션",
@@ -1848,7 +1855,6 @@ class LocalizationManager:
             "scope_edit_article_subtext": "편집한 아티클을 꾸밉니다.",
             "skip_once_on_edit": "건너뛰기를 편집에도 적용",
             "skip_once_on_edit_subtext": "건너뛰기가 켜져 있으면 채팅에서의 다음 편집도 꾸미지 않습니다.",
-            # Маска, Markdown, ротация и условные маски
             "mask": "마스크",
             "mask_text": "마스크 텍스트",
             "markdown_style": "Markdown 스타일",
@@ -1885,7 +1891,6 @@ class LocalizationManager:
             "conditional_masks_empty": "특정 텍스트가 있는 메시지에 다른 마스크",
             "conditional_masks_format": "{n}번째 줄: ‘식 => 마스크’ 형식이어야 합니다",
             "md_quote": "마스크 전체 인용",
-            # Стиль текста, слова и строки для тегов
             "text_style": "텍스트 스타일",
             "text_style_random": "무작위 스타일",
             "text_style_random_subtext": "메시지마다 새 스타일 (뒤집기 제외).",
@@ -1903,7 +1908,6 @@ class LocalizationManager:
             "tag_lines_count": "문장: {n}개",
             "tag_lines_empty": "아직 문장이 없습니다",
             "tag_lines_limit": "문장은 최대 {n}개",
-            # Разделители
             "separator": "구분자",
             "separator_enable": "구분자 사용",
             "separator_enable_subtext": "단어 사이에 원하는 구분자를 넣습니다.",
@@ -1921,10 +1925,31 @@ class LocalizationManager:
             "separator_space_both": "양쪽",
             "separator_space_left": "왼쪽만",
             "separator_space_right": "오른쪽만",
-            # Милые эффекты
             "cute_enabled": "귀여운 효과 사용",
             "cute_enabled_subtext": "카오모지, UwU, 행동, 장식. 링크, @멘션, #해시태그, 코드는 바뀌지 않습니다.",
             "cute_preview": "미리보기",
+            "section_debug": "디버그",
+            "debug_enabled": "디버그를 켰습니다",
+            "debug_disabled": "디버그를 껐습니다",
+            "debug_start": "기록 시작",
+            "debug_start_subtext": "플러그인의 모든 동작을 기록합니다: 탭, 설정 변경, 대화상자, 알림, 메시지 처리(길이만, 본문 없음), 내부 로그. 바뀐 설정 값과 채팅 ID가 들어가니 다른 사람에게 보내기 전에 확인하세요.",
+            "debug_stop": "기록 중지",
+            "debug_recording": "기록 중 · {amount}",
+            "debug_log": "디버그 로그",
+            "debug_log_subtext": "{amount}. 눌러서 저장, 삭제하거나 기록을 이어 가세요.",
+            "debug_amount": "{lines}줄, {size}",
+            "debug_actions_message": "기록을 멈췄습니다({amount}). 로그를 어떻게 할까요?",
+            "debug_to_saved": "저장된 메시지로 보내기",
+            "debug_to_device": "기기에 저장",
+            "debug_delete": "로그 삭제",
+            "debug_continue": "기록 이어 가기",
+            "debug_hide": "디버그 숨기기",
+            "debug_hide_subtext": "기록을 멈추고 로그를 삭제합니다. ‘미리보기’를 빠르게 7번 눌러도 같습니다.",
+            "debug_started": "로그 기록을 시작했습니다",
+            "debug_exported": "디버그 로그를 저장했습니다",
+            "debug_deleted": "디버그 로그를 삭제했습니다",
+            "debug_hidden": "디버그를 숨겼습니다",
+            "debug_failed": "로그 작업에 실패했습니다",
             "cute_preview_sample": "안녕! 잘 지내? 오늘 날씨 정말 좋다.",
             "cute_preview_none": "효과를 하나 이상 켜세요. 눌러서 새로고침합니다.",
             "cute_preview_tap": "눌러서 새로고침합니다.",
@@ -1948,7 +1973,6 @@ class LocalizationManager:
             "cute_stretch_3x": "세 배 (x3)",
             "cute_soft_sign": "단어 끝에 연음 부호 (котикь)",
             "cute_soft_sign_subtext": "러시아어 단어에만 적용됩니다.",
-            # Исключения: списки, игнорирование, regex
             "regex_exceptions": "정규식 예외",
             "regex_exceptions_hint": "한 줄에 정규식 하나. 일치하는 메시지는 꾸미지 않습니다.",
             "regex_exceptions_count": "규칙: {n}개",
@@ -1985,12 +2009,10 @@ class LocalizationManager:
             "exceptions_chat_now_on": "이 채팅에서 Prefixfy가 다시 메시지를 꾸밉니다",
             "exceptions_chat_other_config": "목록은 바뀌었지만 이 채팅은 다른 구성(채팅 연결, 일정 또는 계정 설정)을 따릅니다",
             "exceptions_count": "규칙: {n}개, 채팅: {m}개",
-            # Premium Emoji
             "capture_custom_emoji": "Premium 이모지 코드 받기",
             "capture_custom_emoji_enabled": "Premium 이모지가 담긴 메시지를 보내면 플러그인이 코드를 알려 줍니다",
             "capture_custom_emoji_disabled": "Premium 이모지 코드 받기를 취소했습니다",
             "capture_custom_emoji_hint": "마스크 안의 Premium 이모지: (id|🙂). 🙂는 Premium이 없는 사람에게 보이는 일반 이모지입니다. 코드는 채팅 메뉴의 ‘Premium 이모지 코드 받기’로 받을 수 있습니다.",
-            # Расписание
             "schedule": "구성 일정",
             "schedule_empty": "설정 안 됨",
             "schedule_count": "규칙: {n}개",
@@ -2009,7 +2031,6 @@ class LocalizationManager:
             "schedule_err_deep": "조건이 너무 복잡합니다",
             "schedule_err_random": "비율은 0~100이어야 합니다",
             "schedule_err_size": "텍스트가 너무 깁니다",
-            # Конфигурации
             "config_import_cancelled": "가져오기를 취소했습니다",
             "config_import": "가져오기",
             "config_export": "내보내기",
@@ -2098,7 +2119,6 @@ class LocalizationManager:
             "config_actions_subtext": "사용할 항목 고르기",
             "config_part_schedule": "채팅 연결 및 일정",
             "config_part_cute": "귀여운 효과",
-            # Медиа
             "media_attachment": "미디어",
             "media_attachment_enable": "미디어 첨부",
             "media_attachment_enable_subtext": "선택한 파일을 메시지마다 함께 보냅니다.",
@@ -2112,7 +2132,6 @@ class LocalizationManager:
             "media_deleted": "미디어를 삭제했습니다",
             "media_import_failed": "미디어를 추가하지 못했습니다",
             "media_delete_failed": "미디어를 삭제하지 못했습니다",
-            # Аккаунты
             "account_mode": "계정별 설정",
             "account_mode_subtext": "계정마다 따로 설정합니다. 바꾸기 전까지는 모든 계정이 같은 설정을 씁니다.",
             "account_target": "설정할 계정",
@@ -2133,7 +2152,6 @@ class LocalizationManager:
             "account_import_title": "구성을 어디에 적용할까요?",
             "account_import_all": "모든 계정",
             "account_import_common": "공용 (전용 설정이 없는 계정)",
-            # Обновления и проверка
             "check_now": "지금 확인",
             "check_now_subtext": "플러그인이 공식 빌드인지 확인합니다.",
             "check_started": "확인하는 중…",
@@ -2177,7 +2195,6 @@ class LocalizationManager:
             "ota_dl_warning": "모바일 데이터에서는 통신사 요금이 부과될 수 있습니다. Wi-Fi 사용을 권장합니다.",
             "ota_unit_kb": "KB",
             "ota_unit_mb": "MB",
-            # О плагине, статусы и уведомления проверки
             "gate_update_required": "업데이트 필요",
             "gate_update_required_subtext": "Prefixfy {version} 공식 빌드를 설치하세요. 그때까지 메시지를 꾸미지 않습니다.",
             "gate_verify_required": "확인 실패",
@@ -2213,7 +2230,6 @@ class LocalizationManager:
             "gate_soft": "기능 일시 중지",
             "gate_soft_subtext": "지금은 빌드를 확인할 수 없어 기본 꾸미기만 작동합니다. 인터넷 연결을 확인하세요. 확인에 성공하면 모두 돌아옵니다.",
             "gate_bypass_note": "이 기능으로는 차단이 풀리지 않습니다.",
-            # Удаление данных и возобновление работы
             "wipe_row": "데이터 삭제",
             "wipe_row_subtext": "플러그인 데이터를 모두 지우거나 사용을 완전히 그만둡니다.",
             "wipe_title": "Prefixfy 데이터를 삭제할까요?",
@@ -2241,7 +2257,6 @@ class LocalizationManager:
             "resume_done": "Prefixfy가 다시 작동합니다",
             "resume_failed": "플러그인을 시작하지 못했습니다. 껐다가 다시 켜세요.",
             "wipe_auto_reset_done": "플러그인 데이터가 손상되어 초기화했습니다",
-            # Первая настройка и приветствие
             "setup_step_1": "1/3단계: 언어",
             "setup_step_2": "2/3단계: 꾸미기",
             "setup_step_3": "3/3단계: 업데이트",
@@ -2265,7 +2280,6 @@ class LocalizationManager:
             "updated_banner_subtext": "눌러서 확인하기",
         },
         "fr": {
-            # Общие действия, ошибки, подсказки редакторов
             "editor_empty_means_default": "Laissez le champ vide et touchez « Enregistrer » pour revenir à la valeur par défaut.",
             "action_save": "Enregistrer",
             "action_delete": "Supprimer",
@@ -2274,7 +2288,6 @@ class LocalizationManager:
             "action_apply": "Appliquer",
             "action_next": "Suivant",
             "error_operation_failed": "Une erreur est survenue",
-            # Заголовки разделов
             "section_scope": "Où il agit",
             "section_language": "Langue du plugin",
             "section_configurations": "Configurations",
@@ -2284,13 +2297,11 @@ class LocalizationManager:
             "section_accounts": "Comptes",
             "section_updates": "Mises à jour et vérification",
             "section_cute": "Effets mignons",
-            # Плагин и язык
             "plugin_enable": "Mode liste noire",
             "plugin_enable_subtext": "Activé : le plugin agit partout sauf dans les chats de la liste. Désactivé : uniquement dans les chats de la liste (liste blanche).",
             "language": "Langue",
             "language_auto": "Comme dans Telegram",
             "language_auto_subtext": "Utilise la langue de l’interface de Telegram. Désactivez pour choisir vous-même.",
-            # Область применения, исключения по чатам, конфигурация чата
             "scope_message": "Messages",
             "scope_message_subtext": "Mettre en forme les messages texte ordinaires.",
             "scope_media": "Légendes des médias",
@@ -2322,7 +2333,6 @@ class LocalizationManager:
             "scope_edit_article_subtext": "Mettre en forme les articles après modification.",
             "skip_once_on_edit": "Le saut s’applique aussi aux modifications",
             "skip_once_on_edit_subtext": "Si un saut est actif, la prochaine modification dans le chat reste aussi sans mise en forme.",
-            # Маска, Markdown, ротация и условные маски
             "mask": "Masque",
             "mask_text": "Texte du masque",
             "markdown_style": "Style Markdown",
@@ -2359,7 +2369,6 @@ class LocalizationManager:
             "conditional_masks_empty": "Un masque à part pour les messages contenant un texte précis",
             "conditional_masks_format": "Ligne {n} : format attendu « expression => masque »",
             "md_quote": "Tout le masque en citation",
-            # Стиль текста, слова и строки для тегов
             "text_style": "Style du texte",
             "text_style_random": "Style aléatoire",
             "text_style_random_subtext": "Un nouveau style pour chaque message (sauf à l’envers).",
@@ -2377,7 +2386,6 @@ class LocalizationManager:
             "tag_lines_count": "Lignes : {n}",
             "tag_lines_empty": "Aucune ligne pour l’instant",
             "tag_lines_limit": "{n} lignes au maximum",
-            # Разделители
             "separator": "Séparateur",
             "separator_enable": "Activer le séparateur",
             "separator_enable_subtext": "Insérer vos propres séparateurs entre les mots.",
@@ -2395,10 +2403,31 @@ class LocalizationManager:
             "separator_space_both": "Des deux côtés",
             "separator_space_left": "À gauche seulement",
             "separator_space_right": "À droite seulement",
-            # Милые эффекты
             "cute_enabled": "Activer les effets mignons",
             "cute_enabled_subtext": "Kaomoji, UwU, actions et décorations. Les liens, @mentions, #hashtags et le code ne changent pas.",
             "cute_preview": "Aperçu",
+            "section_debug": "Débogage",
+            "debug_enabled": "Débogage activé",
+            "debug_disabled": "Débogage désactivé",
+            "debug_start": "Démarrer l’enregistrement",
+            "debug_start_subtext": "Enregistre toutes les actions du plugin : touches, changements de réglages, dialogues, notifications, traitement des messages (longueurs seulement, sans texte) et le journal interne. Les valeurs de réglages modifiées et les ID de chats y figurent : vérifiez-le avant de l’envoyer à qui que ce soit.",
+            "debug_stop": "Arrêter l’enregistrement",
+            "debug_recording": "Enregistrement · {amount}",
+            "debug_log": "Journal de débogage",
+            "debug_log_subtext": "{amount}. Touchez pour enregistrer, supprimer ou reprendre l’enregistrement.",
+            "debug_amount": "{lines} lignes, {size}",
+            "debug_actions_message": "Enregistrement arrêté ({amount}). Que faire du journal ?",
+            "debug_to_saved": "Envoyer dans les Messages enregistrés",
+            "debug_to_device": "Enregistrer sur l’appareil",
+            "debug_delete": "Supprimer le journal",
+            "debug_continue": "Reprendre l’enregistrement",
+            "debug_hide": "Masquer le débogage",
+            "debug_hide_subtext": "Arrête l’enregistrement et supprime le journal. Comme 7 touches rapides sur « Aperçu ».",
+            "debug_started": "Enregistrement du journal démarré",
+            "debug_exported": "Journal de débogage enregistré",
+            "debug_deleted": "Journal de débogage supprimé",
+            "debug_hidden": "Débogage masqué",
+            "debug_failed": "L’action sur le journal a échoué",
             "cute_preview_sample": "Salut ! Ça va ? Il fait super beau aujourd’hui.",
             "cute_preview_none": "Activez au moins un effet. Touchez pour actualiser.",
             "cute_preview_tap": "Touchez pour actualiser.",
@@ -2422,7 +2451,6 @@ class LocalizationManager:
             "cute_stretch_3x": "Triple (x3)",
             "cute_soft_sign": "Signe mou à la fin des mots (котикь)",
             "cute_soft_sign_subtext": "Mots russes uniquement.",
-            # Исключения: списки, игнорирование, regex
             "regex_exceptions": "Exceptions regex",
             "regex_exceptions_hint": "Une expression régulière par ligne. Les messages correspondants ne sont pas mis en forme.",
             "regex_exceptions_count": "Règles : {n}",
@@ -2459,12 +2487,10 @@ class LocalizationManager:
             "exceptions_chat_now_on": "Prefixfy décore de nouveau les messages dans ce chat",
             "exceptions_chat_other_config": "La liste a été modifiée, mais ce chat suit une autre configuration (liaison de chat, planning ou réglages du compte)",
             "exceptions_count": "Règles : {n}, chats : {m}",
-            # Premium Emoji
             "capture_custom_emoji": "Obtenir le code d’un Premium Emoji",
             "capture_custom_emoji_enabled": "Envoyez un message avec un Premium Emoji : le plugin vous renverra son code",
             "capture_custom_emoji_disabled": "Capture du code Premium Emoji annulée",
             "capture_custom_emoji_hint": "Premium Emoji dans un masque : (id|🙂), où 🙂 est un emoji ordinaire pour ceux qui n’ont pas Premium. Obtenez le code avec « Obtenir le code d’un Premium Emoji » dans le menu du chat.",
-            # Расписание
             "schedule": "Planning des configurations",
             "schedule_empty": "Non défini",
             "schedule_count": "Règles : {n}",
@@ -2483,7 +2509,6 @@ class LocalizationManager:
             "schedule_err_deep": "condition trop complexe",
             "schedule_err_random": "le pourcentage doit être de 0 à 100",
             "schedule_err_size": "trop de texte",
-            # Конфигурации
             "config_import_cancelled": "Importation annulée",
             "config_import": "Importer",
             "config_export": "Exporter",
@@ -2572,7 +2597,6 @@ class LocalizationManager:
             "config_actions_subtext": "Choisir les parties à utiliser",
             "config_part_schedule": "Liaisons des chats et planning",
             "config_part_cute": "Effets mignons",
-            # Медиа
             "media_attachment": "Média",
             "media_attachment_enable": "Joindre un média",
             "media_attachment_enable_subtext": "Envoyer le fichier choisi avec chaque message.",
@@ -2586,7 +2610,6 @@ class LocalizationManager:
             "media_deleted": "Média supprimé",
             "media_import_failed": "Impossible d’ajouter le média",
             "media_delete_failed": "Impossible de supprimer le média",
-            # Аккаунты
             "account_mode": "Réglages par compte",
             "account_mode_subtext": "Des réglages séparés pour chaque compte. Tant que vous ne les modifiez pas, tous les comptes partagent les mêmes.",
             "account_target": "Compte à régler",
@@ -2607,7 +2630,6 @@ class LocalizationManager:
             "account_import_title": "Où appliquer la configuration ?",
             "account_import_all": "À tous les comptes",
             "account_import_common": "Aux réglages partagés (comptes sans réglages propres)",
-            # Обновления и проверка
             "check_now": "Vérifier maintenant",
             "check_now_subtext": "S’assurer que la version du plugin est officielle.",
             "check_started": "Vérification…",
@@ -2651,7 +2673,6 @@ class LocalizationManager:
             "ota_dl_warning": "En données mobiles, votre opérateur peut facturer le trafic. Le Wi-Fi est préférable.",
             "ota_unit_kb": "Ko",
             "ota_unit_mb": "Mo",
-            # О плагине, статусы и уведомления проверки
             "gate_update_required": "Mise à jour requise",
             "gate_update_required_subtext": "Installez la version officielle de Prefixfy {version}. D’ici là, le plugin ne met pas les messages en forme.",
             "gate_verify_required": "Échec de la vérification",
@@ -2687,7 +2708,6 @@ class LocalizationManager:
             "gate_soft": "Fonctions suspendues",
             "gate_soft_subtext": "Le build ne peut pas être vérifié pour l’instant, seule la mise en forme de base fonctionne. Vérifiez votre connexion : tout revient après une vérification réussie.",
             "gate_bypass_note": "Cette fonction ne lève pas le blocage.",
-            # Удаление данных и возобновление работы
             "wipe_row": "Supprimer les données",
             "wipe_row_subtext": "Effacer toutes les données du plugin ou arrêter complètement de l’utiliser.",
             "wipe_title": "Supprimer les données de Prefixfy ?",
@@ -2715,7 +2735,6 @@ class LocalizationManager:
             "resume_done": "Prefixfy fonctionne de nouveau",
             "resume_failed": "Impossible de démarrer le plugin. Désactivez-le puis réactivez-le.",
             "wipe_auto_reset_done": "Les données du plugin étaient endommagées, il a donc été réinitialisé",
-            # Первая настройка и приветствие
             "setup_step_1": "Étape 1 sur 3 : langue",
             "setup_step_2": "Étape 2 sur 3 : apparence",
             "setup_step_3": "Étape 3 sur 3 : mises à jour",
@@ -2897,26 +2916,10 @@ def as_text(value) -> str:
     return "" if value is None else str(value)
 
 
-# ==== PURE:BEGIN text_safety ====
-# Чистый блок без Android и без зависимостей от остального файла: только re и unicodedata. Его проверяет tests/.
-#
-# 49.6.0: защита от Zalgo. Zalgo — это стопки комбинирующих знаков на одной букве: такой текст вылезает за строку,
-# ломает вёрстку клиента и раздувает сообщение. Подряд идущие комбинирующие знаки (Mn/Me) сверх ZALGO_MAX_RUN считаются Zalgo.
-# Обычные диакритики (é, ё, й, вьетнамский, огласовки иврита и арабского) укладываются в лимит. Невидимые символы
-# формата (Cf: ZWJ, ZWNJ, ZWSP…) не прерывают стопку, иначе их можно вставлять между знаками и обходить проверку.
-#
-# 50.0.0: к Zalgo добавлено остальное, чем текст можно подменить или спрятать в нём что-то:
-#   * bidi-символы (U+202A–202E, U+2066–2069, LRM/RLM, ALM): U+202E переворачивает остаток строки, и «gpj.exe» выглядит как «exe.jpg»;
-#   * невидимые символы (ZWSP, word joiner, мягкий перенос, заполнители Hangul/Braille, селекторы вариантов, теги Unicode):
-#     ими разбивают слова, чтобы обойти фильтры, и прячут в тексте данные;
-#   * управляющие коды (C0, DEL, C1) и «одиночные» суррогаты;
-#   * аномальные цепочки эмодзи: слишком длинные ZWJ-последовательности и слишком длинные серии эмодзи подряд.
-# ZWJ, ZWNJ, VS16 и теги флагов остаются там, где они нужны: внутри эмодзи-последовательностей и в письменностях,
-# которым ZWNJ/ZWJ необходимы (арабское письмо, индийские, бирманское, кхмерское).
 ZALGO_MAX_RUN = 4
-EMOJI_MAX_ZWJ_LINKS = 6     # элементов в одной ZWJ-цепочке (самая длинная настоящая — 4: семья, поцелуй)
-EMOJI_MAX_RUN = 32          # эмодзи подряд, без пробелов между ними
-EMOJI_MAX_TAGS = 8          # тегов в одной последовательности флага (настоящим нужно 6–7)
+EMOJI_MAX_ZWJ_LINKS = 6
+EMOJI_MAX_RUN = 32
+EMOJI_MAX_TAGS = 8
 _ZALGO_MARKS = frozenset(("Mn", "Me"))
 _unicode_category = unicodedata.category
 
@@ -2967,10 +2970,6 @@ def strip_zalgo(text):
     return "".join(out)
 
 
-# Эмодзи. 50.0.0: из базового класса убраны модификаторы тона кожи (1F3FB–1F3FF) и региональные индикаторы (1F1E6–1F1FF).
-# Раньше они входили и в базовый класс, и в «хвост» элемента или в пару флага, поэтому один и тот же текст разбирался
-# несколькими способами, и проверка вида «👍🏽 × 25 + буква» перебирала 2^25 вариантов (22 эмодзи — 2 секунды, 30 — минуты).
-# Теперь у каждой строки ровно одно разбиение, и проверка линейна.
 _EMOJI_SYMBOL = r"[\u00A9\u00AE\u203C\u2049\u2122\u2139\u2194-\u2199\u21A9-\u21AA\u231A-\u231B\u2328\u23CF\u23E9-\u23F3\u23F8-\u23FA\u24C2\u25AA-\u25AB\u25B6\u25C0\u25FB-\u25FE\u2600-\u2604\u260E\u2611\u2614-\u2615\u2618\u261D\u2620\u2622-\u2623\u2626\u262A\u262E-\u262F\u2638-\u263A\u2640\u2642\u2648-\u2653\u265F-\u2660\u2663\u2665-\u2666\u2668\u267B\u267E-\u267F\u2692-\u2697\u2699\u269B-\u269C\u26A0-\u26A1\u26A7\u26AA-\u26AB\u26B0-\u26B1\u26BD-\u26BE\u26C4-\u26C5\u26C8\u26CE-\u26CF\u26D1\u26D3-\u26D4\u26E9-\u26EA\u26F0-\u26F5\u26F7-\u26FA\u26FD\u2702\u2705\u2708-\u270D\u270F\u2712\u2714\u2716\u271D\u2721\u2728\u2733-\u2734\u2744\u2747\u274C\u274E\u2753-\u2755\u2757\u2763-\u2764\u2795-\u2797\u27A1\u27B0\u27BF\u2934-\u2935\u2B05-\u2B07\u2B1B-\u2B1C\u2B50\u2B55\u3030\u303D\u3297\u3299\U0001F000-\U0001F1E5\U0001F200-\U0001F3FA\U0001F400-\U0001FAFF]"
 _EMOJI_ELEMENT = (
     r"(?:[\U0001F1E6-\U0001F1FF]{2}|[#*0-9]\uFE0F?\u20E3|" + _EMOJI_SYMBOL + r")"
@@ -2993,7 +2992,6 @@ def _emoji_token_regex():
     return _EMOJI_TOKEN_RE
 
 
-# Всегда удаляются: управляющие (кроме \t \n \r), bidi, невидимые, селекторы вариантов, суррогаты, служебные теги.
 _BIDI_CLASS = r"\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069"
 _CONTROL_CLASS = r"\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x84\x86-\x9f\ud800-\udfff"
 _INVISIBLE_CLASS = (
@@ -3005,7 +3003,6 @@ _CONTROL_RE = re.compile("[" + _CONTROL_CLASS + "]")
 _INVISIBLE_RE = re.compile("[" + _INVISIBLE_CLASS + "]")
 _ALWAYS_DROP_RE = re.compile("[" + _BIDI_CLASS + _CONTROL_CLASS + _INVISIBLE_CLASS + "]")
 _LINE_BREAKS = {0x85: "\n", 0x2028: "\n", 0x2029: "\n"}
-# Остаются только в нужном месте: ZWNJ, ZWJ, VS15/VS16, теги флагов (E0020–E007F).
 _CONDITIONAL_RE = re.compile(r"[\u200c\u200d\ufe0e\ufe0f\U000e0020-\U000e007f]")
 _EMOJI_BASE_FOR_VS = frozenset("#*0123456789")
 _VS_BASE_CATEGORIES = frozenset(("So", "Sm", "Sk"))
@@ -3092,7 +3089,7 @@ def sanitize_text(text):
     if not isinstance(text, str) or not text:
         return text
     cleaned = text
-    for _ in range(6):  # удаление одного символа может изменить соседей другого, поэтому идём до неподвижной точки
+    for _ in range(6):
         step = cleaned
         if _ALWAYS_DROP_RE.search(step) or "\x85" in step or "\u2028" in step or "\u2029" in step:
             step = _ALWAYS_DROP_RE.sub("", step.translate(_LINE_BREAKS))
@@ -3128,7 +3125,6 @@ def unsafe_kinds(text) -> frozenset:
     if limit_emoji_chains(text) != text:
         kinds.add("emoji_chain")
     return frozenset(kinds)
-# ==== PURE:END text_safety ====
 
 
 MASK_TOKEN_RE = re.compile(r"\[text(?:[ \t]*:[ \t]*([^\[\]\r\n]*?))?[ \t]*\]")
@@ -3147,7 +3143,7 @@ def normalize_link(raw) -> Optional[str]:
     link = as_text(raw).strip()
     if not link or any(ch.isspace() for ch in link) or len(link) > 2048:
         return None
-    if has_unsafe_text(link):  # 50.0.0: bidi-подмена и невидимые символы в адресе ссылки
+    if has_unsafe_text(link):
         return None
     if link.startswith("@") and len(link) > 1:
         name = link[1:]
@@ -3430,8 +3426,6 @@ def _style_atoms_full(text: str, style: int, translit: bool = False) -> List[Tup
     if style == STYLE_MIXED:
         return _mixed_atoms(text, translit)
     protected = {match.start(): match.end() for match in _PLACEHOLDER_RE.finditer(text)}
-    # 50.0.0: составное эмодзи (ZWJ-последовательность, флаг, ❤️ с селектором, кейкап) остаётся неделимым атомом. Раньше стиль
-    # шёл по одному символу кода: «Vaporwave» рвал семью 👨‍👩‍👧‍👦 пробелами, а «Upside down» и «Mirrored» отрывали селектор от ❤️.
     emoji_starts = set()
     if not text.isascii():
         for match in _EMOJI_TOKEN_RE.finditer(text):
@@ -4090,7 +4084,7 @@ SCHEDULE_KEY = "Prefixfy_schedule"
 ACCT_MODE_KEY = "Prefixfy_acct_mode"
 ACCT_TARGET_KEY = "Prefixfy_acct_target"
 ACCT_LIVE_KEY = "Prefixfy_acct_live"
-ACCT_PINS_KEY = "Prefixfy_acct_shared_pins"  # 46.5.0: {uid: id общей конфигурации, выбранной аккаунтом}
+ACCT_PINS_KEY = "Prefixfy_acct_shared_pins"
 ACCT_SELECTOR_KEY = "Prefixfy_acct_selector"
 ACCT_AUTO = "auto"
 ACCT_COMMON = "common"
@@ -4422,9 +4416,6 @@ def _schedule_dates_hit(dates, day) -> bool:
 def _parse_schedule_line(line: str, number: int):
     """Одна строка -> (правило, None) или (None, ошибка). Не бросает исключений."""
     try:
-        # 52.0.0: строка правила с bidi-подменой, невидимыми или управляющими символами отвергается. Иначе в
-        # редакторе и в чужом файле конфигурации она выглядела бы иначе, чем работает («Работа» могла
-        # оказаться другим именем), а редактор потом не давал сохранить расписание целиком.
         if has_unsafe_text(line):
             return None, (number, "schedule_err_format", "")
         left, separator, name = line.partition("=")
@@ -4516,9 +4507,6 @@ def _schedule_in_tail(node, minutes: int) -> bool:
 def _schedule_eval(node, env) -> bool:
     op = node[0]
     if op == "and":
-        # 52.0.0: день недели и дата берутся по дню начала интервала отдельно для каждой группы «и». Раньше день
-        # переносился на вчера для всего правила, если в нём был хоть один интервал через полночь, и
-        # «wed 01:00-03:00 or fri 23:00-02:00» в среду в 01:30 не срабатывало (среда проверялась как вторник).
         if _schedule_in_tail(node, env.minutes) and env.anchor != env.previous:
             saved = env.anchor
             env.anchor = env.previous
@@ -4563,7 +4551,6 @@ def schedule_match(rules, now, resolve=None, chat=None):
         for rule in rules:
             if rule.tier != tier:
                 continue
-            # Одиночный интервал (без «и») тоже относится ко дню начала: так он работал и раньше.
             single_tail = rule.expr[0] == "time" and _schedule_in_tail(rule.expr, minutes)
             env = _ScheduleEnv(minutes, yesterday if single_tail else today, chat if rule.needs_chat else None, yesterday)
             try:
@@ -4588,8 +4575,6 @@ def rename_schedule_target(raw, old_name: str, new_name: str) -> Tuple[str, bool
     for line in as_text(raw).splitlines():
         head, sep, tail = line.partition("=")
         if sep and tail.strip().casefold() == old:
-            # 52.0.0: splitlines() режет и по \x0b, \x0c, \x1c-\x1e, \x85, \u2028, \u2029; имя с таким символом
-            # дописало бы в расписание новое правило.
             flat_name = " ".join(as_text(sanitize_text(as_text(new_name))).split())
             line, changed = f"{head}= {flat_name}", True
         lines.append(line)
@@ -4679,9 +4664,6 @@ def is_plugin_file(path) -> bool:
         return False
 
 
-# 49.0.0: только папки с медиа. Хранилище конфигураций и пресеты аккаунтов (Prefixfy_store, Prefixfy_accounts)
-# больше не считаются «медиа»: иначе путь из записи конфигурации мог указать на служебный файл, и плагин отправил
-# бы его в чат вложением или удалил при чистке медиа.
 MEDIA_STORE_DIRS = frozenset({"Prefixfy_media", "Prefixfy_configurations"})
 
 
@@ -4781,9 +4763,6 @@ class StoreVault:
 
     @staticmethod
     def _jbytes(data: bytes):
-        # 53.0.0: Chaquopy умеет собрать byte[] прямо из bytes одной операцией. Если эта версия не умеет (TypeError,
-        # или значения >127 не влезают в jbyte - OverflowError/ValueError), остаётся прежний поэлементный путь.
-        # Раньше всегда шёл поэлементный: на списке блокировок до 1 МБ - секунды на каждое чтение и запись.
         from java import jarray, jbyte
         data = bytes(data)
         try:
@@ -4797,8 +4776,6 @@ class StoreVault:
     @staticmethod
     def _pybytes(array) -> bytes:
         try:
-            # Буферный протокол массива Java: байты как есть. Без него bytes() перебирает знаковые значения и падает
-            # на отрицательных - тогда прежний путь.
             data = bytes(array)
             if len(data) == len(array):
                 return data
@@ -4885,10 +4862,6 @@ class StoreVault:
                 raise ValueError("bad key length")
             except Exception as exc:
                 if not kek_fresh and blob.startswith(self.MAGIC) and len(blob) > head + 16:
-                    # 49.0.0: ключ Keystore на месте, файл ключа правильной формы, но открыть не вышло. Это может быть
-                    # временный сбой Keystore (устройство заблокировано, служба занята). Раньше ключ тут же
-                    # перевыпускался, и все запечатанные данные терялись навсегда. Теперь хранилище недоступно
-                    # только до следующего запуска.
                     raise VaultError(f"data key is temporarily unreadable: {exc}")
                 self._log(f"Prefixfy vault: data key is unreadable, creating a new one: {exc}")
         key = os.urandom(32)
@@ -5121,6 +5094,68 @@ def unique_name(base: str, taken, ignore: str = "") -> str:
     return name
 
 
+_TRACE_SINK = None
+
+
+def trace_action(event: str, **fields):
+    """Записать действие плагина в журнал отладки (если запись идёт и отладка разрешена флагом)."""
+    sink = _TRACE_SINK
+    if sink is not None:
+        try:
+            sink(event, fields)
+        except Exception:
+            pass
+
+
+def _traced(event: str, label, fn, **extra):
+    if fn is None:
+        return fn
+
+    def wrapper(*args, **kwargs):
+        trace_action(event, item=label, **extra)
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
+def _traced_change(event: str, key, fn):
+    if fn is None:
+        return fn
+
+    def wrapper(value, *args, **kwargs):
+        trace_action(event, key=key, value=value)
+        return fn(value, *args, **kwargs)
+
+    return wrapper
+
+
+def Text(*args, **kwargs):
+    label = kwargs.get("text")
+    if kwargs.get("on_click") is not None:
+        kwargs["on_click"] = _traced("tap", label, kwargs["on_click"])
+    if kwargs.get("on_long_click") is not None:
+        kwargs["on_long_click"] = _traced("long_tap", label, kwargs["on_long_click"])
+    return _SdkText(*args, **kwargs)
+
+
+def Switch(*args, **kwargs):
+    if kwargs.get("on_change") is not None:
+        kwargs["on_change"] = _traced_change("switch", kwargs.get("key"), kwargs["on_change"])
+    return _SdkSwitch(*args, **kwargs)
+
+
+def Selector(*args, **kwargs):
+    if kwargs.get("on_change") is not None:
+        kwargs["on_change"] = _traced_change("select", kwargs.get("key"), kwargs["on_change"])
+    return _SdkSelector(*args, **kwargs)
+
+
+def Input(*args, **kwargs):
+    if kwargs.get("on_change") is not None:
+        kwargs["on_change"] = _traced_change("input", kwargs.get("key"), kwargs["on_change"])
+    return _SdkInput(*args, **kwargs)
+
+
 FEATURE_FLAGS: Dict[str, bool] = {
     "regex_exceptions": True,
     "chat_type_rules": True,
@@ -5138,6 +5173,7 @@ FEATURE_FLAGS: Dict[str, bool] = {
     "lang_ja": True,
     "lang_ko": True,
     "lang_fr": True,
+    "debug": False,
 }
 MASK_TAG_NAMES = ("date", "time", "datetime", "time12", "chat", "id", "weekday", "weekday_short", "year", "year_short", "month", "monthname", "day", "week", "yearday", "hour", "minute", "second", "ampm", "daypart", "timestamp", "tz", "chattype", "username", "count", "dice", "random_emoji", "emoji", "reply", "chatcount", "battery", "moon", "line", "since", "until", "quote", "countdown", "weather")
 APPEARANCE_FLAGS: Dict[str, bool] = {
@@ -5712,6 +5748,7 @@ class PrefixfySettings:
         return sanitize_text(value) if isinstance(value, str) else value
 
     def set(self, key, value, reload_settings=False):
+        trace_action("setting", key=key, value=value)
         with self._batch_lock:
             batching = self._batch_depth > 0
             if batching:
@@ -5804,9 +5841,6 @@ class TextFilter:
                 return True
         if self.regex_exceptions:
             sample = text[:REGEX_TEXT_LIMIT]
-            # 52.1.0: в длинном сообщении проверяется ещё и хвост. Раньше смотрелись только первые REGEX_TEXT_LIMIT
-            # символов, и правило вида «\?$» не срабатывало на сообщениях длиннее 1024 знаков. search(text, pos)
-            # не даёт «^» совпасть в середине текста, а «$» по-прежнему означает настоящий конец.
             tail_start = len(text) - REGEX_TEXT_LIMIT if len(text) > REGEX_TEXT_LIMIT else None
             for pattern in self.regex_exceptions:
                 if pattern.search(sample):
@@ -5843,7 +5877,7 @@ class MaskTransformation(Transformation):
             if wrap_kind and len(self.table) < _MD_MAX_ENTITIES and not (wrap_kind in _MD_CODE_KINDS and self.table):
                 self.wrap_id = len(self.table)
                 self.table.append((wrap_kind, ""))
-        self.separator: Optional["SeparatorTransformation"] = None  # 49.2.0: разделители ставятся только в тексте сообщения
+        self.separator: Optional["SeparatorTransformation"] = None
         self.left_plain = "" if self._has_custom_emoji(self.left) else _MD_SENTINEL_RE.sub("", self.left)
         self.right_plain = "" if self._has_custom_emoji(self.right) else _MD_SENTINEL_RE.sub("", self.right)
         self.left_visible = _MD_SENTINEL_RE.sub("", self.left)
@@ -5867,7 +5901,6 @@ class MaskTransformation(Transformation):
         has_right = bool(self.right_plain) and text.endswith(self.right_plain)
         prefix = "" if has_left else self.left
         suffix = "" if has_right else self.right
-        # 49.2.0: если маска уже стоит в тексте, её части не стилизуются и не получают разделители повторно.
         head = self.left_plain if has_left else ""
         tail = self.right_plain if has_right and len(text) >= len(head) + len(self.right_plain) else ""
         middle = text[len(head):len(text) - len(tail)] if (head or tail) else text
@@ -6131,7 +6164,6 @@ class CuteTransformation(Transformation):
 
     @classmethod
     def _soften(cls, word: str) -> str:
-        # 49.2.0: только слова из кириллицы. Раньше «100р» или «Ivanов» тоже получали мягкий знак.
         if (len(word) >= 3 and not word.isupper() and cls._CYRILLIC_WORD_RE.fullmatch(word)
                 and word[-1].lower() in CUTE_SOFT_SIGN_CONSONANTS):
             return word + "ь"
@@ -6294,8 +6326,6 @@ class TransformationPipeline:
             separator = SeparatorTransformation(settings, self.markdown_table)
             mask_part = self._mask()
             if mask_part is not None:
-                # 49.2.0: раньше разделители вставлялись и между словами маски («От • Васи: • привет»), а после
-                # этого правка сообщения не узнавала маску и добавляла её второй раз.
                 mask_part.separator = separator
             else:
                 self.transformations.append(separator)
@@ -6374,7 +6404,6 @@ class TransformationPipeline:
         if has_marker_chars(text):
             return None
         protected, spans = protect_special(text, self.ignore_kinds)
-        # 45.6.0: сообщение, состоящее только из защищённых фрагментов (ссылка, код, упоминание...), не оформляется.
         if spans and not _PLACEHOLDER_RE.sub("", protected).strip():
             return None
         return protected, spans
@@ -6402,8 +6431,6 @@ class TransformationPipeline:
                 if self.logger:
                     self.logger(f"Prefixfy transformation failed: {exc}")
         result = restore_special(protected, spans)
-        # 49.6.0: если из чистого текста получился Zalgo, сообщение уходит без оформления.
-        # 50.0.0: то же для bidi, невидимых и управляющих символов и аномальных цепочек эмодзи.
         probe = _MD_SENTINEL_RE.sub("", result) if self.markdown_table else result
         if has_unsafe_text(probe) and not has_unsafe_text(text):
             if self.logger:
@@ -7214,7 +7241,6 @@ class RuntimeManager:
         with self._lock:
             self._suspend += 1
         try:
-            # 52.0.0: правки внутри bulk() ещё и пишутся на диск одной операцией (PrefixfySettings.batch).
             with self.plugin.settings.batch():
                 yield
         finally:
@@ -7233,37 +7259,25 @@ class ConfigurationSaveError(RuntimeError):
     pass
 
 
-# ==== LEGACY:BEGIN migration (данные версий ниже 49) ====
-# 50.0.0: весь код под прошлые версии собран здесь. Раньше он был размазан по файлу: раскладка языков, немецкий,
-# «ignore_special», плоские конфигурации, профили аккаунтов <uid>.json, .pfx_prev, Prefixfy_flags.json.
-#
-# Как это работает. Версия схемы данных лежит в настройке SCHEMA_KEY. Её нет у всех, кто обновляется с версий ниже 50:
-# у 49.x ключа ещё не было, а все шаги ниже безопасно выполняются повторно (у каждого своя защита от двойного применения).
-# Мигратор проходит шаги в хронологическом порядке (45.6 -> 46 -> 47 -> 48 -> 49), и только если все они прошли,
-# пишет SCHEMA_KEY = 50. Если хотя бы один шаг не удался (например, не записался файл), ключ не пишется, и всё
-# повторяется при следующем запуске. После этого мигратор не выполняется вообще.
-#
-# Чтобы убрать поддержку старых версий совсем, достаточно удалить этот блок (всё, что в нём, называется LEGACY_* или
-# legacy_*), его вызовы (grep "_legacy") и слово LegacyMigration в _setup_init.
 SCHEMA_KEY = "Prefixfy_schema"
 SCHEMA_VERSION = 50
 
 LEGACY_LANGUAGE_LAYOUTS = {
-    1: (None, "ru", "en", "ja", "ko", "ar", "fr", "pl", "de", "uk"),  # до 47: были арабский, польский, немецкий, украинский
-    2: LANGUAGE_MODES + ("de",),                                       # 47: немецкий последним; удалён в 48.0.0
+    1: (None, "ru", "en", "ja", "ko", "ar", "fr", "pl", "de", "uk"),
+    2: LANGUAGE_MODES + ("de",),
 }
-LEGACY_LANGUAGE_LAYOUT_KEY = "Prefixfy_language_layout"   # нет ключа или 1 — раскладка 1; 2 — раскладка 2
+LEGACY_LANGUAGE_LAYOUT_KEY = "Prefixfy_language_layout"
 LEGACY_LANGUAGE_LIVE_KEY = "Prefixfy_language_live_layout"
-LEGACY_LANGUAGE_MARKS_KEY = "Prefixfy_language_migrated"  # какие наборы уже переведены (индексы не идемпотентны)
+LEGACY_LANGUAGE_MARKS_KEY = "Prefixfy_language_migrated"
 LEGACY_IGNORE_SPLIT_KEY = "Prefixfy_ignore_split"
-LEGACY_IGNORE_KEY = "ignore_special"                      # 45.6.0: разбит на шесть ignore_*
-LEGACY_CONFIG_FORMATS = ("maskify-config",)               # прежнее имя плагина в файлах экспорта
-LEGACY_CONFIG_LAYOUT_VERSION = 15                         # в файлах версии ниже 15 язык записан в раскладке 1
+LEGACY_IGNORE_KEY = "ignore_special"
+LEGACY_CONFIG_FORMATS = ("maskify-config",)
+LEGACY_CONFIG_LAYOUT_VERSION = 15
 LEGACY_FLAT_CONFIGS_KEY = "Prefixfy_experimental_configurations"
 LEGACY_FLAT_ACTIVE_KEY = "Prefixfy_experimental_active_configuration"
 LEGACY_FLAT_MAX_RECORDS = 200
-LEGACY_FLAGS_CACHE_FILE = "Prefixfy_flags.json"           # теперь .pfx_profile
-LEGACY_PREV_FILE = ".pfx_prev"                            # прежняя схема отката OTA, теперь раздел .pfx_slot
+LEGACY_FLAGS_CACHE_FILE = "Prefixfy_flags.json"
+LEGACY_PREV_FILE = ".pfx_prev"
 LEGACY_SETTING_KEYS = (LEGACY_FLAT_CONFIGS_KEY, LEGACY_FLAT_ACTIVE_KEY)
 
 
@@ -7353,7 +7367,6 @@ class LegacyMigration:
         except Exception as exc:
             self.plugin.log(f"Prefixfy language migration marker failed: {exc}")
 
-    # --- шаг 1 (45.6, 47, 48): настройки самого плагина --------------------------------------------------------------
     def migrate_settings(self):
         if not self.pending:
             return
@@ -7364,7 +7377,7 @@ class LegacyMigration:
                 self._set(LEGACY_LANGUAGE_LIVE_KEY, 2)
             language = self._get("language", 0)
             if isinstance(language, int) and not isinstance(language, bool) and language >= len(LANGUAGE_MODES):
-                self._set("language", legacy_language_index(language, 2))  # 48.0.0: «de» -> английский
+                self._set("language", legacy_language_index(language, 2))
             if not self._get(LEGACY_IGNORE_SPLIT_KEY, 0):
                 if self._get(LEGACY_IGNORE_KEY, None) is False:
                     for key in IGNORE_KEYS:
@@ -7373,7 +7386,6 @@ class LegacyMigration:
         except Exception as exc:
             self._fail("settings", exc)
 
-    # --- шаг 2 (46.x, 49): файлы рядом с плагином ---------------------------------------------------------------------
     def migrate_files(self):
         if not self.pending:
             return
@@ -7394,7 +7406,6 @@ class LegacyMigration:
         except OSError as exc:
             self.plugin.log(f"Prefixfy migration: {LEGACY_PREV_FILE} not removed: {exc}")
 
-    # --- шаг 3 (46.0): плоские конфигурации из настройки плагина -> хранилище ---------------------------------------
     def import_flat_configurations(self, manager):
         if not self.pending or manager.configurations:
             return
@@ -7405,7 +7416,7 @@ class LegacyMigration:
             data = json.loads(raw)
         except Exception as exc:
             self.plugin.log(f"Configurations legacy load failed: {exc}")
-            manager._degraded = True  # повреждённый JSON не починить повтором, поэтому шаг не считается неудавшимся
+            manager._degraded = True
             return
         if not isinstance(data, dict):
             return
@@ -7433,7 +7444,6 @@ class LegacyMigration:
         if not all_stored:
             self.ok = False
 
-    # --- шаг 4 (46.x): профили аккаунтов <uid>.json -> пресеты --------------------------------------------------------
     def convert_account_files(self, manager):
         if not self.pending:
             return
@@ -7463,7 +7473,7 @@ class LegacyMigration:
                 if not isinstance(params, dict):
                     raise ValueError("no params object")
             except Exception as exc:
-                accounts.degraded = True  # нечитаемый файл повтором не починить
+                accounts.degraded = True
                 manager.plugin.log(f"Prefixfy accounts: cannot read {os.path.basename(path)}: {exc}")
                 continue
             try:
@@ -7497,7 +7507,6 @@ class LegacyMigration:
             self._save_marks(marks)
         return True
 
-    # --- шаг 5 (47, 48.0): язык в сохранённых наборах --------------------------------------------------------------
     def migrate_languages(self, manager):
         """Раскладка 1 -> текущая переводит каждый набор ровно один раз (метка пишется сразу после записи, поэтому сбой
         посередине не приводит к повторному пересчёту: индексы не идемпотентны). Раскладка 2 -> текущая («de» -> английский)
@@ -7526,7 +7535,6 @@ class LegacyMigration:
                     if not manager._sync_params(config_id, role, {**params, "language": legacy_language_index(value, 2)}):
                         self.ok = False
 
-    # --- конец ----------------------------------------------------------------------------------------------------
     def finish(self):
         """Все шаги прошли: фиксируем версию схемы. Иначе ничего не пишем, и всё повторится при следующем запуске."""
         if not self.pending:
@@ -7536,8 +7544,6 @@ class LegacyMigration:
             return
         try:
             self._set(SCHEMA_KEY, SCHEMA_VERSION)
-            # Откат на 49.x (в том числе автоматический откат OTA) проверяет эти ключи при каждом запуске: без них он
-            # повторно пересчитал бы уже переведённые индексы языка.
             self._set(LEGACY_LANGUAGE_LAYOUT_KEY, 2)
             self._set(LEGACY_LANGUAGE_LIVE_KEY, 2)
             self._set(LEGACY_IGNORE_SPLIT_KEY, 1)
@@ -7548,7 +7554,6 @@ class LegacyMigration:
             self.pending = False
         except Exception as exc:
             self.plugin.log(f"Prefixfy migration: schema version not saved: {exc}")
-# ==== LEGACY:END migration ====
 
 
 CONFIG_FORMAT = "Prefixfy-config"
@@ -7563,8 +7568,6 @@ COMPONENT_ALIASES = {
     "media": ("media", "attached_media"),
     "schedule": ("schedule",),
 }
-# Настройки «Где работает»: отдельного компонента для импорта/экспорта у них нет, но сбрасываться они должны вместе с
-# исключениями и чатами, иначе часть конфига остаётся нетронутой.
 SCOPE_RESET_KEYS = ("process_message", "process_media", "process_article", "process_edit", "process_edit_message",
                     "process_edit_media", "process_edit_article", "skip_once_on_edit")
 COMPONENT_KEYS = {
@@ -7728,9 +7731,6 @@ def validate_component(component: str, section: dict) -> bool:
             return False
         if scope is None:
             return True
-        # 52.1.0: импорт берёт режим и список из chat_scope, а плоские ключи — только если их нет. Проверка
-        # теперь такая же: файл только с chat_scope (без chat_scope_enabled/disabled_chats) больше не отвергается,
-        # а противоречие между chat_scope и плоскими ключами, если они есть, по-прежнему ошибка.
         if not isinstance(scope, dict) or scope.get("mode") not in ("exceptions", "included"):
             return False
         scope_chats = scope.get("chats", chats)
@@ -7754,8 +7754,6 @@ def validate_component(component: str, section: dict) -> bool:
     return False
 
 
-# 49.3.0: компоненты, текст которых может попасть в исходящие сообщения. Исключения и расписание — это шаблоны и
-# правила, а не отправляемый текст, поэтому ссылки в них (например, в regex) не считаются.
 LINK_SCAN_COMPONENTS = ("mask", "separator", "cute")
 _IMPORT_URL_RE = re.compile(r"(?:https?|tg|ton)://[^\s\[\]<>\"']+", re.IGNORECASE)
 
@@ -7889,16 +7887,6 @@ def classify_components(data: dict) -> Dict[str, str]:
 MAX_CONTAINER_ENTRIES = 16
 
 
-# 53.0.0: файл конфигурации, зашифрованный паролем.
-#
-# Шифруется весь контейнер .prefixfy целиком (config.json, имя, список частей, медиа), поэтому без пароля из файла
-# не узнать даже, какие части в нём есть. Всё на стандартной библиотеке Python, без Java: одинаково работает
-# на любом устройстве и проверяется тестами вне приложения.
-#   ключи:      PBKDF2-HMAC-SHA256(пароль в NFC, соль 16 байт, итерации из заголовка) -> 64 байта = k_enc | k_mac
-#   шифр:       блоки по 1 МиБ, гамма блока i = SHAKE256(метка | k_enc | nonce | i), XOR
-#   целостность: HMAC-SHA256(k_mac, заголовок | шифртекст), проверяется ДО расшифровки (encrypt-then-MAC);
-#                заголовок с длиной под MAC, поэтому обрезка, подмена параметров и перестановка блоков видны.
-# Файл: заголовок (LOCKED_HEADER) | шифртекст | тег 32 байта. Неверный пароль и порча файла неразличимы.
 LOCKED_MAGIC = b"PFXLOCK1"
 LOCKED_VERSION = 1
 LOCKED_KDF_PBKDF2_SHA256 = 1
@@ -7988,7 +7976,6 @@ def _locked_header(handle, file_size: int):
         raise ConfigurationError("not an encrypted configuration")
     if version != LOCKED_VERSION or kdf != LOCKED_KDF_PBKDF2_SHA256:
         raise ConfigurationError("unsupported encrypted configuration")
-    # Параметры из файла ограничены: чужой файл не заставит считать ключ минутами или читать гигабайты.
     if not LOCKED_MIN_ITERATIONS <= iterations <= LOCKED_MAX_ITERATIONS or chunk != LOCKED_CHUNK:
         raise ConfigurationError("unsupported encrypted configuration")
     if size > LOCKED_MAX_PLAIN or file_size != LOCKED_HEADER.size + size + LOCKED_TAG_SIZE:
@@ -8028,11 +8015,6 @@ def unlock_container(source: str, target: str, password: str):
             raise
 
 
-# 53.0.0: прикреплённое медиа хранится зашифрованным.
-# Ключ - производный от ключа данных хранилища (его оборачивает Android Keystore), поэтому файл медиа без этого
-# устройства не прочитать. Конструкция та же, что у файлов с паролем (гамма SHAKE256 + HMAC-SHA256, проверка до
-# расшифровки), только без пароля. Путь в ключ не входит: копии файла для конфигураций остаются читаемыми.
-# Файл: MEDIA_SEAL_HEADER | шифртекст | тег 32 байта. Хранилище недоступно - медиа хранится как раньше, открыто.
 MEDIA_SEAL_MAGIC = b"PFXMED01"
 MEDIA_SEAL_HEADER = struct.Struct(">8s16sQ")
 MEDIA_OUTBOX_DIR = "Prefixfy_outbox"
@@ -8251,6 +8233,7 @@ class ConfigTransfer:
     CONFIG_IMPORT_REQUEST_CODE = 7400
     CONFIG_EXPORT_REQUEST_CODE = 7401
     MEDIA_IMPORT_REQUEST_CODE = 7403
+    DEBUG_EXPORT_REQUEST_CODE = 7404
     CONFIG_EXTENSION = ".prefixfy"
     EXPORT_MAX_CONFIGS = 10
 
@@ -8263,7 +8246,7 @@ class ConfigTransfer:
         self.pending_export_id: Optional[str] = None
         self.pending_export_name = ""
         self.pending_export_password: Optional[str] = None
-        self._awaiting: Optional[int] = None  # 49.0.0: код запроса, который плагин действительно запускал
+        self._awaiting: Optional[int] = None
         self._file_handler_secret = None
         self.media_data_dir = os.path.join(get_plugins_dir(), "Prefixfy_media")
         ensure_dir_exists(self.media_data_dir)
@@ -8297,7 +8280,6 @@ class ConfigTransfer:
 
     def _prepare_media_target(self, name, mime):
         name = re.sub(r"[\x00-\x1f\x7f]", "", os.path.basename(as_text(name).replace("\\", "/"))).strip()[:120]
-        # 52.0.0: имя из чужого файла или стороннего приложения - без bidi-подмены («gpj.exe» → «exe.jpg») и невидимых символов.
         name = as_text(sanitize_text(name)).strip() or "attached_media.bin"
         mime = as_text(mime).strip().lower()
         if not self._MIME_RE.fullmatch(mime):
@@ -8312,7 +8294,6 @@ class ConfigTransfer:
 
     def _commit_media(self, temp_path, target, name, mime):
         old = self.media_path()
-        # 53.0.0: в хранилище медиа попадает уже зашифрованным; открытая временная копия удаляется.
         try:
             seal_media_file(temp_path, target)
         finally:
@@ -8613,8 +8594,6 @@ class ConfigTransfer:
         if self._file_handler_secret:
             return
         try:
-            # 52.0.0: через add_file_hook SDK сам снимет обработчик при выгрузке, даже если on_plugin_unload упадёт;
-            # раньше после такого сбоя расширение оставалось занятым до перезапуска приложения.
             self._file_handler_secret = self.plugin.add_file_hook(
                 FilesController.FileInfo(ext="prefixfy", on_click=self._on_config_file_click)
             )
@@ -8647,9 +8626,6 @@ class ConfigTransfer:
             self.plugin.log(f"Prefixfy file open failed: {exc}")
             self._toast("config_import_file_failed", fragment)
             return
-        # 52.0.0: контейнер может весить до сотен мегабайт (вложенное медиа). Раньше он распаковывался прямо в
-        # обработчике нажатия, то есть в главном потоке, и чужой файл из чата подвешивал приложение. Теперь чтение и
-        # проверка идут в фоне, а окно выбора частей показывается уже в главном потоке.
 
         def opened(data):
             handed_over = False
@@ -8672,7 +8648,6 @@ class ConfigTransfer:
                 if not handed_over:
                     self.discard_container_media(data)
 
-        # 53.0.0: зашифрованный файл: сначала пароль, и только потом окно со списком частей.
         self._open_container(path, fragment, opened)
 
     def _open_container(self, path: str, fragment, on_data, on_finish=None, password: Optional[str] = None):
@@ -8745,8 +8720,6 @@ class ConfigTransfer:
                     return self._component_label(c) + " — " + self._tr("config_part_state_absent")
                 return self._component_label(c)
 
-            # 52.0.0: медиа из чужого файла потом уходит вместе с каждым сообщением, поэтому эта часть
-            # больше не отмечается заранее: пользователь включает её сам.
             rows = [(row_label(c), c in useful and c != "media", c in useful) for c in visible]
 
             def confirm(selected, as_new):
@@ -8812,7 +8785,6 @@ class ConfigTransfer:
             self.discard_container_media(data)
             return
         if not links_confirmed:
-            # 50.1.0: выбранные части, которых нет в файле или которые стоят по умолчанию, ничего не меняют: пропускаем.
             states = classify_components(data)
             useless = tuple(c for c in components if states.get(c) != IMPORT_USEFUL)
             if useless:
@@ -8836,7 +8808,6 @@ class ConfigTransfer:
                         self.plugin.log(f"Prefixfy import link dialog failed: {exc}")
                         shown = False
                     if not shown:
-                        # Предупреждение показать не удалось: молча импортировать ссылки нельзя.
                         self.discard_container_media(data)
                         self._toast("config_import_failed", fragment)
 
@@ -8983,22 +8954,19 @@ class ConfigTransfer:
             self._tr("config_import_take_name_yes", name=self._shorten(imported, 16)), answered(True))
         builder.set_negative_button(
             self._tr("config_import_take_name_no", current=self._shorten(current, 16)), answered(False))
-        # без ответа импорт не начнётся, поэтому окно закрывается только кнопками
         return bool(self.plugin._show_builder(builder, cancelable=False))
 
     def _apply_import_rename(self, plan, fragment=None):
         uid, _planned_id, imported, _current = plan
         configs = self.plugin.configurations
         try:
-            # 49.3.0: после импорта аккаунт, шедший по общей конфигурации, получает собственную копию, и переименовать
-            # нужно её. Общую конфигурацию из набора аккаунта переименовать нельзя, раньше это давало ложное «не сохранено».
             with configs._lock:
                 if uid is None:
                     config_id = configs.active_id
                 else:
                     config_id = None if configs.accounts.pin(uid) else configs.accounts.active_id(uid)
             if not config_id:
-                return  # импорт ничего не изменил: аккаунт по-прежнему идёт за общей конфигурацией
+                return
             if not configs.rename_imported(uid, config_id, imported):
                 self._toast("config_save_failed", fragment)
         except Exception as exc:
@@ -9033,7 +9001,6 @@ class ConfigTransfer:
             except Exception as exc:
                 self.plugin.log(f"Prefixfy import rename plan failed: {exc}")
         if rename_plan is not None:
-            # 48.2.0: сначала спрашиваем про имя, импортируем только после ответа.
             plan = rename_plan
 
             def on_answer(take_name):
@@ -9204,7 +9171,6 @@ class ConfigTransfer:
     def _export_ask_parts(self, chosen, index, picked, available, preset=None):
         fragment, _ = self._activity()
         config_id, label = chosen[index]
-        # В списке у общих конфигураций аккаунта есть пометка; в файл и в имя файла идёт настоящее имя.
         name = as_text((self.plugin.configurations._record(config_id) or {}).get("name")) or label
         total = len(chosen)
         last = index + 1 >= total
@@ -9216,7 +9182,6 @@ class ConfigTransfer:
             message = self._tr("config_export_parts_progress", i=index + 1, n=total) + "\n\n" + message
 
         if preset is not None:
-            # Возврат после отмены ввода пароля: отметки частей и чекбокс шифрования как были.
             chosen_parts, was_locked = preset
             rows = [(label, component in chosen_parts, enabled)
                     for (label, _checked, enabled), component in zip(rows, available)]
@@ -9237,8 +9202,6 @@ class ConfigTransfer:
             if not extra_checked:
                 proceed(picked + [(config_id, name, components, None)])
                 return True
-            # 53.0.0: у каждого конфига свой чекбокс и свой пароль. Пароль спрашивается сразу после выбора его
-            # частей, до перехода к следующему конфигу; отмена возвращает к частям этого же конфига.
             run_on_ui_thread(lambda: self._ask_export_password(
                 lambda password: proceed(picked + [(config_id, name, components, password)]),
                 name=label if total > 1 else None,
@@ -9304,6 +9267,40 @@ class ConfigTransfer:
         self._awaiting = self.CONFIG_EXPORT_REQUEST_CODE
         activity.startActivityForResult(intent, self.CONFIG_EXPORT_REQUEST_CODE)
 
+    def request_debug_export(self, path: str):
+        _, activity = self._activity()
+        if not activity:
+            discard_file(path)
+            return
+        self.pending_debug_path = path
+        intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        intent.setType("text/plain")
+        intent.putExtra(Intent.EXTRA_TITLE, os.path.basename(path))
+        self._awaiting = self.DEBUG_EXPORT_REQUEST_CODE
+        activity.startActivityForResult(intent, self.DEBUG_EXPORT_REQUEST_CODE)
+
+    def _finish_debug_export(self, result_code, data):
+        path, self.pending_debug_path = getattr(self, "pending_debug_path", None), None
+        fragment, _ = self._activity()
+        uri = data.getData() if data is not None and result_code == -1 else None
+        if not path or uri is None:
+            if path:
+                discard_file(path)
+            return
+
+        def work():
+            try:
+                self._write_file_to_uri(uri, path)
+                self._toast("debug_exported", fragment)
+            except Exception as exc:
+                self.plugin.log(f"Prefixfy debug export failed: {exc}")
+                self._toast("debug_failed", fragment)
+            finally:
+                discard_file(path)
+
+        threading.Thread(target=work, name="PrefixfyDebugExport", daemon=True).start()
+
     def _saved_messages_target(self):
         account = get_selected_account()
         if account is None:
@@ -9319,8 +9316,6 @@ class ConfigTransfer:
         self._export_many_to_saved([(config_id, name, components, password)], single=True)
 
     def _export_many_to_saved(self, items, single: bool = False):
-        # 53.0.0: сборка файла (до сотен мегабайт медиа, а с паролем ещё и вывод ключа) идёт в фоне,
-        # раньше - прямо в обработчике нажатия, в главном потоке.
         fragment, _ = self._activity()
         try:
             account, user_id = self._saved_messages_target()
@@ -9368,7 +9363,7 @@ class ConfigTransfer:
         data = {"format": CONFIG_FORMAT, "version": CONFIG_VERSION}
         name = ConfigurationsManager.normalize_name(config_name) if config_name else ""
         if name:
-            data["name"] = name  # 49.3.0: имя конфигурации пишется в файл всегда (до 49.3.0 было необязательным)
+            data["name"] = name
         if "language" in components:
             data["language"] = {"value": s.language_index()}
         if "mask" in components:
@@ -9449,7 +9444,6 @@ class ConfigTransfer:
                 if media_ready:
                     entry = "media/attached_media" + safe_extension(config["media"]["name"])
                     config["media"]["file"] = entry
-                    # 53.0.0: медиа хранится зашифрованным - в архив пишется расшифрованный поток, без файла на диске.
                     info = zipfile.ZipInfo(entry, date_time=time.localtime()[:6])
                     info.compress_type = zipfile.ZIP_STORED
                     with archive.open(info, "w", force_zip64=True) as stream:
@@ -9459,7 +9453,6 @@ class ConfigTransfer:
                     raise ValueError("configuration is too large to export")
                 archive.writestr("config.json", payload)
             if password:
-                # 53.0.0: открытый контейнер живёт только как временный файл и удаляется сразу после шифрования.
                 lock_container(temp, path, password)
                 discard_file(temp)
             else:
@@ -9496,10 +9489,15 @@ class ConfigTransfer:
             stream.close()
 
     def handle_activity_result(self, request_code, result_code, data) -> bool:
-        if request_code not in (self.MEDIA_IMPORT_REQUEST_CODE, self.CONFIG_IMPORT_REQUEST_CODE, self.CONFIG_EXPORT_REQUEST_CODE):
+        if request_code not in (self.MEDIA_IMPORT_REQUEST_CODE, self.CONFIG_IMPORT_REQUEST_CODE, self.CONFIG_EXPORT_REQUEST_CODE,
+                                self.DEBUG_EXPORT_REQUEST_CODE):
             return False
-        # 49.0.0: результат с тем же кодом от чужого экрана (другой плагин, повторная доставка после пересоздания
-        # активности) не обрабатывается: плагин принимает только ответ на свой последний запрос, и только один раз.
+        if request_code == self.DEBUG_EXPORT_REQUEST_CODE:
+            if self._awaiting != request_code:
+                return False
+            self._awaiting = None
+            self._finish_debug_export(result_code, data)
+            return True
         if self._awaiting != request_code:
             return False
         self._awaiting = None
@@ -9522,8 +9520,6 @@ class ConfigTransfer:
         if uri is None:
             return True
 
-        # 52.0.0: onActivityResult приходит в главном потоке, а копирование и распаковка файла (до сотен мегабайт)
-        # раньше шли прямо в нём и подвешивали приложение. Тяжёлая часть теперь в фоне, окна - снова в главном потоке.
         _, activity = self._activity()
         resolver = activity.getContentResolver() if activity is not None else None
 
@@ -9572,7 +9568,6 @@ class ConfigTransfer:
             def opened(parsed):
                 def show():
                     try:
-                        # 49.0.0: тот же путь, что и при открытии файла из чата: с выбором аккаунта для «как новую».
                         self._import_opened_data(parsed, fragment, components, as_new)
                     except Exception as exc:
                         self.discard_container_media(parsed)
@@ -9581,7 +9576,6 @@ class ConfigTransfer:
 
                 run_on_ui_thread(show)
 
-            # 53.0.0: зашифрованный файл сначала спрашивает пароль; копия удаляется после чтения или отмены.
             self._open_container(temp_path, fragment, opened, cleanup)
 
         if request_code == self.MEDIA_IMPORT_REQUEST_CODE:
@@ -9631,7 +9625,7 @@ class ConfigurationsManager:
         self.accounts = AccountProfiles(self)
         self.configurations: Dict[str, dict] = {}
         self._load_store()
-        legacy = plugin._legacy  # 50.0.0: данные версий ниже 50 приводит к текущей схеме единый мигратор (см. LegacyMigration)
+        legacy = plugin._legacy
         legacy.import_flat_configurations(self)
         self.accounts.load()
         legacy.convert_account_files(self)
@@ -10445,7 +10439,6 @@ class ConfigurationsManager:
                     "origin": self.ORIGIN_IMPORTED,
                 })
             except Exception:
-                # 49.3.0: раньше сбой после загрузки значений по умолчанию оставлял живые настройки импортированными.
                 if config_id:
                     self._discard_record(config_id)
                 self._restore_live(previous)
@@ -10498,7 +10491,7 @@ class ConfigurationsManager:
             config_id = str(config_id)
             record = self._record(config_id)
             if self.edit_uid is not None and self._owner_of(config_id) != self.edit_uid:
-                return False  # 46.5.0: общую конфигурацию из набора аккаунта не переименовать
+                return False
             if record is None or self.name_error(name, ignore_id=config_id):
                 return False
             old_name = as_text(record.get("name"))
@@ -11262,7 +11255,6 @@ def verify_manifest(raw: bytes) -> Dict[str, Any]:
         "sha512": sha512,
         "size": size,
         "file": name,
-        # changelog не входит в digest: правка текста без новой сборки не должна считаться «повторным использованием serial».
         "changelog": parse_changelog(body.get("changelog")),
         "digest": _body_digest(body, ("issued_at", "changelog")),
         "signed": signed,
@@ -11801,7 +11793,7 @@ def _ota_bad_serials() -> List[int]:
 
 
 def _write_file_atomic(path: str, data: bytes):
-    temp = unique_temp(path)  # 49.0.0: у каждой записи свой временный файл, параллельные записи не портят друг друга
+    temp = unique_temp(path)
     try:
         with open(temp, "wb") as handle:
             handle.write(data)
@@ -11886,10 +11878,6 @@ def _slot_verified_bytes(meta: Dict[str, Any], role: str) -> bytes:
     if not hmac.compare_digest(digest, as_text(meta.get("sha256"))):
         raise ValueError("slot file is damaged")
     if role == SLOT_STAGED:
-        # 52.0.0: описание раздела лежит рядом с файлом и подписи не имеет. Раньше staged-раздел ставился, если
-        # файл совпадал с хешем из этого же описания, то есть подложенные файл + slot.json становились активной
-        # сборкой по кнопке «Перезагрузить» или при самолечении. Теперь в разделе хранится подписанный манифест,
-        # и файл обязан совпасть с его хешем, версией и серией.
         signed = meta.get("manifest")
         if not isinstance(signed, dict):
             raise ValueError("staged slot has no signed manifest")
@@ -12085,7 +12073,7 @@ _WIPE_STATE_FILES = (
 )
 _WIPE_KEEP_ON_CLEAN = frozenset({STORE_KEY_FILE, SERIALS_FILE, KNOWN_BUILDS_FILE, OTA_STATE_FILE, BLACKLIST_GUARD_FILE})
 _WIPE_DIRS = ("Prefixfy_media", ConfigurationsManager.MEDIA_DIR_NAME, ConfigurationsManager.STORE_DIR_NAME, ACCT_DIR_NAME,
-              MEDIA_OUTBOX_DIR)
+              MEDIA_OUTBOX_DIR, DEBUG_DIR_NAME)
 _WIPE_CACHE_DIRS = ("Prefixfy_tmp", "Prefixfy_imports", "Prefixfy_exports", "Prefixfy")
 _WIPE_TEMP_SUFFIXES = (".tmp", ".ota", ".bak")
 _WIPE_MEDIA_RESET = {
@@ -12094,10 +12082,10 @@ _WIPE_MEDIA_RESET = {
 _WIPE_INTERNAL_KEYS = {
     SCHEMA_KEY: SCHEMA_VERSION, CHAT_COUNTS_KEY: "", COUNTER_KEY: 0,
     SETUP_STAGE_KEY: 1, SETUP_SEEN_KEY: 1, WELCOME_UNTIL_KEY: 0, UPDATED_UNTIL_KEY: 0, UPDATED_NOTES_KEY: "",
-    SETUP_UPDATE_AT_KEY: 0,
+    SETUP_UPDATE_AT_KEY: 0, DEBUG_ENABLED_KEY: False, DEBUG_RECORDING_KEY: False,
     "Prefixfy_markdown_style_pick": 0, "Prefixfy_text_style_pick": 0,
     CHAT_CONFIGS_KEY: "{}", SCHEDULE_KEY: "", ACCT_MODE_KEY: False, ACCT_TARGET_KEY: ACCT_AUTO, ACCT_LIVE_KEY: "", ACCT_PINS_KEY: "",
-    **{key: "" for key in LEGACY_SETTING_KEYS},  # старые плоские конфигурации тоже содержат пользовательские настройки
+    **{key: "" for key in LEGACY_SETTING_KEYS},
 }
 
 
@@ -12239,12 +12227,9 @@ def _wipe_files(opt_out: bool, log):
 
 
 def _wipe_settings(plugin, opt_out: bool):
-    # Сброс без отказа тоже стирает все настройки и служебные ключи: иначе от конфигураций, расписания,
-    # режима аккаунтов и счётчиков остались бы «хвосты». От отказа он отличается только тем, что плагин не засыпает.
     values: Dict[str, Any] = {**SETTING_DEFAULTS, **TRANSIENT_SETTING_DEFAULTS, **OTA_SETTING_DEFAULTS, **_WIPE_INTERNAL_KEYS}
     bulk_set_settings(plugin, values)
-    plugin._counter_state = None  # 52.0.0: счётчики в памяти не должны пережить сброс и записаться обратно
-    # Мастер обязан начаться заново: если запись этапа не прошла, повторяем и проверяем результат.
+    plugin._counter_state = None
     for _attempt in range(3):
         try:
             if plugin.get_setting(SETUP_STAGE_KEY, None) == 1:
@@ -12253,7 +12238,7 @@ def _wipe_settings(plugin, opt_out: bool):
         except Exception as exc:
             plugin.log(f"Prefixfy wipe: setup stage was not restored: {exc}")
     try:
-        plugin._language_ui_invalidate()  # 47.1.0: после сброса переключатель языка создаётся заново
+        plugin._language_ui_invalidate()
     except Exception:
         pass
 
@@ -12460,8 +12445,8 @@ class RemoteControl:
         self._device_ids: frozenset = frozenset()
         self._dev_checked = float("-inf")
         self._dev_lock = threading.Lock()
-        self._dev_known = False  # 48.2.0: был ли в этом сеансе хоть один полный список аккаунтов устройства
-        self._bl_net_ok = float("-inf")  # 48.2.0: когда ЧС в последний раз подтверждён сервером (не кэшем)
+        self._dev_known = False
+        self._bl_net_ok = float("-inf")
         self._bl_ids: frozenset = frozenset()
         self._bl_serial = -1
         self._bl_digest = ""
@@ -12579,7 +12564,6 @@ class RemoteControl:
         if self.due():
             self._sync()
         elif self._force_needed():
-            # Кэш манифеста свежий, опрос не нужен, но сборка уже признана изменённой: лечим сразу после запуска.
             self.ota_force_step(True)
         while not stop.is_set():
             items = self._schedule()
@@ -12659,7 +12643,6 @@ class RemoteControl:
                         raise ValueError(f"{name} is too large")
                     chunks.append(chunk)
                 if expected is not None and total != expected:
-                    # 49.1.0: оборванная передача раньше могла дать «неверную подпись» вместо понятного повтора.
                     raise ConnectionError(f"{name} download was cut short ({total} of {expected} bytes)")
         except urllib.error.HTTPError as exc:
             if exc.code == 304 and etag and not bust:
@@ -12707,7 +12690,7 @@ class RemoteControl:
                 break
             try:
                 if meta is not None:
-                    meta.pop("etag", None)  # ETag зеркала к основному серверу не относится
+                    meta.pop("etag", None)
                 data = cls._download_once(base, hosts, name, limit, "", True, None, total_timeout)
                 return data
             except Exception as exc:
@@ -12740,9 +12723,6 @@ class RemoteControl:
             if not self._busy.acquire(timeout=REMOTE_FORCE_WAIT):
                 return False
             try:
-                # 49.1.0: «Проверить сейчас» больше не стирает кэш заранее. Раньше без сети это сразу
-                # приостанавливало функции до следующей удачной проверки. Теперь файлы качаются в обход кэша,
-                # а сохранённое состояние заменяется только проверенным новым.
                 self._prepare_forced()
                 self._poll_devices(force=True)
                 try:
@@ -12813,8 +12793,6 @@ class RemoteControl:
         self.plugin.log("Prefixfy: forced check, cached remote state kept until a verified one arrives")
 
     def _invalidate_cache(self):
-        # 48.2.0: подписанный кэш ЧС не удаляется: иначе «Проверить сейчас» без сети с последующим перезапуском
-        # стирал блокировку. Подделать его нельзя (подпись и серийный номер), а новый список его заменит.
         for path in (self._cache_path, self._flags_path):
             for target in (path, path + ".tmp"):
                 try:
@@ -12857,7 +12835,6 @@ class RemoteControl:
                 except ValueError as first:
                     if bust:
                         raise
-                    # 49.1.0: кэш CDN мог отдать копию из середины публикации. Один повтор в обход кэша.
                     self.plugin.log(f"Prefixfy manifest rejected ({first}), fetching it again without cache")
                     bust = True
                     raw = self._download(MANIFEST_FILE, bust=True, meta=meta)
@@ -12986,7 +12963,6 @@ class RemoteControl:
             if hit and not exists:
                 self.plugin._request_blacklist_wipe()
             elif exists and not hit and self._bl_known and self._dev_known:
-                # 48.2.0: метка снимается, только если и ЧС, и полный список аккаунтов устройства известны.
                 clear_file = _plugins_path(BLACKLIST_GUARD_FILE)
                 discard_file(clear_file)
         except Exception as exc:
@@ -12996,8 +12972,6 @@ class RemoteControl:
         self._poll_devices()
         if self._bl_hit(self._device_ids):
             return True
-        # 48.2.0: устройство уже попадало в ЧС (метка есть), а снять подозрение пока нечем: ЧС не получен
-        # или список аккаунтов неполный. Считаем заблокированным, пока проверка не пройдёт (fail-closed).
         if not (self._bl_known and self._dev_known):
             try:
                 return blacklist_guard_exists()
@@ -13023,7 +12997,6 @@ class RemoteControl:
             ids, complete = device_account_scan(self.plugin.log)
             if ids is not None:
                 if not complete:
-                    # 48.2.0: неполный скан: прежние аккаунты не забываем, новые найденные добавляем.
                     ids = ids | self._device_ids
                 elif not self._dev_known:
                     self._dev_known = known_flipped = True
@@ -13063,7 +13036,6 @@ class RemoteControl:
                 except ValueError as exc:
                     if again or bust:
                         raise
-                    # 49.1.0: копия из кэша CDN не прошла проверку: один повтор в обход кэша.
                     self.plugin.log(f"Prefixfy blacklist rejected ({exc}), fetching it again without cache")
                     bust = True
                     raw = self._download(BLACKLIST_FILE, BLACKLIST_MAX_BYTES, bust=True, meta=meta)
@@ -13071,8 +13043,6 @@ class RemoteControl:
             if exc.code == 404:
                 self._etags.pop("b", None)
                 if self._bl_serial >= 0 or self._bl_ids:
-                    # 48.2.0: 404 не подписан. Если подписанный ЧС уже был, отсутствие файла его не отменяет:
-                    # снять блокировку можно только новым подписанным списком с большим серийным номером.
                     self.plugin.log("Prefixfy blacklist check failed: HTTP 404 after a signed list was seen")
                     return False
                 self._bl_known = True
@@ -13376,8 +13346,6 @@ class RemoteControl:
         size = state["size"]
         data = b""
         for attempt in range(OTA_VERIFY_ATTEMPTS):
-            # 49.1.0: файл качается с запасом времени для медленной сети, а при несовпадении размера или хеша
-            # (CDN ещё отдаёт прошлую версию сразу после публикации) перекачивается с паузой.
             data = self._download(name, size or MANIFEST_MAX_FILE_SIZE, total_timeout=OTA_TOTAL_TIMEOUT,
                                   stop=self._unloaded)
             problem = ""
@@ -13455,7 +13423,6 @@ class RemoteControl:
         """Скачать и проверить версию в неактивный раздел. apply=True - сразу сменить раздел и перезапустить плагин
         (автообновление, самолечение, удаление данных); apply=False - остановиться на «почти готово»."""
         version = format_version(state["version"])
-        # reinstall: подписанная официальная сборка ставится поверх, даже если она та же самая и обновлений нет.
         force = self._force_needed() or reinstall
         staged = self.staged_ready()
         reuse = staged is not None and staged.get("sha256") == state["sha256"]
@@ -13502,8 +13469,6 @@ class RemoteControl:
             return
         time.sleep(0.3)
         if not _host_set_plugin_enabled(True, log):
-            # 52.0.0: хост сообщил, что новая сборка не включилась. Раньше это выяснялось только по таймауту
-            # OTA_LOAD_TIMEOUT; теперь откат сразу.
             if _ota_rollback("new build failed to start", log):
                 _host_restart_plugin(log)
             else:
@@ -13626,7 +13591,6 @@ class RemoteControl:
                 self._force_fails = 0
                 self._force_retry_at = 0.0
             elif kind == "ota_busy":
-                # Другая установка ещё идёт: повторяем скоро, а не при следующем опросе сервера (раз в сутки).
                 self._force_retry_at = time.monotonic() + 15.0
             else:
                 self._force_fails += 1
@@ -13653,8 +13617,6 @@ class RemoteControl:
                 self._ota_day = now.date()
             if self.mismatch_reason() != "outdated":
                 return
-            # 52.2.0: во время начальной настройки автообновление не срабатывает: оно перезапустило бы плагин
-            # посреди мастера. Обновление поставит «Завершить настройку».
             if self.plugin._setup_stage() < SETUP_DONE:
                 return
             if time.monotonic() < self._ota_retry_at:
@@ -13846,7 +13808,6 @@ _ARTICLE_EMOJI_IMAGE_SIZE = 20
 def _iv_new(name: str):
     """Новый экземпляр узла TL_iv$<name> (textPlain, textConcat, textImage...)."""
     full = _IV_PACKAGE + name
-    # 52.0.0: find_class - тот же jclass, повторная попытка через него только писала в журнал второй traceback.
     try:
         from java import jclass
         return jclass(full)()
@@ -13971,7 +13932,7 @@ def article_frame_plan(texts, left: str, right: str) -> List[bool]:
         if key is None:
             continue
         is_head, is_tail = bool(head) and key == head, bool(tail) and key == tail
-        if is_head and is_tail:  # маска симметрична: первый такой блок открывает рамку, следующий закрывает
+        if is_head and is_tail:
             is_head, is_tail = (False, True) if opened else (True, False)
         if is_head:
             roles[index], opened = "H", True
@@ -13984,7 +13945,7 @@ def article_frame_plan(texts, left: str, right: str) -> List[bool]:
             keep[index] = True
     for index, role in enumerate(roles):
         if role == "T" and index > 0 and keys[index - 1] is not None:
-            keep[index - 1] = True  # блок-суффикс стоит прямо под текстом
+            keep[index - 1] = True
         elif role == "H":
             closing = next((k for k in range(index + 1, count) if roles[k] == "T"), None)
             reopening = next((k for k in range(index + 1, count) if roles[k] == "H"), count)
@@ -14057,7 +14018,7 @@ def fallback_side_spans(side: str, table, text: str, from_end: bool = False) -> 
         index = pos - 1 if from_end else pos
         return text[index] if 0 <= index < count else ""
 
-    while at() and _fallback_skippable(at()):  # пробелы и переводы строк по краю текста не мешают
+    while at() and _fallback_skippable(at()):
         pos += step
     spans: List[Tuple[int, int, int]] = []
     for chunk, document in units:
@@ -14147,6 +14108,84 @@ def _show_info_unbound(text: str, log):
         log(f"Prefixfy notice failed: {exc}")
 
 
+class DebugRecorder:
+    """Журнал отладки: строки self.log() с отметкой времени, в файл в закрытой папке плагина.
+    Запись переживает перезапуск плагина (OTA), размер ограничен DEBUG_MAX_BYTES."""
+
+    def __init__(self, directory: str):
+        self.directory = directory
+        self.path = os.path.join(directory, DEBUG_LOG_NAME)
+        self._lock = threading.Lock()
+        self.active = False
+        self._full = False
+
+    def exists(self) -> bool:
+        return os.path.isfile(self.path) and os.path.getsize(self.path) > 0
+
+    def stats(self) -> Tuple[int, int]:
+        try:
+            size = os.path.getsize(self.path)
+        except OSError:
+            return 0, 0
+        lines = 0
+        try:
+            with open(self.path, "rb") as handle:
+                for chunk in iter(lambda: handle.read(65536), b""):
+                    lines += chunk.count(b"\n")
+        except OSError:
+            pass
+        return lines, size
+
+    def start(self, header: str, resume: bool):
+        with self._lock:
+            os.makedirs(self.directory, exist_ok=True)
+            mode = "a" if resume and os.path.isfile(self.path) else "w"
+            with open(self.path, mode, encoding="utf-8") as handle:
+                handle.write(header.rstrip("\n") + "\n")
+            self._full = os.path.getsize(self.path) >= DEBUG_MAX_BYTES
+            self.active = True
+
+    def stop(self, note: str = ""):
+        with self._lock:
+            if self.active and note:
+                self._append(note)
+            self.active = False
+
+    def write(self, message):
+        if not self.active:
+            return
+        stamp = time.strftime("%H:%M:%S") + f".{int(time.time() * 1000) % 1000:03d}"
+        text = as_text(message).replace("\r\n", "\n").replace("\n", "\n    ")
+        with self._lock:
+            if self.active:
+                self._append(f"{stamp} [{threading.current_thread().name}] {text}")
+
+    def _append(self, line: str):
+        if self._full:
+            return
+        try:
+            with open(self.path, "a", encoding="utf-8") as handle:
+                handle.write(line + "\n")
+                if handle.tell() >= DEBUG_MAX_BYTES:
+                    handle.write("--- log size limit reached, further lines are dropped ---\n")
+                    self._full = True
+        except OSError:
+            pass
+
+    def delete(self):
+        with self._lock:
+            self.active = False
+            self._full = False
+            discard_file(self.path)
+
+    def export_copy(self, directory: str) -> str:
+        os.makedirs(directory, exist_ok=True)
+        target = os.path.join(directory, time.strftime("Prefixfy_debug_%Y%m%d_%H%M%S.txt"))
+        with self._lock:
+            shutil.copyfile(self.path, target)
+        return target
+
+
 class _EntityCarrier:
     """Заменитель SendMessageParams для сборки сущностей подписи к прикреплённому медиа."""
     __slots__ = ("entities",)
@@ -14156,7 +14195,71 @@ class _EntityCarrier:
 
 
 class PrefixfyPlugin(BasePlugin):
+    @staticmethod
+    def _debug_allowed() -> bool:
+        return FEATURES.enabled("debug")
+
+    def log(self, message: str):
+        super().log(message)
+        recorder = self.__dict__.get("_debug")
+        if recorder is not None and recorder.active and self._debug_allowed():
+            recorder.write(message)
+
+    def _trace_sink(self, event: str, fields: Dict[str, Any]):
+        recorder = self.__dict__.get("_debug")
+        if recorder is None or not recorder.active or not self._debug_allowed():
+            return
+        parts = []
+        for name, value in fields.items():
+            if value is None:
+                continue
+            text = as_text(value) if not isinstance(value, (bool, int, float)) else repr(value)
+            text = text.replace("\n", "\\n")
+            if len(text) > 80:
+                text = text[:77] + "…"
+            parts.append(f"{name}={text}")
+        recorder.write(f"ACTION {event}" + (" " + " ".join(parts) if parts else ""))
+
+    def _debug_header(self, resumed: bool) -> str:
+        lines = ["=== Prefixfy debug log " + ("(resumed after restart) " if resumed else "") + time.strftime("%Y-%m-%d %H:%M:%S %z") + " ==="]
+        lines.append(f"plugin: {__version__} ({__build__})")
+        try:
+            import _sdk_version
+            lines.append(f"sdk: {_sdk_version.__version__}{' beta' if getattr(_sdk_version, '__beta__', False) else ''}")
+        except Exception:
+            pass
+        try:
+            from org.telegram.messenger import BuildVars
+            lines.append(f"app: {BuildVars.BUILD_VERSION_STRING} ({BuildVars.BUILD_VERSION})")
+        except Exception:
+            pass
+        try:
+            from android.os import Build
+            lines.append(f"device: {Build.MANUFACTURER} {Build.MODEL}, Android {Build.VERSION.RELEASE} (API {Build.VERSION.SDK_INT})")
+        except Exception:
+            pass
+        try:
+            lines.append(f"language: {self.localization.language()}; vault: {'on' if VAULT.usable else 'off'}")
+        except Exception:
+            pass
+        return "\n".join(lines)
+
+    def _debug_init(self):
+        try:
+            self._debug = DebugRecorder(os.path.join(get_plugins_dir(), DEBUG_DIR_NAME))
+            self._debug_taps = 0
+            self._debug_tap_at = 0.0
+            self._debug_tap_serial = 0
+            global _TRACE_SINK
+            _TRACE_SINK = self._trace_sink
+            if self.get_setting(DEBUG_ENABLED_KEY, False) and self.get_setting(DEBUG_RECORDING_KEY, False):
+                self._debug.start(self._debug_header(True), resume=True)
+        except Exception as exc:
+            self._debug = None
+            super().log(f"Prefixfy debug init failed: {exc}")
+
     def on_plugin_load(self):
+        self._debug_init()
         try:
             self._on_plugin_load_impl()
         except Exception:
@@ -14241,8 +14344,6 @@ class PrefixfyPlugin(BasePlugin):
                         self.log("Prefixfy: could not store the opt-out marker, it holds until the next start only")
                     self._enter_dormant()
                     return True
-                # Перезапуск без отказа от использования: первый перезапуск был для переустановки сборки,
-                # второй делаем после очистки, чтобы плагин стартовал с нуля. Итоговое сообщение покажет второй запуск.
                 if write_wipe_final_marker():
                     self._enter_wipe_halt()
                     return True
@@ -14266,10 +14367,6 @@ class PrefixfyPlugin(BasePlugin):
                 return
             self.log(f"Prefixfy: damaged data found: {', '.join(problems[:12])}")
             if not key_bad and all(item == "settings" or item.startswith("setting:") for item in problems):
-                # 53.0.0: испорчены только живые настройки (значение не того типа, например записанное старой
-                # версией или другим плагином). Раньше это вело к полному сбросу: удалялись все сохранённые
-                # конфигурации и пресеты аккаунтов. Теперь к значению по умолчанию возвращаются только плохие
-                # ключи, а если не собираются сами настройки целиком - живые настройки; файлы конфигураций целы.
                 if "settings" in problems:
                     values = dict(SETTING_DEFAULTS)
                 else:
@@ -14338,8 +14435,6 @@ class PrefixfyPlugin(BasePlugin):
         self.transfer = ConfigTransfer(self)
         self.remote = RemoteControl(self)
         self._weather = WeatherCache(self.log)
-        # 53.0.0: открытые медиафайлы прошлых версий шифруются в очереди плагинов - той же, где идёт отправка
-        # прикреплённого медиа, поэтому файл не меняется у отправки под ногами.
         try:
             run_on_queue(self._seal_legacy_media, PLUGINS_QUEUE, 1500)
         except Exception as exc:
@@ -14388,6 +14483,12 @@ class PrefixfyPlugin(BasePlugin):
         self.log(f"Prefixfy {__build__} loaded ({self.localization.language()})")
 
     def on_plugin_unload(self):
+        recorder = self.__dict__.get("_debug")
+        if recorder is not None and recorder.active and self._debug_allowed():
+            recorder.write("--- plugin unloaded ---")
+        global _TRACE_SINK
+        if _TRACE_SINK == self._trace_sink:
+            _TRACE_SINK = None
         try:
             self._flush_counters()
         except Exception as exc:
@@ -14428,7 +14529,6 @@ class PrefixfyPlugin(BasePlugin):
                 self._edit_seen = {}
 
     def _reset_transient_settings(self):
-        # 52.0.0: пишем только то, что отличается, и одной операцией; обычно запись не нужна вовсе.
         changed = {key: default for key, default in TRANSIENT_SETTING_DEFAULTS.items()
                    if self.get_setting(key, default) != default}
         bulk_set_settings(self, changed)
@@ -14464,7 +14564,6 @@ class PrefixfyPlugin(BasePlugin):
         if launch_class is None:
             self.log("LaunchActivity not found: file pickers are unavailable")
             return
-        # 52.0.0: before/after-колбэки SDK (BaseHook) сами ловят и пишут в лог исключения обработчика.
         hooks = self.hook_all_methods(launch_class, "onActivityResult", after=after)
         if not hooks:
             self.log("LaunchActivity hook failed, file pickers are unavailable")
@@ -14480,14 +14579,20 @@ class PrefixfyPlugin(BasePlugin):
         def before(param):
             request = param.args[0] if len(param.args) else None
             if request is not None and edit_class.isInstance(request):
+                tracing = _TRACE_SINK is not None and self._debug_tracing()
+                if tracing:
+                    started = time.perf_counter()
+                    before_text = as_text(getattr(request, "message", ""))
                 self._on_edit_request(param, request)
+                if tracing:
+                    after_text = as_text(getattr(request, "message", ""))
+                    trace_action("edit", changed=after_text != before_text, before=utf16_length(before_text),
+                                 after=utf16_length(after_text), ms=round((time.perf_counter() - started) * 1000, 1))
 
         manager_class = self._hookable_class("org.telegram.tgnet.ConnectionsManager")
         if manager_class is None:
             self.log("Prefixfy edit: ConnectionsManager not found, message editing is unavailable")
             return
-        # 52.0.0: sendRequest вызывается на каждый запрос клиента. Фильтр по типу запроса работает в Java,
-        # поэтому Python вызывается только для messages.editMessage, а не для всего сетевого трафика.
         hooks = self.hook_all_methods(
             manager_class, "sendRequest", before=before,
             before_filters=[HookFilter.ArgumentIsInstanceOf(0, edit_class)],
@@ -14512,12 +14617,10 @@ class PrefixfyPlugin(BasePlugin):
         return self.localization.tr(key, **kwargs)
 
     def _toast(self, key, fragment=None, **kwargs):
-        # 49.0.0: уведомления часто вызываются из фоновых потоков (проверка, импорт, OTA); UI трогаем только из главного.
+        trace_action("toast", key=key)
         text = self._tr(key, **kwargs)
         stop = self.stop_event
         if stop is not None and stop.is_set():
-            # 52.0.0: после выгрузки (OTA и сброс сами выключают плагин) run_on_ui_thread SDK отменяет задачи
-            # плагина, и BulletinHelper тоже: сообщение вроде «перезапустите плагин вручную» просто терялось.
             _show_info_unbound(text, self.log)
             return
 
@@ -14569,6 +14672,11 @@ class PrefixfyPlugin(BasePlugin):
         return None
 
     def _show_builder(self, builder, guard: Optional[DismissGuard] = None, *, red=(), cancelable: Optional[bool] = None) -> bool:
+        if _TRACE_SINK is not None:
+            caller = sys._getframe(1).f_code.co_name
+            if caller in ("show_text_dialog", "show_checklist", "show_password_dialog"):
+                caller = f"{caller}<-{sys._getframe(2).f_code.co_name}"
+            trace_action("dialog", by=caller)
         """52.0.0: всё, что AlertDialogBuilder применяет при создании (красные кнопки, слушатель закрытия), ставится
         до show(); то, что SDK меняет только у готового диалога (cancelable), - после."""
         try:
@@ -14813,7 +14921,7 @@ class PrefixfyPlugin(BasePlugin):
             if not enabled:
                 continue
             setattr(self, attr, self.add_menu_item(MenuItemData(
-                menu_type=MenuItemType.CHAT_ACTION_MENU, text=self._tr(key), on_click=handler, priority=priority,
+                menu_type=MenuItemType.CHAT_ACTION_MENU, text=self._tr(key), on_click=_traced("menu", key, handler), priority=priority,
             )))
         self._menu_language = signature
 
@@ -14903,8 +15011,6 @@ class PrefixfyPlugin(BasePlugin):
         mapping = dict(self._chat_bindings())
         chats = section.get("chats")
         for dialog, name in (list(chats.items())[:MAX_IMPORTED_CHAT_BINDINGS] if isinstance(chats, dict) else ()):
-            # 52.0.0: привязки вида «uid:чат» относятся к аккаунтам конкретного устройства, экспорт их не пишет;
-            # из чужого файла они не принимаются.
             if not _CHAT_BIND_KEY_RE.fullmatch(str(dialog)) or ":" in str(dialog):
                 continue
             name = as_text(name).strip()
@@ -15288,10 +15394,6 @@ class PrefixfyPlugin(BasePlugin):
             ids.add(dialog_id)
             message = "exceptions_chat_added"
         self.settings.set_disabled_chat_ids(ids)
-        # 52.1.0: итог считается по той конфигурации, которая реально оформляет этот чат. Список правится в
-        # текущей (редактируемой) конфигурации, а чат может оформляться по другой: привязка чата, расписание или
-        # пресет аккаунта. Раньше плашка говорила «добавлен в исключения», хотя в чате ничего не менялось;
-        # в режиме белого списка добавление вообще включает плагин, а не выключает.
         try:
             account = self._current_account_slot()
             base = self._base_runtime(account)
@@ -15894,6 +15996,161 @@ class PrefixfyPlugin(BasePlugin):
             self.log(f"Prefixfy cute preview failed: {exc}")
             return tr("cute_preview_none")
 
+    def _on_preview_tap(self, *_):
+        now = time.monotonic()
+        if now - getattr(self, "_debug_tap_at", 0.0) <= DEBUG_TAP_GAP:
+            self._debug_taps = getattr(self, "_debug_taps", 0) + 1
+        else:
+            self._debug_taps = 1
+        self._debug_tap_at = now
+        self._debug_tap_serial = serial = getattr(self, "_debug_tap_serial", 0) + 1
+        if self._debug_taps >= DEBUG_TAP_COUNT and self._debug_allowed():
+            self._debug_taps = 0
+            if self.get_setting(DEBUG_ENABLED_KEY, False):
+                self._debug_turn_off("debug_disabled")
+            else:
+                self._debug_unlock()
+            return
+
+        def refresh():
+            if self._debug_tap_serial == serial:
+                self.reload_settings_ui()
+
+        run_on_ui_thread(refresh, int(DEBUG_TAP_GAP * 1000) + 30)
+
+    def _debug_unlock(self):
+        try:
+            self.set_setting(DEBUG_ENABLED_KEY, True, reload_settings=False)
+        except Exception as exc:
+            self.log(f"Prefixfy debug unlock failed: {exc}")
+            return
+        self._toast("debug_enabled")
+        self.reload_settings_ui()
+
+    def _settings_debug(self) -> List[Any]:
+        recorder = self.__dict__.get("_debug")
+        if recorder is None or not self.get_setting(DEBUG_ENABLED_KEY, False):
+            return []
+        if not self._debug_allowed():
+            if recorder.active:
+                recorder.stop()
+                self.set_setting(DEBUG_RECORDING_KEY, False, reload_settings=False)
+            return []
+        tr = self._tr
+        items: List[Any] = [Header(text=tr("section_debug"))]
+        lines, size = recorder.stats()
+        amount = tr("debug_amount", lines=lines, size=self._debug_size(size))
+        if recorder.active:
+            items.append(Text(text=tr("debug_stop"), subtext=tr("debug_recording", amount=amount),
+                              icon=self._icon("msg_check", "msg_info"), on_click=self._debug_stop_click))
+        elif recorder.exists():
+            items.append(Text(text=tr("debug_log"), subtext=tr("debug_log_subtext", amount=amount),
+                              icon=self._icon("msg_document", "msg_info"), on_click=lambda *_: self._debug_actions()))
+        else:
+            items.append(Text(text=tr("debug_start"), subtext=tr("debug_start_subtext"),
+                              icon=self._icon("msg_timer", "msg_info"), on_click=self._debug_start_click))
+        items.append(Text(text=tr("debug_hide"), subtext=tr("debug_hide_subtext"),
+                          icon=self._icon("msg_delete", "msg_info"), on_click=self._debug_hide_click))
+        return items
+
+    def _debug_size(self, size: int) -> str:
+        tr = self._tr
+        if size >= 1048576:
+            return f"{size / 1048576:.1f} {tr('ota_unit_mb')}"
+        return f"{max(1, round(size / 1024)) if size else 0} {tr('ota_unit_kb')}"
+
+    def _debug_start_click(self, *_, resume: bool = False):
+        recorder = self.__dict__.get("_debug")
+        if recorder is None:
+            return
+        try:
+            recorder.start(self._debug_header(False), resume=resume)
+            self.set_setting(DEBUG_RECORDING_KEY, True, reload_settings=False)
+            self._toast("debug_started")
+        except Exception as exc:
+            self.log(f"Prefixfy debug start failed: {exc}")
+            self._toast("debug_failed")
+        self.reload_settings_ui()
+
+    def _debug_stop_click(self, *_):
+        recorder = self.__dict__.get("_debug")
+        if recorder is None:
+            return
+        recorder.stop("--- recording stopped ---")
+        self.set_setting(DEBUG_RECORDING_KEY, False, reload_settings=False)
+        self.reload_settings_ui()
+        self._debug_actions()
+
+    def _debug_actions(self):
+        recorder = self.__dict__.get("_debug")
+        if recorder is None or not recorder.exists():
+            return
+        activity = self._dialog_activity(None)
+        if not activity:
+            return
+        tr = self._tr
+        lines, size = recorder.stats()
+        builder = AlertDialogBuilder(activity)
+        builder.set_title(tr("debug_log"))
+        builder.set_message(tr("debug_actions_message", amount=tr("debug_amount", lines=lines, size=self._debug_size(size))))
+        actions = (self._debug_to_saved, self._debug_to_device, self._debug_delete, self._debug_continue)
+
+        def picked(bld, which):
+            bld.dismiss()
+            if 0 <= which < len(actions):
+                actions[which]()
+
+        builder.set_items([tr("debug_to_saved"), tr("debug_to_device"), tr("debug_delete"), tr("debug_continue")], picked)
+        builder.set_negative_button(tr("action_cancel"), lambda bld, which: bld.dismiss())
+        self._show_builder(builder)
+
+    def _debug_to_saved(self):
+        recorder = self.__dict__.get("_debug")
+
+        def work():
+            try:
+                account, user_id = self.transfer._saved_messages_target()
+                path = recorder.export_copy(temp_dir("exports"))
+                send_document(user_id, path, caption="", account=account)
+                self._toast("debug_exported")
+            except Exception as exc:
+                self.log(f"Prefixfy debug export failed: {exc}")
+                self._toast("debug_failed")
+
+        threading.Thread(target=work, name="PrefixfyDebugExport", daemon=True).start()
+
+    def _debug_to_device(self):
+        recorder = self.__dict__.get("_debug")
+        try:
+            path = recorder.export_copy(temp_dir("exports"))
+            self.transfer.request_debug_export(path)
+        except Exception as exc:
+            self.log(f"Prefixfy debug export failed: {exc}")
+            self._toast("debug_failed")
+
+    def _debug_delete(self):
+        recorder = self.__dict__.get("_debug")
+        if recorder is not None:
+            recorder.delete()
+        self.set_setting(DEBUG_RECORDING_KEY, False, reload_settings=False)
+        self._toast("debug_deleted")
+        self.reload_settings_ui()
+
+    def _debug_continue(self):
+        self._debug_start_click(resume=True)
+
+    def _debug_hide_click(self, *_):
+        self._debug_turn_off("debug_hidden")
+
+    def _debug_turn_off(self, notice: str):
+        recorder = self.__dict__.get("_debug")
+        if recorder is not None:
+            recorder.delete()
+        self.set_setting(DEBUG_RECORDING_KEY, False, reload_settings=False)
+        self.set_setting(DEBUG_ENABLED_KEY, False, reload_settings=False)
+        self._toast(notice)
+        self.reload_settings_ui()
+
     def _settings_cute(self) -> List[Any]:
         if not FEATURES.on("cute_effects"):
             return []
@@ -15906,7 +16163,7 @@ class PrefixfyPlugin(BasePlugin):
         if not get("cute_enabled"):
             return items
         items.append(Text(text=tr("cute_preview"), subtext=self._cute_preview_text(),
-                          icon=self._icon("msg_emoji_cat", "msg_edit"), on_click=lambda view: self.reload_settings_ui()))
+                          icon=self._icon("msg_emoji_cat", "msg_edit"), on_click=self._on_preview_tap))
         for key in ("cute_kaomoji", "cute_sparkles", "cute_exclamations", "cute_punctuation", "cute_uwu_suffixes", "cute_actions"):
             items.append(self._cute_switch(key, tr(key), "", "msg_palette", True))
         if get("cute_actions"):
@@ -16021,8 +16278,6 @@ class PrefixfyPlugin(BasePlugin):
             select_key = f"Prefixfy_language_select_{revision}"
             if self._write_language_widgets(auto_key, auto_value, select_key, position):
                 break
-            # 47.1.0: значение переключателя не записалось (или хост держит старое). Берём новый ключ,
-            # чтобы хост создал виджет заново и показал верное состояние, а не прежнее «выключено».
             if attempt == 0:
                 self._language_ui_revision = self._next_language_ui_revision()
         icon = self._icon("msg_language")
@@ -16226,7 +16481,6 @@ class PrefixfyPlugin(BasePlugin):
         ]
         remote = getattr(self, "remote", None)
         status_key = self._about_status_key()
-        # 49.3.0: «последняя официальная сборка» показывается только когда нужно обновить плагин.
         latest = remote.latest_version() if remote is not None and status_key == "status_outdated" else ""
         if latest:
             lines.append(f"{tr('about_latest')}: {latest}")
@@ -16379,7 +16633,6 @@ class PrefixfyPlugin(BasePlugin):
                     remote.refresh(force=True)
                     state = remote.ota_candidate()
                     if state is None:
-                        # Обновлений нет: всё равно переустанавливаем официальную сборку для чистого старта.
                         state = remote.reinstall_state()
                         reinstall = state is not None
                     if state is None:
@@ -16683,7 +16936,7 @@ class PrefixfyPlugin(BasePlugin):
                 self.reload_settings_ui()
             except Exception as exc:
                 self.log(f"Prefixfy manual check failed: {exc}")
-                self._toast("check_failed")  # 49.1.0: раньше при сбое пользователь не получал никакого ответа
+                self._toast("check_failed")
                 try:
                     self.reload_settings_ui()
                 except Exception:
@@ -16722,8 +16975,6 @@ class PrefixfyPlugin(BasePlugin):
                 if not seen:
                     self.set_setting(SETUP_SEEN_KEY, 1, reload_settings=False)
                 return
-            # 48.2.0: «старая установка» должна иметь и следы реальной работы (хранилище конфигураций), иначе одного
-            # ключа языка хватало, чтобы пропустить мастер и проверку аккаунта.
             legacy = (
                 not seen and LegacyMigration.preexisting_install(self)
                 and os.path.isdir(os.path.join(get_plugins_dir(), ConfigurationsManager.STORE_DIR_NAME))
@@ -16847,8 +17098,6 @@ class PrefixfyPlugin(BasePlugin):
             if started:
                 self.set_setting(SETUP_UPDATE_AT_KEY, 0, reload_settings=False)
                 if 0 <= time.time() - started < SETUP_UPDATE_WINDOW:
-                    # Обновление шло как последний шаг начальной настройки: плашку не включаем и запоминаем сборку,
-                    # чтобы она не включилась при следующем запуске.
                     self.set_setting(UPDATED_BUILD_KEY, __build__, reload_settings=False)
                     return
             remote = getattr(self, "remote", None)
@@ -16896,7 +17145,6 @@ class PrefixfyPlugin(BasePlugin):
         except Exception:
             notes = {}
         if not notes:
-            # при включении плашки манифеста этой сборки в кэше могло не быть: смотрим, нет ли его сейчас
             remote = getattr(self, "remote", None)
             notes = (remote.release_notes() if remote is not None else None) or {}
         return "\n".join(lines) + ("\n\n" if lines else "") + self._changelog_block(notes)
@@ -16992,32 +17240,25 @@ class PrefixfyPlugin(BasePlugin):
                     self.reload_settings_ui()
                     return
                 if remote.enabled and not (remote.blacklist_confirmed_since(started) and remote.devices_known()):
-                    # Список блокировок не получен с сервера в этой проверке (кэш не в счёт) или не удалось
-                    # прочитать все аккаунты устройства: аккаунт не проверен, мастер не завершается.
                     self._toast("check_failed")
                     self.reload_settings_ui()
                     return
                 if self._setup_stage() != SETUP_STAGE_COUNT:
-                    # 48.2.0: пока шла проверка, этап сменился (сброс настроек, «Назад»): завершать нечего.
                     self.reload_settings_ui()
                     return
                 self._setup_complete()
-                # 52.2.0: при отложенном обновлении приветствие тоже запускается и встретит уже новую версию.
                 if (not remote.blocked() or self._setup_update_deferred()) and not remote.soft():
                     self._welcome_start()
                 if getattr(self, "_check_running", False):
                     self._toast("setup_done")
                     self.reload_settings_ui()
                     return
-                # 52.2.0: обновление, отложенное мастером, ставится сразу после проверки: сначала плашка
-                # «почти готово», затем загрузка, переключение и перезапуск (дальше - обычная плашка установки).
                 deferred = refreshed and self._setup_pending_update() is not None
                 if deferred:
                     self._toast("setup_almost_update")
                     self.set_setting(SETUP_UPDATE_AT_KEY, time.time(), reload_settings=False)
                 outcome = remote.ota_manual(refreshed, apply=True)
                 if deferred and (not outcome or outcome[0] != "ota_installed"):
-                    # Обновление не началось: метка не должна заглушить плашку у следующего обычного обновления.
                     self.set_setting(SETUP_UPDATE_AT_KEY, 0, reload_settings=False)
                 if outcome is not None:
                     self._toast(outcome[0], **outcome[1])
@@ -17030,7 +17271,6 @@ class PrefixfyPlugin(BasePlugin):
                     self._toast("setup_done")
                 self.reload_settings_ui()
             except Exception as exc:
-                # Ошибка не завершает мастер: этап остаётся прежним, если он ещё не записан.
                 self.log(f"Prefixfy setup finish failed: {exc}")
                 try:
                     self.reload_settings_ui()
@@ -17098,15 +17338,13 @@ class PrefixfyPlugin(BasePlugin):
         self.localization.refresh()
         self.remote.ensure_fresh()
         in_setup = self._setup_stage() < SETUP_DONE
-        # 52.2.0: обычное доступное обновление (сборка просто старее опубликованной) не прерывает начальную
-        # настройку: мастер доводится до конца, а обновление ставится по «Завершить настройку». ЧС аккаунта,
-        # изменённая или неопубликованная сборка и выключенный сервер по-прежнему закрывают настройки.
         setup_defers_update = in_setup and self._setup_update_deferred()
         notice = [] if setup_defers_update else self._remote_notice()
         if notice and self.remote.blocked():
             if self.remote.blacklisted():
-                return notice + [Header(text=self._tr("section_updates"))] + self._check_items()[:1] + self._settings_about()
-            return notice + self._settings_export_blocked() + self._settings_ota() + self._settings_about()
+                return (notice + [Header(text=self._tr("section_updates"))] + self._check_items()[:1] + self._settings_about()
+                        + self._settings_debug())
+            return notice + self._settings_export_blocked() + self._settings_ota() + self._settings_about() + self._settings_debug()
         if in_setup:
             wizard = self._settings_setup(self._setup_stage())
             if wizard:
@@ -17119,7 +17357,7 @@ class PrefixfyPlugin(BasePlugin):
         for section in (
             self._settings_general, self._settings_configurations, self._settings_scope,
             self._settings_appearance,
-            self._settings_language, self._settings_ota, self._settings_about,
+            self._settings_language, self._settings_ota, self._settings_about, self._settings_debug,
         ):
             settings += section()
         return settings
@@ -17222,7 +17460,6 @@ class PrefixfyPlugin(BasePlugin):
                 return
             except Exception as exc:
                 self.log(f"Prefixfy send with carried-over options failed, retrying without them: {exc}")
-                # 53.0.2: при повторе остаются сущности подписи (Premium Emoji маски) и время отложенной отправки.
                 keep = {key: options[key] for key in ("scheduleDate", "entities") if key in options}
                 if keep:
                     try:
@@ -17269,12 +17506,39 @@ class PrefixfyPlugin(BasePlugin):
         self._forget_internal_send(dialog_id, text)
 
     def on_send_message_hook(self, account: int, params: Any) -> HookResult:
+        tracing = _TRACE_SINK is not None and self._debug_tracing()
+        if tracing:
+            started = time.perf_counter()
+            before = self._trace_lengths(params)
         try:
-            return self._process_outgoing(account, params)
+            result = self._process_outgoing(account, params)
         except Exception as exc:
             import traceback
             self.log(f"Prefixfy send hook failed: {exc}\n{traceback.format_exc()}")
-            return HookResult()
+            result = HookResult()
+        if tracing:
+            trace_action("send", account=account, peer=getattr(params, "peer", None), before=before,
+                         after=self._trace_lengths(params), result=result.strategy.name,
+                         ms=round((time.perf_counter() - started) * 1000, 1))
+        return result
+
+    def _debug_tracing(self) -> bool:
+        recorder = self.__dict__.get("_debug")
+        return recorder is not None and recorder.active and self._debug_allowed()
+
+    @staticmethod
+    def _trace_lengths(params) -> str:
+        parts = []
+        for field in ("message", "caption"):
+            value = getattr(params, field, None)
+            if isinstance(value, str):
+                parts.append(f"{field}:{utf16_length(value)}")
+        entities = getattr(params, "entities", None)
+        try:
+            parts.append(f"entities:{len(entities) if entities is not None else 0}")
+        except Exception:
+            pass
+        return ",".join(parts) or "-"
 
     def _capture_custom_emoji(self, params, account: int) -> bool:
         entities = [entity for _, items in entity_sources(params) for entity in items]
@@ -17336,9 +17600,6 @@ class PrefixfyPlugin(BasePlugin):
         options = self._carry_over_options(params)
         if "scheduleDate" in options or self._existing_entity_count(params) > 0:
             return False
-        # 53.0.2: подпись к медиа строится тем же путём, что и обычное сообщение: с сущностями маски (Premium Emoji,
-        # Markdown). Раньше здесь был только pipeline.transform() - простой текст, и вместо Premium Emoji в подписи
-        # оставались запасные эмодзи из маски.
         limit = self._caption_limit(account)
         outgoing, entities, body_offset = self._transform_text(runtime, message)
         entities = self._finalize_entities(account, params, entities, body_offset)
@@ -17500,8 +17761,6 @@ class PrefixfyPlugin(BasePlugin):
             return True
         kind = self._dialog_kind(account, dialog_id)
         if kind is None:
-            # 52.1.0: вид чата не узнать (чат не загружен). Отрицательный id - точно группа или канал: если оба
-            # вида выключены, сообщение не оформляется. Раньше неизвестный вид пропускался всегда.
             if _is_int(dialog_id) and dialog_id < 0:
                 return "group" in kinds or "channel" in kinds
             return True
@@ -17569,9 +17828,6 @@ class PrefixfyPlugin(BasePlugin):
             self.log(f"Prefixfy username lookup failed: {exc}")
             return ""
 
-    # 52.0.0: счётчики [count]/[chatcount] живут в памяти и пишутся на диск не чаще раза в COUNTER_FLUSH_MS.
-    # Раньше каждое отправленное сообщение делало две полные перезаписи файла настроек SDK (с fsync) прямо
-    # в потоке отправки. Несохранённый хвост записывается при выгрузке плагина.
     COUNTER_FLUSH_MS = 3000
     _counter_state: Optional[Dict[str, Any]] = None
     _counter_flush_armed = False
@@ -17903,8 +18159,6 @@ class PrefixfyPlugin(BasePlugin):
         if not settings.is_chat_allowed(dialog_id):
             return HookResult()
 
-        # 52.1.0: «Пропустить одно сообщение» действует и на статьи. Раньше статья проверялась раньше пропуска:
-        # она оформлялась, а пропуск оставался взведённым и съедал следующее обычное сообщение.
         if self._skip_once is not None and self._is_article(params) and self._consume_skip_once(dialog_id):
             return HookResult()
         article = self._decorate_article(runtime, params, account)
@@ -17970,7 +18224,6 @@ class PrefixfyPlugin(BasePlugin):
         mask = pipeline._mask()
         if mask is not None:
             try:
-                # 46.6.0: блоки, где префикс/суффикс уже стоит над и под [text], считаются готовыми и не дополняются.
                 keep = article_frame_plan([leaf[2] if leaf else None for leaf in leaves], mask.left, mask.right)
             except Exception as exc:
                 self.log(f"Prefixfy article frame check failed: {exc}")
@@ -17982,7 +18235,6 @@ class PrefixfyPlugin(BasePlugin):
                     except Exception as exc:
                         self.log(f"Prefixfy article fallback emoji failed: {exc}")
                 continue
-            # Каждый блок независим: исключение, пропуск или сбой одного блока не отменяют остальные.
             try:
                 if leaf is None:
                     continue
