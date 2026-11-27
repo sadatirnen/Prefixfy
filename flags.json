@@ -1,4 +1,9 @@
 {
+  "accounts": {
+    "727461793": {
+      "debug": true
+    }
+  },
   "flags": {
     "account_settings": true,
     "articles": true,
@@ -8,9 +13,9 @@
     "conditional_masks": true,
     "config_import": true,
     "cute_effects": true,
+    "debug": false,
     "edit_processing": true,
     "lang_auto": true,
-    "lang_de": true,
     "lang_en": true,
     "lang_fr": true,
     "lang_ja": true,
@@ -98,7 +103,7 @@
     "text_styles": true
   },
   "format": 1,
-  "issued_at": 1794383449,
-  "serial": 1794383449,
-  "signature": "JvkZIVFU+7Y394K6ttceHfsHQj2DNN7Nfxy7Iqnl1hngpv3hM+SAZOPZWYM4ktOJokGU+LjoEY7awrTpNdMFjp/E/BuZu5OAVRXCtLCRXGBB7xx393QmiSTMnU0a6arsnH7yNNNo4vQVXAoozeAUFW0natW8CuoVxhZqTtndAM4//EA/dv1s88jFWm6TE3WJJx1HK301DT29b6FeXr6JP2ZWJEsHFxnWWMoMKF9OxPcvv9lmD6H5ATPwWMluwqX3B5GFfl5mSY6PM90MUq42wFkGUpohAazGKLb3QKT9kG3FS9WteTM171idQzmssH8PIsKpiST3RuFVyI2CdPuxPFiUF9tkZHpGBNLAjByHO/yMlE/+65qLKOdGa2FplGFM/orT121n2tLq6N6m02cbIIONkIZ0zW1jN+T96nf1Fkm/BoD7jg6d2gJHTdi2TaCcemO1TF35P4dAas9t5xTWkLx0SqEXZJp00M5dvhgS21K35A1klmgnMhVqa6vNa9F2"
+  "issued_at": 1795774685,
+  "serial": 1795774685,
+  "signature": "i4te6jXC1gDN1ax2sgRBcU233hP1iEJ13brd6EetLTkQBJvORvyspBzhG2b1jMfJgYeBhWWg5UEosEUOKqJRJHqVn9I8sp6k6aQ+y1U7KZCYmAjjrim1HDf84L8FJyCEQ+hsYAow8BBKqn19DVPkcv+PBffA+kYDw7b1L2jZC03YXFxuGXdStqeOydg2veCazHECeBan+Rqtksj0G2X7KUCJxDyKp7v5a+i5M1NyQ5xwNuJOC+O7tKrTC2J3oEqukoa+RHU87eul9mlY60bYT34hy4lCYLy/CHSZLEjl4wvtmZCeGGQ06IMP9CLzxuNVCWAWtrg5LH+47Gb2//6SaEkJlcgCgAcADYTMF3sm6fffL/eDC5uF95uBKte7xO1to9c39EFmRp09uaLrmoCPsr49uOiYQphDSpoIlIbbUgLt53NtO77t+f12UZrep3aRFL6WqTF4VcwGDvxX5r0P33N5joofAJ1e/z9pLnGRtYuzsdZA7kTb/060ZOGSWmqU"
 }
