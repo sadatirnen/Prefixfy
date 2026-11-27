@@ -72,8 +72,8 @@ __id__ = "double_slash_prefix"
 __name__ = "Prefixfy"
 __description__ = "Prefixfy — стильное оформление исходящих сообщений: маска с гиперссылкой и 35+ тегами, 30 стилей текста, разделители и милые эффекты, маски для чатов с ротацией, правилами и расписанием, исключения и regex, оформление при редактировании, вложение медиа, Premium Emoji. Конфигурации (в том числе по аккаунтам) с импортом и экспортом, OTA-обновления, 5 языков интерфейса."
 __author__ = "@Prefixfy"
-__version__ = "54.0.0"
-__build__ = "54.0.0_20261127.2_108"
+__version__ = "54.0.1"
+__build__ = "54.0.1_20261127.3_110"
 __icon__ = "http_Prefixfy_by_fStikBot/3"
 __app_version__ = ">=13.1.1"
 __sdk_version__ = ">=1.4.6.5"
@@ -175,7 +175,7 @@ DEBUG_DIR_NAME = "Prefixfy_debug"
 DEBUG_LOG_NAME = "recording.log"
 DEBUG_MAX_BYTES = 4 * 1024 * 1024
 DEBUG_TAP_COUNT = 7
-DEBUG_TAP_GAP = 0.3
+DEBUG_TAP_GAP = 0.5
 SETUP_UPDATE_WINDOW = 3600
 SETUP_STAGE_COUNT = 3
 SETUP_DONE = SETUP_STAGE_COUNT + 1
@@ -496,7 +496,6 @@ class LocalizationManager:
             "cute_preview": "Предпросмотр",
             "section_debug": "Отладка",
             "debug_enabled": "Отладка включена",
-            "debug_disabled": "Отладка выключена",
             "debug_start": "Начать запись",
             "debug_start_subtext": "Записывает все действия плагина: нажатия, изменения настроек, окна, уведомления, обработку сообщений (только длины, без текста) и служебный журнал. Изменённые значения настроек и id чатов попадают в журнал — проверьте его, прежде чем кому-то отправлять.",
             "debug_stop": "Остановить запись",
@@ -510,7 +509,7 @@ class LocalizationManager:
             "debug_delete": "Удалить журнал",
             "debug_continue": "Продолжить запись",
             "debug_hide": "Скрыть отладку",
-            "debug_hide_subtext": "Остановит запись и удалит журнал. То же самое — 7 быстрых нажатий на «Предпросмотр».",
+            "debug_hide_subtext": "Остановит запись и удалит журнал.",
             "debug_started": "Запись журнала начата",
             "debug_exported": "Журнал отладки сохранён",
             "debug_deleted": "Журнал отладки удалён",
@@ -974,7 +973,6 @@ class LocalizationManager:
             "cute_preview": "Preview",
             "section_debug": "Debugging",
             "debug_enabled": "Debugging enabled",
-            "debug_disabled": "Debugging disabled",
             "debug_start": "Start recording",
             "debug_start_subtext": "Records every plugin action: taps, setting changes, dialogs, notices, message processing (lengths only, no text) and the service log. Changed setting values and chat IDs end up in the log, so check it before sending it to anyone.",
             "debug_stop": "Stop recording",
@@ -988,7 +986,7 @@ class LocalizationManager:
             "debug_delete": "Delete log",
             "debug_continue": "Continue recording",
             "debug_hide": "Hide debugging",
-            "debug_hide_subtext": "Stops recording and deletes the log. Same as 7 quick taps on “Preview”.",
+            "debug_hide_subtext": "Stops recording and deletes the log.",
             "debug_started": "Log recording started",
             "debug_exported": "Debug log saved",
             "debug_deleted": "Debug log deleted",
@@ -1452,7 +1450,6 @@ class LocalizationManager:
             "cute_preview": "プレビュー",
             "section_debug": "デバッグ",
             "debug_enabled": "デバッグを有効にしました",
-            "debug_disabled": "デバッグを無効にしました",
             "debug_start": "記録を開始",
             "debug_start_subtext": "プラグインのすべての操作を記録します：タップ、設定の変更、ダイアログ、通知、メッセージ処理（長さのみ、本文なし）、内部ログ。変更した設定値やチャット ID が含まれるため、誰かに送る前に確認してください。",
             "debug_stop": "記録を停止",
@@ -1466,7 +1463,7 @@ class LocalizationManager:
             "debug_delete": "ログを削除",
             "debug_continue": "記録を続行",
             "debug_hide": "デバッグを隠す",
-            "debug_hide_subtext": "記録を停止してログを削除します。「プレビュー」を素早く 7 回タップしても同じです。",
+            "debug_hide_subtext": "記録を停止してログを削除します。",
             "debug_started": "ログの記録を開始しました",
             "debug_exported": "デバッグログを保存しました",
             "debug_deleted": "デバッグログを削除しました",
@@ -1930,7 +1927,6 @@ class LocalizationManager:
             "cute_preview": "미리보기",
             "section_debug": "디버그",
             "debug_enabled": "디버그를 켰습니다",
-            "debug_disabled": "디버그를 껐습니다",
             "debug_start": "기록 시작",
             "debug_start_subtext": "플러그인의 모든 동작을 기록합니다: 탭, 설정 변경, 대화상자, 알림, 메시지 처리(길이만, 본문 없음), 내부 로그. 바뀐 설정 값과 채팅 ID가 들어가니 다른 사람에게 보내기 전에 확인하세요.",
             "debug_stop": "기록 중지",
@@ -1944,7 +1940,7 @@ class LocalizationManager:
             "debug_delete": "로그 삭제",
             "debug_continue": "기록 이어 가기",
             "debug_hide": "디버그 숨기기",
-            "debug_hide_subtext": "기록을 멈추고 로그를 삭제합니다. ‘미리보기’를 빠르게 7번 눌러도 같습니다.",
+            "debug_hide_subtext": "기록을 멈추고 로그를 삭제합니다.",
             "debug_started": "로그 기록을 시작했습니다",
             "debug_exported": "디버그 로그를 저장했습니다",
             "debug_deleted": "디버그 로그를 삭제했습니다",
@@ -2408,7 +2404,6 @@ class LocalizationManager:
             "cute_preview": "Aperçu",
             "section_debug": "Débogage",
             "debug_enabled": "Débogage activé",
-            "debug_disabled": "Débogage désactivé",
             "debug_start": "Démarrer l’enregistrement",
             "debug_start_subtext": "Enregistre toutes les actions du plugin : touches, changements de réglages, dialogues, notifications, traitement des messages (longueurs seulement, sans texte) et le journal interne. Les valeurs de réglages modifiées et les ID de chats y figurent : vérifiez-le avant de l’envoyer à qui que ce soit.",
             "debug_stop": "Arrêter l’enregistrement",
@@ -2422,7 +2417,7 @@ class LocalizationManager:
             "debug_delete": "Supprimer le journal",
             "debug_continue": "Reprendre l’enregistrement",
             "debug_hide": "Masquer le débogage",
-            "debug_hide_subtext": "Arrête l’enregistrement et supprime le journal. Comme 7 touches rapides sur « Aperçu ».",
+            "debug_hide_subtext": "Arrête l’enregistrement et supprime le journal.",
             "debug_started": "Enregistrement du journal démarré",
             "debug_exported": "Journal de débogage enregistré",
             "debug_deleted": "Journal de débogage supprimé",
@@ -16004,12 +15999,10 @@ class PrefixfyPlugin(BasePlugin):
             self._debug_taps = 1
         self._debug_tap_at = now
         self._debug_tap_serial = serial = getattr(self, "_debug_tap_serial", 0) + 1
-        if self._debug_taps >= DEBUG_TAP_COUNT and self._debug_allowed():
+        if (self._debug_taps >= DEBUG_TAP_COUNT and self._debug_allowed()
+                and not self.get_setting(DEBUG_ENABLED_KEY, False)):
             self._debug_taps = 0
-            if self.get_setting(DEBUG_ENABLED_KEY, False):
-                self._debug_turn_off("debug_disabled")
-            else:
-                self._debug_unlock()
+            self._debug_unlock()
             return
 
         def refresh():
@@ -16140,15 +16133,12 @@ class PrefixfyPlugin(BasePlugin):
         self._debug_start_click(resume=True)
 
     def _debug_hide_click(self, *_):
-        self._debug_turn_off("debug_hidden")
-
-    def _debug_turn_off(self, notice: str):
         recorder = self.__dict__.get("_debug")
         if recorder is not None:
             recorder.delete()
         self.set_setting(DEBUG_RECORDING_KEY, False, reload_settings=False)
         self.set_setting(DEBUG_ENABLED_KEY, False, reload_settings=False)
-        self._toast(notice)
+        self._toast("debug_hidden")
         self.reload_settings_ui()
 
     def _settings_cute(self) -> List[Any]:
